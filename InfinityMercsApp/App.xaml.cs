@@ -1,3 +1,5 @@
+using InfinityMercsApp.Views;
+
 namespace InfinityMercsApp;
 
 public partial class App : Application

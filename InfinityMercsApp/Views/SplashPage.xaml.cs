@@ -1,4 +1,7 @@
-namespace InfinityMercsApp;
+using InfinityMercsApp.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace InfinityMercsApp.Views;
 
 public partial class SplashPage : ContentPage
 {
@@ -19,6 +22,12 @@ public partial class SplashPage : ContentPage
 		}
 
 		_navigated = true;
+
+		var initializationService = Application.Current?.Handler?.MauiContext?.Services.GetService<AppInitializationService>();
+		if (initializationService is not null)
+		{
+			await initializationService.InitializeAsync();
+		}
 
 		await Task.Delay(2000);
 

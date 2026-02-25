@@ -2,6 +2,19 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "stop-maui-windows-app",
+      "type": "process",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Get-Process InfinityMercsApp -ErrorAction SilentlyContinue | Stop-Process -Force"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "build-maui-windows",
       "type": "process",
       "command": "dotnet",
@@ -11,8 +24,18 @@
         "-f",
         "net9.0-windows10.0.19041.0"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": [
+        "stop-maui-windows-app"
+      ],
+      "dependsOrder": "sequence",
       "problemMatcher": "$msCompile",
-      "group": "build"
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     }
   ]
 }
