@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.SplashPage"
+             BackgroundColor="#111827">
+
+    <Grid>
+        <VerticalStackLayout
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            Spacing="16">
+
+            <Image
+                Source="dotnet_bot.png"
+                HeightRequest="120"
+                Aspect="AspectFit" />
+
+            <Label
+                Text="Infinity Mercs"
+                FontSize="30"
+                FontAttributes="Bold"
+                TextColor="White"
+                HorizontalTextAlignment="Center" />
+
+            <Label
+                Text="Loading..."
+                FontSize="16"
+                TextColor="#9CA3AF"
+                HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentPage>

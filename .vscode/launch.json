@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MAUI Windows (Local Device)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-maui-windows",
+      "program": "${workspaceFolder}/InfinityMercsApp/bin/Debug/net9.0-windows10.0.19041.0/win10-x64/InfinityMercsApp.exe",
+      "cwd": "${workspaceFolder}/InfinityMercsApp",
+      "stopAtEntry": false,
+      "justMyCode": true
+    }
+  ]
+}
