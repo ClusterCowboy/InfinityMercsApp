@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
-using Microsoft.Maui.Storage;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -11,7 +11,9 @@ public class MainViewModel : BaseViewModel
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
     };
 
     private readonly IWebAccessObject? _webAccessObject;
@@ -130,11 +132,47 @@ public class MainViewModel : BaseViewModel
             MetadataStatus = "Downloading metadata...";
 
             var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            var filePath = Path.Combine(FileSystem.Current.AppDataDirectory, "metadata.json");
+            if (_metadataAccessor is not null)
+            {
+                await _metadataAccessor.ImportFromJsonAsync(metadataJson);
+            }
 
-            await File.WriteAllTextAsync(filePath, metadataJson);
+            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
+            if (metadataDocument is null || metadataDocument.Factions.Count == 0)
+            {
+                MetadataStatus = "Metadata imported to DB. No factions found.";
+                return;
+            }
 
-            MetadataStatus = $"Saved metadata to: {filePath}";
+            var factionIds = metadataDocument.Factions
+                .Select(f => f.Id)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            var fetchedCount = 0;
+            var errorCount = 0;
+            foreach (var factionId in factionIds)
+            {
+                try
+                {
+                    MetadataStatus = $"Fetching faction data for {factionId}...";
+                    var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
+
+                    if (_armyDataAccessor is not null)
+                    {
+                        await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
+                    }
+
+                    fetchedCount++;
+                }
+                catch
+                {
+                    errorCount++;
+                }
+            }
+
+            MetadataStatus = $"Metadata imported and armies fetched to DB. Success: {fetchedCount}, Errors: {errorCount}.";
         }
         catch (Exception ex)
         {
@@ -155,8 +193,6 @@ public class MainViewModel : BaseViewModel
             UpdateStatus = "Downloading metadata...";
 
             var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            var metadataPath = Path.Combine(FileSystem.Current.AppDataDirectory, "metadata.json");
-            await File.WriteAllTextAsync(metadataPath, metadataJson);
             await _metadataAccessor.ImportFromJsonAsync(metadataJson);
 
             var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
@@ -262,18 +298,15 @@ public class MainViewModel : BaseViewModel
             ArmyStatus = $"Downloading army data for faction {factionId}...";
 
             var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
-            var filePath = Path.Combine(FileSystem.Current.AppDataDirectory, $"army-{factionId}.json");
-
-            await File.WriteAllTextAsync(filePath, armyJson);
 
             if (_armyDataAccessor is not null)
             {
                 await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
-                ArmyStatus = $"Saved and imported faction {factionId} to DB. File: {filePath}";
+                ArmyStatus = $"Downloaded and imported faction {factionId} to DB.";
             }
             else
             {
-                ArmyStatus = $"Saved army data to: {filePath}";
+                ArmyStatus = "Army data downloaded, but DB accessor is unavailable.";
             }
         }
         catch (Exception ex)

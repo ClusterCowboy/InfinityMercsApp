@@ -10,7 +10,6 @@ public class FactionRecord
 
     public int ParentId { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string Slug { get; set; } = string.Empty;
@@ -26,7 +25,6 @@ public class AmmunitionRecord
     [PrimaryKey]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Wiki { get; set; }
@@ -38,10 +36,8 @@ public class WeaponRecord
     [PrimaryKey]
     public string WeaponKey { get; set; } = string.Empty;
 
-    [Indexed]
     public int WeaponId { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Type { get; set; }
@@ -73,7 +69,6 @@ public class SkillRecord
     [PrimaryKey]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Wiki { get; set; }
@@ -85,7 +80,6 @@ public class EquipRecord
     [PrimaryKey]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Wiki { get; set; }
@@ -97,7 +91,6 @@ public class HackProgramRecord
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Opponent { get; set; }
@@ -140,7 +133,6 @@ public class MetachemistryRecord
     [PrimaryKey]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string Value { get; set; } = string.Empty;
@@ -152,7 +144,6 @@ public class BootyRecord
     [PrimaryKey]
     public int Id { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string Value { get; set; } = string.Empty;

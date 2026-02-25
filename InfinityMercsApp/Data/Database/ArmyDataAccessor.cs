@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SQLite;
 
 namespace InfinityMercsApp.Data.Database;
@@ -7,7 +8,9 @@ public class ArmyDataAccessor : IArmyDataAccessor
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
     };
 
     private readonly IDatabaseContext _databaseContext;

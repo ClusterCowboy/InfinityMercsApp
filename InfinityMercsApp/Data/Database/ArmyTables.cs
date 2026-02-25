@@ -33,10 +33,8 @@ public class ArmyUnitRecord
     [PrimaryKey]
     public string UnitKey { get; set; } = string.Empty;
 
-    [Indexed]
     public int FactionId { get; set; }
 
-    [Indexed]
     public int UnitId { get; set; }
 
     public int? IdArmy { get; set; }
@@ -47,7 +45,6 @@ public class ArmyUnitRecord
 
     public string? IscAbbr { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Slug { get; set; }
@@ -67,17 +64,14 @@ public class ArmyResumeRecord
     [PrimaryKey]
     public string ResumeKey { get; set; } = string.Empty;
 
-    [Indexed]
     public int FactionId { get; set; }
 
-    [Indexed]
     public int UnitId { get; set; }
 
     public int? IdArmy { get; set; }
 
     public string? Isc { get; set; }
 
-    [Indexed]
     public string Name { get; set; } = string.Empty;
 
     public string? Slug { get; set; }
