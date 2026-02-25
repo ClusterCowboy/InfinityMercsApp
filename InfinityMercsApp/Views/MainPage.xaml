@@ -52,6 +52,15 @@
             <Label
                 Text="{Binding ArmyStatus}"
                 LineBreakMode="WordWrap" />
+
+            <Button
+                Text="Update All Factions From Metadata"
+                Command="{Binding UpdateAllDataCommand}"
+                HorizontalOptions="Fill" />
+
+            <Label
+                Text="{Binding UpdateStatus}"
+                LineBreakMode="WordWrap" />
         </VerticalStackLayout>
     </ScrollView>
 

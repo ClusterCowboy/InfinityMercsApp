@@ -31,6 +31,8 @@ public static class MauiProgram
 			return new HttpClient(handler);
 		});
 		builder.Services.AddSingleton<IDatabaseContext, DatabaseContext>();
+		builder.Services.AddSingleton<IMetadataAccessor, MetadataAccessor>();
+		builder.Services.AddSingleton<IArmyDataAccessor, ArmyDataAccessor>();
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<AppInitializationService>();
 		builder.Services.AddTransient<MainViewModel>();

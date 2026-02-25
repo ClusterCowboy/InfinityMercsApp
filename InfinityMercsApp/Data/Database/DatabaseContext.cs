@@ -6,13 +6,13 @@ namespace InfinityMercsApp.Data.Database;
 
 public class DatabaseContext : IDatabaseContext
 {
-    private readonly SQLiteAsyncConnection _connection;
+    public SQLiteAsyncConnection Connection { get; }
     private bool _isInitialized;
 
     public DatabaseContext()
     {
         DatabasePath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3");
-        _connection = new SQLiteAsyncConnection(DatabasePath);
+        Connection = new SQLiteAsyncConnection(DatabasePath);
     }
 
     public string DatabasePath { get; }
@@ -25,7 +25,19 @@ public class DatabaseContext : IDatabaseContext
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await _connection.CreateTableAsync<AppSetting>();
+        await Connection.CreateTableAsync<AppSetting>();
+        await Connection.CreateTableAsync<FactionRecord>();
+        await Connection.CreateTableAsync<AmmunitionRecord>();
+        await Connection.CreateTableAsync<WeaponRecord>();
+        await Connection.CreateTableAsync<SkillRecord>();
+        await Connection.CreateTableAsync<EquipRecord>();
+        await Connection.CreateTableAsync<HackProgramRecord>();
+        await Connection.CreateTableAsync<MartialArtRecord>();
+        await Connection.CreateTableAsync<MetachemistryRecord>();
+        await Connection.CreateTableAsync<BootyRecord>();
+        await Connection.CreateTableAsync<ArmyFactionRecord>();
+        await Connection.CreateTableAsync<ArmyUnitRecord>();
+        await Connection.CreateTableAsync<ArmyResumeRecord>();
         _isInitialized = true;
     }
 }
