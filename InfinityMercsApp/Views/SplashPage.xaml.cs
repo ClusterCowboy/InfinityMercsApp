@@ -12,7 +12,7 @@ public partial class SplashPage : ContentPage
 		InitializeComponent();
 	}
 
-	protected override async void OnAppearing()
+	protected override void OnAppearing()
 	{
 		base.OnAppearing();
 
@@ -24,16 +24,30 @@ public partial class SplashPage : ContentPage
 		_navigated = true;
 
 		var initializationService = Application.Current?.Handler?.MauiContext?.Services.GetService<AppInitializationService>();
-		if (initializationService is not null)
-		{
-			await initializationService.InitializeAsync();
-		}
-
-		await Task.Delay(2000);
-
 		if (Application.Current?.Windows.Count > 0)
 		{
 			Application.Current.Windows[0].Page = new AppShell();
+		}
+
+		_ = RunStartupCheckAsync(initializationService);
+	}
+
+	private static async Task RunStartupCheckAsync(AppInitializationService? initializationService)
+	{
+		if (initializationService is null)
+		{
+			return;
+		}
+
+		try
+		{
+			// Let the shell render before running network/database startup checks.
+			await Task.Delay(250);
+			await Task.Run(() => initializationService.InitializeAsync());
+		}
+		catch
+		{
+			// Ignore startup check failures so app launch is never blocked.
 		}
 	}
 }

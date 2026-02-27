@@ -17,6 +17,10 @@ public partial class App : MauiWinUIApplication
 	public App()
 	{
 		this.InitializeComponent();
+		this.UnhandledException += (_, args) =>
+		{
+			InfinityMercsApp.App.CrashLog.Write("WinUI.UnhandledException", args.Exception);
+		};
 	}
 
 	protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

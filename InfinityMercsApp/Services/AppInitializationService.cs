@@ -3,11 +3,15 @@ using System.Text.Json.Serialization;
 using System.Globalization;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Models;
 
 namespace InfinityMercsApp.Services;
 
 public class AppInitializationService
 {
+    private const string LastStartupUpdateAttemptKey = "startup_update_last_attempt_utc";
+    private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -35,36 +39,38 @@ public class AppInitializationService
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await _databaseContext.InitializeAsync(cancellationToken);
-
-        var hasMetadata = await _metadataAccessor.HasMetadataAsync(cancellationToken);
-        if (!hasMetadata)
+        if (!await ShouldAttemptStartupUpdateAsync(cancellationToken))
         {
-            var metadataJson = await _webAccessObject.GetMetaDataAsync(cancellationToken);
-            await _metadataAccessor.ImportFromJsonAsync(metadataJson, cancellationToken);
+            return;
+        }
 
-            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
-            if (metadataDocument is not null)
+        await RecordStartupUpdateAttemptAsync(cancellationToken);
+
+        var metadataJson = await _webAccessObject.GetMetaDataAsync(cancellationToken);
+        await _metadataAccessor.ImportFromJsonAsync(metadataJson, cancellationToken);
+
+        var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
+        if (metadataDocument is not null)
+        {
+            foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
             {
-                foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
+                var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
+                var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+                var latestVersion = armyDocument?.Version;
+                if (string.IsNullOrWhiteSpace(latestVersion))
                 {
-                    var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
-                    var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
-                    var latestVersion = armyDocument?.Version;
-                    if (string.IsNullOrWhiteSpace(latestVersion))
-                    {
-                        continue;
-                    }
-
-                    var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
-                    var storedVersion = snapshot?.Version;
-
-                    if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                    {
-                        continue;
-                    }
-
-                    await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
+                    continue;
                 }
+
+                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    continue;
+                }
+
+                await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
             }
         }
     }
@@ -92,5 +98,54 @@ public class AppInitializationService
         }
 
         return 0;
+    }
+
+    private async Task<bool> ShouldAttemptStartupUpdateAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var setting = await _databaseContext.Connection.Table<AppSetting>()
+            .Where(x => x.Key == LastStartupUpdateAttemptKey)
+            .FirstOrDefaultAsync();
+
+        if (setting is null)
+        {
+            return true;
+        }
+
+        if (!DateTimeOffset.TryParse(
+                setting.Value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var lastAttemptUtc))
+        {
+            return true;
+        }
+
+        var elapsed = DateTimeOffset.UtcNow - lastAttemptUtc;
+        return elapsed >= StartupUpdateInterval;
+    }
+
+    private async Task RecordStartupUpdateAttemptAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var value = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        var existingSetting = await _databaseContext.Connection.Table<AppSetting>()
+            .Where(x => x.Key == LastStartupUpdateAttemptKey)
+            .FirstOrDefaultAsync();
+
+        if (existingSetting is null)
+        {
+            await _databaseContext.Connection.InsertAsync(new AppSetting
+            {
+                Key = LastStartupUpdateAttemptKey,
+                Value = value
+            });
+            return;
+        }
+
+        existingSetting.Value = value;
+        await _databaseContext.Connection.UpdateAsync(existingSetting);
     }
 }

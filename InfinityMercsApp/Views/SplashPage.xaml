@@ -22,8 +22,14 @@
                 TextColor="White"
                 HorizontalTextAlignment="Center" />
 
+            <ActivityIndicator
+                IsRunning="True"
+                Color="#9CA3AF"
+                HorizontalOptions="Center" />
+
             <Label
-                Text="Loading..."
+                x:Name="StatusLabel"
+                Text="Updating data..."
                 FontSize="16"
                 TextColor="#9CA3AF"
                 HorizontalTextAlignment="Center" />
