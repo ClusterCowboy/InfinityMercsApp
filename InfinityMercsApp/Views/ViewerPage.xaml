@@ -57,7 +57,13 @@
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <controls:FactionListItemView />
+                                <controls:FactionListItemView>
+                                    <controls:FactionListItemView.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectUnitCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </controls:FactionListItemView.GestureRecognizers>
+                                </controls:FactionListItemView>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>

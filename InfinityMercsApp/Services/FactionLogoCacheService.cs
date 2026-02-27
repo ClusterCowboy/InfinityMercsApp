@@ -227,24 +227,44 @@ public class FactionLogoCacheService
 
     private static async Task<bool> TryCopyPackagedAssetAsync(string packagedPath, string localPath, CancellationToken cancellationToken)
     {
-        try
-        {
-            var localDirectory = Path.GetDirectoryName(localPath);
-            if (!string.IsNullOrWhiteSpace(localDirectory))
-            {
-                Directory.CreateDirectory(localDirectory);
-            }
+        var candidates = BuildCandidatePackagedPaths(packagedPath).Distinct(StringComparer.OrdinalIgnoreCase);
 
-            await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
-            await using var fileStream = File.Create(localPath);
-            await packageStream.CopyToAsync(fileStream, cancellationToken);
-            return true;
-        }
-        catch (Exception ex)
+        foreach (var candidate in candidates)
         {
-            Console.Error.WriteLine($"SVG package copy failed for '{packagedPath}': {ex.Message}");
-            return false;
+            try
+            {
+                var localDirectory = Path.GetDirectoryName(localPath);
+                if (!string.IsNullOrWhiteSpace(localDirectory))
+                {
+                    Directory.CreateDirectory(localDirectory);
+                }
+
+                await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(candidate);
+                await using var fileStream = File.Create(localPath);
+                await packageStream.CopyToAsync(fileStream, cancellationToken);
+                return true;
+            }
+            catch
+            {
+                // Try next candidate path.
+            }
         }
+
+        Console.Error.WriteLine($"SVG package copy failed for '{packagedPath}'.");
+        return false;
+    }
+
+    private static IEnumerable<string> BuildCandidatePackagedPaths(string packagedPath)
+    {
+        var normalized = packagedPath.Replace('\\', '/').TrimStart('/');
+        var lower = normalized.ToLowerInvariant();
+        var backslash = normalized.Replace('/', '\\');
+        var backslashLower = lower.Replace('/', '\\');
+
+        yield return normalized;
+        yield return lower;
+        yield return backslash;
+        yield return backslashLower;
     }
 
     private enum EnsureResult

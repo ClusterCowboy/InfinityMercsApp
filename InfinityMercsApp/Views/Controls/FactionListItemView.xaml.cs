@@ -26,7 +26,7 @@ public partial class FactionListItemView : ContentView
         _svgPicture = null;
 
         var item = BindingContext as IViewerListItem;
-        if (item is null || string.IsNullOrWhiteSpace(item.CachedLogoPath) || !File.Exists(item.CachedLogoPath))
+        if (item is null)
         {
             LogoCanvas.InvalidateSurface();
             return;
@@ -34,13 +34,31 @@ public partial class FactionListItemView : ContentView
 
         try
         {
-            await using var stream = File.OpenRead(item.CachedLogoPath);
+            Stream? stream = null;
+            if (!string.IsNullOrWhiteSpace(item.CachedLogoPath) && File.Exists(item.CachedLogoPath))
+            {
+                stream = File.OpenRead(item.CachedLogoPath);
+            }
+            else if (!string.IsNullOrWhiteSpace(item.PackagedLogoPath))
+            {
+                stream = await FileSystem.Current.OpenAppPackageFileAsync(item.PackagedLogoPath);
+            }
+
+            if (stream is null)
+            {
+                LogoCanvas.InvalidateSurface();
+                return;
+            }
+
+            await using (stream)
+            {
             var svg = new SKSvg();
-            _svgPicture = svg.Load(stream);
+                _svgPicture = svg.Load(stream);
+            }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"FactionListItemView SVG load failed for '{item.CachedLogoPath}': {ex.Message}");
+            Console.Error.WriteLine($"FactionListItemView SVG load failed for '{item.CachedLogoPath ?? item.PackagedLogoPath}': {ex.Message}");
             _svgPicture = null;
         }
 

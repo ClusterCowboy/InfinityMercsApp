@@ -4,21 +4,35 @@
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Controls.FactionListItemView">
 
-    <Grid
-        Padding="8,6"
-        MinimumHeightRequest="50"
-        ColumnDefinitions="Auto,*"
-        ColumnSpacing="10">
-        <skia:SKCanvasView
-            x:Name="LogoCanvas"
-            WidthRequest="32"
-            HeightRequest="32"
-            VerticalOptions="Center"
-            PaintSurface="OnLogoCanvasPaintSurface" />
-        <Label
-            Grid.Column="1"
-            VerticalOptions="Center"
-            Text="{Binding Name}" />
-    </Grid>
+    <Border x:Name="ItemBorder" Padding="0" StrokeThickness="0">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="6" />
+        </Border.StrokeShape>
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                <Setter Property="BackgroundColor" Value="#334155" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </DataTrigger>
+        </Border.Triggers>
+
+        <Grid
+            Padding="8,6"
+            MinimumHeightRequest="50"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="10">
+            <skia:SKCanvasView
+                x:Name="LogoCanvas"
+                WidthRequest="32"
+                HeightRequest="32"
+                VerticalOptions="Center"
+                PaintSurface="OnLogoCanvasPaintSurface" />
+            <Label
+                Grid.Column="1"
+                VerticalOptions="Center"
+                Text="{Binding Name}" />
+        </Grid>
+    </Border>
 
 </ContentView>

@@ -14,6 +14,7 @@ public class ViewerViewModel : BaseViewModel
     private string _status = "Loading factions...";
     private string _unitsStatus = "Select a faction.";
     private ViewerFactionItem? _selectedFaction;
+    private ViewerUnitItem? _selectedUnit;
 
     public ViewerViewModel(
         IMetadataAccessor? metadataAccessor = null,
@@ -23,17 +24,31 @@ public class ViewerViewModel : BaseViewModel
         _metadataAccessor = metadataAccessor;
         _armyDataAccessor = armyDataAccessor;
         _factionLogoCacheService = factionLogoCacheService;
+
         SelectFactionCommand = new Command<ViewerFactionItem>(async item =>
         {
-            if (item is not null)
+            if (item is null)
             {
-                SelectedFaction = item;
-                await LoadUnitsForSelectedFactionAsync();
+                return;
             }
+
+            SelectedFaction = item;
+            await LoadUnitsForSelectedFactionAsync();
+        });
+
+        SelectUnitCommand = new Command<ViewerUnitItem>(item =>
+        {
+            if (item is null)
+            {
+                return;
+            }
+
+            SelectedUnit = item;
         });
     }
 
     public ObservableCollection<ViewerFactionItem> Factions { get; } = [];
+
     public ObservableCollection<ViewerUnitItem> Units { get; } = [];
 
     public bool IsLoading
@@ -91,15 +106,55 @@ public class ViewerViewModel : BaseViewModel
                 return;
             }
 
+            if (_selectedFaction is not null)
+            {
+                _selectedFaction.IsSelected = false;
+            }
+
             _selectedFaction = value;
+
+            if (_selectedFaction is not null)
+            {
+                _selectedFaction.IsSelected = true;
+            }
+
+            SelectedUnit = null;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectedFactionLogoUrl));
+        }
+    }
+
+    public ViewerUnitItem? SelectedUnit
+    {
+        get => _selectedUnit;
+        set
+        {
+            if (_selectedUnit == value)
+            {
+                return;
+            }
+
+            if (_selectedUnit is not null)
+            {
+                _selectedUnit.IsSelected = false;
+            }
+
+            _selectedUnit = value;
+
+            if (_selectedUnit is not null)
+            {
+                _selectedUnit.IsSelected = true;
+            }
+
+            OnPropertyChanged();
         }
     }
 
     public string SelectedFactionLogoUrl => SelectedFaction?.Logo ?? string.Empty;
 
     public ICommand SelectFactionCommand { get; }
+
+    public ICommand SelectUnitCommand { get; }
 
     public async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
@@ -127,7 +182,8 @@ public class ViewerViewModel : BaseViewModel
                     Id = faction.Id,
                     Name = faction.Name,
                     Logo = faction.Logo,
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id)
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id),
+                    PackagedLogoPath = $"SVGCache/{faction.Id}.svg"
                 });
             }
 
@@ -147,6 +203,7 @@ public class ViewerViewModel : BaseViewModel
     public async Task LoadUnitsForSelectedFactionAsync(CancellationToken cancellationToken = default)
     {
         Units.Clear();
+        SelectedUnit = null;
 
         if (SelectedFaction is null)
         {
@@ -168,8 +225,7 @@ public class ViewerViewModel : BaseViewModel
             {
                 UnitsStatus = "Preparing unit SVG cache...";
                 var cacheResult = await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(SelectedFaction.Id, units, cancellationToken);
-                Console.Error.WriteLine(
-                    $"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
+                Console.Error.WriteLine($"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
             }
 
             foreach (var unit in units.OrderBy(x => x.Name))
@@ -179,7 +235,8 @@ public class ViewerViewModel : BaseViewModel
                     Id = unit.UnitId,
                     Name = unit.Name,
                     Logo = unit.Logo,
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(SelectedFaction.Id, unit.UnitId)
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(SelectedFaction.Id, unit.UnitId),
+                    PackagedLogoPath = $"SVGCache/units/{SelectedFaction.Id}-{unit.UnitId}.svg"
                 });
             }
 
@@ -198,9 +255,13 @@ public interface IViewerListItem
     string Name { get; }
 
     string? CachedLogoPath { get; }
+
+    string? PackagedLogoPath { get; }
+
+    bool IsSelected { get; set; }
 }
 
-public class ViewerFactionItem : IViewerListItem
+public class ViewerFactionItem : BaseViewModel, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -209,9 +270,27 @@ public class ViewerFactionItem : IViewerListItem
     public string? Logo { get; init; }
 
     public string? CachedLogoPath { get; init; }
+
+    public string? PackagedLogoPath { get; init; }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
+            OnPropertyChanged();
+        }
+    }
 }
 
-public class ViewerUnitItem
+public class ViewerUnitItem : BaseViewModel, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -220,4 +299,22 @@ public class ViewerUnitItem
     public string? Logo { get; init; }
 
     public string? CachedLogoPath { get; init; }
+
+    public string? PackagedLogoPath { get; init; }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
+            OnPropertyChanged();
+        }
+    }
 }
