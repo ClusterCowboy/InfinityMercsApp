@@ -36,8 +36,10 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<AppInitializationService>();
 		builder.Services.AddTransient<MainViewModel>();
+		builder.Services.AddTransient<ViewerViewModel>();
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<SplashPage>();
+		builder.Services.AddTransient<ViewerPage>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

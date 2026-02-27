@@ -13,8 +13,14 @@
         Route="MainPage" />
 
     <ShellContent
+        Title="Viewer"
+        ContentTemplate="{DataTemplate views:ViewerPage}"
+        Route="ViewerPage" />
+        
+    <ShellContent
         Title="Settings"
         ContentTemplate="{DataTemplate views:SettingsPage}"
         Route="SettingsPage" />
+
 
 </Shell>
