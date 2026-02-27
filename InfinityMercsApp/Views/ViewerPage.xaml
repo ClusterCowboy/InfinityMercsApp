@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.ViewerPage"
              Title="Viewer">
 
@@ -27,6 +28,7 @@
                 <CollectionView
                     Grid.Row="2"
                     ItemsSource="{Binding Factions}"
+                    SelectedItem="{Binding SelectedFaction, Mode=TwoWay}"
                     SelectionMode="Single">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
@@ -45,7 +47,14 @@
         </Border>
 
         <Border Grid.Column="1" StrokeThickness="1" Padding="12">
-            <Label Text="Column 2" FontSize="20" FontAttributes="Bold" />
+            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
+                <Label Text="Faction Logo (SVG)" FontSize="20" FontAttributes="Bold" />
+                <Label Grid.Row="1" Text="{Binding SelectedFaction.Name}" />
+                <Label Grid.Row="2" x:Name="SvgStatusLabel" TextColor="#6B7280" />
+                <Border Grid.Row="3" StrokeThickness="1" Padding="8">
+                    <skia:SKCanvasView x:Name="SvgCanvas" PaintSurface="OnSvgCanvasPaintSurface" />
+                </Border>
+            </Grid>
         </Border>
 
         <Border Grid.Column="2" StrokeThickness="1" Padding="12">

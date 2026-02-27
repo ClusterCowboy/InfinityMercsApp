@@ -45,9 +45,9 @@ public partial class SplashPage : ContentPage
 			await Task.Delay(250);
 			await Task.Run(() => initializationService.InitializeAsync());
 		}
-		catch
+		catch (Exception ex)
 		{
-			// Ignore startup check failures so app launch is never blocked.
+			Console.Error.WriteLine($"Startup check failed: {ex.Message}");
 		}
 	}
 }

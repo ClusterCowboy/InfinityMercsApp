@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -19,20 +20,25 @@ public class MainViewModel : BaseViewModel
     private readonly IWebAccessObject? _webAccessObject;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly FactionLogoCacheService? _factionLogoCacheService;
     private int _count;
     private string _metadataStatus = "Metadata file not downloaded yet.";
     private string _armyStatus = "Army file not downloaded yet.";
     private string _updateStatus = "No update run yet.";
+    private bool _isUpdateInProgress;
+    private string _updateProgressMessage = string.Empty;
     private string _factionIdInput = "1";
 
     public MainViewModel(
         IWebAccessObject? webAccessObject = null,
         IArmyDataAccessor? armyDataAccessor = null,
-        IMetadataAccessor? metadataAccessor = null)
+        IMetadataAccessor? metadataAccessor = null,
+        FactionLogoCacheService? factionLogoCacheService = null)
     {
         _webAccessObject = webAccessObject;
         _armyDataAccessor = armyDataAccessor;
         _metadataAccessor = metadataAccessor;
+        _factionLogoCacheService = factionLogoCacheService;
         IncrementCounterCommand = new Command(OnIncrementCounter);
         DownloadMetadataCommand = new Command(async () => await DownloadMetadataAsync());
         DownloadArmyDataCommand = new Command(async () => await DownloadArmyDataAsync());
@@ -105,6 +111,39 @@ public class MainViewModel : BaseViewModel
         }
     }
 
+    public bool IsUpdateInProgress
+    {
+        get => _isUpdateInProgress;
+        private set
+        {
+            if (_isUpdateInProgress == value)
+            {
+                return;
+            }
+
+            _isUpdateInProgress = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanForceUpdate));
+        }
+    }
+
+    public bool CanForceUpdate => !IsUpdateInProgress;
+
+    public string UpdateProgressMessage
+    {
+        get => _updateProgressMessage;
+        private set
+        {
+            if (_updateProgressMessage == value)
+            {
+                return;
+            }
+
+            _updateProgressMessage = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ICommand IncrementCounterCommand { get; }
 
     public ICommand DownloadMetadataCommand { get; }
@@ -142,6 +181,11 @@ public class MainViewModel : BaseViewModel
             {
                 MetadataStatus = "Metadata imported to DB. No factions found.";
                 return;
+            }
+
+            if (_factionLogoCacheService is not null)
+            {
+                await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions);
             }
 
             var factionIds = metadataDocument.Factions
@@ -183,8 +227,9 @@ public class MainViewModel : BaseViewModel
                         updatedCount++;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Console.Error.WriteLine($"DownloadMetadataAsync faction {factionId} failed: {ex.Message}");
                     errorCount++;
                 }
             }
@@ -193,12 +238,18 @@ public class MainViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"DownloadMetadataAsync failed: {ex.Message}");
             MetadataStatus = $"Download failed: {ex.Message}";
         }
     }
 
     private async Task UpdateAllDataAsync()
     {
+        if (IsUpdateInProgress)
+        {
+            return;
+        }
+
         if (_webAccessObject is null || _metadataAccessor is null || _armyDataAccessor is null)
         {
             UpdateStatus = "Required services are not available.";
@@ -207,9 +258,12 @@ public class MainViewModel : BaseViewModel
 
         try
         {
+            IsUpdateInProgress = true;
+            UpdateProgressMessage = "Updating database: downloading metadata...";
             UpdateStatus = "Downloading metadata...";
 
             var metadataJson = await _webAccessObject.GetMetaDataAsync();
+            UpdateProgressMessage = "Updating database: importing metadata...";
             await _metadataAccessor.ImportFromJsonAsync(metadataJson);
 
             var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
@@ -217,6 +271,14 @@ public class MainViewModel : BaseViewModel
             {
                 UpdateStatus = "Metadata download succeeded but no factions were found.";
                 return;
+            }
+
+            if (_factionLogoCacheService is not null)
+            {
+                UpdateProgressMessage = "Updating SVGs: caching faction logos...";
+                var logoCacheResult = await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions);
+                UpdateStatus =
+                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}.";
             }
 
             var factionIds = metadataDocument.Factions
@@ -233,6 +295,7 @@ public class MainViewModel : BaseViewModel
             {
                 try
                 {
+                    UpdateProgressMessage = $"Updating factions: checking {factionId}...";
                     UpdateStatus = $"Checking faction {factionId}...";
 
                     var latestArmyJson = await _webAccessObject.GetArmyDataAsync(factionId);
@@ -257,17 +320,25 @@ public class MainViewModel : BaseViewModel
                     await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, latestArmyJson);
                     updatedCount++;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Console.Error.WriteLine($"UpdateAllDataAsync faction {factionId} failed: {ex.Message}");
                     errorCount++;
                 }
             }
 
             UpdateStatus = $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.";
+            UpdateProgressMessage = "Finalizing update...";
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"UpdateAllDataAsync failed: {ex.Message}");
             UpdateStatus = $"Update failed: {ex.Message}";
+        }
+        finally
+        {
+            IsUpdateInProgress = false;
+            UpdateProgressMessage = string.Empty;
         }
     }
 
@@ -344,6 +415,7 @@ public class MainViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"DownloadArmyDataAsync failed: {ex.Message}");
             ArmyStatus = $"Download failed: {ex.Message}";
         }
     }

@@ -6,16 +6,44 @@
              x:DataType="viewModels:MainViewModel"
              Title="Settings">
 
-    <VerticalStackLayout Padding="24" Spacing="16" VerticalOptions="Center">
-        <Button
-            Text="Force online update"
-            Command="{Binding UpdateAllDataCommand}"
-            HorizontalOptions="Fill" />
+    <Grid>
+        <VerticalStackLayout Padding="24" Spacing="16" VerticalOptions="Center">
+            <Button
+                Text="Force online update"
+                Command="{Binding UpdateAllDataCommand}"
+                IsEnabled="{Binding CanForceUpdate}"
+                HorizontalOptions="Fill" />
 
-        <Label
-            Text="{Binding UpdateStatus}"
-            LineBreakMode="WordWrap" />
-    </VerticalStackLayout>
+            <Label
+                Text="{Binding UpdateStatus}"
+                LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+
+        <Grid
+            IsVisible="{Binding IsUpdateInProgress}"
+            InputTransparent="False"
+            BackgroundColor="#80000000">
+            <Border
+                Padding="16"
+                StrokeThickness="1"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MinimumWidthRequest="280">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        Text="Force Update Running"
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        HorizontalTextAlignment="Center" />
+                    <ActivityIndicator IsRunning="True" HorizontalOptions="Center" />
+                    <Label
+                        Text="{Binding UpdateProgressMessage}"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
 
 </ContentPage>
 

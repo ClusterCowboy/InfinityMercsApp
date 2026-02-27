@@ -41,9 +41,9 @@ public partial class App : Application
 				_logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "runtime-crash.log");
 				Write("Crash logger initialized.");
 			}
-			catch
+			catch (Exception ex)
 			{
-				// Ignore failures while initializing crash logging.
+				Console.Error.WriteLine($"CrashLog.Initialize failed: {ex.Message}");
 			}
 		}
 
@@ -64,9 +64,9 @@ public partial class App : Application
 					File.AppendAllText(_logPath, sb.ToString());
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				// Never throw from crash logging.
+				Console.Error.WriteLine($"CrashLog.Write failed: {ex.Message}");
 			}
 		}
 	}

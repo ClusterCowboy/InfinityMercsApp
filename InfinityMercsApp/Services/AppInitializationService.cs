@@ -23,17 +23,20 @@ public class AppInitializationService
     private readonly IMetadataAccessor _metadataAccessor;
     private readonly IArmyDataAccessor _armyDataAccessor;
     private readonly IWebAccessObject _webAccessObject;
+    private readonly FactionLogoCacheService _factionLogoCacheService;
 
     public AppInitializationService(
         IDatabaseContext databaseContext,
         IMetadataAccessor metadataAccessor,
         IArmyDataAccessor armyDataAccessor,
-        IWebAccessObject webAccessObject)
+        IWebAccessObject webAccessObject,
+        FactionLogoCacheService factionLogoCacheService)
     {
         _databaseContext = databaseContext;
         _metadataAccessor = metadataAccessor;
         _armyDataAccessor = armyDataAccessor;
         _webAccessObject = webAccessObject;
+        _factionLogoCacheService = factionLogoCacheService;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -52,6 +55,8 @@ public class AppInitializationService
         var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
         if (metadataDocument is not null)
         {
+            await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions, cancellationToken);
+
             foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
             {
                 var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);

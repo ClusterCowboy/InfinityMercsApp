@@ -8,6 +8,7 @@ public class ViewerViewModel : BaseViewModel
     private readonly IMetadataAccessor? _metadataAccessor;
     private bool _isLoading;
     private string _status = "Loading factions...";
+    private FactionRecord? _selectedFaction;
 
     public ViewerViewModel(IMetadataAccessor? metadataAccessor = null)
     {
@@ -46,6 +47,24 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
+    public FactionRecord? SelectedFaction
+    {
+        get => _selectedFaction;
+        set
+        {
+            if (_selectedFaction == value)
+            {
+                return;
+            }
+
+            _selectedFaction = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedFactionLogoUrl));
+        }
+    }
+
+    public string SelectedFactionLogoUrl => SelectedFaction?.Logo ?? string.Empty;
+
     public async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
         if (_metadataAccessor is null)
@@ -70,6 +89,7 @@ public class ViewerViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"LoadFactionsAsync failed: {ex.Message}");
             Status = $"Failed to load factions: {ex.Message}";
         }
         finally
