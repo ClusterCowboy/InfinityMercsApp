@@ -25,7 +25,7 @@ public partial class FactionListItemView : ContentView
         _svgPicture?.Dispose();
         _svgPicture = null;
 
-        var item = BindingContext as ViewerFactionItem;
+        var item = BindingContext as IViewerListItem;
         if (item is null || string.IsNullOrWhiteSpace(item.CachedLogoPath) || !File.Exists(item.CachedLogoPath))
         {
             LogoCanvas.InvalidateSurface();

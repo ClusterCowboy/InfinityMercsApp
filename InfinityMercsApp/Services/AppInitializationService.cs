@@ -67,6 +67,11 @@ public class AppInitializationService
                     continue;
                 }
 
+                if (armyDocument?.Resume is not null)
+                {
+                    await _factionLogoCacheService.CacheUnitLogosAsync(factionId, armyDocument.Resume, cancellationToken);
+                }
+
                 var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
                 var storedVersion = snapshot?.Version;
 

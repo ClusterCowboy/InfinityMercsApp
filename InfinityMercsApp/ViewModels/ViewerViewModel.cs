@@ -8,27 +8,33 @@ namespace InfinityMercsApp.ViewModels;
 public class ViewerViewModel : BaseViewModel
 {
     private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private bool _isLoading;
     private string _status = "Loading factions...";
+    private string _unitsStatus = "Select a faction.";
     private ViewerFactionItem? _selectedFaction;
 
     public ViewerViewModel(
         IMetadataAccessor? metadataAccessor = null,
+        IArmyDataAccessor? armyDataAccessor = null,
         FactionLogoCacheService? factionLogoCacheService = null)
     {
         _metadataAccessor = metadataAccessor;
+        _armyDataAccessor = armyDataAccessor;
         _factionLogoCacheService = factionLogoCacheService;
-        SelectFactionCommand = new Command<ViewerFactionItem>(item =>
+        SelectFactionCommand = new Command<ViewerFactionItem>(async item =>
         {
             if (item is not null)
             {
                 SelectedFaction = item;
+                await LoadUnitsForSelectedFactionAsync();
             }
         });
     }
 
     public ObservableCollection<ViewerFactionItem> Factions { get; } = [];
+    public ObservableCollection<ViewerUnitItem> Units { get; } = [];
 
     public bool IsLoading
     {
@@ -56,6 +62,21 @@ public class ViewerViewModel : BaseViewModel
             }
 
             _status = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string UnitsStatus
+    {
+        get => _unitsStatus;
+        private set
+        {
+            if (_unitsStatus == value)
+            {
+                return;
+            }
+
+            _unitsStatus = value;
             OnPropertyChanged();
         }
     }
@@ -93,6 +114,10 @@ public class ViewerViewModel : BaseViewModel
             IsLoading = true;
             Status = "Loading factions...";
             var factions = await _metadataAccessor.GetFactionsAsync(false, cancellationToken);
+            if (_factionLogoCacheService is not null)
+            {
+                await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
+            }
 
             Factions.Clear();
             foreach (var faction in factions)
@@ -118,9 +143,75 @@ public class ViewerViewModel : BaseViewModel
             IsLoading = false;
         }
     }
+
+    public async Task LoadUnitsForSelectedFactionAsync(CancellationToken cancellationToken = default)
+    {
+        Units.Clear();
+
+        if (SelectedFaction is null)
+        {
+            UnitsStatus = "Select a faction.";
+            return;
+        }
+
+        if (_armyDataAccessor is null)
+        {
+            UnitsStatus = "Army data service unavailable.";
+            return;
+        }
+
+        try
+        {
+            UnitsStatus = "Loading units...";
+            var units = await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
+            if (_factionLogoCacheService is not null)
+            {
+                UnitsStatus = "Preparing unit SVG cache...";
+                var cacheResult = await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(SelectedFaction.Id, units, cancellationToken);
+                Console.Error.WriteLine(
+                    $"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
+            }
+
+            foreach (var unit in units.OrderBy(x => x.Name))
+            {
+                Units.Add(new ViewerUnitItem
+                {
+                    Id = unit.UnitId,
+                    Name = unit.Name,
+                    Logo = unit.Logo,
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(SelectedFaction.Id, unit.UnitId)
+                });
+            }
+
+            UnitsStatus = Units.Count == 0 ? "No units available for this faction." : $"{Units.Count} units loaded.";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"LoadUnitsForSelectedFactionAsync failed: {ex.Message}");
+            UnitsStatus = $"Failed to load units: {ex.Message}";
+        }
+    }
 }
 
-public class ViewerFactionItem
+public interface IViewerListItem
+{
+    string Name { get; }
+
+    string? CachedLogoPath { get; }
+}
+
+public class ViewerFactionItem : IViewerListItem
+{
+    public int Id { get; init; }
+
+    public string Name { get; init; } = string.Empty;
+
+    public string? Logo { get; init; }
+
+    public string? CachedLogoPath { get; init; }
+}
+
+public class ViewerUnitItem
 {
     public int Id { get; init; }
 

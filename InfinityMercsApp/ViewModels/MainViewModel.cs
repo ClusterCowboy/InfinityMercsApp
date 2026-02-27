@@ -206,6 +206,11 @@ public class MainViewModel : BaseViewModel
                     var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
                     var latestVersion = latestArmy?.Version;
 
+                    if (_factionLogoCacheService is not null && latestArmy?.Resume is not null)
+                    {
+                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                    }
+
                     if (_armyDataAccessor is not null)
                     {
                         if (string.IsNullOrWhiteSpace(latestVersion))
@@ -283,7 +288,7 @@ public class MainViewModel : BaseViewModel
                     $"[SVG DEBUG] Faction {debugInfo.FactionId}: exists={debugInfo.Exists}, bytes={debugInfo.SizeBytes}, path={debugInfo.LocalPath}, url={debugInfo.ExpectedLogoUrl ?? "<null>"}");
 
                 UpdateStatus =
-                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}. " +
+                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Reused from cache: {logoCacheResult.CachedReuse}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}. " +
                     $"Hayabusa(1199): Exists={debugInfo.Exists}, Bytes={debugInfo.SizeBytes}.";
             }
 
@@ -307,6 +312,11 @@ public class MainViewModel : BaseViewModel
                     var latestArmyJson = await _webAccessObject.GetArmyDataAsync(factionId);
                     var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(latestArmyJson, JsonOptions);
                     var latestVersion = latestArmy?.Version;
+
+                    if (_factionLogoCacheService is not null && latestArmy?.Resume is not null)
+                    {
+                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                    }
 
                     if (string.IsNullOrWhiteSpace(latestVersion))
                     {

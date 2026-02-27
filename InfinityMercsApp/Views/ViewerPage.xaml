@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              x:Class="InfinityMercsApp.Views.ViewerPage"
              Title="Viewer">
@@ -48,13 +47,21 @@
         </Border>
 
         <Border Grid.Column="1" StrokeThickness="1" Padding="12">
-            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
-                <Label Text="Faction Logo (SVG)" FontSize="20" FontAttributes="Bold" />
-                <Label Grid.Row="1" Text="{Binding SelectedFaction.Name}" />
-                <Label Grid.Row="2" x:Name="SvgStatusLabel" TextColor="#6B7280" />
-                <Border Grid.Row="3" StrokeThickness="1" Padding="8">
-                    <skia:SKCanvasView x:Name="SvgCanvas" PaintSurface="OnSvgCanvasPaintSurface" />
-                </Border>
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <Label Text="Units" FontSize="20" FontAttributes="Bold" />
+                <Label Grid.Row="1" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
+                <ScrollView Grid.Row="2" x:Name="UnitScrollView">
+                    <ScrollView.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
+                    </ScrollView.GestureRecognizers>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:FactionListItemView />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
             </Grid>
         </Border>
 

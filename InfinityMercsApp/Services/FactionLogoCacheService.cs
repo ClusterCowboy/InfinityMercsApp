@@ -6,18 +6,20 @@ namespace InfinityMercsApp.Services;
 public class FactionLogoCacheService
 {
     public const int DebugFactionId = 1199;
-    private readonly HttpClient _httpClient;
-    private readonly string _cacheDirectory;
 
-    public FactionLogoCacheService(HttpClient httpClient)
+    private const string PackagedCacheRoot = "SVGCache";
+    private readonly string _localCacheDirectory;
+    private readonly string _localUnitCacheDirectory;
+
+    public FactionLogoCacheService()
     {
-        _httpClient = httpClient;
-        _cacheDirectory = Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache");
+        _localCacheDirectory = Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache");
+        _localUnitCacheDirectory = Path.Combine(_localCacheDirectory, "units");
     }
 
     public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<FactionDto> factions, CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(_cacheDirectory);
+        Directory.CreateDirectory(_localCacheDirectory);
         var result = new LogoCacheResult();
 
         foreach (var faction in factions)
@@ -25,48 +27,133 @@ public class FactionLogoCacheService
             cancellationToken.ThrowIfCancellationRequested();
             result.TotalFactions++;
 
-            if (faction.Id <= 0 || string.IsNullOrWhiteSpace(faction.Logo))
+            if (faction.Id <= 0)
             {
-                if (faction.Id == DebugFactionId)
-                {
-                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} skipped: missing logo URL.");
-                }
                 result.MissingLogoUrl++;
                 continue;
             }
 
-            if (!Uri.TryCreate(faction.Logo, UriKind.Absolute, out var logoUri))
+            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
+            if (ok == EnsureResult.Reused)
             {
-                if (faction.Id == DebugFactionId)
-                {
-                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} skipped: invalid logo URL '{faction.Logo}'.");
-                }
-                result.InvalidLogoUrl++;
+                result.CachedReuse++;
+            }
+            else if (ok == EnsureResult.CopiedFromPackage)
+            {
+                result.Downloaded++;
+            }
+            else
+            {
+                result.Failed++;
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
+        IEnumerable<FactionRecord> factions,
+        CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(_localCacheDirectory);
+        var result = new LogoCacheResult();
+
+        foreach (var faction in factions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.TotalFactions++;
+
+            if (faction.Id <= 0)
+            {
+                result.MissingLogoUrl++;
                 continue;
             }
 
-            try
+            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
+            if (ok == EnsureResult.Reused)
             {
-                if (faction.Id == DebugFactionId)
-                {
-                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} download start: {logoUri}");
-                }
-
-                await using var logoStream = await _httpClient.GetStreamAsync(logoUri, cancellationToken);
-                var localPath = GetCachedLogoPath(faction.Id);
-                await using var fileStream = File.Create(localPath);
-                await logoStream.CopyToAsync(fileStream, cancellationToken);
-                result.Downloaded++;
-
-                if (faction.Id == DebugFactionId)
-                {
-                    var fileInfo = new FileInfo(localPath);
-                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} download success: {localPath} ({fileInfo.Length} bytes)");
-                }
+                result.CachedReuse++;
             }
-            catch (Exception ex)
+            else if (ok == EnsureResult.CopiedFromPackage)
             {
-                Console.Error.WriteLine($"Faction logo cache failed for {faction.Id} ({faction.Logo}): {ex.Message}");
+                result.Downloaded++;
+            }
+            else
+            {
+                result.Failed++;
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<LogoCacheResult> CacheUnitLogosAsync(
+        int factionId,
+        IEnumerable<ArmyResumeDto> units,
+        CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(_localUnitCacheDirectory);
+        var result = new LogoCacheResult();
+
+        foreach (var unit in units)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.TotalFactions++;
+
+            if (unit.Id <= 0)
+            {
+                result.MissingLogoUrl++;
+                continue;
+            }
+
+            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.Id, cancellationToken);
+            if (ok == EnsureResult.Reused)
+            {
+                result.CachedReuse++;
+            }
+            else if (ok == EnsureResult.CopiedFromPackage)
+            {
+                result.Downloaded++;
+            }
+            else
+            {
+                result.Failed++;
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<LogoCacheResult> CacheUnitLogosFromRecordsAsync(
+        int factionId,
+        IEnumerable<ArmyResumeRecord> units,
+        CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(_localUnitCacheDirectory);
+        var result = new LogoCacheResult();
+
+        foreach (var unit in units)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.TotalFactions++;
+
+            if (unit.UnitId <= 0)
+            {
+                result.MissingLogoUrl++;
+                continue;
+            }
+
+            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.UnitId, cancellationToken);
+            if (ok == EnsureResult.Reused)
+            {
+                result.CachedReuse++;
+            }
+            else if (ok == EnsureResult.CopiedFromPackage)
+            {
+                result.Downloaded++;
+            }
+            else
+            {
                 result.Failed++;
             }
         }
@@ -76,12 +163,23 @@ public class FactionLogoCacheService
 
     public string GetCachedLogoPath(int factionId)
     {
-        return Path.Combine(_cacheDirectory, $"{factionId}.svg");
+        return Path.Combine(_localCacheDirectory, $"{factionId}.svg");
     }
 
     public string? TryGetCachedLogoPath(int factionId)
     {
         var path = GetCachedLogoPath(factionId);
+        return File.Exists(path) ? path : null;
+    }
+
+    public string GetCachedUnitLogoPath(int factionId, int unitId)
+    {
+        return Path.Combine(_localUnitCacheDirectory, $"{factionId}-{unitId}.svg");
+    }
+
+    public string? TryGetCachedUnitLogoPath(int factionId, int unitId)
+    {
+        var path = GetCachedUnitLogoPath(factionId, unitId);
         return File.Exists(path) ? path : null;
     }
 
@@ -100,6 +198,61 @@ public class FactionLogoCacheService
             SizeBytes = bytes
         };
     }
+
+    private async Task<EnsureResult> EnsureFactionLogoAvailableAsync(int factionId, CancellationToken cancellationToken)
+    {
+        var localPath = GetCachedLogoPath(factionId);
+        if (File.Exists(localPath) && new FileInfo(localPath).Length > 0)
+        {
+            return EnsureResult.Reused;
+        }
+
+        var packagedPath = $"{PackagedCacheRoot}/{factionId}.svg";
+        var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
+        return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
+    }
+
+    private async Task<EnsureResult> EnsureUnitLogoAvailableAsync(int factionId, int unitId, CancellationToken cancellationToken)
+    {
+        var localPath = GetCachedUnitLogoPath(factionId, unitId);
+        if (File.Exists(localPath) && new FileInfo(localPath).Length > 0)
+        {
+            return EnsureResult.Reused;
+        }
+
+        var packagedPath = $"{PackagedCacheRoot}/units/{factionId}-{unitId}.svg";
+        var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
+        return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
+    }
+
+    private static async Task<bool> TryCopyPackagedAssetAsync(string packagedPath, string localPath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var localDirectory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrWhiteSpace(localDirectory))
+            {
+                Directory.CreateDirectory(localDirectory);
+            }
+
+            await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
+            await using var fileStream = File.Create(localPath);
+            await packageStream.CopyToAsync(fileStream, cancellationToken);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SVG package copy failed for '{packagedPath}': {ex.Message}");
+            return false;
+        }
+    }
+
+    private enum EnsureResult
+    {
+        Reused,
+        CopiedFromPackage,
+        MissingFromPackage
+    }
 }
 
 public class LogoCacheResult
@@ -113,6 +266,8 @@ public class LogoCacheResult
     public int MissingLogoUrl { get; set; }
 
     public int InvalidLogoUrl { get; set; }
+
+    public int CachedReuse { get; set; }
 }
 
 public class LogoCacheDebugInfo
