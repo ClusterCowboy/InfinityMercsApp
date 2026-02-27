@@ -28,10 +28,14 @@
                 HeightRequest="32"
                 VerticalOptions="Center"
                 PaintSurface="OnLogoCanvasPaintSurface" />
-            <Label
-                Grid.Column="1"
-                VerticalOptions="Center"
-                Text="{Binding Name}" />
+            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                <Label Text="{Binding Name}" />
+                <Label
+                    Text="{Binding Subtitle}"
+                    FontSize="12"
+                    TextColor="#6B7280"
+                    IsVisible="{Binding HasSubtitle}" />
+            </VerticalStackLayout>
         </Grid>
     </Border>
 

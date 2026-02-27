@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Services;
@@ -13,9 +14,20 @@ public class ViewerViewModel : BaseViewModel
     private bool _isLoading;
     private string _status = "Loading factions...";
     private string _unitsStatus = "Select a faction.";
+    private string _profilesStatus = "Select a unit.";
     private ViewerFactionItem? _selectedFaction;
     private ViewerUnitItem? _selectedUnit;
     private bool _mercsOnlyUnits;
+    private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
+    {
+        [1] = 0, // LI
+        [2] = 1, // MI
+        [3] = 2, // HI
+        [4] = 3, // TAG
+        [5] = 4, // REM
+        [6] = 5, // SK
+        [7] = 6  // WB
+    };
 
     public ViewerViewModel(
         IMetadataAccessor? metadataAccessor = null,
@@ -37,7 +49,7 @@ public class ViewerViewModel : BaseViewModel
             await LoadUnitsForSelectedFactionAsync();
         });
 
-        SelectUnitCommand = new Command<ViewerUnitItem>(item =>
+        SelectUnitCommand = new Command<ViewerUnitItem>(async item =>
         {
             if (item is null)
             {
@@ -45,12 +57,14 @@ public class ViewerViewModel : BaseViewModel
             }
 
             SelectedUnit = item;
+            await LoadProfilesForSelectedUnitAsync();
         });
     }
 
     public ObservableCollection<ViewerFactionItem> Factions { get; } = [];
 
     public ObservableCollection<ViewerUnitItem> Units { get; } = [];
+    public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
 
     public bool IsLoading
     {
@@ -97,6 +111,21 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
+    public string ProfilesStatus
+    {
+        get => _profilesStatus;
+        private set
+        {
+            if (_profilesStatus == value)
+            {
+                return;
+            }
+
+            _profilesStatus = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ViewerFactionItem? SelectedFaction
     {
         get => _selectedFaction;
@@ -120,6 +149,8 @@ public class ViewerViewModel : BaseViewModel
             }
 
             SelectedUnit = null;
+            Profiles.Clear();
+            ProfilesStatus = "Select a unit.";
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectedFactionLogoUrl));
         }
@@ -225,6 +256,8 @@ public class ViewerViewModel : BaseViewModel
     {
         Units.Clear();
         SelectedUnit = null;
+        Profiles.Clear();
+        ProfilesStatus = "Select a unit.";
 
         if (SelectedFaction is null)
         {
@@ -244,6 +277,11 @@ public class ViewerViewModel : BaseViewModel
             var units = MercsOnlyUnits
                 ? await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(SelectedFaction.Id, cancellationToken)
                 : await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
+
+            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
+            var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
+            var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
+
             if (_factionLogoCacheService is not null)
             {
                 UnitsStatus = "Preparing unit SVG cache...";
@@ -251,13 +289,18 @@ public class ViewerViewModel : BaseViewModel
                 Console.Error.WriteLine($"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
             }
 
-            foreach (var unit in units.OrderBy(x => x.Name))
+            var orderedUnits = units
+                .OrderBy(unit => GetUnitTypeSortIndex(unit.Type))
+                .ThenBy(unit => unit.Name, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var unit in orderedUnits)
             {
                 Units.Add(new ViewerUnitItem
                 {
                     Id = unit.UnitId,
                     Name = unit.Name,
                     Logo = unit.Logo,
+                    Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(SelectedFaction.Id, unit.UnitId),
                     PackagedLogoPath = $"SVGCache/units/{SelectedFaction.Id}-{unit.UnitId}.svg"
                 });
@@ -271,6 +314,163 @@ public class ViewerViewModel : BaseViewModel
             UnitsStatus = $"Failed to load units: {ex.Message}";
         }
     }
+
+    private static string BuildUnitSubtitle(
+        ArmyResumeRecord unit,
+        IReadOnlyDictionary<int, string> typeLookup,
+        IReadOnlyDictionary<int, string> categoryLookup)
+    {
+        var typeName = unit.Type.HasValue && typeLookup.TryGetValue(unit.Type.Value, out var t)
+            ? t
+            : (unit.Type?.ToString() ?? "?");
+
+        var categoryName = unit.Category.HasValue && categoryLookup.TryGetValue(unit.Category.Value, out var c)
+            ? c
+            : (unit.Category?.ToString() ?? "?");
+
+        return $"{typeName} - {categoryName}";
+    }
+
+    private static int GetUnitTypeSortIndex(int? unitType)
+    {
+        if (!unitType.HasValue)
+        {
+            return int.MaxValue - 1;
+        }
+
+        return UnitTypeSortOrder.TryGetValue(unitType.Value, out var sortIndex)
+            ? sortIndex
+            : int.MaxValue;
+    }
+
+    private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)
+    {
+        var map = new Dictionary<int, string>();
+        if (string.IsNullOrWhiteSpace(filtersJson))
+        {
+            return map;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(filtersJson);
+            if (!doc.RootElement.TryGetProperty(sectionName, out var section) || section.ValueKind != JsonValueKind.Array)
+            {
+                return map;
+            }
+
+            foreach (var entry in section.EnumerateArray())
+            {
+                if (!entry.TryGetProperty("id", out var idElement))
+                {
+                    continue;
+                }
+
+                int id;
+                if (idElement.ValueKind == JsonValueKind.Number && idElement.TryGetInt32(out var intId))
+                {
+                    id = intId;
+                }
+                else if (idElement.ValueKind == JsonValueKind.String && int.TryParse(idElement.GetString(), out var stringId))
+                {
+                    id = stringId;
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (!entry.TryGetProperty("name", out var nameElement) || nameElement.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var name = nameElement.GetString();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    map[id] = name;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"BuildIdNameLookup failed for section '{sectionName}': {ex.Message}");
+        }
+
+        return map;
+    }
+
+    public async Task LoadProfilesForSelectedUnitAsync(CancellationToken cancellationToken = default)
+    {
+        Profiles.Clear();
+
+        if (SelectedFaction is null || SelectedUnit is null)
+        {
+            ProfilesStatus = "Select a unit.";
+            return;
+        }
+
+        if (_armyDataAccessor is null)
+        {
+            ProfilesStatus = "Army data service unavailable.";
+            return;
+        }
+
+        try
+        {
+            ProfilesStatus = "Loading profiles...";
+            var unit = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, SelectedUnit.Id, cancellationToken);
+            if (unit is null || string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
+            {
+                ProfilesStatus = "No profiles found for this unit.";
+                return;
+            }
+
+            using var doc = JsonDocument.Parse(unit.ProfileGroupsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                ProfilesStatus = "No profiles found for this unit.";
+                return;
+            }
+
+            foreach (var group in doc.RootElement.EnumerateArray())
+            {
+                var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
+                    ? iscElement.GetString() ?? string.Empty
+                    : string.Empty;
+
+                if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    var profileName = profile.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+                        ? nameElement.GetString() ?? string.Empty
+                        : string.Empty;
+
+                    if (string.IsNullOrWhiteSpace(profileName))
+                    {
+                        continue;
+                    }
+
+                    Profiles.Add(new ViewerProfileItem
+                    {
+                        GroupName = groupName,
+                        Name = profileName
+                    });
+                }
+            }
+
+            ProfilesStatus = Profiles.Count == 0 ? "No profiles found for this unit." : $"{Profiles.Count} profiles loaded.";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"LoadProfilesForSelectedUnitAsync failed: {ex.Message}");
+            ProfilesStatus = $"Failed to load profiles: {ex.Message}";
+        }
+    }
 }
 
 public interface IViewerListItem
@@ -280,6 +480,10 @@ public interface IViewerListItem
     string? CachedLogoPath { get; }
 
     string? PackagedLogoPath { get; }
+
+    string? Subtitle { get; }
+
+    bool HasSubtitle { get; }
 
     bool IsSelected { get; set; }
 }
@@ -295,6 +499,10 @@ public class ViewerFactionItem : BaseViewModel, IViewerListItem
     public string? CachedLogoPath { get; init; }
 
     public string? PackagedLogoPath { get; init; }
+
+    public string? Subtitle => null;
+
+    public bool HasSubtitle => false;
 
     private bool _isSelected;
     public bool IsSelected
@@ -325,6 +533,10 @@ public class ViewerUnitItem : BaseViewModel, IViewerListItem
 
     public string? PackagedLogoPath { get; init; }
 
+    public string? Subtitle { get; init; }
+
+    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+
     private bool _isSelected;
     public bool IsSelected
     {
@@ -340,4 +552,11 @@ public class ViewerUnitItem : BaseViewModel, IViewerListItem
             OnPropertyChanged();
         }
     }
+}
+
+public class ViewerProfileItem
+{
+    public string GroupName { get; init; } = string.Empty;
+
+    public string Name { get; init; } = string.Empty;
 }

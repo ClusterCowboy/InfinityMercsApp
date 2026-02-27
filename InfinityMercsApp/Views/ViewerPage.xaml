@@ -76,7 +76,24 @@
         </Border>
 
         <Border Grid.Column="2" StrokeThickness="1" Padding="12">
-            <Label Text="Column 3" FontSize="20" FontAttributes="Bold" />
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <Label Text="Profiles" FontSize="20" FontAttributes="Bold" />
+                <Label Grid.Row="1" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
+                <ScrollView Grid.Row="2">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                        <Label Text="{Binding GroupName}" FontSize="12" TextColor="#6B7280" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
         </Border>
     </Grid>
 
