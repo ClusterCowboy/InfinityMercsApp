@@ -150,7 +150,8 @@ public class MainViewModel : BaseViewModel
                 .OrderBy(x => x)
                 .ToList();
 
-            var fetchedCount = 0;
+            var updatedCount = 0;
+            var skippedCount = 0;
             var errorCount = 0;
             foreach (var factionId in factionIds)
             {
@@ -158,13 +159,29 @@ public class MainViewModel : BaseViewModel
                 {
                     MetadataStatus = $"Fetching faction data for {factionId}...";
                     var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
+                    var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+                    var latestVersion = latestArmy?.Version;
 
                     if (_armyDataAccessor is not null)
                     {
-                        await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
-                    }
+                        if (string.IsNullOrWhiteSpace(latestVersion))
+                        {
+                            skippedCount++;
+                            continue;
+                        }
 
-                    fetchedCount++;
+                        var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId);
+                        var storedVersion = snapshot?.Version;
+
+                        if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                        {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
+                        updatedCount++;
+                    }
                 }
                 catch
                 {
@@ -172,7 +189,7 @@ public class MainViewModel : BaseViewModel
                 }
             }
 
-            MetadataStatus = $"Metadata imported and armies fetched to DB. Success: {fetchedCount}, Errors: {errorCount}.";
+            MetadataStatus = $"Metadata imported. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.";
         }
         catch (Exception ex)
         {
@@ -298,11 +315,27 @@ public class MainViewModel : BaseViewModel
             ArmyStatus = $"Downloading army data for faction {factionId}...";
 
             var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
+            var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+            var latestVersion = latestArmy?.Version;
 
             if (_armyDataAccessor is not null)
             {
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    ArmyStatus = "Downloaded army data has no version; skipped.";
+                    return;
+                }
+
+                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId);
+                var storedVersion = snapshot?.Version;
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    ArmyStatus = $"No update needed for faction {factionId}. Stored: {storedVersion}, Incoming: {latestVersion}.";
+                    return;
+                }
+
                 await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
-                ArmyStatus = $"Downloaded and imported faction {factionId} to DB.";
+                ArmyStatus = $"Faction {factionId} updated to version {latestVersion}.";
             }
             else
             {
