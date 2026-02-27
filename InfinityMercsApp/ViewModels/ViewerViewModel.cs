@@ -15,6 +15,7 @@ public class ViewerViewModel : BaseViewModel
     private string _unitsStatus = "Select a faction.";
     private ViewerFactionItem? _selectedFaction;
     private ViewerUnitItem? _selectedUnit;
+    private bool _mercsOnlyUnits;
 
     public ViewerViewModel(
         IMetadataAccessor? metadataAccessor = null,
@@ -156,6 +157,26 @@ public class ViewerViewModel : BaseViewModel
 
     public ICommand SelectUnitCommand { get; }
 
+    public bool MercsOnlyUnits
+    {
+        get => _mercsOnlyUnits;
+        set
+        {
+            if (_mercsOnlyUnits == value)
+            {
+                return;
+            }
+
+            _mercsOnlyUnits = value;
+            OnPropertyChanged();
+
+            if (SelectedFaction is not null)
+            {
+                _ = LoadUnitsForSelectedFactionAsync();
+            }
+        }
+    }
+
     public async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
         if (_metadataAccessor is null)
@@ -220,7 +241,9 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             UnitsStatus = "Loading units...";
-            var units = await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
+            var units = MercsOnlyUnits
+                ? await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(SelectedFaction.Id, cancellationToken)
+                : await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
             if (_factionLogoCacheService is not null)
             {
                 UnitsStatus = "Preparing unit SVG cache...";

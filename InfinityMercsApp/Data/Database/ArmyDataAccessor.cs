@@ -6,6 +6,10 @@ namespace InfinityMercsApp.Data.Database;
 
 public class ArmyDataAccessor : IArmyDataAccessor
 {
+    private const int CharacterCategory = 10;
+    private const int TagType = 4;
+    private const string MercSlugPrefix = "merc-%";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -124,19 +128,32 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
-        return await _connection.Table<ArmyUnitRecord>()
-            .Where(x => x.FactionId == factionId)
-            .OrderBy(x => x.Name)
-            .ToListAsync();
+        const string sql = """
+            SELECT *
+            FROM army_units
+            WHERE FactionId = ?
+              AND (Slug IS NULL OR Slug NOT LIKE ?)
+            ORDER BY Name
+            """;
+
+        return await _connection.QueryAsync<ArmyUnitRecord>(sql, factionId, MercSlugPrefix);
     }
 
     public async Task<ArmyUnitRecord?> GetUnitAsync(int factionId, int unitId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
-        return await _connection.Table<ArmyUnitRecord>()
-            .Where(x => x.FactionId == factionId && x.UnitId == unitId)
-            .FirstOrDefaultAsync();
+        const string sql = """
+            SELECT *
+            FROM army_units
+            WHERE FactionId = ?
+              AND UnitId = ?
+              AND (Slug IS NULL OR Slug NOT LIKE ?)
+            LIMIT 1
+            """;
+
+        var rows = await _connection.QueryAsync<ArmyUnitRecord>(sql, factionId, unitId, MercSlugPrefix);
+        return rows.FirstOrDefault();
     }
 
     public async Task<IReadOnlyList<ArmyUnitRecord>> SearchUnitsAsync(string searchTerm, int? factionId = null, CancellationToken cancellationToken = default)
@@ -149,41 +166,96 @@ public class ArmyDataAccessor : IArmyDataAccessor
         {
             if (factionId.HasValue)
             {
-                return await _connection.Table<ArmyUnitRecord>()
-                    .Where(x => x.FactionId == factionId.Value)
-                    .OrderBy(x => x.Name)
-                    .Take(250)
-                    .ToListAsync();
+                const string sqlByFaction = """
+                    SELECT *
+                    FROM army_units
+                    WHERE FactionId = ?
+                      AND (Slug IS NULL OR Slug NOT LIKE ?)
+                    ORDER BY Name
+                    LIMIT 250
+                    """;
+
+                return await _connection.QueryAsync<ArmyUnitRecord>(sqlByFaction, factionId.Value, MercSlugPrefix);
             }
 
-            return await _connection.Table<ArmyUnitRecord>()
-                .OrderBy(x => x.Name)
-                .Take(250)
-                .ToListAsync();
+            const string sqlAll = """
+                SELECT *
+                FROM army_units
+                WHERE (Slug IS NULL OR Slug NOT LIKE ?)
+                ORDER BY Name
+                LIMIT 250
+                """;
+
+            return await _connection.QueryAsync<ArmyUnitRecord>(sqlAll, MercSlugPrefix);
         }
 
         if (factionId.HasValue)
         {
-            return await _connection.Table<ArmyUnitRecord>()
-                .Where(x => x.FactionId == factionId.Value && x.Name.Contains(term))
-                .OrderBy(x => x.Name)
-                .ToListAsync();
+            const string sqlByFactionWithTerm = """
+                SELECT *
+                FROM army_units
+                WHERE FactionId = ?
+                  AND Name LIKE ?
+                  AND (Slug IS NULL OR Slug NOT LIKE ?)
+                ORDER BY Name
+                """;
+
+            return await _connection.QueryAsync<ArmyUnitRecord>(sqlByFactionWithTerm, factionId.Value, $"%{term}%", MercSlugPrefix);
         }
 
-        return await _connection.Table<ArmyUnitRecord>()
-            .Where(x => x.Name.Contains(term))
-            .OrderBy(x => x.Name)
-            .ToListAsync();
+        const string sqlWithTerm = """
+            SELECT *
+            FROM army_units
+            WHERE Name LIKE ?
+              AND (Slug IS NULL OR Slug NOT LIKE ?)
+            ORDER BY Name
+            """;
+
+        return await _connection.QueryAsync<ArmyUnitRecord>(sqlWithTerm, $"%{term}%", MercSlugPrefix);
     }
 
     public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
-        return await _connection.Table<ArmyResumeRecord>()
-            .Where(x => x.FactionId == factionId)
-            .OrderBy(x => x.Name)
-            .ToListAsync();
+        const string sql = """
+            SELECT *
+            FROM army_resume
+            WHERE FactionId = ?
+              AND (Slug IS NULL OR Slug NOT LIKE ?)
+            ORDER BY Name
+            """;
+
+        return await _connection.QueryAsync<ArmyResumeRecord>(sql, factionId, MercSlugPrefix);
+    }
+
+    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+
+        const string sql = """
+            SELECT r.*
+            FROM army_resume r
+            WHERE r.FactionId = ?
+              AND EXISTS (
+                    SELECT 1
+                    FROM army_units u
+                    WHERE u.FactionId = r.FactionId
+                      AND u.UnitId = r.UnitId
+                )
+              AND (r.Slug IS NULL OR r.Slug NOT LIKE ?)
+              AND (r.Category IS NULL OR r.Category <> ?)
+              AND (r.Type IS NULL OR r.Type <> ?)
+            ORDER BY r.Name
+            """;
+
+        return await _connection.QueryAsync<ArmyResumeRecord>(
+            sql,
+            factionId,
+            MercSlugPrefix,
+            CharacterCategory,
+            TagType);
     }
 
     private static string BuildUnitKey(int factionId, ArmyUnitDto unit)

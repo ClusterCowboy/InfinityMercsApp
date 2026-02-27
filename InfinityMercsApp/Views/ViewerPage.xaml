@@ -47,10 +47,14 @@
         </Border>
 
         <Border Grid.Column="1" StrokeThickness="1" Padding="12">
-            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
                 <Label Text="Units" FontSize="20" FontAttributes="Bold" />
-                <Label Grid.Row="1" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
-                <ScrollView Grid.Row="2" x:Name="UnitScrollView">
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Center">
+                    <CheckBox IsChecked="{Binding MercsOnlyUnits}" VerticalOptions="Center" />
+                    <Label Text="Mercs Only Units" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Label Grid.Row="2" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
+                <ScrollView Grid.Row="3" x:Name="UnitScrollView">
                     <ScrollView.GestureRecognizers>
                         <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
                     </ScrollView.GestureRecognizers>
