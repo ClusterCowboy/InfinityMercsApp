@@ -277,8 +277,14 @@ public class MainViewModel : BaseViewModel
             {
                 UpdateProgressMessage = "Updating SVGs: caching faction logos...";
                 var logoCacheResult = await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions);
+                var debugFaction = metadataDocument.Factions.FirstOrDefault(x => x.Id == FactionLogoCacheService.DebugFactionId);
+                var debugInfo = _factionLogoCacheService.GetDebugInfo(FactionLogoCacheService.DebugFactionId, debugFaction?.Logo);
+                Console.Error.WriteLine(
+                    $"[SVG DEBUG] Faction {debugInfo.FactionId}: exists={debugInfo.Exists}, bytes={debugInfo.SizeBytes}, path={debugInfo.LocalPath}, url={debugInfo.ExpectedLogoUrl ?? "<null>"}");
+
                 UpdateStatus =
-                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}.";
+                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}. " +
+                    $"Hayabusa(1199): Exists={debugInfo.Exists}, Bytes={debugInfo.SizeBytes}.";
             }
 
             var factionIds = metadataDocument.Factions

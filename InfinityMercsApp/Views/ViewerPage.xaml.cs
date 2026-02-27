@@ -67,6 +67,13 @@ public partial class ViewerPage : ContentPage
 		var cachedPath = _factionLogoCacheService.TryGetCachedLogoPath(faction.Id);
 		if (string.IsNullOrWhiteSpace(cachedPath))
 		{
+			if (faction.Id == FactionLogoCacheService.DebugFactionId)
+			{
+				var debugInfo = _factionLogoCacheService.GetDebugInfo(faction.Id, faction.Logo);
+				Console.Error.WriteLine(
+					$"[SVG DEBUG] Viewer miss for {faction.Id}: exists={debugInfo.Exists}, bytes={debugInfo.SizeBytes}, path={debugInfo.LocalPath}, url={debugInfo.ExpectedLogoUrl ?? "<null>"}");
+			}
+
 			_svgPicture?.Dispose();
 			_svgPicture = null;
 			SvgStatusLabel.Text = "No cached SVG for this faction yet.";

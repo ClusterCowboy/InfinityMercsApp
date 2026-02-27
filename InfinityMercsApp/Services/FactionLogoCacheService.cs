@@ -5,6 +5,7 @@ namespace InfinityMercsApp.Services;
 
 public class FactionLogoCacheService
 {
+    public const int DebugFactionId = 1199;
     private readonly HttpClient _httpClient;
     private readonly string _cacheDirectory;
 
@@ -26,23 +27,42 @@ public class FactionLogoCacheService
 
             if (faction.Id <= 0 || string.IsNullOrWhiteSpace(faction.Logo))
             {
+                if (faction.Id == DebugFactionId)
+                {
+                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} skipped: missing logo URL.");
+                }
                 result.MissingLogoUrl++;
                 continue;
             }
 
             if (!Uri.TryCreate(faction.Logo, UriKind.Absolute, out var logoUri))
             {
+                if (faction.Id == DebugFactionId)
+                {
+                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} skipped: invalid logo URL '{faction.Logo}'.");
+                }
                 result.InvalidLogoUrl++;
                 continue;
             }
 
             try
             {
+                if (faction.Id == DebugFactionId)
+                {
+                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} download start: {logoUri}");
+                }
+
                 await using var logoStream = await _httpClient.GetStreamAsync(logoUri, cancellationToken);
                 var localPath = GetCachedLogoPath(faction.Id);
                 await using var fileStream = File.Create(localPath);
                 await logoStream.CopyToAsync(fileStream, cancellationToken);
                 result.Downloaded++;
+
+                if (faction.Id == DebugFactionId)
+                {
+                    var fileInfo = new FileInfo(localPath);
+                    Console.Error.WriteLine($"[SVG DEBUG] {DebugFactionId} download success: {localPath} ({fileInfo.Length} bytes)");
+                }
             }
             catch (Exception ex)
             {
@@ -64,6 +84,22 @@ public class FactionLogoCacheService
         var path = GetCachedLogoPath(factionId);
         return File.Exists(path) ? path : null;
     }
+
+    public LogoCacheDebugInfo GetDebugInfo(int factionId, string? expectedLogoUrl = null)
+    {
+        var localPath = GetCachedLogoPath(factionId);
+        var exists = File.Exists(localPath);
+        var bytes = exists ? new FileInfo(localPath).Length : 0;
+
+        return new LogoCacheDebugInfo
+        {
+            FactionId = factionId,
+            ExpectedLogoUrl = expectedLogoUrl,
+            LocalPath = localPath,
+            Exists = exists,
+            SizeBytes = bytes
+        };
+    }
 }
 
 public class LogoCacheResult
@@ -77,4 +113,17 @@ public class LogoCacheResult
     public int MissingLogoUrl { get; set; }
 
     public int InvalidLogoUrl { get; set; }
+}
+
+public class LogoCacheDebugInfo
+{
+    public int FactionId { get; set; }
+
+    public string? ExpectedLogoUrl { get; set; }
+
+    public string LocalPath { get; set; } = string.Empty;
+
+    public bool Exists { get; set; }
+
+    public long SizeBytes { get; set; }
 }
