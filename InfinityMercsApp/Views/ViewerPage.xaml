@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              x:Class="InfinityMercsApp.Views.ViewerPage"
              Title="Viewer">
 
@@ -25,24 +26,24 @@
                     IsVisible="{Binding IsLoading}"
                     HorizontalOptions="Start" />
 
-                <CollectionView
-                    Grid.Row="2"
-                    ItemsSource="{Binding Factions}"
-                    SelectedItem="{Binding SelectedFaction, Mode=TwoWay}"
-                    SelectionMode="Single">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Padding="6" ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                <Label
-                                    Text="{Binding Id}"
-                                    FontAttributes="Bold" />
-                                <Label
-                                    Grid.Column="1"
-                                    Text="{Binding Name}" />
-                            </Grid>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                <ScrollView Grid.Row="2" x:Name="FactionScrollView">
+                    <ScrollView.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnFactionListPanUpdated" />
+                    </ScrollView.GestureRecognizers>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Factions}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:FactionListItemView>
+                                    <controls:FactionListItemView.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectFactionCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </controls:FactionListItemView.GestureRecognizers>
+                                </controls:FactionListItemView>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
             </Grid>
         </Border>
 

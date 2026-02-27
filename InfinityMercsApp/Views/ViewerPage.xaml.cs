@@ -14,6 +14,7 @@ public partial class ViewerPage : ContentPage
 	private readonly FactionLogoCacheService? _factionLogoCacheService;
 	private SKPicture? _svgPicture;
 	private bool _loaded;
+	private double _dragStartScrollY;
 
 	public ViewerPage()
 	{
@@ -127,5 +128,19 @@ public partial class ViewerPage : ContentPage
 		canvas.Translate(x, y);
 		canvas.Scale(scale);
 		canvas.DrawPicture(_svgPicture);
+	}
+
+	private async void OnFactionListPanUpdated(object? sender, PanUpdatedEventArgs e)
+	{
+		switch (e.StatusType)
+		{
+			case GestureStatus.Started:
+				_dragStartScrollY = FactionScrollView.ScrollY;
+				break;
+			case GestureStatus.Running:
+				var targetY = Math.Max(0, _dragStartScrollY - e.TotalY);
+				await FactionScrollView.ScrollToAsync(0, targetY, false);
+				break;
+		}
 	}
 }

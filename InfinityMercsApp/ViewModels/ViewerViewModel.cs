@@ -1,21 +1,34 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
 
 public class ViewerViewModel : BaseViewModel
 {
     private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly FactionLogoCacheService? _factionLogoCacheService;
     private bool _isLoading;
     private string _status = "Loading factions...";
-    private FactionRecord? _selectedFaction;
+    private ViewerFactionItem? _selectedFaction;
 
-    public ViewerViewModel(IMetadataAccessor? metadataAccessor = null)
+    public ViewerViewModel(
+        IMetadataAccessor? metadataAccessor = null,
+        FactionLogoCacheService? factionLogoCacheService = null)
     {
         _metadataAccessor = metadataAccessor;
+        _factionLogoCacheService = factionLogoCacheService;
+        SelectFactionCommand = new Command<ViewerFactionItem>(item =>
+        {
+            if (item is not null)
+            {
+                SelectedFaction = item;
+            }
+        });
     }
 
-    public ObservableCollection<FactionRecord> Factions { get; } = [];
+    public ObservableCollection<ViewerFactionItem> Factions { get; } = [];
 
     public bool IsLoading
     {
@@ -47,7 +60,7 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
-    public FactionRecord? SelectedFaction
+    public ViewerFactionItem? SelectedFaction
     {
         get => _selectedFaction;
         set
@@ -64,6 +77,8 @@ public class ViewerViewModel : BaseViewModel
     }
 
     public string SelectedFactionLogoUrl => SelectedFaction?.Logo ?? string.Empty;
+
+    public ICommand SelectFactionCommand { get; }
 
     public async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
@@ -82,7 +97,13 @@ public class ViewerViewModel : BaseViewModel
             Factions.Clear();
             foreach (var faction in factions)
             {
-                Factions.Add(faction);
+                Factions.Add(new ViewerFactionItem
+                {
+                    Id = faction.Id,
+                    Name = faction.Name,
+                    Logo = faction.Logo,
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id)
+                });
             }
 
             Status = factions.Count == 0 ? "No factions available." : $"{factions.Count} factions loaded.";
@@ -97,4 +118,15 @@ public class ViewerViewModel : BaseViewModel
             IsLoading = false;
         }
     }
+}
+
+public class ViewerFactionItem
+{
+    public int Id { get; init; }
+
+    public string Name { get; init; } = string.Empty;
+
+    public string? Logo { get; init; }
+
+    public string? CachedLogoPath { get; init; }
 }
