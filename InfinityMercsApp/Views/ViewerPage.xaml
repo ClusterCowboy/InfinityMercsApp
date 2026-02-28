@@ -162,8 +162,8 @@
                     <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" />
                 </Grid>
 
-                <Label Grid.Row="3" Text="{Binding EquipmentSummary}" LineBreakMode="WordWrap" />
-                <Label Grid.Row="4" Text="{Binding SpecialSkillsSummary}" LineBreakMode="WordWrap" />
+                <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
+                <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
                 <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
                 <Label Grid.Row="6" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
                 <ScrollView Grid.Row="7">
@@ -189,12 +189,12 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Label Grid.Column="0" Text="{Binding RangedWeapons}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="1" Text="{Binding MeleeWeapons}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="2" Text="{Binding UniqueEquipment}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="3" Text="{Binding UniqueSkills}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
                                         </Grid>
-                                        <Label Text="{Binding Peripherals}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
+                                        <Label FormattedText="{Binding PeripheralsFormatted}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

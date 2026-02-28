@@ -12,7 +12,8 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [ ] Give list of valid profiles in army list to link peripherals to
 	 - [ ] Have the peripheral show up as equipment in the linked to unit
 	 - [ ] Only allow one peripheral, subtract cost of additional peripherals       
- - [ ] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
+ - [X] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
+	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
 	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
  - [X] Show the unit as having a cube

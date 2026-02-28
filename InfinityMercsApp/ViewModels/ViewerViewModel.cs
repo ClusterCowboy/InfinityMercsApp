@@ -12,7 +12,7 @@ namespace InfinityMercsApp.ViewModels;
 
 public class ViewerViewModel : BaseViewModel
 {
-    private readonly record struct ExtraDefinition(string Name, string Type);
+    private readonly record struct ExtraDefinition(string Name, string Type, string? Url);
 
     private enum FactionFilterMode
     {
@@ -43,6 +43,8 @@ public class ViewerViewModel : BaseViewModel
     private string _unitAva = "-";
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
+    private FormattedString _equipmentSummaryFormatted = new();
+    private FormattedString _specialSkillsSummaryFormatted = new();
     private bool _showRegularOrderIcon;
     private bool _showIrregularOrderIcon;
     private bool _showImpetuousIcon;
@@ -50,6 +52,11 @@ public class ViewerViewModel : BaseViewModel
     private bool _showCubeIcon;
     private bool _showCube2Icon;
     private bool _showHackableIcon;
+    private string? _impetuousIconUrl;
+    private string? _tacticalAwarenessIconUrl;
+    private string? _cubeIconUrl;
+    private string? _cube2IconUrl;
+    private string? _hackableIconUrl;
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
@@ -184,6 +191,16 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
+    public FormattedString EquipmentSummaryFormatted
+    {
+        get => _equipmentSummaryFormatted;
+        private set
+        {
+            _equipmentSummaryFormatted = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string SpecialSkillsSummary
     {
         get => _specialSkillsSummary;
@@ -195,6 +212,16 @@ public class ViewerViewModel : BaseViewModel
             }
 
             _specialSkillsSummary = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public FormattedString SpecialSkillsSummaryFormatted
+    {
+        get => _specialSkillsSummaryFormatted;
+        private set
+        {
+            _specialSkillsSummaryFormatted = value;
             OnPropertyChanged();
         }
     }
@@ -343,6 +370,81 @@ public class ViewerViewModel : BaseViewModel
     public bool HasOrderTypeIcon => ShowRegularOrderIcon || ShowIrregularOrderIcon;
     public bool HasAnyTopHeaderIcons => HasOrderTypeIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
+
+    public string? ImpetuousIconUrl
+    {
+        get => _impetuousIconUrl;
+        private set
+        {
+            if (_impetuousIconUrl == value)
+            {
+                return;
+            }
+
+            _impetuousIconUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? TacticalAwarenessIconUrl
+    {
+        get => _tacticalAwarenessIconUrl;
+        private set
+        {
+            if (_tacticalAwarenessIconUrl == value)
+            {
+                return;
+            }
+
+            _tacticalAwarenessIconUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? CubeIconUrl
+    {
+        get => _cubeIconUrl;
+        private set
+        {
+            if (_cubeIconUrl == value)
+            {
+                return;
+            }
+
+            _cubeIconUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? Cube2IconUrl
+    {
+        get => _cube2IconUrl;
+        private set
+        {
+            if (_cube2IconUrl == value)
+            {
+                return;
+            }
+
+            _cube2IconUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? HackableIconUrl
+    {
+        get => _hackableIconUrl;
+        private set
+        {
+            if (_hackableIconUrl == value)
+            {
+                return;
+            }
+
+            _hackableIconUrl = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool ShowUnitsInInches
     {
@@ -707,6 +809,11 @@ public class ViewerViewModel : BaseViewModel
         ShowCubeIcon = false;
         ShowCube2Icon = false;
         ShowHackableIcon = false;
+        ImpetuousIconUrl = null;
+        TacticalAwarenessIconUrl = null;
+        CubeIconUrl = null;
+        Cube2IconUrl = null;
+        HackableIconUrl = null;
         UnitMov = "-";
         UnitCc = "-";
         UnitBs = "-";
@@ -860,6 +967,122 @@ public class ViewerViewModel : BaseViewModel
         return list.Count == 0
             ? $"{label}: -"
             : $"{label}: {string.Join(", ", list)}";
+    }
+
+    private static FormattedString BuildNamedSummaryFormatted(
+        string label,
+        IEnumerable<string> values,
+        IReadOnlyDictionary<int, string>? equipLookup,
+        IReadOnlyDictionary<int, string>? links,
+        Color textColor)
+    {
+        var list = values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span { Text = $"{label}: ", TextColor = textColor });
+
+        if (list.Count == 0)
+        {
+            formatted.Spans.Add(new Span { Text = "-", TextColor = textColor });
+            return formatted;
+        }
+
+        for (var i = 0; i < list.Count; i++)
+        {
+            var value = list[i];
+            var span = new Span { Text = value, TextColor = textColor };
+            var link = TryResolveLinkForDisplayName(value, equipLookup, links);
+            if (!string.IsNullOrWhiteSpace(link))
+            {
+                var tap = new TapGestureRecognizer();
+                tap.Tapped += async (_, _) => await OpenLinkAsync(link);
+                span.GestureRecognizers.Add(tap);
+            }
+
+            formatted.Spans.Add(span);
+            if (i < list.Count - 1)
+            {
+                formatted.Spans.Add(new Span { Text = ", ", TextColor = textColor });
+            }
+        }
+
+        return formatted;
+    }
+
+    private static string? TryResolveLinkForDisplayName(
+        string displayName,
+        IReadOnlyDictionary<int, string>? nameLookup,
+        IReadOnlyDictionary<int, string>? links)
+    {
+        if (string.IsNullOrWhiteSpace(displayName) || nameLookup is null || links is null)
+        {
+            return null;
+        }
+
+        foreach (var pair in nameLookup)
+        {
+            if (!links.ContainsKey(pair.Key))
+            {
+                continue;
+            }
+
+            if (string.Equals(pair.Value, displayName, StringComparison.OrdinalIgnoreCase))
+            {
+                return links[pair.Key];
+            }
+        }
+
+        var trimmed = displayName;
+        var parenIndex = displayName.IndexOf(" (", StringComparison.Ordinal);
+        if (parenIndex > 0)
+        {
+            trimmed = displayName[..parenIndex];
+        }
+
+        foreach (var pair in nameLookup)
+        {
+            if (!links.ContainsKey(pair.Key))
+            {
+                continue;
+            }
+
+            if (string.Equals(pair.Value, trimmed, StringComparison.OrdinalIgnoreCase))
+            {
+                return links[pair.Key];
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryResolveFirstLinkByPredicate(
+        IReadOnlyDictionary<int, string> nameLookup,
+        IReadOnlyDictionary<int, string> links,
+        Func<string, bool> predicate)
+    {
+        foreach (var pair in nameLookup)
+        {
+            if (!links.TryGetValue(pair.Key, out var url))
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                continue;
+            }
+
+            if (predicate(pair.Value))
+            {
+                return url;
+            }
+        }
+
+        return null;
     }
 
     private static string BuildOptionConfigurationSummary(
@@ -1519,12 +1742,154 @@ public class ViewerViewModel : BaseViewModel
                     ? typeElement.GetString() ?? string.Empty
                     : string.Empty;
 
-                map[id] = new ExtraDefinition(name, type);
+                map[id] = new ExtraDefinition(name, type, TryReadLink(entry));
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"BuildExtrasLookup failed: {ex.Message}");
+        }
+
+        return map;
+    }
+
+    private static string? TryReadLink(JsonElement entry)
+    {
+        foreach (var key in new[] { "url", "href", "link", "wiki", "web" })
+        {
+            if (!entry.TryGetProperty(key, out var valueElement) || valueElement.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var value = valueElement.GetString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static List<(string Text, string? Url)> BuildLinkedLines(
+        IEnumerable<(int Id, string Name)> entries,
+        IReadOnlyDictionary<int, string> links)
+    {
+        var result = new List<(string Text, string? Url)>();
+        foreach (var entry in entries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Name))
+            {
+                continue;
+            }
+
+            var url = links.TryGetValue(entry.Id, out var resolvedUrl) ? resolvedUrl : null;
+            var existingIndex = result.FindIndex(x => string.Equals(x.Text, entry.Name, StringComparison.OrdinalIgnoreCase));
+            if (existingIndex >= 0)
+            {
+                if (string.IsNullOrWhiteSpace(result[existingIndex].Url) && !string.IsNullOrWhiteSpace(url))
+                {
+                    result[existingIndex] = (result[existingIndex].Text, url);
+                }
+
+                continue;
+            }
+
+            result.Add((entry.Name, url));
+        }
+
+        return result;
+    }
+
+    private static FormattedString BuildLinkedFormattedString(IEnumerable<(string Text, string? Url)> lines, Color textColor)
+    {
+        var formatted = new FormattedString();
+        var list = lines.ToList();
+        if (list.Count == 0)
+        {
+            formatted.Spans.Add(new Span { Text = "-", TextColor = textColor });
+            return formatted;
+        }
+
+        for (var i = 0; i < list.Count; i++)
+        {
+            var line = list[i];
+            var span = new Span { Text = line.Text, TextColor = textColor };
+            if (!string.IsNullOrWhiteSpace(line.Url))
+            {
+                var link = line.Url;
+                var tap = new TapGestureRecognizer();
+                tap.Tapped += async (_, _) => await OpenLinkAsync(link);
+                span.GestureRecognizers.Add(tap);
+            }
+
+            formatted.Spans.Add(span);
+            if (i < list.Count - 1)
+            {
+                formatted.Spans.Add(new Span { Text = Environment.NewLine, TextColor = textColor });
+            }
+        }
+
+        return formatted;
+    }
+
+    private static async Task OpenLinkAsync(string? link)
+    {
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return;
+        }
+
+        try
+        {
+            await Launcher.Default.OpenAsync(link);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to open link '{link}': {ex.Message}");
+        }
+    }
+
+    private static Dictionary<int, string> BuildIdLinkLookup(string? filtersJson, string sectionName)
+    {
+        var map = new Dictionary<int, string>();
+        if (string.IsNullOrWhiteSpace(filtersJson))
+        {
+            return map;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(filtersJson);
+            if (!doc.RootElement.TryGetProperty(sectionName, out var section) || section.ValueKind != JsonValueKind.Array)
+            {
+                return map;
+            }
+
+            foreach (var entry in section.EnumerateArray())
+            {
+                if (!entry.TryGetProperty("id", out var idElement) || !TryParseId(idElement, out var id))
+                {
+                    continue;
+                }
+
+                var link = TryReadLink(entry);
+                if (!string.IsNullOrWhiteSpace(link))
+                {
+                    map[id] = link;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"BuildIdLinkLookup failed for section '{sectionName}': {ex.Message}");
         }
 
         return map;
@@ -1875,6 +2240,18 @@ public class ViewerViewModel : BaseViewModel
         UnitNameHeading = SelectedUnit?.Name ?? "Select a unit";
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
+            "Equipment",
+            [],
+            equipLookup: null,
+            links: null,
+            Color.FromArgb("#06B6D4"));
+        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+            "Special Skills",
+            [],
+            equipLookup: null,
+            links: null,
+            Color.FromArgb("#F59E0B"));
 
         if (SelectedFaction is null || SelectedUnit is null)
         {
@@ -1894,11 +2271,16 @@ public class ViewerViewModel : BaseViewModel
             var unit = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, SelectedUnit.Id, cancellationToken);
             var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
+            var equipLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            var skillsLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
+            var charsLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "chars");
             var weaponsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+            var weaponsLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "weapons");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
             var peripheralLookup = BuildIdNameLookup(snapshot?.FiltersJson, "peripheral");
+            var peripheralLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "peripheral");
 
             if (unit is null || string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
             {
@@ -1919,10 +2301,79 @@ public class ViewerViewModel : BaseViewModel
             ShowRegularOrderIcon = !orderTraits.HasIrregular && orderTraits.HasRegular;
             ShowImpetuousIcon = orderTraits.HasImpetuous;
             ShowTacticalAwarenessIcon = orderTraits.HasTacticalAwareness;
+            ImpetuousIconUrl = orderTraits.HasImpetuous
+                ? TryResolveFirstLinkByPredicate(
+                    skillsLookup,
+                    skillsLinks,
+                    name => name.Contains("impetuous", StringComparison.OrdinalIgnoreCase))
+                : null;
+            TacticalAwarenessIconUrl = orderTraits.HasTacticalAwareness
+                ? TryResolveFirstLinkByPredicate(
+                    skillsLookup,
+                    skillsLinks,
+                    name => name.Contains("tactical", StringComparison.OrdinalIgnoreCase))
+                : null;
             var techTraits = ParseUnitTechTraits(doc.RootElement, equipLookup, skillsLookup, charsLookup);
             ShowCubeIcon = techTraits.HasCube;
             ShowCube2Icon = techTraits.HasCube2;
             ShowHackableIcon = techTraits.HasHackable;
+            CubeIconUrl = techTraits.HasCube
+                ? TryResolveFirstLinkByPredicate(
+                    charsLookup,
+                    charsLinks,
+                    name =>
+                    {
+                        var normalized = NormalizeTokenText(name);
+                        return Regex.IsMatch(normalized, @"\bcube\b", RegexOptions.IgnoreCase) &&
+                               !Regex.IsMatch(normalized, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
+                    })
+                  ?? TryResolveFirstLinkByPredicate(
+                    equipLookup,
+                    equipLinks,
+                    name =>
+                    {
+                        var normalized = NormalizeTokenText(name);
+                        return Regex.IsMatch(normalized, @"\bcube\b", RegexOptions.IgnoreCase) &&
+                               !Regex.IsMatch(normalized, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
+                    })
+                  ?? TryResolveFirstLinkByPredicate(
+                    skillsLookup,
+                    skillsLinks,
+                    name =>
+                    {
+                        var normalized = NormalizeTokenText(name);
+                        return Regex.IsMatch(normalized, @"\bcube\b", RegexOptions.IgnoreCase) &&
+                               !Regex.IsMatch(normalized, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
+                    })
+                : null;
+            Cube2IconUrl = techTraits.HasCube2
+                ? TryResolveFirstLinkByPredicate(
+                    charsLookup,
+                    charsLinks,
+                    name => Regex.IsMatch(NormalizeTokenText(name), @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase))
+                  ?? TryResolveFirstLinkByPredicate(
+                    equipLookup,
+                    equipLinks,
+                    name => Regex.IsMatch(NormalizeTokenText(name), @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase))
+                  ?? TryResolveFirstLinkByPredicate(
+                    skillsLookup,
+                    skillsLinks,
+                    name => Regex.IsMatch(NormalizeTokenText(name), @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase))
+                : null;
+            HackableIconUrl = techTraits.HasHackable
+                ? TryResolveFirstLinkByPredicate(
+                    charsLookup,
+                    charsLinks,
+                    name => name.Contains("hackable", StringComparison.OrdinalIgnoreCase))
+                  ?? TryResolveFirstLinkByPredicate(
+                    equipLookup,
+                    equipLinks,
+                    name => name.Contains("hackable", StringComparison.OrdinalIgnoreCase))
+                  ?? TryResolveFirstLinkByPredicate(
+                    skillsLookup,
+                    skillsLinks,
+                    name => name.Contains("hackable", StringComparison.OrdinalIgnoreCase))
+                : null;
 
             HashSet<string>? commonEquipNames = null;
             HashSet<string>? commonSkillNames = null;
@@ -2039,35 +2490,38 @@ public class ViewerViewModel : BaseViewModel
                             GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"),
                             weaponsLookup,
                             extrasLookup,
-                            ShowUnitsInInches)
-                        .Select(x => x.Name)
-                        .ToList();
-                    var rangedWeapons = JoinOrDash(optionWeapons.Where(x => !IsMeleeWeaponName(x)));
-                    var meleeWeapons = JoinOrDash(optionWeapons.Where(IsMeleeWeaponName));
-                    var uniqueEquipment = JoinOrDash(
-                        GetOrderedIdDisplayNamesFromEntries(
+                            ShowUnitsInInches);
+                    var rangedWeaponEntries = optionWeapons.Where(x => !IsMeleeWeaponName(x.Name)).ToList();
+                    var meleeWeaponEntries = optionWeapons.Where(x => IsMeleeWeaponName(x.Name)).ToList();
+                    var rangedWeapons = JoinOrDash(rangedWeaponEntries.Select(x => x.Name));
+                    var meleeWeapons = JoinOrDash(meleeWeaponEntries.Select(x => x.Name));
+
+                    var uniqueEquipmentEntries = GetOrderedIdDisplayNamesFromEntries(
                                 GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"),
                                 equipLookup,
                                 extrasLookup,
                                 ShowUnitsInInches)
                             .Where(x => equipUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
-                            .Select(x => x.Name));
-                    var uniqueSkills = JoinOrDash(
-                        GetOrderedIdDisplayNamesFromEntries(
+                            .ToList();
+                    var uniqueEquipment = JoinOrDash(uniqueEquipmentEntries.Select(x => x.Name));
+
+                    var uniqueSkillsEntries = GetOrderedIdDisplayNamesFromEntries(
                                 GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"),
                                 skillsLookup,
                                 extrasLookup,
                                 ShowUnitsInInches)
                             .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
-                            .Select(x => x.Name)
-                            .Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)));
-                    var peripherals = JoinOrDash(
-                        GetOrderedIdDisplayNamesFromEntries(
+                            .Where(x => !x.Name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                    var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));
+
+                    var peripheralEntries = GetOrderedIdDisplayNamesFromEntries(
                                 GetOptionEntriesWithIncludes(doc.RootElement, option, "peripheral"),
                                 peripheralLookup,
                                 extrasLookup,
                                 ShowUnitsInInches)
-                            .Select(x => x.Name));
+                            .ToList();
+                    var peripherals = JoinOrDash(peripheralEntries.Select(x => x.Name));
                     var swc = ReadOptionSwc(option);
                     var cost = ReadOptionCost(option);
 
@@ -2082,16 +2536,27 @@ public class ViewerViewModel : BaseViewModel
                         continue;
                     }
 
+                    var rangedLines = BuildLinkedLines(rangedWeaponEntries, weaponsLinks);
+                    var meleeLines = BuildLinkedLines(meleeWeaponEntries, weaponsLinks);
+                    var uniqueEquipmentLines = BuildLinkedLines(uniqueEquipmentEntries, equipLinks);
+                    var uniqueSkillsLines = BuildLinkedLines(uniqueSkillsEntries, skillsLinks);
+                    var peripheralLines = BuildLinkedLines(peripheralEntries, peripheralLinks);
+
                     Profiles.Add(new ViewerProfileItem
                     {
                         GroupName = groupName,
                         Name = displayName,
                         NameFormatted = BuildNameFormatted(displayName),
                         RangedWeapons = rangedWeapons,
+                        RangedWeaponsFormatted = BuildLinkedFormattedString(rangedLines, Color.FromArgb("#EF4444")),
                         MeleeWeapons = meleeWeapons,
+                        MeleeWeaponsFormatted = BuildLinkedFormattedString(meleeLines, Color.FromArgb("#22C55E")),
                         UniqueEquipment = uniqueEquipment,
+                        UniqueEquipmentFormatted = BuildLinkedFormattedString(uniqueEquipmentLines, Color.FromArgb("#06B6D4")),
                         UniqueSkills = uniqueSkills,
+                        UniqueSkillsFormatted = BuildLinkedFormattedString(uniqueSkillsLines, Color.FromArgb("#F59E0B")),
                         Peripherals = peripherals,
+                        PeripheralsFormatted = BuildLinkedFormattedString(peripheralLines, Color.FromArgb("#FACC15")),
                         Swc = swc,
                         SwcDisplay = MercsOnlyUnits ? string.Empty : $"SWC {swc}",
                         Cost = cost
@@ -2103,6 +2568,18 @@ public class ViewerViewModel : BaseViewModel
             var stableSkills = profileCount > 0 ? (IEnumerable<string>)(commonSkillNames ?? []) : [];
             EquipmentSummary = BuildNamedSummary("Equipment", stableEquip);
             SpecialSkillsSummary = BuildNamedSummary("Special Skills", stableSkills);
+            EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
+                "Equipment",
+                stableEquip,
+                equipLookup,
+                equipLinks,
+                Color.FromArgb("#06B6D4"));
+            SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+                "Special Skills",
+                stableSkills,
+                skillsLookup,
+                skillsLinks,
+                Color.FromArgb("#F59E0B"));
             ProfilesStatus = Profiles.Count == 0 ? "No configurations found for this unit." : $"{Profiles.Count} configurations loaded.";
         }
         catch (Exception ex)
@@ -2231,14 +2708,19 @@ public class ViewerProfileItem
     public FormattedString? NameFormatted { get; init; }
 
     public string RangedWeapons { get; init; } = "-";
+    public FormattedString? RangedWeaponsFormatted { get; init; }
 
     public string MeleeWeapons { get; init; } = "-";
+    public FormattedString? MeleeWeaponsFormatted { get; init; }
 
     public string UniqueEquipment { get; init; } = "-";
+    public FormattedString? UniqueEquipmentFormatted { get; init; }
 
     public string UniqueSkills { get; init; } = "-";
+    public FormattedString? UniqueSkillsFormatted { get; init; }
 
     public string Peripherals { get; init; } = "-";
+    public FormattedString? PeripheralsFormatted { get; init; }
 
     public bool HasPeripherals => !string.IsNullOrWhiteSpace(Peripherals) && Peripherals != "-";
 
