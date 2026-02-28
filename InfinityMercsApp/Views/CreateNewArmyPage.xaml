@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.CreateNewArmyPage"
+             Title="Create New Army">
+
+    <Grid Padding="24" RowSpacing="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="3*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" RowSpacing="12" ColumnSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Row="0" Grid.Column="0">
+                <Button x:Name="StandardCompanyButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="StandardCompanyIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnStandardCompanyIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="Standard Company"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="0" Grid.Column="1">
+                <Button x:Name="CohesiveCompanyButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="CohesiveCompanyIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnCohesiveCompanyIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="Cohesive Company"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="1" Grid.Column="0">
+                <Button x:Name="InspiringLeaderButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="InspiringLeaderIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnInspiringLeaderIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="Inspiring Leader"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Button x:Name="AirborneCompanyButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="AirborneCompanyIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnAirborneCompanyIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="Airborne Company"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="2" Grid.Column="0">
+                <Button x:Name="TagCompanyButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="TagCompanyIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnTagCompanyIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="TAG Company"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="2" Grid.Column="1">
+                <Button x:Name="ProxyPackButton" Text="" />
+                <Grid InputTransparent="True" ColumnSpacing="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <skia:SKCanvasView
+                            x:Name="ProxyPackIconCanvas"
+                            Margin="0,5"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PaintSurface="OnProxyPackIconCanvasPaintSurface" />
+                    </Grid>
+
+                    <Label
+                        Grid.Column="1"
+                        Text="Proxy Pack"
+                        FontSize="36"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center" />
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1" VerticalOptions="End">
+            <Button
+                Text="← BACK"
+                HorizontalOptions="Start"
+                Clicked="OnBackClicked" />
+        </Grid>
+    </Grid>
+
+</ContentPage>

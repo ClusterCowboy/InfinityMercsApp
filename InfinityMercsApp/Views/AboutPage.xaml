@@ -244,6 +244,162 @@
 
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
+                    x:Name="AttributionIcon10Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon10CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-hack.svg hack by WEBTECHOPS LLP from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounHackAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon11Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon11CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-team.svg team by Hanbai from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounTeamAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon12Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon12CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-leadership-719245.svg leadership by Aditya D Nugroho from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounLeadershipAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon13Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon13CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-airborne-8005870.svg airborne by Zulyadin Fahmi from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounAirborneAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon14Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon14CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-battle-mech-1731140.svg Battle Mech by Anatolii Babii from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounBattleMechAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon15Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon15CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-assassin-5981200.svg assassin by Nicky Spencer from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounAssassinAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
                     x:Name="AttributionIcon2Canvas"
                     WidthRequest="50"
                     HeightRequest="50"

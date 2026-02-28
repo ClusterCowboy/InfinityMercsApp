@@ -11,13 +11,16 @@
             FontAttributes="Bold"
             HorizontalTextAlignment="Center" />
 
-        <Button
-            Text="New Team"
-            HorizontalOptions="Fill" />
+        <HorizontalStackLayout Spacing="12">
+            <Button
+                Text="New Army"
+                Clicked="OnNewArmyClicked"
+                HorizontalOptions="FillAndExpand" />
 
-        <Button
-            Text="Load Team"
-            HorizontalOptions="Fill" />
+            <Button
+                Text="Load Team"
+                HorizontalOptions="FillAndExpand" />
+        </HorizontalStackLayout>
     </VerticalStackLayout>
 
 </ContentPage>
