@@ -54,37 +54,115 @@
         </Border>
 
         <Border Grid.Column="1" StrokeThickness="1" Padding="12">
-            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
-                <Label Text="Units" FontSize="20" FontAttributes="Bold" />
-                <VerticalStackLayout Grid.Row="1" Spacing="6">
-                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                        <CheckBox IsChecked="{Binding MercsOnlyUnits}" VerticalOptions="Center" />
-                        <Label Text="Mercs Only Units" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                        <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
-                        <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-                <Label Grid.Row="2" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
-                <ScrollView Grid.Row="3" x:Name="UnitScrollView">
-                    <ScrollView.GestureRecognizers>
-                        <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
-                    </ScrollView.GestureRecognizers>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate>
-                                <controls:FactionListItemView>
-                                    <controls:FactionListItemView.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectUnitCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </controls:FactionListItemView.GestureRecognizers>
-                                </controls:FactionListItemView>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
+            <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Grid.Column="0" Text="Units" Command="{Binding ShowUnitsTabCommand}" CornerRadius="8">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding ShowUnitsTab}" Value="True">
+                                <Setter Property="BackgroundColor" Value="#2563EB" />
+                                <Setter Property="TextColor" Value="White" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Button" Binding="{Binding ShowUnitsTab}" Value="False">
+                                <Setter Property="BackgroundColor" Value="#E5E7EB" />
+                                <Setter Property="TextColor" Value="#111827" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                    <Button Grid.Column="1" Text="Fireteams" Command="{Binding ShowFireteamsTabCommand}" CornerRadius="8">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding ShowFireteamsTab}" Value="True">
+                                <Setter Property="BackgroundColor" Value="#2563EB" />
+                                <Setter Property="TextColor" Value="White" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Button" Binding="{Binding ShowFireteamsTab}" Value="False">
+                                <Setter Property="BackgroundColor" Value="#E5E7EB" />
+                                <Setter Property="TextColor" Value="#111827" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                </Grid>
+
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8" IsVisible="{Binding ShowUnitsTab}">
+                    <Label Text="Units" FontSize="20" FontAttributes="Bold" />
+                    <VerticalStackLayout Grid.Row="1" Spacing="6">
+                        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                            <CheckBox IsChecked="{Binding MercsOnlyUnits}" VerticalOptions="Center" />
+                            <Label Text="Mercs Only Units" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                            <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+                            <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                     </VerticalStackLayout>
-                </ScrollView>
+                    <Label Grid.Row="2" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
+                    <ScrollView Grid.Row="3" x:Name="UnitScrollView">
+                        <ScrollView.GestureRecognizers>
+                            <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
+                        </ScrollView.GestureRecognizers>
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:FactionListItemView>
+                                        <controls:FactionListItemView.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectUnitCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </controls:FactionListItemView.GestureRecognizers>
+                                    </controls:FactionListItemView>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </Grid>
+
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8" IsVisible="{Binding ShowFireteamsTab}">
+                    <Label Text="Fireteams" FontSize="20" FontAttributes="Bold" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="DUO" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="{Binding FireteamDuoCount}" FontSize="18" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="HARIS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="{Binding FireteamHarisCount}" FontSize="18" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" Spacing="2">
+                            <Label Text="CORE" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="{Binding FireteamCoreCount}" FontSize="18" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Label Grid.Row="2" Text="{Binding FireteamsStatus}" TextColor="#6B7280" />
+                    <ScrollView Grid.Row="3">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Fireteams}" Spacing="8">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border StrokeThickness="1" Padding="10">
+                                        <VerticalStackLayout Spacing="6">
+                                            <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                            <Label Text="{Binding TeamTypes, StringFormat='Types: {0}'}" />
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                                <Label Grid.Column="0" Text="Unit" FontAttributes="Bold" />
+                                                <Label Grid.Column="1" Text="Min" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                                <Label Grid.Column="2" Text="Max" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                            </Grid>
+                                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding UnitLimits}" Spacing="2">
+                                                <BindableLayout.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                                            <Label Grid.Column="0" Text="{Binding Name}" />
+                                                            <Label Grid.Column="1" Text="{Binding Min}" HorizontalTextAlignment="Center" />
+                                                            <Label Grid.Column="2" Text="{Binding Max}" HorizontalTextAlignment="Center" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </BindableLayout.ItemTemplate>
+                                            </VerticalStackLayout>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </Grid>
             </Grid>
         </Border>
 

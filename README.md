@@ -20,10 +20,11 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
  - [ ] Show Fireteam options
-	 - [ ] Show Duo, Haris, or Core teams
+	 - [X] Show Duo, Haris, or Core teams
 	 - [ ] Highlight options when selecting a type of fireteam
 	 - [ ] Show bonuses from fireteams in the statline
 #### Mercs Features
+
  - [ ] Spec Ops Implementation
  - [ ] Spec Ops for the captain
  - [ ] Choosing a captain should give a pool of points for improvement based on the per-scenario options
