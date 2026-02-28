@@ -435,7 +435,7 @@ public class ViewerViewModel : BaseViewModel
                 Name = faction.Name,
                 Logo = faction.Logo,
                 CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id),
-                PackagedLogoPath = $"SVGCache/{faction.Id}.svg"
+                PackagedLogoPath = $"SVGCache/factions/{faction.Id}.svg"
             }).ToList();
 
             ApplyFactionFilter();

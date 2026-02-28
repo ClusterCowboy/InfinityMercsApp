@@ -207,7 +207,7 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        var packagedPath = $"{PackagedCacheRoot}/{factionId}.svg";
+        var packagedPath = $"{PackagedCacheRoot}/factions/{factionId}.svg";
         var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
         return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
     }
