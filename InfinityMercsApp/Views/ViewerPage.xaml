@@ -90,32 +90,26 @@
 
         <Border Grid.Column="2" StrokeThickness="1" Padding="12">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
-                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                    <Label Grid.Column="0" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" />
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="4">
+                    <Label Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
                     <skia:SKCanvasView
+                        Grid.Row="0"
                         Grid.Column="1"
-                        x:Name="OrderTypeIconCanvas"
-                        WidthRequest="24"
+                        x:Name="TopIconRowCanvas"
                         HeightRequest="24"
-                        IsVisible="{Binding HasOrderTypeIcon}"
+                        HorizontalOptions="Fill"
                         VerticalOptions="Center"
-                        PaintSurface="OnOrderTypeIconCanvasPaintSurface" />
+                        IsVisible="{Binding HasAnyTopHeaderIcons}"
+                        PaintSurface="OnTopIconRowCanvasPaintSurface" />
                     <skia:SKCanvasView
-                        Grid.Column="2"
-                        x:Name="ImpetuousIconCanvas"
-                        WidthRequest="24"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        x:Name="BottomIconRowCanvas"
                         HeightRequest="24"
-                        IsVisible="{Binding ShowImpetuousIcon}"
+                        HorizontalOptions="Fill"
                         VerticalOptions="Center"
-                        PaintSurface="OnImpetuousIconCanvasPaintSurface" />
-                    <skia:SKCanvasView
-                        Grid.Column="2"
-                        x:Name="TacticalAwarenessIconCanvas"
-                        WidthRequest="24"
-                        HeightRequest="24"
-                        IsVisible="{Binding ShowTacticalAwarenessIcon}"
-                        VerticalOptions="Center"
-                        PaintSurface="OnTacticalAwarenessIconCanvasPaintSurface" />
+                        IsVisible="{Binding HasAnyBottomHeaderIcons}"
+                        PaintSurface="OnBottomIconRowCanvasPaintSurface" />
                 </Grid>
 
                 <Grid Grid.Row="1" ColumnSpacing="6">

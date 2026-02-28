@@ -13,9 +13,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [ ] Have the peripheral show up as equipment in the linked to unit
 	 - [ ] Only allow one peripheral, subtract cost of additional peripherals       
  - [ ] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
- - [ ] Show the unit as having Tac orders, Regular Orders, Multiple Lt Orders, Irregular orders, or
- - [ ] Show the unit as having a cube
- - [ ] Show the unit as being hackable
+ - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
+	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
+ - [X] Show the unit as having a cube
+ - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
  - [ ] Show Fireteam options
 	 - [ ] Show Duo, Haris, or Core teams

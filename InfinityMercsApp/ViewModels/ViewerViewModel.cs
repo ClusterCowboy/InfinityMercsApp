@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
@@ -46,6 +47,9 @@ public class ViewerViewModel : BaseViewModel
     private bool _showIrregularOrderIcon;
     private bool _showImpetuousIcon;
     private bool _showTacticalAwarenessIcon;
+    private bool _showCubeIcon;
+    private bool _showCube2Icon;
+    private bool _showHackableIcon;
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
@@ -235,6 +239,7 @@ public class ViewerViewModel : BaseViewModel
             _showRegularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasOrderTypeIcon));
+            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
         }
     }
 
@@ -251,6 +256,7 @@ public class ViewerViewModel : BaseViewModel
             _showIrregularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasOrderTypeIcon));
+            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
         }
     }
 
@@ -266,6 +272,7 @@ public class ViewerViewModel : BaseViewModel
 
             _showImpetuousIcon = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
         }
     }
 
@@ -281,10 +288,61 @@ public class ViewerViewModel : BaseViewModel
 
             _showTacticalAwarenessIcon = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
+        }
+    }
+
+    public bool ShowCubeIcon
+    {
+        get => _showCubeIcon;
+        private set
+        {
+            if (_showCubeIcon == value)
+            {
+                return;
+            }
+
+            _showCubeIcon = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
+        }
+    }
+
+    public bool ShowCube2Icon
+    {
+        get => _showCube2Icon;
+        private set
+        {
+            if (_showCube2Icon == value)
+            {
+                return;
+            }
+
+            _showCube2Icon = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
+        }
+    }
+
+    public bool ShowHackableIcon
+    {
+        get => _showHackableIcon;
+        private set
+        {
+            if (_showHackableIcon == value)
+            {
+                return;
+            }
+
+            _showHackableIcon = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
         }
     }
 
     public bool HasOrderTypeIcon => ShowRegularOrderIcon || ShowIrregularOrderIcon;
+    public bool HasAnyTopHeaderIcons => HasOrderTypeIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
+    public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
 
     public bool ShowUnitsInInches
     {
@@ -646,6 +704,9 @@ public class ViewerViewModel : BaseViewModel
         ShowIrregularOrderIcon = false;
         ShowImpetuousIcon = false;
         ShowTacticalAwarenessIcon = false;
+        ShowCubeIcon = false;
+        ShowCube2Icon = false;
+        ShowHackableIcon = false;
         UnitMov = "-";
         UnitCc = "-";
         UnitBs = "-";
@@ -1663,6 +1724,130 @@ public class ViewerViewModel : BaseViewModel
         return (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness);
     }
 
+    private static (bool HasCube, bool HasCube2, bool HasHackable) ParseUnitTechTraits(
+        JsonElement profileGroupsArray,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        IReadOnlyDictionary<int, string> charsLookup)
+    {
+        var hasCube = false;
+        var hasCube2 = false;
+        var hasHackable = false;
+
+        if (profileGroupsArray.ValueKind != JsonValueKind.Array)
+        {
+            return (false, false, false);
+        }
+
+        foreach (var group in profileGroupsArray.EnumerateArray())
+        {
+            if (group.TryGetProperty("profiles", out var profilesElement) && profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    foreach (var equip in GetOrderedIdNames(profile, "equip", equipLookup))
+                    {
+                        ApplyTechTraitName(equip.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+
+                    foreach (var skill in GetOrderedIdNames(profile, "skills", skillsLookup))
+                    {
+                        ApplyTechTraitName(skill.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+
+                    foreach (var character in GetOrderedIdNames(profile, "chars", charsLookup))
+                    {
+                        ApplyTechTraitName(character.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+                }
+            }
+
+            if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var option in optionsElement.EnumerateArray())
+                {
+                    foreach (var equip in GetOrderedIdNames(option, "equip", equipLookup))
+                    {
+                        ApplyTechTraitName(equip.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+
+                    foreach (var skill in GetOrderedIdNames(option, "skills", skillsLookup))
+                    {
+                        ApplyTechTraitName(skill.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+
+                    foreach (var character in GetOrderedIdNames(option, "chars", charsLookup))
+                    {
+                        ApplyTechTraitName(character.Name, ref hasCube, ref hasCube2, ref hasHackable);
+                    }
+                }
+            }
+        }
+
+        return (hasCube, hasCube2, hasHackable);
+    }
+
+    private static void ApplyTechTraitName(string name, ref bool hasCube, ref bool hasCube2, ref bool hasHackable)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        var normalized = NormalizeTokenText(name);
+
+        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase) &&
+            !Regex.IsMatch(normalized, @"\b(non[\s-]*hackable|not[\s-]*hackable)\b", RegexOptions.IgnoreCase))
+        {
+            hasHackable = true;
+        }
+
+        var hasNegativeCube = Regex.IsMatch(
+            normalized,
+            @"\b(no[\s-]*cube|without[\s-]*cube|cube[\s-]*none)\b",
+            RegexOptions.IgnoreCase);
+
+        if (hasNegativeCube)
+        {
+            return;
+        }
+
+        var isCube2 = Regex.IsMatch(
+            normalized,
+            @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b",
+            RegexOptions.IgnoreCase);
+
+        if (isCube2)
+        {
+            hasCube2 = true;
+            return;
+        }
+
+        if (Regex.IsMatch(normalized, @"\bcube\b", RegexOptions.IgnoreCase))
+        {
+            hasCube = true;
+        }
+    }
+
+    private static string NormalizeTokenText(string value)
+    {
+        var lowered = value.ToLowerInvariant();
+        var sb = new StringBuilder(lowered.Length);
+        foreach (var c in lowered)
+        {
+            if (char.IsLetterOrDigit(c) || c == '.')
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append(' ');
+            }
+        }
+
+        return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
+    }
+
     private void UpdateUnitMoveDisplay()
     {
         if (!_unitMoveFirstCm.HasValue || !_unitMoveSecondCm.HasValue)
@@ -1710,6 +1895,7 @@ public class ViewerViewModel : BaseViewModel
             var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var weaponsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
             var peripheralLookup = BuildIdNameLookup(snapshot?.FiltersJson, "peripheral");
@@ -1733,6 +1919,10 @@ public class ViewerViewModel : BaseViewModel
             ShowRegularOrderIcon = !orderTraits.HasIrregular && orderTraits.HasRegular;
             ShowImpetuousIcon = orderTraits.HasImpetuous;
             ShowTacticalAwarenessIcon = orderTraits.HasTacticalAwareness;
+            var techTraits = ParseUnitTechTraits(doc.RootElement, equipLookup, skillsLookup, charsLookup);
+            ShowCubeIcon = techTraits.HasCube;
+            ShowCube2Icon = techTraits.HasCube2;
+            ShowHackableIcon = techTraits.HasHackable;
 
             HashSet<string>? commonEquipNames = null;
             HashSet<string>? commonSkillNames = null;

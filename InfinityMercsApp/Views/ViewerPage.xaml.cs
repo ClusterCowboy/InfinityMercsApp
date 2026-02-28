@@ -9,6 +9,10 @@ namespace InfinityMercsApp.Views;
 
 public partial class ViewerPage : ContentPage
 {
+	private const int MaxIconsPerRow = 3;
+	private const float IconSize = 24f;
+	private const float IconGap = 20f;
+	private const float RightPadding = 24f;
 	private readonly ViewerViewModel _viewModel;
 	private bool _loaded;
 	private double _factionDragStartScrollY;
@@ -17,6 +21,9 @@ public partial class ViewerPage : ContentPage
 	private SKPicture? _irregularOrderIconPicture;
 	private SKPicture? _impetuousIconPicture;
 	private SKPicture? _tacticalAwarenessIconPicture;
+	private SKPicture? _cubeIconPicture;
+	private SKPicture? _cube2IconPicture;
+	private SKPicture? _hackableIconPicture;
 
 	public ViewerPage()
 	{
@@ -51,6 +58,12 @@ public partial class ViewerPage : ContentPage
 		_impetuousIconPicture = null;
 		_tacticalAwarenessIconPicture?.Dispose();
 		_tacticalAwarenessIconPicture = null;
+		_cubeIconPicture?.Dispose();
+		_cubeIconPicture = null;
+		_cube2IconPicture?.Dispose();
+		_cube2IconPicture = null;
+		_hackableIconPicture?.Dispose();
+		_hackableIconPicture = null;
 
 		try
 		{
@@ -96,26 +109,58 @@ public partial class ViewerPage : ContentPage
 			Console.Error.WriteLine($"ViewerPage tactical awareness icon load failed: {ex.Message}");
 		}
 
-		OrderTypeIconCanvas.InvalidateSurface();
-		ImpetuousIconCanvas.InvalidateSurface();
-		TacticalAwarenessIconCanvas.InvalidateSurface();
+		try
+		{
+			await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cube-alt-2-svgrepo-com.svg");
+			var cubeSvg = new SKSvg();
+			_cubeIconPicture = cubeSvg.Load(cubeStream);
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"ViewerPage cube icon load failed: {ex.Message}");
+		}
+
+		try
+		{
+			await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cubes-svgrepo-com.svg");
+			var cube2Svg = new SKSvg();
+			_cube2IconPicture = cube2Svg.Load(cube2Stream);
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"ViewerPage cube 2.0 icon load failed: {ex.Message}");
+		}
+
+		try
+		{
+			await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circuit-8241852.svg");
+			var hackableSvg = new SKSvg();
+			_hackableIconPicture = hackableSvg.Load(hackableStream);
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"ViewerPage hackable icon load failed: {ex.Message}");
+		}
+
+		TopIconRowCanvas.InvalidateSurface();
+		BottomIconRowCanvas.InvalidateSurface();
 	}
 
 	private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
-		if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon) or nameof(ViewerViewModel.ShowIrregularOrderIcon))
+		if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
+			or nameof(ViewerViewModel.ShowIrregularOrderIcon)
+			or nameof(ViewerViewModel.ShowImpetuousIcon)
+			or nameof(ViewerViewModel.ShowTacticalAwarenessIcon))
 		{
-			OrderTypeIconCanvas.InvalidateSurface();
+			TopIconRowCanvas.InvalidateSurface();
 		}
 
-		if (e.PropertyName == nameof(ViewerViewModel.ShowImpetuousIcon))
+		if (e.PropertyName is nameof(ViewerViewModel.ShowCubeIcon)
+			or nameof(ViewerViewModel.ShowCube2Icon)
+			or nameof(ViewerViewModel.ShowHackableIcon))
 		{
-			ImpetuousIconCanvas.InvalidateSurface();
-		}
-
-		if (e.PropertyName == nameof(ViewerViewModel.ShowTacticalAwarenessIcon))
-		{
-			TacticalAwarenessIconCanvas.InvalidateSurface();
+			BottomIconRowCanvas.InvalidateSurface();
 		}
 	}
 
@@ -147,47 +192,96 @@ public partial class ViewerPage : ContentPage
 		}
 	}
 
-	private void OnOrderTypeIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+	private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
 	{
 		var canvas = e.Surface.Canvas;
 		canvas.Clear(SKColors.Transparent);
 
-		var picture = _viewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-		DrawPictureCentered(canvas, e.Info, picture);
+		var pictures = new List<SKPicture>(MaxIconsPerRow);
+		var orderTypePicture = _viewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
+		if (_viewModel.HasOrderTypeIcon && orderTypePicture is not null)
+		{
+			pictures.Add(orderTypePicture);
+		}
+
+		if (_viewModel.ShowImpetuousIcon && _impetuousIconPicture is not null)
+		{
+			pictures.Add(_impetuousIconPicture);
+		}
+
+		if (_viewModel.ShowTacticalAwarenessIcon && _tacticalAwarenessIconPicture is not null)
+		{
+			pictures.Add(_tacticalAwarenessIconPicture);
+		}
+
+		DrawIconRow(canvas, e.Info, pictures);
 	}
 
-	private void OnImpetuousIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+	private void OnBottomIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
 	{
 		var canvas = e.Surface.Canvas;
 		canvas.Clear(SKColors.Transparent);
-		DrawPictureCentered(canvas, e.Info, _impetuousIconPicture);
+
+		var pictures = new List<SKPicture>(MaxIconsPerRow);
+
+		if (_viewModel.ShowCubeIcon && _cubeIconPicture is not null)
+		{
+			pictures.Add(_cubeIconPicture);
+		}
+
+		if (_viewModel.ShowCube2Icon && _cube2IconPicture is not null)
+		{
+			pictures.Add(_cube2IconPicture);
+		}
+
+		if (_viewModel.ShowHackableIcon && _hackableIconPicture is not null)
+		{
+			pictures.Add(_hackableIconPicture);
+		}
+
+		DrawIconRow(canvas, e.Info, pictures);
 	}
 
-	private void OnTacticalAwarenessIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+	private static void DrawIconRow(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
 	{
-		var canvas = e.Surface.Canvas;
-		canvas.Clear(SKColors.Transparent);
-		DrawPictureCentered(canvas, e.Info, _tacticalAwarenessIconPicture);
-	}
-
-	private static void DrawPictureCentered(SKCanvas canvas, SKImageInfo info, SKPicture? picture)
-	{
-		if (picture is null)
+		if (pictures.Count == 0)
 		{
 			return;
 		}
 
+		var drawCount = Math.Min(MaxIconsPerRow, pictures.Count);
+		var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
+		var startX = info.Width - RightPadding - rowWidth;
+		if (startX < 0)
+		{
+			startX = 0;
+		}
+
+		for (var i = 0; i < drawCount; i++)
+		{
+			var x = startX + (i * (IconSize + IconGap));
+			var y = (info.Height - IconSize) / 2f;
+			var destination = new SKRect(x, y, x + IconSize, y + IconSize);
+			DrawPictureInRect(canvas, pictures[i], destination);
+		}
+	}
+
+	private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)
+	{
 		var bounds = picture.CullRect;
 		if (bounds.Width <= 0 || bounds.Height <= 0)
 		{
 			return;
 		}
 
-		var scale = Math.Min(info.Width / bounds.Width, info.Height / bounds.Height);
-		var x = (info.Width - (bounds.Width * scale)) / 2f;
-		var y = (info.Height - (bounds.Height * scale)) / 2f;
+		var scale = Math.Min(destination.Width / bounds.Width, destination.Height / bounds.Height);
+		var drawnWidth = bounds.Width * scale;
+		var drawnHeight = bounds.Height * scale;
+		var translateX = destination.Left + ((destination.Width - drawnWidth) / 2f) - (bounds.Left * scale);
+		var translateY = destination.Top + ((destination.Height - drawnHeight) / 2f) - (bounds.Top * scale);
 
-		canvas.Translate(x, y);
+		using var restore = new SKAutoCanvasRestore(canvas, true);
+		canvas.Translate(translateX, translateY);
 		canvas.Scale(scale);
 		canvas.DrawPicture(picture);
 	}
