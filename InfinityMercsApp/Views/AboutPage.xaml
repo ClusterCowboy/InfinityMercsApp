@@ -166,6 +166,58 @@
 
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
+                    x:Name="AttributionIcon7Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon7CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-upload-2450840.svg Upload by Kawalan Icon from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounUploadAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon8Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon8CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-double-arrows-7302616.svg double arrows by Shocho from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounDoubleArrowsAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
                     x:Name="AttributionIcon2Canvas"
                     WidthRequest="50"
                     HeightRequest="50"

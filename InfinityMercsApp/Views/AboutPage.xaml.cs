@@ -12,6 +12,8 @@ public partial class AboutPage : ContentPage
     private SKPicture? _attributionIcon4Picture;
     private SKPicture? _attributionIcon5Picture;
     private SKPicture? _attributionIcon6Picture;
+    private SKPicture? _attributionIcon7Picture;
+    private SKPicture? _attributionIcon8Picture;
 
     public AboutPage()
     {
@@ -66,6 +68,16 @@ public partial class AboutPage : ContentPage
         await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/fire/");
     }
 
+    private async void OnNounUploadAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/upload/");
+    }
+
+    private async void OnNounDoubleArrowsAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/double-arrows/");
+    }
+
     private async Task LoadAttributionIconsAsync()
     {
         _attributionIconPicture?.Dispose();
@@ -80,6 +92,10 @@ public partial class AboutPage : ContentPage
         _attributionIcon5Picture = null;
         _attributionIcon6Picture?.Dispose();
         _attributionIcon6Picture = null;
+        _attributionIcon7Picture?.Dispose();
+        _attributionIcon7Picture = null;
+        _attributionIcon8Picture?.Dispose();
+        _attributionIcon8Picture = null;
 
         try
         {
@@ -153,11 +169,37 @@ public partial class AboutPage : ContentPage
             _attributionIcon6Picture = null;
         }
 
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-upload-2450840.svg");
+            var svg = new SKSvg();
+            _attributionIcon7Picture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AboutPage attribution icon 7 load failed: {ex.Message}");
+            _attributionIcon7Picture = null;
+        }
+
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-double-arrows-7302616.svg");
+            var svg = new SKSvg();
+            _attributionIcon8Picture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AboutPage attribution icon 8 load failed: {ex.Message}");
+            _attributionIcon8Picture = null;
+        }
+
         AttributionIconCanvas.InvalidateSurface();
         AttributionIcon2Canvas.InvalidateSurface();
         AttributionIcon4Canvas.InvalidateSurface();
         AttributionIcon5Canvas.InvalidateSurface();
         AttributionIcon6Canvas.InvalidateSurface();
+        AttributionIcon7Canvas.InvalidateSurface();
+        AttributionIcon8Canvas.InvalidateSurface();
     }
 
     private void OnAttributionIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -308,5 +350,55 @@ public partial class AboutPage : ContentPage
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_attributionIcon6Picture);
+    }
+
+    private void OnAttributionIcon7CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_attributionIcon7Picture is null)
+        {
+            return;
+        }
+
+        var bounds = _attributionIcon7Picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_attributionIcon7Picture);
+    }
+
+    private void OnAttributionIcon8CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_attributionIcon8Picture is null)
+        {
+            return;
+        }
+
+        var bounds = _attributionIcon8Picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_attributionIcon8Picture);
     }
 }

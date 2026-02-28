@@ -42,6 +42,10 @@ public class ViewerViewModel : BaseViewModel
     private string _unitAva = "-";
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
+    private bool _showRegularOrderIcon;
+    private bool _showIrregularOrderIcon;
+    private bool _showImpetuousIcon;
+    private bool _showTacticalAwarenessIcon;
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
@@ -217,6 +221,70 @@ public class ViewerViewModel : BaseViewModel
     public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
     public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
     public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
+
+    public bool ShowRegularOrderIcon
+    {
+        get => _showRegularOrderIcon;
+        private set
+        {
+            if (_showRegularOrderIcon == value)
+            {
+                return;
+            }
+
+            _showRegularOrderIcon = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasOrderTypeIcon));
+        }
+    }
+
+    public bool ShowIrregularOrderIcon
+    {
+        get => _showIrregularOrderIcon;
+        private set
+        {
+            if (_showIrregularOrderIcon == value)
+            {
+                return;
+            }
+
+            _showIrregularOrderIcon = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasOrderTypeIcon));
+        }
+    }
+
+    public bool ShowImpetuousIcon
+    {
+        get => _showImpetuousIcon;
+        private set
+        {
+            if (_showImpetuousIcon == value)
+            {
+                return;
+            }
+
+            _showImpetuousIcon = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowTacticalAwarenessIcon
+    {
+        get => _showTacticalAwarenessIcon;
+        private set
+        {
+            if (_showTacticalAwarenessIcon == value)
+            {
+                return;
+            }
+
+            _showTacticalAwarenessIcon = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasOrderTypeIcon => ShowRegularOrderIcon || ShowIrregularOrderIcon;
 
     public bool ShowUnitsInInches
     {
@@ -574,6 +642,10 @@ public class ViewerViewModel : BaseViewModel
     {
         _unitMoveFirstCm = null;
         _unitMoveSecondCm = null;
+        ShowRegularOrderIcon = false;
+        ShowIrregularOrderIcon = false;
+        ShowImpetuousIcon = false;
+        ShowTacticalAwarenessIcon = false;
         UnitMov = "-";
         UnitCc = "-";
         UnitBs = "-";
@@ -1529,6 +1601,68 @@ public class ViewerViewModel : BaseViewModel
         return values.Count >= 2 ? (values[0], values[1]) : (null, null);
     }
 
+    private static (bool HasRegular, bool HasIrregular, bool HasImpetuous, bool HasTacticalAwareness) ParseUnitOrderTraits(JsonElement profileGroupsArray)
+    {
+        var hasRegular = false;
+        var hasIrregular = false;
+        var hasImpetuous = false;
+        var hasTacticalAwareness = false;
+
+        if (profileGroupsArray.ValueKind != JsonValueKind.Array)
+        {
+            return (false, false, false, false);
+        }
+
+        foreach (var group in profileGroupsArray.EnumerateArray())
+        {
+            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var order in ordersElement.EnumerateArray())
+                {
+                    if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    var type = typeElement.GetString();
+                    if (string.IsNullOrWhiteSpace(type))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(type, "REGULAR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasRegular = true;
+                    }
+                    else if (string.Equals(type, "IRREGULAR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasIrregular = true;
+                    }
+                    else if (string.Equals(type, "IMPETUOUS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasImpetuous = true;
+                    }
+                    else if (string.Equals(type, "TACTICAL", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasTacticalAwareness = true;
+                    }
+                }
+            }
+        }
+
+        return (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness);
+    }
+
     private void UpdateUnitMoveDisplay()
     {
         if (!_unitMoveFirstCm.HasValue || !_unitMoveSecondCm.HasValue)
@@ -1594,6 +1728,11 @@ public class ViewerViewModel : BaseViewModel
             }
 
             PopulateUnitStatsFromFirstProfile(doc.RootElement);
+            var orderTraits = ParseUnitOrderTraits(doc.RootElement);
+            ShowIrregularOrderIcon = orderTraits.HasIrregular;
+            ShowRegularOrderIcon = !orderTraits.HasIrregular && orderTraits.HasRegular;
+            ShowImpetuousIcon = orderTraits.HasImpetuous;
+            ShowTacticalAwarenessIcon = orderTraits.HasTacticalAwareness;
 
             HashSet<string>? commonEquipNames = null;
             HashSet<string>? commonSkillNames = null;
