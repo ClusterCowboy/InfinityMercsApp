@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
+using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Services;
 
@@ -596,6 +597,327 @@ public class ViewerViewModel : BaseViewModel
             : $"{label}: {string.Join(", ", values)}";
     }
 
+    private static string BuildOptionConfigurationSummary(
+        JsonElement option,
+        IReadOnlyDictionary<int, string> weaponsLookup,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        var weapons = GetOrderedNames(option, "weapons", weaponsLookup);
+        var equip = GetOrderedNames(option, "equip", equipLookup);
+        var skills = GetOrderedNames(option, "skills", skillsLookup);
+
+        var primary = weapons.Count > 0 ? string.Join(", ", weapons) : string.Empty;
+        var extras = equip.Concat(skills).ToList();
+
+        if (string.IsNullOrWhiteSpace(primary) && extras.Count == 0)
+        {
+            return "-";
+        }
+
+        if (string.IsNullOrWhiteSpace(primary))
+        {
+            return string.Join(", ", extras);
+        }
+
+        if (extras.Count == 0)
+        {
+            return primary;
+        }
+
+        return $"{primary} + {string.Join(", ", extras)}";
+    }
+
+    private static (string Text, FormattedString Formatted) BuildOptionConfigurationSummaryFormatted(
+        JsonElement option,
+        IReadOnlyDictionary<int, string> weaponsLookup,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        IReadOnlyDictionary<int, int> equipUsageCounts,
+        IReadOnlyDictionary<int, int> skillUsageCounts)
+    {
+        var weapons = GetOrderedIdNames(option, "weapons", weaponsLookup);
+        var equip = GetOrderedIdNames(option, "equip", equipLookup);
+        var skills = GetOrderedIdNames(option, "skills", skillsLookup);
+
+        if (HasLieutenantOrder(option) && !skills.Any(s => s.Name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)))
+        {
+            skills.Add((-1, "Lieutenant"));
+        }
+
+        var formatted = new FormattedString();
+        var categoryTexts = new List<string>();
+        var hasAny = false;
+
+        void AppendSeparator()
+        {
+            if (!hasAny)
+            {
+                return;
+            }
+
+            formatted.Spans.Add(new Span { Text = " + " });
+        }
+
+        void AppendTokenList(IEnumerable<(int Id, string Name)> tokens, Func<int, string, string?> colorSelector)
+        {
+            var tokenList = tokens.ToList();
+            if (tokenList.Count == 0)
+            {
+                return;
+            }
+
+            AppendSeparator();
+            categoryTexts.Add(string.Join(", ", tokenList.Select(x => x.Name)));
+            for (var i = 0; i < tokenList.Count; i++)
+            {
+                if (i > 0)
+                {
+                    formatted.Spans.Add(new Span { Text = ", " });
+                }
+
+                var token = tokenList[i];
+                var color = colorSelector(token.Id, token.Name);
+                formatted.Spans.Add(color is null
+                    ? new Span { Text = token.Name }
+                    : new Span { Text = token.Name, TextColor = Color.FromArgb(color) });
+            }
+
+            hasAny = true;
+        }
+
+        AppendTokenList(weapons, (_, name) => IsMeleeWeaponName(name) ? "#22C55E" : "#EF4444");
+        AppendTokenList(equip, (id, _) => equipUsageCounts.TryGetValue(id, out var c) && c == 1 ? "#06B6D4" : null);
+        AppendTokenList(skills, (id, name) =>
+        {
+            if (name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+            {
+                return "#C084FC";
+            }
+
+            return skillUsageCounts.TryGetValue(id, out var c) && c == 1 ? "#F59E0B" : null;
+        });
+
+        if (!hasAny)
+        {
+            formatted.Spans.Add(new Span { Text = "-" });
+            return ("-", formatted);
+        }
+
+        return (string.Join(" + ", categoryTexts), formatted);
+    }
+
+    private static bool IsMeleeWeaponName(string weaponName) =>
+        weaponName.Contains("cc", StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasLieutenantOrder(JsonElement option)
+    {
+        if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var order in ordersElement.EnumerateArray())
+        {
+            if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var type = typeElement.GetString();
+            if (string.Equals(type, "LIEUTENANT", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string BuildOptionDisplayName(
+        JsonElement option,
+        string baseName,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        var details = new List<string>();
+        var normalizedBase = baseName.ToLowerInvariant();
+
+        foreach (var skillName in GetOrderedNames(option, "skills", skillsLookup))
+        {
+            if (IsNameDetailTag(skillName) && !normalizedBase.Contains(skillName.ToLowerInvariant()))
+            {
+                details.Add(skillName);
+            }
+        }
+
+        foreach (var equipName in GetOrderedNames(option, "equip", equipLookup))
+        {
+            if (IsNameDetailTag(equipName) && !normalizedBase.Contains(equipName.ToLowerInvariant()))
+            {
+                details.Add(equipName);
+            }
+        }
+
+        if (option.TryGetProperty("orders", out var ordersElement) && ordersElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var order in ordersElement.EnumerateArray())
+            {
+                if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var type = typeElement.GetString();
+                if (string.Equals(type, "LIEUTENANT", StringComparison.OrdinalIgnoreCase) &&
+                    !normalizedBase.Contains("lieutenant"))
+                {
+                    details.Add("Lieutenant");
+                }
+            }
+        }
+
+        var distinctDetails = details
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (distinctDetails.Count == 0)
+        {
+            return baseName;
+        }
+
+        return $"{baseName} ({string.Join(", ", distinctDetails)})";
+    }
+
+    private static bool IsNameDetailTag(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return value.Contains("forward observer", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("hacker", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("hacking device", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("specialist", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("paramedic", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("doctor", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("engineer", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("nco", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ReadOptionSwc(JsonElement option)
+    {
+        if (!option.TryGetProperty("swc", out var swcElement))
+        {
+            return "-";
+        }
+
+        if (swcElement.ValueKind == JsonValueKind.String)
+        {
+            var swc = swcElement.GetString();
+            return string.IsNullOrWhiteSpace(swc) ? "-" : swc;
+        }
+
+        if (swcElement.ValueKind == JsonValueKind.Number)
+        {
+            return swcElement.ToString();
+        }
+
+        return "-";
+    }
+
+    private static string ReadOptionCost(JsonElement option)
+    {
+        if (!option.TryGetProperty("points", out var pointsElement))
+        {
+            return "-";
+        }
+
+        if (pointsElement.ValueKind == JsonValueKind.Number)
+        {
+            if (pointsElement.TryGetInt32(out var intCost))
+            {
+                return intCost.ToString();
+            }
+
+            return pointsElement.ToString();
+        }
+
+        if (pointsElement.ValueKind == JsonValueKind.String)
+        {
+            var points = pointsElement.GetString();
+            return string.IsNullOrWhiteSpace(points) ? "-" : points;
+        }
+
+        return "-";
+    }
+
+    private static bool IsPositiveSwc(string swc)
+    {
+        if (string.IsNullOrWhiteSpace(swc) || swc == "-")
+        {
+            return false;
+        }
+
+        return decimal.TryParse(
+                   swc,
+                   System.Globalization.NumberStyles.Number,
+                   System.Globalization.CultureInfo.InvariantCulture,
+                   out var value)
+               && value > 0m;
+    }
+
+    private static List<string> GetOrderedNames(
+        JsonElement container,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup)
+    {
+        return GetOrderedIdNames(container, propertyName, lookup)
+            .Select(x => x.Name)
+            .ToList();
+    }
+
+    private static List<(int Id, string Name)> GetOrderedIdNames(
+        JsonElement container,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup)
+    {
+        if (!container.TryGetProperty(propertyName, out var arr) || arr.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var entries = new List<(int Order, int Id, string Name)>();
+        foreach (var entry in arr.EnumerateArray())
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var order = int.MaxValue;
+            if (entry.ValueKind == JsonValueKind.Object &&
+                entry.TryGetProperty("order", out var orderElement) &&
+                orderElement.ValueKind == JsonValueKind.Number &&
+                orderElement.TryGetInt32(out var parsedOrder))
+            {
+                order = parsedOrder;
+            }
+
+            var name = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            entries.Add((order, id, name));
+        }
+
+        return entries
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => (x.Id, x.Name))
+            .ToList();
+    }
+
     private void PopulateUnitStatsFromFirstProfile(JsonElement profileGroupsArray)
     {
         ResetUnitStats();
@@ -737,6 +1059,7 @@ public class ViewerViewModel : BaseViewModel
             var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            var weaponsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
 
             if (unit is null || string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
             {
@@ -756,6 +1079,31 @@ public class ViewerViewModel : BaseViewModel
             HashSet<int>? commonEquipIds = null;
             HashSet<int>? commonSkillIds = null;
             var profileCount = 0;
+            var equipUsageCounts = new Dictionary<int, int>();
+            var skillUsageCounts = new Dictionary<int, int>();
+
+            foreach (var usageGroup in doc.RootElement.EnumerateArray())
+            {
+                if (!usageGroup.TryGetProperty("options", out var usageOptionsElement) || usageOptionsElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var usageOption in usageOptionsElement.EnumerateArray())
+                {
+                    foreach (var equipId in CollectIdsFromArrayProperty(usageOption, "equip"))
+                    {
+                        equipUsageCounts[equipId] = equipUsageCounts.TryGetValue(equipId, out var count) ? count + 1 : 1;
+                    }
+
+                    foreach (var skillId in CollectIdsFromArrayProperty(usageOption, "skills"))
+                    {
+                        skillUsageCounts[skillId] = skillUsageCounts.TryGetValue(skillId, out var count) ? count + 1 : 1;
+                    }
+                }
+            }
+
+            var seenConfigurations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var group in doc.RootElement.EnumerateArray())
             {
@@ -792,12 +1140,43 @@ public class ViewerViewModel : BaseViewModel
                     }
 
                     profileCount++;
+                }
 
-                    var profileName = profile.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var option in optionsElement.EnumerateArray())
+                {
+                    var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
                         ? nameElement.GetString() ?? string.Empty
                         : string.Empty;
 
-                    if (string.IsNullOrWhiteSpace(profileName))
+                    if (string.IsNullOrWhiteSpace(optionName))
+                    {
+                        optionName = groupName;
+                    }
+
+                    var displayName = BuildOptionDisplayName(option, optionName, equipLookup, skillsLookup);
+                    var configurationData = BuildOptionConfigurationSummaryFormatted(
+                        option,
+                        weaponsLookup,
+                        equipLookup,
+                        skillsLookup,
+                        equipUsageCounts,
+                        skillUsageCounts);
+                    var configuration = configurationData.Text;
+                    var swc = ReadOptionSwc(option);
+                    var cost = ReadOptionCost(option);
+
+                    if (MercsOnlyUnits && IsPositiveSwc(swc))
+                    {
+                        continue;
+                    }
+
+                    var dedupeKey = $"{groupName}|{displayName}|{configuration}|{swc}|{cost}";
+                    if (!seenConfigurations.Add(dedupeKey))
                     {
                         continue;
                     }
@@ -805,7 +1184,12 @@ public class ViewerViewModel : BaseViewModel
                     Profiles.Add(new ViewerProfileItem
                     {
                         GroupName = groupName,
-                        Name = profileName
+                        Name = displayName,
+                        Configuration = configuration,
+                        ConfigurationFormatted = configurationData.Formatted,
+                        Swc = swc,
+                        SwcDisplay = MercsOnlyUnits ? string.Empty : $"SWC {swc}",
+                        Cost = cost
                     });
                 }
             }
@@ -814,7 +1198,7 @@ public class ViewerViewModel : BaseViewModel
             var stableSkills = profileCount > 0 ? (IEnumerable<int>)(commonSkillIds ?? []) : [];
             EquipmentSummary = BuildNamedSummary("Equipment", stableEquip, equipLookup);
             SpecialSkillsSummary = BuildNamedSummary("Special Skills", stableSkills, skillsLookup);
-            ProfilesStatus = Profiles.Count == 0 ? "No profiles found for this unit." : $"{Profiles.Count} profiles loaded.";
+            ProfilesStatus = Profiles.Count == 0 ? "No configurations found for this unit." : $"{Profiles.Count} configurations loaded.";
         }
         catch (Exception ex)
         {
@@ -936,4 +1320,14 @@ public class ViewerProfileItem
     public string GroupName { get; init; } = string.Empty;
 
     public string Name { get; init; } = string.Empty;
+
+    public string Configuration { get; init; } = string.Empty;
+
+    public FormattedString? ConfigurationFormatted { get; init; }
+
+    public string Swc { get; init; } = "-";
+
+    public string SwcDisplay { get; init; } = string.Empty;
+
+    public string Cost { get; init; } = "-";
 }

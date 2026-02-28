@@ -131,7 +131,7 @@
 
                 <Label Grid.Row="3" Text="{Binding EquipmentSummary}" LineBreakMode="WordWrap" />
                 <Label Grid.Row="4" Text="{Binding SpecialSkillsSummary}" LineBreakMode="WordWrap" />
-                <Label Grid.Row="5" Text="Profiles" FontSize="20" FontAttributes="Bold" />
+                <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
                 <Label Grid.Row="6" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
                 <ScrollView Grid.Row="7">
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
@@ -139,8 +139,17 @@
                             <DataTemplate>
                                 <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
                                     <VerticalStackLayout Spacing="2">
-                                        <Label Text="{Binding Name}" FontAttributes="Bold" />
-                                        <Label Text="{Binding GroupName}" FontSize="12" TextColor="#6B7280" />
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="72" />
+                                                <ColumnDefinition Width="56" />
+                                            </Grid.ColumnDefinitions>
+                                            <Label Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" />
+                                            <Label Grid.Column="1" Text="{Binding SwcDisplay}" FontSize="12" HorizontalTextAlignment="End" />
+                                            <Label Grid.Column="2" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                        </Grid>
+                                        <Label FormattedText="{Binding ConfigurationFormatted}" FontSize="12" TextColor="#6B7280" LineBreakMode="WordWrap" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
