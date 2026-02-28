@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
@@ -9,6 +11,15 @@ namespace InfinityMercsApp.ViewModels;
 
 public class ViewerViewModel : BaseViewModel
 {
+    private readonly record struct ExtraDefinition(string Name, string Type);
+
+    private enum FactionFilterMode
+    {
+        All,
+        Factions,
+        Sectorials
+    }
+
     private readonly IMetadataAccessor? _metadataAccessor;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
@@ -37,6 +48,9 @@ public class ViewerViewModel : BaseViewModel
     private ViewerFactionItem? _selectedFaction;
     private ViewerUnitItem? _selectedUnit;
     private bool _mercsOnlyUnits;
+    private bool _lieutenantOnlyUnits;
+    private FactionFilterMode _factionFilterMode = FactionFilterMode.All;
+    private List<ViewerFactionItem> _allFactions = [];
     private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
     {
         [1] = 0, // LI
@@ -320,6 +334,80 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
+    public bool LieutenantOnlyUnits
+    {
+        get => _lieutenantOnlyUnits;
+        set
+        {
+            if (_lieutenantOnlyUnits == value)
+            {
+                return;
+            }
+
+            _lieutenantOnlyUnits = value;
+            OnPropertyChanged();
+
+            if (SelectedFaction is not null)
+            {
+                _ = LoadUnitsForSelectedFactionAsync();
+            }
+        }
+    }
+
+    public bool ShowAllFactionEntries
+    {
+        get => _factionFilterMode == FactionFilterMode.All;
+        set
+        {
+            if (!value || _factionFilterMode == FactionFilterMode.All)
+            {
+                return;
+            }
+
+            _factionFilterMode = FactionFilterMode.All;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowFactionEntriesOnly));
+            OnPropertyChanged(nameof(ShowSectorialEntriesOnly));
+            ApplyFactionFilter();
+        }
+    }
+
+    public bool ShowFactionEntriesOnly
+    {
+        get => _factionFilterMode == FactionFilterMode.Factions;
+        set
+        {
+            if (!value || _factionFilterMode == FactionFilterMode.Factions)
+            {
+                return;
+            }
+
+            _factionFilterMode = FactionFilterMode.Factions;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowAllFactionEntries));
+            OnPropertyChanged(nameof(ShowSectorialEntriesOnly));
+            ApplyFactionFilter();
+        }
+    }
+
+    public bool ShowSectorialEntriesOnly
+    {
+        get => _factionFilterMode == FactionFilterMode.Sectorials;
+        set
+        {
+            if (!value || _factionFilterMode == FactionFilterMode.Sectorials)
+            {
+                return;
+            }
+
+            _factionFilterMode = FactionFilterMode.Sectorials;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowAllFactionEntries));
+            OnPropertyChanged(nameof(ShowFactionEntriesOnly));
+            ApplyFactionFilter();
+        }
+    }
+
     public async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
         await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
@@ -334,24 +422,23 @@ public class ViewerViewModel : BaseViewModel
         {
             IsLoading = true;
             Status = "Loading factions...";
-            var factions = await _metadataAccessor.GetFactionsAsync(false, cancellationToken);
+            var factions = await _metadataAccessor.GetFactionsAsync(true, cancellationToken);
             if (_factionLogoCacheService is not null)
             {
                 await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
             }
 
-            Factions.Clear();
-            foreach (var faction in factions)
+            _allFactions = factions.Select(faction => new ViewerFactionItem
             {
-                Factions.Add(new ViewerFactionItem
-                {
-                    Id = faction.Id,
-                    Name = faction.Name,
-                    Logo = faction.Logo,
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id),
-                    PackagedLogoPath = $"SVGCache/{faction.Id}.svg"
-                });
-            }
+                Id = faction.Id,
+                ParentId = faction.ParentId,
+                Name = faction.Name,
+                Logo = faction.Logo,
+                CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id),
+                PackagedLogoPath = $"SVGCache/{faction.Id}.svg"
+            }).ToList();
+
+            ApplyFactionFilter();
 
             Status = factions.Count == 0 ? "No factions available." : $"{factions.Count} factions loaded.";
         }
@@ -394,6 +481,23 @@ public class ViewerViewModel : BaseViewModel
             var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
             var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
             var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
+            var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+
+            var filteredUnitIds = new HashSet<int>();
+            foreach (var unit in units)
+            {
+                var unitRecord = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, unit.UnitId, cancellationToken);
+                if (UnitHasVisibleOption(
+                        unitRecord?.ProfileGroupsJson,
+                        skillsLookup,
+                        LieutenantOnlyUnits,
+                        MercsOnlyUnits))
+                {
+                    filteredUnitIds.Add(unit.UnitId);
+                }
+            }
+
+            units = units.Where(x => filteredUnitIds.Contains(x.UnitId)).ToList();
 
             if (_factionLogoCacheService is not null)
             {
@@ -425,6 +529,34 @@ public class ViewerViewModel : BaseViewModel
         {
             Console.Error.WriteLine($"LoadUnitsForSelectedFactionAsync failed: {ex.Message}");
             UnitsStatus = $"Failed to load units: {ex.Message}";
+        }
+    }
+
+    private void ApplyFactionFilter()
+    {
+        IEnumerable<ViewerFactionItem> filtered = _allFactions;
+        if (_factionFilterMode == FactionFilterMode.Factions)
+        {
+            filtered = filtered.Where(x => x.Id == x.ParentId);
+        }
+        else if (_factionFilterMode == FactionFilterMode.Sectorials)
+        {
+            filtered = filtered.Where(x => x.Id != x.ParentId);
+        }
+
+        var filteredList = filtered.ToList();
+
+        Factions.Clear();
+        foreach (var faction in filteredList)
+        {
+            Factions.Add(faction);
+        }
+
+        if (SelectedFaction is not null && !filteredList.Contains(SelectedFaction))
+        {
+            SelectedFaction = null;
+            Units.Clear();
+            UnitsStatus = "Select a faction.";
         }
     }
 
@@ -584,17 +716,17 @@ public class ViewerViewModel : BaseViewModel
         return false;
     }
 
-    private static string BuildNamedSummary(string label, IEnumerable<int> ids, IReadOnlyDictionary<int, string> lookup)
+    private static string BuildNamedSummary(string label, IEnumerable<string> values)
     {
-        var values = ids
-            .Select(id => lookup.TryGetValue(id, out var name) ? name : id.ToString())
+        var list = values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return values.Count == 0
+        return list.Count == 0
             ? $"{label}: -"
-            : $"{label}: {string.Join(", ", values)}";
+            : $"{label}: {string.Join(", ", list)}";
     }
 
     private static string BuildOptionConfigurationSummary(
@@ -628,87 +760,57 @@ public class ViewerViewModel : BaseViewModel
         return $"{primary} + {string.Join(", ", extras)}";
     }
 
-    private static (string Text, FormattedString Formatted) BuildOptionConfigurationSummaryFormatted(
-        JsonElement option,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, int> equipUsageCounts,
-        IReadOnlyDictionary<int, int> skillUsageCounts)
-    {
-        var weapons = GetOrderedIdNames(option, "weapons", weaponsLookup);
-        var equip = GetOrderedIdNames(option, "equip", equipLookup);
-        var skills = GetOrderedIdNames(option, "skills", skillsLookup);
-
-        if (HasLieutenantOrder(option) && !skills.Any(s => s.Name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)))
-        {
-            skills.Add((-1, "Lieutenant"));
-        }
-
-        var formatted = new FormattedString();
-        var categoryTexts = new List<string>();
-        var hasAny = false;
-
-        void AppendSeparator()
-        {
-            if (!hasAny)
-            {
-                return;
-            }
-
-            formatted.Spans.Add(new Span { Text = " + " });
-        }
-
-        void AppendTokenList(IEnumerable<(int Id, string Name)> tokens, Func<int, string, string?> colorSelector)
-        {
-            var tokenList = tokens.ToList();
-            if (tokenList.Count == 0)
-            {
-                return;
-            }
-
-            AppendSeparator();
-            categoryTexts.Add(string.Join(", ", tokenList.Select(x => x.Name)));
-            for (var i = 0; i < tokenList.Count; i++)
-            {
-                if (i > 0)
-                {
-                    formatted.Spans.Add(new Span { Text = ", " });
-                }
-
-                var token = tokenList[i];
-                var color = colorSelector(token.Id, token.Name);
-                formatted.Spans.Add(color is null
-                    ? new Span { Text = token.Name }
-                    : new Span { Text = token.Name, TextColor = Color.FromArgb(color) });
-            }
-
-            hasAny = true;
-        }
-
-        AppendTokenList(weapons, (_, name) => IsMeleeWeaponName(name) ? "#22C55E" : "#EF4444");
-        AppendTokenList(equip, (id, _) => equipUsageCounts.TryGetValue(id, out var c) && c == 1 ? "#06B6D4" : null);
-        AppendTokenList(skills, (id, name) =>
-        {
-            if (name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
-            {
-                return "#C084FC";
-            }
-
-            return skillUsageCounts.TryGetValue(id, out var c) && c == 1 ? "#F59E0B" : null;
-        });
-
-        if (!hasAny)
-        {
-            formatted.Spans.Add(new Span { Text = "-" });
-            return ("-", formatted);
-        }
-
-        return (string.Join(" + ", categoryTexts), formatted);
-    }
-
     private static bool IsMeleeWeaponName(string weaponName) =>
         weaponName.Contains("cc", StringComparison.OrdinalIgnoreCase);
+
+    private static string JoinOrDash(IEnumerable<string> values)
+    {
+        var list = values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return list.Count == 0 ? "-" : string.Join(Environment.NewLine, list);
+    }
+
+    private static FormattedString BuildNameFormatted(string name)
+    {
+        var formatted = new FormattedString();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            formatted.Spans.Add(new Span { Text = string.Empty });
+            return formatted;
+        }
+
+        const string token = "Lieutenant";
+        var start = 0;
+        while (true)
+        {
+            var index = name.IndexOf(token, start, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                if (start < name.Length)
+                {
+                    formatted.Spans.Add(new Span { Text = name[start..] });
+                }
+
+                break;
+            }
+
+            if (index > start)
+            {
+                formatted.Spans.Add(new Span { Text = name[start..index] });
+            }
+
+            formatted.Spans.Add(new Span
+            {
+                Text = name.Substring(index, token.Length),
+                TextColor = Color.FromArgb("#C084FC")
+            });
+            start = index + token.Length;
+        }
+
+        return formatted;
+    }
 
     private static bool HasLieutenantOrder(JsonElement option)
     {
@@ -729,6 +831,81 @@ public class ViewerViewModel : BaseViewModel
             {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private static bool IsLieutenantOption(JsonElement option, IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        if (HasLieutenantOrder(option))
+        {
+            return true;
+        }
+
+        if (option.TryGetProperty("name", out var nameElement) &&
+            nameElement.ValueKind == JsonValueKind.String &&
+            nameElement.GetString()?.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return true;
+        }
+
+        foreach (var skill in GetOrderedIdNames(option, "skills", skillsLookup))
+        {
+            if (skill.Name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool UnitHasVisibleOption(
+        string? profileGroupsJson,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        bool requireLieutenant,
+        bool requireMercsZeroSwc)
+    {
+        if (string.IsNullOrWhiteSpace(profileGroupsJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(profileGroupsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
+            foreach (var group in doc.RootElement.EnumerateArray())
+            {
+                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var option in optionsElement.EnumerateArray())
+                {
+                    if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
+                    {
+                        continue;
+                    }
+
+                    if (requireMercsZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
+                    {
+                        continue;
+                    }
+
+                    return true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"UnitHasVisibleOption failed: {ex.Message}");
         }
 
         return false;
@@ -878,6 +1055,346 @@ public class ViewerViewModel : BaseViewModel
         return GetOrderedIdNames(container, propertyName, lookup)
             .Select(x => x.Name)
             .ToList();
+    }
+
+    private static List<(int Id, string Name)> GetOrderedIdDisplayNames(
+        JsonElement container,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        if (!container.TryGetProperty(propertyName, out var arr) || arr.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var entries = new List<(int Order, int Id, string Name)>();
+        foreach (var entry in arr.EnumerateArray())
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var order = int.MaxValue;
+            if (entry.ValueKind == JsonValueKind.Object &&
+                entry.TryGetProperty("order", out var orderElement) &&
+                orderElement.ValueKind == JsonValueKind.Number &&
+                orderElement.TryGetInt32(out var parsedOrder))
+            {
+                order = parsedOrder;
+            }
+
+            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
+            entries.Add((order, id, displayName));
+        }
+
+        return entries
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => (x.Id, x.Name))
+            .ToList();
+    }
+
+    private static List<(int Id, string Name)> GetOrderedIdDisplayNamesFromEntries(
+        IEnumerable<JsonElement> entriesSource,
+        IReadOnlyDictionary<int, string> lookup,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        var entries = new List<(int Order, int Id, string Name)>();
+        foreach (var entry in entriesSource)
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var order = int.MaxValue;
+            if (entry.ValueKind == JsonValueKind.Object &&
+                entry.TryGetProperty("order", out var orderElement) &&
+                orderElement.ValueKind == JsonValueKind.Number &&
+                orderElement.TryGetInt32(out var parsedOrder))
+            {
+                order = parsedOrder;
+            }
+
+            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
+            entries.Add((order, id, displayName));
+        }
+
+        return entries
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => (x.Id, x.Name))
+            .ToList();
+    }
+
+    private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        string propertyName)
+    {
+        var collected = new List<JsonElement>();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        CollectOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName, collected, visited, null);
+        return collected;
+    }
+
+    private static void CollectOptionEntriesWithIncludes(
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        string propertyName,
+        List<JsonElement> target,
+        HashSet<string> visited,
+        (int GroupId, int OptionId)? includeRef)
+    {
+        var key = includeRef.HasValue
+            ? $"{includeRef.Value.GroupId}:{includeRef.Value.OptionId}"
+            : option.GetRawText().GetHashCode().ToString();
+        if (!visited.Add(key))
+        {
+            return;
+        }
+
+        if (option.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var entry in arr.EnumerateArray())
+            {
+                target.Add(entry);
+            }
+        }
+
+        if (!option.TryGetProperty("includes", out var includesElement) || includesElement.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (var include in includesElement.EnumerateArray())
+        {
+            if (include.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (!TryParseIncludeReference(include, out var includeGroupId, out var includeOptionId))
+            {
+                continue;
+            }
+
+            var includedOption = FindIncludedOption(profileGroupsRoot, includeGroupId, includeOptionId);
+            if (includedOption.HasValue)
+            {
+                CollectOptionEntriesWithIncludes(
+                    profileGroupsRoot,
+                    includedOption.Value,
+                    propertyName,
+                    target,
+                    visited,
+                    (includeGroupId, includeOptionId));
+            }
+        }
+    }
+
+    private static bool TryParseIncludeReference(JsonElement include, out int groupId, out int optionId)
+    {
+        groupId = 0;
+        optionId = 0;
+
+        if (!include.TryGetProperty("group", out var groupElement) || !TryParseId(groupElement, out groupId))
+        {
+            return false;
+        }
+
+        if (!include.TryGetProperty("option", out var optionElement) || !TryParseId(optionElement, out optionId))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static JsonElement? FindIncludedOption(JsonElement profileGroupsRoot, int groupId, int optionId)
+    {
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            if (!group.TryGetProperty("id", out var groupIdElement) ||
+                !TryParseId(groupIdElement, out var parsedGroupId) ||
+                parsedGroupId != groupId)
+            {
+                continue;
+            }
+
+            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                if (!option.TryGetProperty("id", out var optionIdElement) ||
+                    !TryParseId(optionIdElement, out var parsedOptionId) ||
+                    parsedOptionId != optionId)
+                {
+                    continue;
+                }
+
+                return option;
+            }
+        }
+
+        return null;
+    }
+
+    private static string BuildEntryDisplayName(
+        string baseName,
+        JsonElement entry,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        if (entry.ValueKind != JsonValueKind.Object)
+        {
+            return baseName;
+        }
+
+        if (!entry.TryGetProperty("extra", out var extraElement) || extraElement.ValueKind != JsonValueKind.Array)
+        {
+            return baseName;
+        }
+
+        var extras = new List<string>();
+        foreach (var extraEntry in extraElement.EnumerateArray())
+        {
+            if (!TryParseId(extraEntry, out var extraId))
+            {
+                continue;
+            }
+
+            if (extrasLookup.TryGetValue(extraId, out var extraDefinition) &&
+                !string.IsNullOrWhiteSpace(extraDefinition.Name))
+            {
+                extras.Add(FormatExtraDisplay(extraDefinition, showUnitsInInches));
+            }
+            else
+            {
+                extras.Add(extraId.ToString());
+            }
+        }
+
+        var distinctExtras = extras
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return distinctExtras.Count == 0
+            ? baseName
+            : $"{baseName} ({string.Join(", ", distinctExtras)})";
+    }
+
+    private static string FormatExtraDisplay(ExtraDefinition extraDefinition, bool showUnitsInInches)
+    {
+        if (!showUnitsInInches ||
+            !string.Equals(extraDefinition.Type, "DISTANCE", StringComparison.OrdinalIgnoreCase))
+        {
+            return extraDefinition.Name;
+        }
+
+        return ConvertDistanceTextToInches(extraDefinition.Name);
+    }
+
+    private static string ConvertDistanceTextToInches(string distanceText)
+    {
+        if (string.IsNullOrWhiteSpace(distanceText))
+        {
+            return distanceText;
+        }
+
+        var match = Regex.Match(distanceText, @"([+-]?)(\d+(?:\.\d+)?)");
+        if (!match.Success)
+        {
+            return distanceText;
+        }
+
+        var signToken = match.Groups[1].Value;
+        var valueToken = match.Groups[2].Value;
+        if (!decimal.TryParse(valueToken, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueCm))
+        {
+            return distanceText;
+        }
+
+        if (signToken == "-")
+        {
+            valueCm = -valueCm;
+        }
+
+        var valueInches = (int)Math.Round((double)(valueCm / 2.5m), MidpointRounding.AwayFromZero);
+        var replacement = valueInches < 0
+            ? valueInches.ToString(CultureInfo.InvariantCulture)
+            : signToken == "+"
+                ? $"+{valueInches}"
+                : valueInches.ToString(CultureInfo.InvariantCulture);
+
+        return string.Concat(
+            distanceText.AsSpan(0, match.Index),
+            replacement,
+            distanceText.AsSpan(match.Index + match.Length));
+    }
+
+    private static Dictionary<int, ExtraDefinition> BuildExtrasLookup(string? filtersJson)
+    {
+        var map = new Dictionary<int, ExtraDefinition>();
+        if (string.IsNullOrWhiteSpace(filtersJson))
+        {
+            return map;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(filtersJson);
+            if (!doc.RootElement.TryGetProperty("extras", out var section) || section.ValueKind != JsonValueKind.Array)
+            {
+                return map;
+            }
+
+            foreach (var entry in section.EnumerateArray())
+            {
+                if (!entry.TryGetProperty("id", out var idElement) || !TryParseId(idElement, out var id))
+                {
+                    continue;
+                }
+
+                if (!entry.TryGetProperty("name", out var nameElement) || nameElement.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var name = nameElement.GetString();
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                var type = entry.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
+                    ? typeElement.GetString() ?? string.Empty
+                    : string.Empty;
+
+                map[id] = new ExtraDefinition(name, type);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"BuildExtrasLookup failed: {ex.Message}");
+        }
+
+        return map;
     }
 
     private static List<(int Id, string Name)> GetOrderedIdNames(
@@ -1060,6 +1577,8 @@ public class ViewerViewModel : BaseViewModel
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var weaponsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+            var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
+            var peripheralLookup = BuildIdNameLookup(snapshot?.FiltersJson, "peripheral");
 
             if (unit is null || string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
             {
@@ -1076,11 +1595,11 @@ public class ViewerViewModel : BaseViewModel
 
             PopulateUnitStatsFromFirstProfile(doc.RootElement);
 
-            HashSet<int>? commonEquipIds = null;
-            HashSet<int>? commonSkillIds = null;
+            HashSet<string>? commonEquipNames = null;
+            HashSet<string>? commonSkillNames = null;
             var profileCount = 0;
-            var equipUsageCounts = new Dictionary<int, int>();
-            var skillUsageCounts = new Dictionary<int, int>();
+            var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var usageGroup in doc.RootElement.EnumerateArray())
             {
@@ -1091,14 +1610,33 @@ public class ViewerViewModel : BaseViewModel
 
                 foreach (var usageOption in usageOptionsElement.EnumerateArray())
                 {
-                    foreach (var equipId in CollectIdsFromArrayProperty(usageOption, "equip"))
+                    if (LieutenantOnlyUnits && !IsLieutenantOption(usageOption, skillsLookup))
                     {
-                        equipUsageCounts[equipId] = equipUsageCounts.TryGetValue(equipId, out var count) ? count + 1 : 1;
+                        continue;
                     }
 
-                    foreach (var skillId in CollectIdsFromArrayProperty(usageOption, "skills"))
+                    var usageSwc = ReadOptionSwc(usageOption);
+                    if (MercsOnlyUnits && IsPositiveSwc(usageSwc))
                     {
-                        skillUsageCounts[skillId] = skillUsageCounts.TryGetValue(skillId, out var count) ? count + 1 : 1;
+                        continue;
+                    }
+
+                    foreach (var equipName in GetOrderedIdDisplayNamesFromEntries(
+                                 GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "equip"),
+                                 equipLookup,
+                                 extrasLookup,
+                                 ShowUnitsInInches).Select(x => x.Name))
+                    {
+                        equipUsageCounts[equipName] = equipUsageCounts.TryGetValue(equipName, out var count) ? count + 1 : 1;
+                    }
+
+                    foreach (var skillName in GetOrderedIdDisplayNamesFromEntries(
+                                 GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "skills"),
+                                 skillsLookup,
+                                 extrasLookup,
+                                 ShowUnitsInInches).Select(x => x.Name))
+                    {
+                        skillUsageCounts[skillName] = skillUsageCounts.TryGetValue(skillName, out var count) ? count + 1 : 1;
                     }
                 }
             }
@@ -1118,25 +1656,29 @@ public class ViewerViewModel : BaseViewModel
 
                 foreach (var profile in profilesElement.EnumerateArray())
                 {
-                    var profileEquip = CollectIdsFromArrayProperty(profile, "equip");
-                    var profileSkills = CollectIdsFromArrayProperty(profile, "skills");
+                    var profileEquip = GetOrderedIdDisplayNames(profile, "equip", equipLookup, extrasLookup, ShowUnitsInInches)
+                        .Select(x => x.Name)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var profileSkills = GetOrderedIdDisplayNames(profile, "skills", skillsLookup, extrasLookup, ShowUnitsInInches)
+                        .Select(x => x.Name)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    if (commonEquipIds is null)
+                    if (commonEquipNames is null)
                     {
-                        commonEquipIds = new HashSet<int>(profileEquip);
+                        commonEquipNames = new HashSet<string>(profileEquip, StringComparer.OrdinalIgnoreCase);
                     }
                     else
                     {
-                        commonEquipIds.IntersectWith(profileEquip);
+                        commonEquipNames.IntersectWith(profileEquip);
                     }
 
-                    if (commonSkillIds is null)
+                    if (commonSkillNames is null)
                     {
-                        commonSkillIds = new HashSet<int>(profileSkills);
+                        commonSkillNames = new HashSet<string>(profileSkills, StringComparer.OrdinalIgnoreCase);
                     }
                     else
                     {
-                        commonSkillIds.IntersectWith(profileSkills);
+                        commonSkillNames.IntersectWith(profileSkills);
                     }
 
                     profileCount++;
@@ -1149,6 +1691,11 @@ public class ViewerViewModel : BaseViewModel
 
                 foreach (var option in optionsElement.EnumerateArray())
                 {
+                    if (LieutenantOnlyUnits && !IsLieutenantOption(option, skillsLookup))
+                    {
+                        continue;
+                    }
+
                     var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
                         ? nameElement.GetString() ?? string.Empty
                         : string.Empty;
@@ -1159,14 +1706,39 @@ public class ViewerViewModel : BaseViewModel
                     }
 
                     var displayName = BuildOptionDisplayName(option, optionName, equipLookup, skillsLookup);
-                    var configurationData = BuildOptionConfigurationSummaryFormatted(
-                        option,
-                        weaponsLookup,
-                        equipLookup,
-                        skillsLookup,
-                        equipUsageCounts,
-                        skillUsageCounts);
-                    var configuration = configurationData.Text;
+                    var optionWeapons = GetOrderedIdDisplayNamesFromEntries(
+                            GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"),
+                            weaponsLookup,
+                            extrasLookup,
+                            ShowUnitsInInches)
+                        .Select(x => x.Name)
+                        .ToList();
+                    var rangedWeapons = JoinOrDash(optionWeapons.Where(x => !IsMeleeWeaponName(x)));
+                    var meleeWeapons = JoinOrDash(optionWeapons.Where(IsMeleeWeaponName));
+                    var uniqueEquipment = JoinOrDash(
+                        GetOrderedIdDisplayNamesFromEntries(
+                                GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"),
+                                equipLookup,
+                                extrasLookup,
+                                ShowUnitsInInches)
+                            .Where(x => equipUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
+                            .Select(x => x.Name));
+                    var uniqueSkills = JoinOrDash(
+                        GetOrderedIdDisplayNamesFromEntries(
+                                GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"),
+                                skillsLookup,
+                                extrasLookup,
+                                ShowUnitsInInches)
+                            .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
+                            .Select(x => x.Name)
+                            .Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)));
+                    var peripherals = JoinOrDash(
+                        GetOrderedIdDisplayNamesFromEntries(
+                                GetOptionEntriesWithIncludes(doc.RootElement, option, "peripheral"),
+                                peripheralLookup,
+                                extrasLookup,
+                                ShowUnitsInInches)
+                            .Select(x => x.Name));
                     var swc = ReadOptionSwc(option);
                     var cost = ReadOptionCost(option);
 
@@ -1175,7 +1747,7 @@ public class ViewerViewModel : BaseViewModel
                         continue;
                     }
 
-                    var dedupeKey = $"{groupName}|{displayName}|{configuration}|{swc}|{cost}";
+                    var dedupeKey = $"{groupName}|{displayName}|{rangedWeapons}|{meleeWeapons}|{uniqueEquipment}|{uniqueSkills}|{peripherals}|{swc}|{cost}";
                     if (!seenConfigurations.Add(dedupeKey))
                     {
                         continue;
@@ -1185,8 +1757,12 @@ public class ViewerViewModel : BaseViewModel
                     {
                         GroupName = groupName,
                         Name = displayName,
-                        Configuration = configuration,
-                        ConfigurationFormatted = configurationData.Formatted,
+                        NameFormatted = BuildNameFormatted(displayName),
+                        RangedWeapons = rangedWeapons,
+                        MeleeWeapons = meleeWeapons,
+                        UniqueEquipment = uniqueEquipment,
+                        UniqueSkills = uniqueSkills,
+                        Peripherals = peripherals,
                         Swc = swc,
                         SwcDisplay = MercsOnlyUnits ? string.Empty : $"SWC {swc}",
                         Cost = cost
@@ -1194,10 +1770,10 @@ public class ViewerViewModel : BaseViewModel
                 }
             }
 
-            var stableEquip = profileCount > 0 ? (IEnumerable<int>)(commonEquipIds ?? []) : [];
-            var stableSkills = profileCount > 0 ? (IEnumerable<int>)(commonSkillIds ?? []) : [];
-            EquipmentSummary = BuildNamedSummary("Equipment", stableEquip, equipLookup);
-            SpecialSkillsSummary = BuildNamedSummary("Special Skills", stableSkills, skillsLookup);
+            var stableEquip = profileCount > 0 ? (IEnumerable<string>)(commonEquipNames ?? []) : [];
+            var stableSkills = profileCount > 0 ? (IEnumerable<string>)(commonSkillNames ?? []) : [];
+            EquipmentSummary = BuildNamedSummary("Equipment", stableEquip);
+            SpecialSkillsSummary = BuildNamedSummary("Special Skills", stableSkills);
             ProfilesStatus = Profiles.Count == 0 ? "No configurations found for this unit." : $"{Profiles.Count} configurations loaded.";
         }
         catch (Exception ex)
@@ -1252,6 +1828,8 @@ public interface IViewerListItem
 public class ViewerFactionItem : BaseViewModel, IViewerListItem
 {
     public int Id { get; init; }
+
+    public int ParentId { get; init; }
 
     public string Name { get; init; } = string.Empty;
 
@@ -1321,9 +1899,19 @@ public class ViewerProfileItem
 
     public string Name { get; init; } = string.Empty;
 
-    public string Configuration { get; init; } = string.Empty;
+    public FormattedString? NameFormatted { get; init; }
 
-    public FormattedString? ConfigurationFormatted { get; init; }
+    public string RangedWeapons { get; init; } = "-";
+
+    public string MeleeWeapons { get; init; } = "-";
+
+    public string UniqueEquipment { get; init; } = "-";
+
+    public string UniqueSkills { get; init; } = "-";
+
+    public string Peripherals { get; init; } = "-";
+
+    public bool HasPeripherals => !string.IsNullOrWhiteSpace(Peripherals) && Peripherals != "-";
 
     public string Swc { get; init; } = "-";
 

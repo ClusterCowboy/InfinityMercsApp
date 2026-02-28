@@ -13,19 +13,25 @@
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" StrokeThickness="1" Padding="10">
-            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+            <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
                 <Label
                     Text="Factions"
                     FontSize="20"
                     FontAttributes="Bold" />
 
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Center">
+                    <RadioButton Content="All" IsChecked="{Binding ShowAllFactionEntries}" />
+                    <RadioButton Content="Factions" IsChecked="{Binding ShowFactionEntriesOnly}" />
+                    <RadioButton Content="Sectorials" IsChecked="{Binding ShowSectorialEntriesOnly}" />
+                </HorizontalStackLayout>
+
                 <ActivityIndicator
-                    Grid.Row="1"
+                    Grid.Row="2"
                     IsRunning="{Binding IsLoading}"
                     IsVisible="{Binding IsLoading}"
                     HorizontalOptions="Start" />
 
-                <ScrollView Grid.Row="2" x:Name="FactionScrollView">
+                <ScrollView Grid.Row="3" x:Name="FactionScrollView">
                     <ScrollView.GestureRecognizers>
                         <PanGestureRecognizer PanUpdated="OnFactionListPanUpdated" />
                     </ScrollView.GestureRecognizers>
@@ -49,10 +55,16 @@
         <Border Grid.Column="1" StrokeThickness="1" Padding="12">
             <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
                 <Label Text="Units" FontSize="20" FontAttributes="Bold" />
-                <HorizontalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Center">
-                    <CheckBox IsChecked="{Binding MercsOnlyUnits}" VerticalOptions="Center" />
-                    <Label Text="Mercs Only Units" VerticalOptions="Center" />
-                </HorizontalStackLayout>
+                <VerticalStackLayout Grid.Row="1" Spacing="6">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <CheckBox IsChecked="{Binding MercsOnlyUnits}" VerticalOptions="Center" />
+                        <Label Text="Mercs Only Units" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+                        <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
                 <Label Grid.Row="2" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
                 <ScrollView Grid.Row="3" x:Name="UnitScrollView">
                     <ScrollView.GestureRecognizers>
@@ -92,16 +104,16 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" />
-                    <Label Grid.Column="1" Text="CC" FontAttributes="Bold" />
-                    <Label Grid.Column="2" Text="BS" FontAttributes="Bold" />
-                    <Label Grid.Column="3" Text="PH" FontAttributes="Bold" />
-                    <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" />
-                    <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" />
-                    <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" />
-                    <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" />
-                    <Label Grid.Column="8" Text="S" FontAttributes="Bold" />
-                    <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" />
+                    <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" />
                 </Grid>
 
                 <Grid Grid.Row="2" ColumnSpacing="6">
@@ -117,16 +129,16 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Column="0" Text="{Binding UnitMov}" />
-                    <Label Grid.Column="1" Text="{Binding UnitCc}" />
-                    <Label Grid.Column="2" Text="{Binding UnitBs}" />
-                    <Label Grid.Column="3" Text="{Binding UnitPh}" />
-                    <Label Grid.Column="4" Text="{Binding UnitWip}" />
-                    <Label Grid.Column="5" Text="{Binding UnitArm}" />
-                    <Label Grid.Column="6" Text="{Binding UnitBts}" />
-                    <Label Grid.Column="7" Text="{Binding UnitVitality}" />
-                    <Label Grid.Column="8" Text="{Binding UnitS}" />
-                    <Label Grid.Column="9" Text="{Binding UnitAva}" />
+                    <Label Grid.Column="0" Text="{Binding UnitMov}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="1" Text="{Binding UnitCc}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="2" Text="{Binding UnitBs}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="3" Text="{Binding UnitPh}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="4" Text="{Binding UnitWip}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="5" Text="{Binding UnitArm}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="6" Text="{Binding UnitBts}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="7" Text="{Binding UnitVitality}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="8" Text="{Binding UnitS}" HorizontalTextAlignment="Center" />
+                    <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" />
                 </Grid>
 
                 <Label Grid.Row="3" Text="{Binding EquipmentSummary}" LineBreakMode="WordWrap" />
@@ -145,11 +157,23 @@
                                                 <ColumnDefinition Width="72" />
                                                 <ColumnDefinition Width="56" />
                                             </Grid.ColumnDefinitions>
-                                            <Label Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" />
+                                            <Label Grid.Column="0" FormattedText="{Binding NameFormatted}" FontAttributes="Bold" />
                                             <Label Grid.Column="1" Text="{Binding SwcDisplay}" FontSize="12" HorizontalTextAlignment="End" />
                                             <Label Grid.Column="2" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
                                         </Grid>
-                                        <Label FormattedText="{Binding ConfigurationFormatted}" FontSize="12" TextColor="#6B7280" LineBreakMode="WordWrap" />
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Label Grid.Column="0" Text="{Binding RangedWeapons}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="1" Text="{Binding MeleeWeapons}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="2" Text="{Binding UniqueEquipment}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="3" Text="{Binding UniqueSkills}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                        </Grid>
+                                        <Label Text="{Binding Peripherals}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
