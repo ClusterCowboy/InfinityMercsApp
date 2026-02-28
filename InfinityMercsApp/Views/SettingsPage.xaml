@@ -8,6 +8,22 @@
 
     <Grid>
         <VerticalStackLayout Padding="24" Spacing="16" VerticalOptions="Center">
+            <VerticalStackLayout Spacing="8">
+                <Label
+                    Text="Show Units in:"
+                    FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="16">
+                    <RadioButton
+                        Content="Inches"
+                        GroupName="GlobalDisplayUnits"
+                        IsChecked="{Binding ShowUnitsInInches}" />
+                    <RadioButton
+                        Content="Centimeters"
+                        GroupName="GlobalDisplayUnits"
+                        IsChecked="{Binding ShowUnitsInCentimeters}" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
             <Button
                 Text="Force online update"
                 Command="{Binding UpdateAllDataCommand}"

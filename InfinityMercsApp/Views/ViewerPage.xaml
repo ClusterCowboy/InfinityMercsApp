@@ -76,10 +76,64 @@
         </Border>
 
         <Border Grid.Column="2" StrokeThickness="1" Padding="12">
-            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                <Label Text="Profiles" FontSize="20" FontAttributes="Bold" />
-                <Label Grid.Row="1" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
-                <ScrollView Grid.Row="2">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
+                <Label Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" />
+
+                <Grid Grid.Row="1" ColumnSpacing="6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" />
+                    <Label Grid.Column="1" Text="CC" FontAttributes="Bold" />
+                    <Label Grid.Column="2" Text="BS" FontAttributes="Bold" />
+                    <Label Grid.Column="3" Text="PH" FontAttributes="Bold" />
+                    <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" />
+                    <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" />
+                    <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" />
+                    <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" />
+                    <Label Grid.Column="8" Text="S" FontAttributes="Bold" />
+                    <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" />
+                </Grid>
+
+                <Grid Grid.Row="2" ColumnSpacing="6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Text="{Binding UnitMov}" />
+                    <Label Grid.Column="1" Text="{Binding UnitCc}" />
+                    <Label Grid.Column="2" Text="{Binding UnitBs}" />
+                    <Label Grid.Column="3" Text="{Binding UnitPh}" />
+                    <Label Grid.Column="4" Text="{Binding UnitWip}" />
+                    <Label Grid.Column="5" Text="{Binding UnitArm}" />
+                    <Label Grid.Column="6" Text="{Binding UnitBts}" />
+                    <Label Grid.Column="7" Text="{Binding UnitVitality}" />
+                    <Label Grid.Column="8" Text="{Binding UnitS}" />
+                    <Label Grid.Column="9" Text="{Binding UnitAva}" />
+                </Grid>
+
+                <Label Grid.Row="3" Text="{Binding EquipmentSummary}" LineBreakMode="WordWrap" />
+                <Label Grid.Row="4" Text="{Binding SpecialSkillsSummary}" LineBreakMode="WordWrap" />
+                <Label Grid.Row="5" Text="Profiles" FontSize="20" FontAttributes="Bold" />
+                <Label Grid.Row="6" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
+                <ScrollView Grid.Row="7">
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>

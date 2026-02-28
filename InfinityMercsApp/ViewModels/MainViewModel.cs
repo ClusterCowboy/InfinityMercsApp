@@ -21,6 +21,7 @@ public class MainViewModel : BaseViewModel
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly IMetadataAccessor? _metadataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly AppSettingsService? _appSettingsService;
     private int _count;
     private string _metadataStatus = "Metadata file not downloaded yet.";
     private string _armyStatus = "Army file not downloaded yet.";
@@ -28,21 +29,25 @@ public class MainViewModel : BaseViewModel
     private bool _isUpdateInProgress;
     private string _updateProgressMessage = string.Empty;
     private string _factionIdInput = "1";
+    private bool _showUnitsInInches = true;
 
     public MainViewModel(
         IWebAccessObject? webAccessObject = null,
         IArmyDataAccessor? armyDataAccessor = null,
         IMetadataAccessor? metadataAccessor = null,
-        FactionLogoCacheService? factionLogoCacheService = null)
+        FactionLogoCacheService? factionLogoCacheService = null,
+        AppSettingsService? appSettingsService = null)
     {
         _webAccessObject = webAccessObject;
         _armyDataAccessor = armyDataAccessor;
         _metadataAccessor = metadataAccessor;
         _factionLogoCacheService = factionLogoCacheService;
+        _appSettingsService = appSettingsService;
         IncrementCounterCommand = new Command(OnIncrementCounter);
         DownloadMetadataCommand = new Command(async () => await DownloadMetadataAsync());
         DownloadArmyDataCommand = new Command(async () => await DownloadArmyDataAsync());
         UpdateAllDataCommand = new Command(async () => await UpdateAllDataAsync());
+        _ = LoadGlobalSettingsAsync();
     }
 
     public string Greeting => "Hello, World!";
@@ -151,6 +156,41 @@ public class MainViewModel : BaseViewModel
     public ICommand DownloadArmyDataCommand { get; }
 
     public ICommand UpdateAllDataCommand { get; }
+
+    public bool ShowUnitsInInches
+    {
+        get => _showUnitsInInches;
+        set
+        {
+            if (_showUnitsInInches == value)
+            {
+                return;
+            }
+
+            _showUnitsInInches = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowUnitsInCentimeters));
+            _ = SaveDisplayUnitsSettingAsync(value);
+        }
+    }
+
+    public bool ShowUnitsInCentimeters
+    {
+        get => !_showUnitsInInches;
+        set
+        {
+            var targetInches = !value;
+            if (_showUnitsInInches == targetInches)
+            {
+                return;
+            }
+
+            _showUnitsInInches = targetInches;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowUnitsInInches));
+            _ = SaveDisplayUnitsSettingAsync(targetInches);
+        }
+    }
 
     private void OnIncrementCounter()
     {
@@ -355,6 +395,43 @@ public class MainViewModel : BaseViewModel
         {
             IsUpdateInProgress = false;
             UpdateProgressMessage = string.Empty;
+        }
+    }
+
+    private async Task LoadGlobalSettingsAsync()
+    {
+        if (_appSettingsService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync();
+            _showUnitsInInches = showInches;
+            OnPropertyChanged(nameof(ShowUnitsInInches));
+            OnPropertyChanged(nameof(ShowUnitsInCentimeters));
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"LoadGlobalSettingsAsync failed: {ex.Message}");
+        }
+    }
+
+    private async Task SaveDisplayUnitsSettingAsync(bool showInches)
+    {
+        if (_appSettingsService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _appSettingsService.SetShowUnitsInInchesAsync(showInches);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SaveDisplayUnitsSettingAsync failed: {ex.Message}");
         }
     }
 
