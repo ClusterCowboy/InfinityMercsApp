@@ -37,6 +37,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IArmyDataAccessor, ArmyDataAccessor>();
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<FactionLogoCacheService>();
+		builder.Services.AddSingleton<AppSettingsService>();
 		builder.Services.AddSingleton<AppInitializationService>();
 		builder.Services.AddTransient<MainViewModel>();
 		builder.Services.AddTransient<ViewerViewModel>();
