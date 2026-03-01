@@ -28,7 +28,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Spec Ops Implementation
  - [ ] Spec Ops for the captain
  - [ ] Choosing a captain should give a pool of points for improvement based on the per-scenario options
- - [ ] The ability to purchase upgrades and reflect this in the stat line of the unit
+ - [ ] The ability to purchase upgrades and reflect this in the stat line of the unitw
 #### Saving
  - [ ] Saving a custom captain
 	 - [ ] Loading a custom captain
@@ -41,8 +41,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 
 ### Company Types
 
+- [ ] Be able to set army points, default to 75 points
+- [ ] Have a slot at the top for the captain, make it clear
 #### Implement Standard Company
- - [ ] Be able to select two sectorials or one vanilla army
+- [X] Be able to select two sectorials or one vanilla army
 #### Implement Cohesive Company
 - [ ] Give selection of Core fireteams
 - [ ] Allow for Level 6 fireteam
@@ -81,6 +83,15 @@ This is an app in C# which will allow for the easy creation and managment of a c
 
 ### Custom Skills
  - [ ] Show notes and denote when skills are different to how they normally are
+ 
+### Captain
+ - [ ] Give the ability for the captain to track how many XP is left at the start
+ - [ ] Give drop down options for the user to improve the skills of the unit
+ - [ ] Have buttons to click on to add gear
+ - [ ] Have buttons to click on to add skills
+ - [ ] Have buttons to click on to add equipment
+ - [ ] Have buttons to click on to remove anything added
+ - [ ] Have a reset button
 
 ## Phase 2+
  - [ ] Season management

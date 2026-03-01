@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.ArmyFactionSelectionPage"
+             Title="">
+
+    <Grid Padding="16" ColumnDefinitions="*,*" ColumnSpacing="12">
+        <Grid Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="10">
+            <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="10" HeightRequest="50">
+                <Border StrokeThickness="2" Stroke="{Binding LeftSlotBorderColor}" Padding="8">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnLeftSlotTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
+                        <skia:SKCanvasView
+                            x:Name="LeftSlotCanvas"
+                            Grid.Column="0"
+                            WidthRequest="34"
+                            HeightRequest="34"
+                            VerticalOptions="Center"
+                            PaintSurface="OnLeftSlotCanvasPaintSurface" />
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding LeftSlotText}"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+                <Border Grid.Column="1" StrokeThickness="2" Stroke="{Binding RightSlotBorderColor}" Padding="8" IsVisible="{Binding ShowRightSelectionBox}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnRightSlotTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
+                        <skia:SKCanvasView
+                            x:Name="RightSlotCanvas"
+                            Grid.Column="0"
+                            WidthRequest="34"
+                            HeightRequest="34"
+                            VerticalOptions="Center"
+                            PaintSurface="OnRightSlotCanvasPaintSurface" />
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding RightSlotText}"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="1" StrokeThickness="1" Padding="10">
+                <ScrollView>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Factions}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:FactionListItemView>
+                                    <controls:FactionListItemView.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectFactionCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </controls:FactionListItemView.GestureRecognizers>
+                                </controls:FactionListItemView>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Border>
+        </Grid>
+
+        <Border Grid.Column="1" StrokeThickness="1" Padding="10">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <Border StrokeThickness="1" Padding="8">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+                        <Grid ColumnDefinitions="40,*" ColumnSpacing="8">
+                            <skia:SKCanvasView
+                                x:Name="SelectedUnitCanvas"
+                                Grid.Column="0"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                VerticalOptions="Center"
+                                PaintSurface="OnSelectedUnitCanvasPaintSurface" />
+                            <Label Grid.Column="1" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                        </Grid>
+                        <Grid Grid.Row="1" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        </Grid>
+                        <Grid Grid.Row="2" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Text="{Binding UnitMov}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="{Binding UnitCc}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="{Binding UnitBs}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="3" Text="{Binding UnitPh}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="4" Text="{Binding UnitWip}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="5" Text="{Binding UnitArm}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="6" Text="{Binding UnitBts}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="7" Text="{Binding UnitVitality}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="8" Text="{Binding UnitS}" HorizontalTextAlignment="Center" />
+                            <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" />
+                        </Grid>
+                        <Label Grid.Row="3" Text="{Binding EquipmentSummary}" LineBreakMode="WordWrap" />
+                        <Label Grid.Row="4" Text="{Binding SpecialSkillsSummary}" LineBreakMode="WordWrap" />
+                    </Grid>
+                </Border>
+
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" VerticalOptions="Center">
+                    <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+                    <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <ScrollView Grid.Row="2">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:FactionListItemView>
+                                    <controls:FactionListItemView.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnUnitListItemTapped" />
+                                    </controls:FactionListItemView.GestureRecognizers>
+                                </controls:FactionListItemView>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

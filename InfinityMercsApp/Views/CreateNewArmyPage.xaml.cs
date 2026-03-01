@@ -29,6 +29,66 @@ public partial class CreateNewArmyPage : ContentPage
         await Shell.Current.GoToAsync("//MainPage");
     }
 
+    private async void OnStandardCompanyClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushModalAsync(new StandardCompanySourcePopupPage());
+    }
+
+    private void OnStandardCompanyTapped(object? sender, TappedEventArgs e)
+    {
+        OnStandardCompanyClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnCohesiveCompanyClicked(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[CreateNewArmyPage] Cohesive Company selected.");
+    }
+
+    private void OnCohesiveCompanyTapped(object? sender, TappedEventArgs e)
+    {
+        OnCohesiveCompanyClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnInspiringLeaderClicked(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[CreateNewArmyPage] Inspiring Leader selected.");
+    }
+
+    private void OnInspiringLeaderTapped(object? sender, TappedEventArgs e)
+    {
+        OnInspiringLeaderClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnAirborneCompanyClicked(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[CreateNewArmyPage] Airborne Company selected.");
+    }
+
+    private void OnAirborneCompanyTapped(object? sender, TappedEventArgs e)
+    {
+        OnAirborneCompanyClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnTagCompanyClicked(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[CreateNewArmyPage] TAG Company selected.");
+    }
+
+    private void OnTagCompanyTapped(object? sender, TappedEventArgs e)
+    {
+        OnTagCompanyClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnProxyPackClicked(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[CreateNewArmyPage] Proxy Pack selected.");
+    }
+
+    private void OnProxyPackTapped(object? sender, TappedEventArgs e)
+    {
+        OnProxyPackClicked(sender, EventArgs.Empty);
+    }
+
     private async Task LoadStandardCompanyIconAsync()
     {
         _standardCompanyIconPicture?.Dispose();

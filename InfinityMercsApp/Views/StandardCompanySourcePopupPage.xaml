@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.StandardCompanySourcePopupPage"
+             BackgroundColor="#80000000"
+             Shell.NavBarIsVisible="False">
+
+    <Grid Padding="32">
+        <Border
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F2937}"
+            StrokeThickness="0"
+            Padding="24"
+            StrokeShape="RoundRectangle 16"
+            HorizontalOptions="Fill"
+            VerticalOptions="Center">
+            <Grid RowSpacing="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label
+                    Text="Choose your source of units:"
+                    FontSize="30"
+                    FontAttributes="Bold"
+                    HorizontalTextAlignment="Center" />
+
+                <Grid Grid.Row="1" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" MinimumHeightRequest="240">
+                        <Button x:Name="OneVanillaFactionButton" Text="" Clicked="OnOneVanillaFactionClicked" />
+                        <VerticalStackLayout InputTransparent="True" Spacing="12" Padding="12">
+                            <skia:SKCanvasView
+                                x:Name="OneVanillaFactionIconCanvas"
+                                HeightRequest="140"
+                                HorizontalOptions="Fill"
+                                PaintSurface="OnOneVanillaFactionIconCanvasPaintSurface" />
+                            <Label
+                                Text="One Vanilla Faction"
+                                FontSize="30"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid Grid.Column="1" MinimumHeightRequest="240">
+                        <Button x:Name="TwoSectorialsButton" Text="" Clicked="OnTwoSectorialsClicked" />
+                        <VerticalStackLayout InputTransparent="True" Spacing="12" Padding="12">
+                            <skia:SKCanvasView
+                                x:Name="TwoSectorialsIconCanvas"
+                                HeightRequest="140"
+                                HorizontalOptions="Fill"
+                                PaintSurface="OnTwoSectorialsIconCanvasPaintSurface" />
+                            <Label
+                                Text="Two Sectorials"
+                                FontSize="30"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Grid>
+
+                <Button
+                    Grid.Row="2"
+                    Text="← BACK"
+                    HorizontalOptions="Start"
+                    Clicked="OnBackClicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>
+
