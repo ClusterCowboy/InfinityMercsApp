@@ -56,6 +56,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
+    private bool _isFactionSelectionActive = true;
     private ArmyUnitSelectionItem? _selectedUnit;
     private string _leftSlotText = string.Empty;
     private string _rightSlotText = string.Empty;
@@ -137,6 +138,23 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand SelectUnitCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
+    public bool IsFactionSelectionActive
+    {
+        get => _isFactionSelectionActive;
+        set
+        {
+            if (_isFactionSelectionActive == value)
+            {
+                return;
+            }
+
+            _isFactionSelectionActive = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsUnitSelectionActive));
+        }
+    }
+
+    public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
     public string UnitNameHeading { get => _unitNameHeading; private set { if (_unitNameHeading != value) { _unitNameHeading = value; OnPropertyChanged(); } } }
     public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
@@ -528,6 +546,16 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         SetActiveSlot(1);
+    }
+
+    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        IsFactionSelectionActive = true;
+    }
+
+    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        IsFactionSelectionActive = false;
     }
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
