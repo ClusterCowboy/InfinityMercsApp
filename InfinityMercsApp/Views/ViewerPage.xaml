@@ -4,6 +4,7 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.ViewerPage"
+             x:Name="ViewerPageRoot"
              Title="Viewer">
 
     <Grid Padding="16" ColumnSpacing="12">
@@ -39,13 +40,9 @@
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Factions}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <controls:FactionListItemView>
-                                    <controls:FactionListItemView.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectFactionCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </controls:FactionListItemView.GestureRecognizers>
-                                </controls:FactionListItemView>
+                                <controls:FactionListItemView
+                                    ItemTappedCommand="{Binding Source={x:Reference ViewerPageRoot}, Path=BindingContext.SelectFactionCommand}"
+                                    ItemTappedCommandParameter="{Binding .}" />
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
@@ -100,20 +97,16 @@
                             <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
                         </ScrollView.GestureRecognizers>
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:FactionListItemView>
-                                        <controls:FactionListItemView.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectUnitCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </controls:FactionListItemView.GestureRecognizers>
-                                    </controls:FactionListItemView>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </ScrollView>
-                </Grid>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:FactionListItemView
+                                    ItemTappedCommand="{Binding Source={x:Reference ViewerPageRoot}, Path=BindingContext.SelectUnitCommand}"
+                                    ItemTappedCommandParameter="{Binding .}" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
 
                 <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8" IsVisible="{Binding ShowFireteamsTab}">
                     <Label Text="Fireteams" FontSize="20" FontAttributes="Bold" />
