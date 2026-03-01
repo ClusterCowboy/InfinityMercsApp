@@ -166,6 +166,11 @@ public class FactionLogoCacheService
         return Path.Combine(_localCacheDirectory, $"{factionId}.svg");
     }
 
+    public string GetPackagedFactionLogoPath(int factionId)
+    {
+        return $"{PackagedCacheRoot}/factions/{factionId}.svg";
+    }
+
     public string? TryGetCachedLogoPath(int factionId)
     {
         var path = GetCachedLogoPath(factionId);
@@ -175,6 +180,11 @@ public class FactionLogoCacheService
     public string GetCachedUnitLogoPath(int factionId, int unitId)
     {
         return Path.Combine(_localUnitCacheDirectory, $"{factionId}-{unitId}.svg");
+    }
+
+    public string GetPackagedUnitLogoPath(int factionId, int unitId)
+    {
+        return $"{PackagedCacheRoot}/units/{factionId}-{unitId}.svg";
     }
 
     public string? TryGetCachedUnitLogoPath(int factionId, int unitId)
@@ -207,7 +217,7 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        var packagedPath = $"{PackagedCacheRoot}/factions/{factionId}.svg";
+        var packagedPath = GetPackagedFactionLogoPath(factionId);
         var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
         return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
     }
@@ -220,7 +230,7 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        var packagedPath = $"{PackagedCacheRoot}/units/{factionId}-{unitId}.svg";
+        var packagedPath = GetPackagedUnitLogoPath(factionId, unitId);
         var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
         return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
     }

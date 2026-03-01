@@ -5,6 +5,9 @@
              x:Class="InfinityMercsApp.Views.Controls.FactionListItemView">
 
     <Border x:Name="ItemBorder" Padding="0" StrokeThickness="0">
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnItemTapped" />
+        </Border.GestureRecognizers>
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="6" />
         </Border.StrokeShape>

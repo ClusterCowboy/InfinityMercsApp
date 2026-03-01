@@ -752,7 +752,8 @@ public class ViewerViewModel : BaseViewModel
                 Name = faction.Name,
                 Logo = faction.Logo,
                 CachedLogoPath = _factionLogoCacheService?.TryGetCachedLogoPath(faction.Id),
-                PackagedLogoPath = $"SVGCache/factions/{faction.Id}.svg"
+                PackagedLogoPath = _factionLogoCacheService?.GetPackagedFactionLogoPath(faction.Id)
+                    ?? $"SVGCache/factions/{faction.Id}.svg"
             }).ToList();
 
             ApplyFactionFilter();
@@ -853,7 +854,8 @@ public class ViewerViewModel : BaseViewModel
                     Logo = unit.Logo,
                     Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(SelectedFaction.Id, unit.UnitId),
-                    PackagedLogoPath = $"SVGCache/units/{SelectedFaction.Id}-{unit.UnitId}.svg"
+                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(SelectedFaction.Id, unit.UnitId)
+                        ?? $"SVGCache/units/{SelectedFaction.Id}-{unit.UnitId}.svg"
                 });
             }
 

@@ -2,16 +2,42 @@ using InfinityMercsApp.ViewModels;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
+using System.Windows.Input;
+using InfinityMercsApp.Views;
 
 namespace InfinityMercsApp.Views.Controls;
 
 public partial class FactionListItemView : ContentView
 {
     private SKPicture? _svgPicture;
+    public event EventHandler? ItemTapped;
+    public static readonly BindableProperty ItemTappedCommandProperty =
+        BindableProperty.Create(
+            nameof(ItemTappedCommand),
+            typeof(ICommand),
+            typeof(FactionListItemView));
+
+    public static readonly BindableProperty ItemTappedCommandParameterProperty =
+        BindableProperty.Create(
+            nameof(ItemTappedCommandParameter),
+            typeof(object),
+            typeof(FactionListItemView));
 
     public FactionListItemView()
     {
         InitializeComponent();
+    }
+
+    public ICommand? ItemTappedCommand
+    {
+        get => (ICommand?)GetValue(ItemTappedCommandProperty);
+        set => SetValue(ItemTappedCommandProperty, value);
+    }
+
+    public object? ItemTappedCommandParameter
+    {
+        get => GetValue(ItemTappedCommandParameterProperty);
+        set => SetValue(ItemTappedCommandParameterProperty, value);
     }
 
     protected override void OnBindingContextChanged()
@@ -34,15 +60,7 @@ public partial class FactionListItemView : ContentView
 
         try
         {
-            Stream? stream = null;
-            if (!string.IsNullOrWhiteSpace(item.CachedLogoPath) && File.Exists(item.CachedLogoPath))
-            {
-                stream = File.OpenRead(item.CachedLogoPath);
-            }
-            else if (!string.IsNullOrWhiteSpace(item.PackagedLogoPath))
-            {
-                stream = await FileSystem.Current.OpenAppPackageFileAsync(item.PackagedLogoPath);
-            }
+            Stream? stream = await OpenBestLogoStreamAsync(item);
 
             if (stream is null)
             {
@@ -63,6 +81,64 @@ public partial class FactionListItemView : ContentView
         }
 
         LogoCanvas.InvalidateSurface();
+    }
+
+    private static async Task<Stream?> OpenBestLogoStreamAsync(IViewerListItem item)
+    {
+        foreach (var cachedPath in BuildCachedCandidates(item))
+        {
+            if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
+            {
+                return File.OpenRead(cachedPath);
+            }
+        }
+
+        foreach (var packagedPath in BuildPackagedCandidates(item))
+        {
+            if (string.IsNullOrWhiteSpace(packagedPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                return await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
+            }
+            catch
+            {
+                // Try next candidate.
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string?> BuildCachedCandidates(IViewerListItem item)
+    {
+        yield return item.CachedLogoPath;
+
+        if (item is ArmyUnitSelectionItem unit)
+        {
+            yield return Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache", "units", $"{unit.SourceFactionId}-{unit.Id}.svg");
+        }
+        else if (item is ArmyFactionSelectionItem faction)
+        {
+            yield return Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache", $"{faction.Id}.svg");
+        }
+    }
+
+    private static IEnumerable<string?> BuildPackagedCandidates(IViewerListItem item)
+    {
+        yield return item.PackagedLogoPath;
+
+        if (item is ArmyUnitSelectionItem unit)
+        {
+            yield return $"SVGCache/units/{unit.SourceFactionId}-{unit.Id}.svg";
+        }
+        else if (item is ArmyFactionSelectionItem faction)
+        {
+            yield return $"SVGCache/factions/{faction.Id}.svg";
+        }
     }
 
     private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -88,5 +164,16 @@ public partial class FactionListItemView : ContentView
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_svgPicture);
+    }
+
+    private void OnItemTapped(object? sender, TappedEventArgs e)
+    {
+        ItemTapped?.Invoke(this, EventArgs.Empty);
+
+        var parameter = ItemTappedCommandParameter ?? BindingContext;
+        if (ItemTappedCommand?.CanExecute(parameter) == true)
+        {
+            ItemTappedCommand.Execute(parameter);
+        }
     }
 }
