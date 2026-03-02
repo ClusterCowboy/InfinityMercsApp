@@ -39,6 +39,10 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private string _companyNameHeading = "Company Viewer";
     private string _companySubtitle = string.Empty;
     private string _companyUnitsStatus = string.Empty;
+    private FormattedString _currentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#EF4444"));
+    private FormattedString _currentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#22C55E"));
+    private FormattedString _currentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
+    private bool _hasCurrentPeripherals;
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
@@ -84,6 +88,51 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             }
 
             _companyUnitsStatus = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public FormattedString CurrentRangedWeaponsFormatted
+    {
+        get => _currentRangedWeaponsFormatted;
+        private set
+        {
+            _currentRangedWeaponsFormatted = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public FormattedString CurrentMeleeWeaponsFormatted
+    {
+        get => _currentMeleeWeaponsFormatted;
+        private set
+        {
+            _currentMeleeWeaponsFormatted = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public FormattedString CurrentPeripheralsFormatted
+    {
+        get => _currentPeripheralsFormatted;
+        private set
+        {
+            _currentPeripheralsFormatted = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasCurrentPeripherals
+    {
+        get => _hasCurrentPeripherals;
+        private set
+        {
+            if (_hasCurrentPeripherals == value)
+            {
+                return;
+            }
+
+            _hasCurrentPeripherals = value;
             OnPropertyChanged();
         }
     }
@@ -230,25 +279,12 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         if (!HasSufficientLoadedProfileDetails(item))
         {
+            var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
             _viewerViewModel.Profiles.Clear();
-            _viewerViewModel.Profiles.Add(new ViewerProfileItem
-            {
-                Name = item.Name,
-                RangedWeapons = item.SavedRangedWeapons,
-                RangedWeaponsFormatted = BuildSimpleFormatted(item.SavedRangedWeapons, Color.FromArgb("#EF4444")),
-                MeleeWeapons = item.SavedCcWeapons,
-                MeleeWeaponsFormatted = BuildSimpleFormatted(item.SavedCcWeapons, Color.FromArgb("#22C55E")),
-                UniqueEquipment = item.SavedEquipment,
-                UniqueEquipmentFormatted = BuildSimpleFormatted(item.SavedEquipment, Color.FromArgb("#06B6D4")),
-                UniqueSkills = item.SavedSkills,
-                UniqueSkillsFormatted = BuildSimpleFormatted(item.SavedSkills, Color.FromArgb("#F59E0B")),
-                Cost = item.Cost.ToString(),
-                Swc = "-",
-                SwcDisplay = string.Empty,
-                IsLieutenant = item.IsLieutenant,
-                ProfileKey = item.ProfileKey
-            });
+            _viewerViewModel.Profiles.Add(BuildMergedProfileItem(item, loadedProfile));
         }
+
+        UpdateCurrentWeaponsDisplay();
     }
 
     private bool HasSufficientLoadedProfileDetails(CompanyViewerUnitListItem item)
@@ -301,6 +337,64 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             TextColor = color
         });
         return formatted;
+    }
+
+    private static ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
+    {
+        var rangedWeapons = !IsDashOrEmpty(loadedProfile?.RangedWeapons) ? loadedProfile!.RangedWeapons : item.SavedRangedWeapons;
+        var meleeWeapons = !IsDashOrEmpty(loadedProfile?.MeleeWeapons) ? loadedProfile!.MeleeWeapons : item.SavedCcWeapons;
+        var uniqueEquipment = !IsDashOrEmpty(loadedProfile?.UniqueEquipment) ? loadedProfile!.UniqueEquipment : item.SavedEquipment;
+        var uniqueSkills = !IsDashOrEmpty(loadedProfile?.UniqueSkills) ? loadedProfile!.UniqueSkills : item.SavedSkills;
+
+        return new ViewerProfileItem
+        {
+            Name = loadedProfile?.Name ?? item.Name,
+            NameFormatted = loadedProfile?.NameFormatted,
+            RangedWeapons = rangedWeapons,
+            RangedWeaponsFormatted = !IsDashOrEmpty(loadedProfile?.RangedWeapons) && loadedProfile?.RangedWeaponsFormatted is not null
+                ? loadedProfile.RangedWeaponsFormatted
+                : BuildSimpleFormatted(rangedWeapons, Color.FromArgb("#EF4444")),
+            MeleeWeapons = meleeWeapons,
+            MeleeWeaponsFormatted = !IsDashOrEmpty(loadedProfile?.MeleeWeapons) && loadedProfile?.MeleeWeaponsFormatted is not null
+                ? loadedProfile.MeleeWeaponsFormatted
+                : BuildSimpleFormatted(meleeWeapons, Color.FromArgb("#22C55E")),
+            UniqueEquipment = uniqueEquipment,
+            UniqueEquipmentFormatted = !IsDashOrEmpty(loadedProfile?.UniqueEquipment) && loadedProfile?.UniqueEquipmentFormatted is not null
+                ? loadedProfile.UniqueEquipmentFormatted
+                : BuildSimpleFormatted(uniqueEquipment, Color.FromArgb("#06B6D4")),
+            UniqueSkills = uniqueSkills,
+            UniqueSkillsFormatted = !IsDashOrEmpty(loadedProfile?.UniqueSkills) && loadedProfile?.UniqueSkillsFormatted is not null
+                ? loadedProfile.UniqueSkillsFormatted
+                : BuildSimpleFormatted(uniqueSkills, Color.FromArgb("#F59E0B")),
+            Peripherals = loadedProfile?.Peripherals ?? "-",
+            PeripheralsFormatted = loadedProfile?.PeripheralsFormatted,
+            Cost = loadedProfile?.Cost ?? item.Cost.ToString(),
+            Swc = loadedProfile?.Swc ?? "-",
+            SwcDisplay = loadedProfile?.SwcDisplay ?? string.Empty,
+            IsLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant,
+            ProfileKey = loadedProfile?.ProfileKey ?? item.ProfileKey
+        };
+    }
+
+    private void UpdateCurrentWeaponsDisplay()
+    {
+        var profile = _viewerViewModel.Profiles.FirstOrDefault();
+        if (profile is null)
+        {
+            CurrentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#EF4444"));
+            CurrentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#22C55E"));
+            CurrentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
+            HasCurrentPeripherals = false;
+            return;
+        }
+
+        CurrentRangedWeaponsFormatted = profile.RangedWeaponsFormatted
+            ?? BuildSimpleFormatted(profile.RangedWeapons, Color.FromArgb("#EF4444"));
+        CurrentMeleeWeaponsFormatted = profile.MeleeWeaponsFormatted
+            ?? BuildSimpleFormatted(profile.MeleeWeapons, Color.FromArgb("#22C55E"));
+        CurrentPeripheralsFormatted = profile.PeripheralsFormatted
+            ?? BuildSimpleFormatted(profile.Peripherals, Color.FromArgb("#FACC15"));
+        HasCurrentPeripherals = !IsDashOrEmpty(profile.Peripherals);
     }
 
     private async Task LoadHeaderIconsAsync()

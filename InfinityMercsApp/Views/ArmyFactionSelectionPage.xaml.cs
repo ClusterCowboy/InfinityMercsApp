@@ -1632,6 +1632,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
                 PointsLimit = int.TryParse(SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
                 CurrentPoints = int.TryParse(SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
+                ImprovedCaptainStats = new SavedImprovedCaptainStats(),
                 SourceFactions = GetUnitSourceFactions()
                     .Select(faction => new SavedCompanyFaction
                     {
@@ -4777,8 +4778,21 @@ public sealed class SavedCompanyFile
     public string CreatedUtc { get; init; } = string.Empty;
     public int PointsLimit { get; init; }
     public int CurrentPoints { get; init; }
+    public SavedImprovedCaptainStats ImprovedCaptainStats { get; init; } = new();
     public List<SavedCompanyFaction> SourceFactions { get; init; } = [];
     public List<SavedCompanyEntry> Entries { get; init; } = [];
+}
+
+public sealed class SavedImprovedCaptainStats
+{
+    public bool IsEnabled { get; init; }
+    public int CcBonus { get; init; }
+    public int BsBonus { get; init; }
+    public int PhBonus { get; init; }
+    public int WipBonus { get; init; }
+    public int ArmBonus { get; init; }
+    public int BtsBonus { get; init; }
+    public int VitalityBonus { get; init; }
 }
 
 public sealed class SavedCompanyFaction

@@ -58,6 +58,10 @@ public class ViewerViewModel : BaseViewModel
     private string? _cube2IconUrl;
     private string? _hackableIconUrl;
     private bool _showUnitsInInches = true;
+    private IReadOnlyDictionary<int, string> _currentEquipmentLookup = new Dictionary<int, string>();
+    private IReadOnlyDictionary<int, string> _currentEquipmentLinks = new Dictionary<int, string>();
+    private IReadOnlyDictionary<int, string> _currentSkillsLookup = new Dictionary<int, string>();
+    private IReadOnlyDictionary<int, string> _currentSkillsLinks = new Dictionary<int, string>();
     private string _fireteamDuoCount = "-";
     private string _fireteamHarisCount = "-";
     private string _fireteamCoreCount = "-";
@@ -696,8 +700,91 @@ public class ViewerViewModel : BaseViewModel
 
         Profiles.Clear();
         Profiles.Add(matchedProfile);
+        ApplySelectedProfileTopSummaries(matchedProfile);
 
         ProfilesStatus = "1 configuration loaded.";
+    }
+
+    private void ApplySelectedProfileTopSummaries(ViewerProfileItem matchedProfile)
+    {
+        var mergedEquipment = MergeSummaryAndUnique(EquipmentSummary, matchedProfile.UniqueEquipment);
+        var mergedSkills = MergeSummaryAndUnique(SpecialSkillsSummary, matchedProfile.UniqueSkills);
+        var mergedEquipmentValues = ExtractSummaryValues(mergedEquipment).ToList();
+        var mergedSkillValues = ExtractSummaryValues(mergedSkills).ToList();
+
+        EquipmentSummary = $"Equipment: {mergedEquipment}";
+        SpecialSkillsSummary = $"Special Skills: {mergedSkills}";
+
+        if (matchedProfile.IsLieutenant)
+        {
+            EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
+                "Equipment",
+                mergedEquipmentValues,
+                _currentEquipmentLookup,
+                _currentEquipmentLinks,
+                null);
+            SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+                "Special Skills",
+                mergedSkillValues,
+                _currentSkillsLookup,
+                _currentSkillsLinks,
+                null);
+            return;
+        }
+
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
+            "Equipment",
+            mergedEquipmentValues,
+            _currentEquipmentLookup,
+            _currentEquipmentLinks,
+            Color.FromArgb("#06B6D4"));
+        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+            "Special Skills",
+            mergedSkillValues,
+            _currentSkillsLookup,
+            _currentSkillsLinks,
+            Color.FromArgb("#F59E0B"));
+    }
+
+    private static string MergeSummaryAndUnique(string summaryLine, string uniqueValues)
+    {
+        var merged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var part in ExtractSummaryValues(summaryLine))
+        {
+            merged.Add(part);
+        }
+
+        foreach (var part in ExtractSummaryValues(uniqueValues))
+        {
+            merged.Add(part);
+        }
+
+        if (merged.Count == 0)
+        {
+            return "-";
+        }
+
+        return string.Join(", ", merged.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<string> ExtractSummaryValues(string? summaryText)
+    {
+        if (string.IsNullOrWhiteSpace(summaryText))
+        {
+            return [];
+        }
+
+        var payload = summaryText;
+        var colonIndex = summaryText.IndexOf(':');
+        if (colonIndex >= 0 && colonIndex < summaryText.Length - 1)
+        {
+            payload = summaryText[(colonIndex + 1)..];
+        }
+
+        return payload
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(x => !string.Equals(x, "-", StringComparison.Ordinal));
     }
 
     private static bool ProfileKeysMatch(string candidateKey, string requestedKey)
@@ -1240,6 +1327,10 @@ public class ViewerViewModel : BaseViewModel
         ResetUnitStats();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
+        _currentEquipmentLookup = new Dictionary<int, string>();
+        _currentEquipmentLinks = new Dictionary<int, string>();
+        _currentSkillsLookup = new Dictionary<int, string>();
+        _currentSkillsLinks = new Dictionary<int, string>();
     }
 
     private void ResetUnitStats()
@@ -1418,7 +1509,7 @@ public class ViewerViewModel : BaseViewModel
         IEnumerable<string> values,
         IReadOnlyDictionary<int, string>? equipLookup,
         IReadOnlyDictionary<int, string>? links,
-        Color textColor)
+        Color? textColor)
     {
         var list = values
             .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -1427,18 +1518,35 @@ public class ViewerViewModel : BaseViewModel
             .ToList();
 
         var formatted = new FormattedString();
-        formatted.Spans.Add(new Span { Text = $"{label}: ", TextColor = textColor });
+        var labelSpan = new Span { Text = $"{label}: " };
+        if (textColor is not null)
+        {
+            labelSpan.TextColor = textColor;
+        }
+
+        formatted.Spans.Add(labelSpan);
 
         if (list.Count == 0)
         {
-            formatted.Spans.Add(new Span { Text = "-", TextColor = textColor });
+            var emptySpan = new Span { Text = "-" };
+            if (textColor is not null)
+            {
+                emptySpan.TextColor = textColor;
+            }
+
+            formatted.Spans.Add(emptySpan);
             return formatted;
         }
 
         for (var i = 0; i < list.Count; i++)
         {
             var value = list[i];
-            var span = new Span { Text = value, TextColor = textColor };
+            var span = new Span { Text = value };
+            if (textColor is not null)
+            {
+                span.TextColor = textColor;
+            }
+
             var link = TryResolveLinkForDisplayName(value, equipLookup, links);
             if (!string.IsNullOrWhiteSpace(link))
             {
@@ -1450,7 +1558,13 @@ public class ViewerViewModel : BaseViewModel
             formatted.Spans.Add(span);
             if (i < list.Count - 1)
             {
-                formatted.Spans.Add(new Span { Text = ", ", TextColor = textColor });
+                var separatorSpan = new Span { Text = ", " };
+                if (textColor is not null)
+                {
+                    separatorSpan.TextColor = textColor;
+                }
+
+                formatted.Spans.Add(separatorSpan);
             }
         }
 
@@ -2104,13 +2218,41 @@ public class ViewerViewModel : BaseViewModel
 
     private static string FormatExtraDisplay(ExtraDefinition extraDefinition, bool showUnitsInInches)
     {
-        if (!showUnitsInInches ||
-            !string.Equals(extraDefinition.Type, "DISTANCE", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(extraDefinition.Type, "DISTANCE", StringComparison.OrdinalIgnoreCase))
         {
             return extraDefinition.Name;
         }
 
-        return ConvertDistanceTextToInches(extraDefinition.Name);
+        var valueText = showUnitsInInches
+            ? ConvertDistanceTextToInches(extraDefinition.Name)
+            : extraDefinition.Name;
+
+        return AppendDistanceUnitSuffix(valueText, showUnitsInInches);
+    }
+
+    private static string AppendDistanceUnitSuffix(string distanceText, bool showUnitsInInches)
+    {
+        if (string.IsNullOrWhiteSpace(distanceText))
+        {
+            return distanceText;
+        }
+
+        if (Regex.IsMatch(distanceText, "(\"|cm)\\s*$", RegexOptions.IgnoreCase))
+        {
+            return distanceText;
+        }
+
+        var match = Regex.Match(distanceText, @"([+-]?\d+(?:\.\d+)?)");
+        if (!match.Success)
+        {
+            return distanceText;
+        }
+
+        var suffix = showUnitsInInches ? "\"" : "cm";
+        return string.Concat(
+            distanceText.AsSpan(0, match.Index + match.Length),
+            suffix,
+            distanceText.AsSpan(match.Index + match.Length));
     }
 
     private static string ConvertDistanceTextToInches(string distanceText)
@@ -2728,6 +2870,10 @@ public class ViewerViewModel : BaseViewModel
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
             var peripheralLookup = BuildIdNameLookup(snapshot?.FiltersJson, "peripheral");
             var peripheralLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "peripheral");
+            _currentEquipmentLookup = equipLookup;
+            _currentEquipmentLinks = equipLinks;
+            _currentSkillsLookup = skillsLookup;
+            _currentSkillsLinks = skillsLinks;
 
             if (unit is null || string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
             {

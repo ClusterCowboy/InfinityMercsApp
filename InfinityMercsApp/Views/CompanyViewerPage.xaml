@@ -47,7 +47,7 @@
             </Border>
 
             <Border Grid.Column="1" StrokeThickness="1" Padding="12">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
                     <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="4">
                         <Label Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
                         <skia:SKCanvasView
@@ -122,42 +122,16 @@
 
                     <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
                     <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
-                    <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
-                    <Label Grid.Row="6" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
-                    <ScrollView Grid.Row="7">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Grid ColumnSpacing="12">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="72" />
-                                                    <ColumnDefinition Width="56" />
-                                                </Grid.ColumnDefinitions>
-                                                <Label Grid.Column="0" FormattedText="{Binding NameFormatted}" FontAttributes="Bold" />
-                                                <Label Grid.Column="1" Text="{Binding SwcDisplay}" FontSize="12" HorizontalTextAlignment="End" />
-                                                <Label Grid.Column="2" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
-                                            </Grid>
-                                            <Grid ColumnSpacing="8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
-                                                <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
-                                                <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
-                                                <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
-                                            </Grid>
-                                            <Label FormattedText="{Binding PeripheralsFormatted}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
+                    <ScrollView Grid.Row="5">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                <Label Text="Weapons" FontSize="20" FontAttributes="Bold" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentRangedWeaponsFormatted}" FontSize="12" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentMeleeWeaponsFormatted}" FontSize="12" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentPeripheralsFormatted}" FontSize="12" LineBreakMode="WordWrap" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasCurrentPeripherals}" />
+                            </VerticalStackLayout>
+                            <Grid Grid.Column="1" />
+                        </Grid>
                     </ScrollView>
                 </Grid>
             </Border>
