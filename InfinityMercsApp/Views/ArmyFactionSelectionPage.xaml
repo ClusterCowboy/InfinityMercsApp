@@ -286,10 +286,10 @@
                                                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding AllowedProfiles}" Spacing="2">
                                                             <BindableLayout.ItemTemplate>
                                                                 <DataTemplate>
-                                                                    <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8" IsVisible="{Binding IsVisible}">
-                                                                        <Label Grid.Column="0" Text="{Binding Min}" HorizontalTextAlignment="Center" />
-                                                                        <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" />
-                                                                        <Label Grid.Column="2" Text="{Binding Name}" LineBreakMode="WordWrap" />
+                                                                    <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8" IsVisible="{Binding IsVisible}" MinimumHeightRequest="50">
+                                                                        <Label Grid.Column="0" Text="{Binding Min}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
+                                                                        <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
+                                                                        <controls:FactionListItemView Grid.Column="2" />
                                                                     </Grid>
                                                                 </DataTemplate>
                                                             </BindableLayout.ItemTemplate>

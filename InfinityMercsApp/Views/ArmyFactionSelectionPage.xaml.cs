@@ -836,7 +836,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                          .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
-                var allowedProfiles = BuildAllowedTeamProfiles(team.UnitLimits);
+                var allowedProfiles = BuildAllowedTeamProfiles(team.UnitLimits, mergedUnits.Values);
                 if (ShouldSkipTeamEntry(allowedProfiles))
                 {
                     continue;
@@ -882,13 +882,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
             {
                 var wildcardAllowedProfiles = wildcardUnitLimits
                     .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(x => new ArmyTeamUnitLimitItem
-                    {
-                        Name = x.Key,
-                        Min = x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
-                        Max = x.Value.Max.ToString(),
-                        Slug = x.Value.Slug
-                    })
+                    .Select(x => BuildTeamUnitLimitItem(
+                        x.Key,
+                        x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
+                        x.Value.Max.ToString(),
+                        x.Value.Slug,
+                        mergedUnits.Values))
                     .ToList();
 
                 TeamEntries.Add(new ArmyTeamListItem
@@ -1191,7 +1190,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     visibleUnitNames,
                     visibleUnitSlugs,
                     visibleNormalizedNames,
-                    treatWildcardAsAlwaysVisible: !team.IsWildcardBucket);
+                    treatWildcardAsAlwaysVisible: !team.IsWildcardBucket,
+                    visibleUnits: Units.Where(x => x.IsVisible).ToList(),
+                    resolvedUnitId: allowed.ResolvedUnitId,
+                    resolvedSourceFactionId: allowed.ResolvedSourceFactionId);
                 allowed.IsVisible = isVisible;
                 if (isVisible)
                 {
@@ -1213,11 +1215,35 @@ public partial class ArmyFactionSelectionPage : ContentPage
         HashSet<string> visibleUnitNames,
         HashSet<string> visibleUnitSlugs,
         IReadOnlyList<string> visibleNormalizedNames,
-        bool treatWildcardAsAlwaysVisible = true)
+        bool treatWildcardAsAlwaysVisible = true,
+        IReadOnlyList<ArmyUnitSelectionItem>? visibleUnits = null,
+        int? resolvedUnitId = null,
+        int? resolvedSourceFactionId = null)
     {
         if (treatWildcardAsAlwaysVisible && IsWildcardEntry(allowedProfileName, allowedProfileSlug))
         {
             return true;
+        }
+
+        // For wildcard bucket rows, only show entries that resolve to an actual visible unit.
+        // This prevents false positives from comment text like "(Orc Troops, Bolts)".
+        if (!treatWildcardAsAlwaysVisible)
+        {
+            if (!resolvedUnitId.HasValue || !resolvedSourceFactionId.HasValue || visibleUnits is null)
+            {
+                return false;
+            }
+
+            return visibleUnits.Any(x =>
+                x.Id == resolvedUnitId.Value &&
+                x.SourceFactionId == resolvedSourceFactionId.Value);
+        }
+
+        if (resolvedUnitId.HasValue && resolvedSourceFactionId.HasValue && visibleUnits is not null)
+        {
+            return visibleUnits.Any(x =>
+                x.Id == resolvedUnitId.Value &&
+                x.SourceFactionId == resolvedSourceFactionId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(allowedProfileSlug) &&
@@ -1248,22 +1274,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
             {
                 return true;
             }
-
-            // Handles variants like "SQUALO MK II" vs "SQUALO".
-            if (normalizedAllowed.Length >= 4 &&
-                normalizedVisible.Length >= 4 &&
-                (normalizedVisible.Contains(normalizedAllowed, StringComparison.Ordinal) ||
-                 normalizedAllowed.Contains(normalizedVisible, StringComparison.Ordinal)))
-            {
-                return true;
-            }
         }
 
         return false;
     }
 
     private static List<ArmyTeamUnitLimitItem> BuildAllowedTeamProfiles(
-        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits)
+        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits,
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
     {
         var merged = new Dictionary<string, (string Name, int Min, int Max, string? Slug, bool MinAsterisk, bool IsWildcard)>(StringComparer.OrdinalIgnoreCase);
 
@@ -1299,14 +1317,90 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return merged.Values
             .OrderBy(x => x.IsWildcard ? 1 : 0)
             .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(x => new ArmyTeamUnitLimitItem
-            {
-                Name = x.Name,
-                Min = x.MinAsterisk ? "*" : x.Min.ToString(),
-                Max = x.Max.ToString(),
-                Slug = x.Slug
-            })
+            .Select(x => BuildTeamUnitLimitItem(
+                x.Name,
+                x.MinAsterisk ? "*" : x.Min.ToString(),
+                x.Max.ToString(),
+                x.Slug,
+                sourceUnits))
             .ToList();
+    }
+
+    private static ArmyTeamUnitLimitItem BuildTeamUnitLimitItem(
+        string displayName,
+        string min,
+        string max,
+        string? slug,
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
+    {
+        var matched = ResolveUnitForTeamEntry(displayName, slug, sourceUnits);
+        return new ArmyTeamUnitLimitItem
+        {
+            Name = displayName,
+            Min = min,
+            Max = max,
+            Slug = slug,
+            CachedLogoPath = matched?.CachedLogoPath,
+            PackagedLogoPath = matched?.PackagedLogoPath,
+            Subtitle = matched?.Subtitle,
+            ResolvedUnitId = matched?.Id,
+            ResolvedSourceFactionId = matched?.SourceFactionId
+        };
+    }
+
+    private static ArmyUnitSelectionItem? ResolveUnitForTeamEntry(
+        string? allowedProfileName,
+        string? allowedProfileSlug,
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
+    {
+        if (!string.IsNullOrWhiteSpace(allowedProfileSlug))
+        {
+            var slugMatch = sourceUnits.FirstOrDefault(x =>
+                !string.IsNullOrWhiteSpace(x.Slug) &&
+                string.Equals(x.Slug.Trim(), allowedProfileSlug.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (slugMatch is not null)
+            {
+                return slugMatch;
+            }
+
+            // If a slug is present but not found in currently visible/source units,
+            // do not fall back to fuzzy name matching (prevents false matches via comments).
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(allowedProfileName))
+        {
+            return null;
+        }
+
+        var exactNameMatch = sourceUnits.FirstOrDefault(x =>
+            string.Equals(x.Name, allowedProfileName, StringComparison.OrdinalIgnoreCase));
+        if (exactNameMatch is not null)
+        {
+            return exactNameMatch;
+        }
+
+        var normalizedAllowed = NormalizeTeamUnitName(allowedProfileName);
+        if (string.IsNullOrWhiteSpace(normalizedAllowed))
+        {
+            return null;
+        }
+
+        foreach (var unit in sourceUnits)
+        {
+            var normalizedUnit = NormalizeTeamUnitName(unit.Name);
+            if (string.IsNullOrWhiteSpace(normalizedUnit))
+            {
+                continue;
+            }
+
+            if (string.Equals(normalizedAllowed, normalizedUnit, StringComparison.Ordinal))
+            {
+                return unit;
+            }
+        }
+
+        return null;
     }
 
     private static bool ShouldSkipTeamEntry(IReadOnlyList<ArmyTeamUnitLimitItem> allowedProfiles)
@@ -4297,12 +4391,18 @@ public class ArmyTeamListItem : BaseViewModel
     }
 }
 
-public class ArmyTeamUnitLimitItem : BaseViewModel
+public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public string Min { get; init; } = "0";
     public string Max { get; init; } = "0";
     public string? Slug { get; init; }
+    public int? ResolvedUnitId { get; init; }
+    public int? ResolvedSourceFactionId { get; init; }
+    public string? CachedLogoPath { get; init; }
+    public string? PackagedLogoPath { get; init; }
+    public string? Subtitle { get; init; }
+    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
     private bool _isVisible = true;
     public bool IsVisible
@@ -4316,6 +4416,22 @@ public class ArmyTeamUnitLimitItem : BaseViewModel
             }
 
             _isVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
             OnPropertyChanged();
         }
     }
