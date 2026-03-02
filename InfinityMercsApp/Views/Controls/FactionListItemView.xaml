@@ -23,7 +23,7 @@
         <Grid
             Padding="8,6"
             MinimumHeightRequest="50"
-            ColumnDefinitions="Auto,*,Auto"
+            ColumnDefinitions="Auto,*,Auto,Auto,Auto"
             ColumnSpacing="10">
             <skia:SKCanvasView
                 x:Name="LogoCanvas"
@@ -39,8 +39,24 @@
                     TextColor="#6B7280"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
-            <Label
+            <skia:SKCanvasView
                 Grid.Column="2"
+                x:Name="RightIconPrimaryCanvas"
+                WidthRequest="24"
+                HeightRequest="24"
+                VerticalOptions="Center"
+                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=ShowRightPrimaryIconSlot}"
+                PaintSurface="OnRightIconPrimaryCanvasPaintSurface" />
+            <skia:SKCanvasView
+                Grid.Column="3"
+                x:Name="RightIconSecondaryCanvas"
+                WidthRequest="24"
+                HeightRequest="24"
+                VerticalOptions="Center"
+                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=ShowRightSecondaryIconSlot}"
+                PaintSurface="OnRightIconSecondaryCanvasPaintSurface" />
+            <Label
+                Grid.Column="4"
                 Text="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TrailingText}"
                 FontAttributes="Bold"
                 VerticalOptions="Start"

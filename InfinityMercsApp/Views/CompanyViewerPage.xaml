@@ -37,6 +37,10 @@
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate>
                                     <controls:FactionListItemView
+                                        ShowRightPrimaryIconSlot="{Binding IsLieutenant}"
+                                        ShowRightSecondaryIconSlot="True"
+                                        RightPrimaryIconPackagedPath="{Binding CaptainIconPackagedPath}"
+                                        RightSecondaryIconPackagedPath="{Binding ExperienceIconPackagedPath}"
                                         ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
                                         ItemTappedCommandParameter="{Binding .}" />
                                 </DataTemplate>

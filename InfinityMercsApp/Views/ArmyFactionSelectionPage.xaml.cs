@@ -1061,6 +1061,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             SavedSkills = combinedSkillsText,
             SavedRangedWeapons = profile.RangedWeapons,
             SavedCcWeapons = profile.MeleeWeapons,
+            ExperiencePoints = 0,
             EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
             HasEquipmentLine = combinedEquipment.Count > 0,
             SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
@@ -1652,7 +1653,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     SavedEquipment = entry.SavedEquipment,
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
-                    SavedCcWeapons = entry.SavedCcWeapons
+                    SavedCcWeapons = entry.SavedCcWeapons,
+                    ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
                 }).ToList()
             };
 
@@ -4751,6 +4753,25 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public bool HasSkillsLine { get; init; }
     public FormattedString RangedLineFormatted { get; init; } = new();
     public FormattedString CcLineFormatted { get; init; } = new();
+    private int _experiencePoints;
+    public int ExperiencePoints
+    {
+        get => _experiencePoints;
+        set
+        {
+            var normalized = Math.Max(0, value);
+            if (_experiencePoints == normalized)
+            {
+                return;
+            }
+
+            _experiencePoints = normalized;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ExperienceRankName));
+        }
+    }
+
+    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
 
     private bool _isSelected;
     public bool IsSelected
@@ -4814,4 +4835,48 @@ public sealed class SavedCompanyEntry
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public int ExperiencePoints { get; init; }
+    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+}
+
+public static class UnitExperienceRanks
+{
+    private static readonly (int MinXp, string RankName)[] OrderedRanks =
+    [
+        (5, "Newbie"),
+        (10, "Hired Gun"),
+        (30, "Hitman"),
+        (50, "Operative"),
+        (75, "Veteran"),
+        (105, "Officer"),
+        (140, "Legend")
+    ];
+
+    public static string GetRankName(int experiencePoints)
+    {
+        var normalized = Math.Max(0, experiencePoints);
+        for (var i = OrderedRanks.Length - 1; i >= 0; i--)
+        {
+            if (normalized >= OrderedRanks[i].MinXp)
+            {
+                return OrderedRanks[i].RankName;
+            }
+        }
+
+        return "Unranked";
+    }
+
+    public static int GetRankLevel(int experiencePoints)
+    {
+        var normalized = Math.Max(0, experiencePoints);
+        for (var i = OrderedRanks.Length - 1; i >= 0; i--)
+        {
+            if (normalized >= OrderedRanks[i].MinXp)
+            {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
 }

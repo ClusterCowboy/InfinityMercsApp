@@ -214,11 +214,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             {
                 var entry = payload.Entries[i];
                 var displayName = string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name;
-                var subtitle = $"C {entry.Cost}";
-                if (entry.IsLieutenant)
-                {
-                    subtitle += " - Lieutenant";
-                }
+                var subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty;
 
                 CompanyUnits.Add(new CompanyViewerUnitListItem
                 {
@@ -233,6 +229,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
+                    CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
+                    ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
                         ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"
@@ -683,6 +682,12 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         canvas.Scale(scale);
         canvas.DrawPicture(picture);
     }
+
+    private static string GetExperienceIconPackagedPath(int experiencePoints)
+    {
+        var level = UnitExperienceRanks.GetRankLevel(experiencePoints);
+        return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/noun-{level}-stars.svg";
+    }
 }
 
 public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
@@ -696,6 +701,11 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public int ExperiencePoints { get; init; }
+    public int ExperienceLevel => UnitExperienceRanks.GetRankLevel(ExperiencePoints);
+    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+    public string CaptainIconPackagedPath { get; init; } = string.Empty;
+    public string ExperienceIconPackagedPath { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string? CachedLogoPath { get; init; }
     public string? PackagedLogoPath { get; init; }
