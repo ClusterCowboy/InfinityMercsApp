@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -17,6 +18,41 @@ namespace InfinityMercsApp.Views;
 public partial class ArmyFactionSelectionPage : ContentPage
 {
     private readonly record struct ExtraDefinition(string Name, string Type);
+    private sealed class TeamAggregate
+    {
+        public TeamAggregate(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+        public int Duo { get; private set; }
+        public int Haris { get; private set; }
+        public int Core { get; private set; }
+        public Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> UnitLimits { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public void AddCounts(int duo, int haris, int core)
+        {
+            Duo += duo;
+            Haris += haris;
+            Core += core;
+        }
+
+        public void MergeUnitLimit(string unitName, int min, int max, string? slug, bool minAsterisk)
+        {
+            if (UnitLimits.TryGetValue(unitName, out var existing))
+            {
+                UnitLimits[unitName] = (
+                    Math.Min(existing.Min, min),
+                    Math.Max(existing.Max, max),
+                    string.IsNullOrWhiteSpace(existing.Slug) ? slug : existing.Slug,
+                    existing.MinAsterisk || minAsterisk);
+                return;
+            }
+
+            UnitLimits[unitName] = (min, max, slug, minAsterisk);
+        }
+    }
 
     private const int MaxIconsPerRow = 3;
     private const float IconSize = 24f;
@@ -59,6 +95,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
+    private bool _teamsView;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
     private string _selectedStartSeasonPoints = "75";
@@ -138,6 +175,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
+        ToggleTeamEntryCommand = new Command<ArmyTeamListItem>(ToggleTeamEntry);
 
         BindingContext = this;
         SetActiveSlot(0);
@@ -149,6 +187,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
     public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
+    public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
     public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
     public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
 
@@ -157,6 +196,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
+    public ICommand ToggleTeamEntryCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
     public string PageHeading
@@ -382,6 +422,26 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
+
+    public bool TeamsView
+    {
+        get => _teamsView;
+        set
+        {
+            if (_teamsView == value)
+            {
+                return;
+            }
+
+            _teamsView = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowUnitsList));
+            OnPropertyChanged(nameof(ShowTeamsList));
+        }
+    }
+
+    public bool ShowUnitsList => !TeamsView;
+    public bool ShowTeamsList => TeamsView;
 
     public string LeftSlotText
     {
@@ -695,6 +755,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         Units.Clear();
+        TeamEntries.Clear();
         _selectedUnit = null;
         ResetUnitDetails();
         if (_armyDataAccessor is null)
@@ -711,6 +772,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         try
         {
             var mergedUnits = new Dictionary<string, ArmyUnitSelectionItem>(StringComparer.OrdinalIgnoreCase);
+            var mergedTeams = new Dictionary<string, TeamAggregate>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var faction in factions)
             {
@@ -719,6 +781,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+                MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
 
                 var filteredIds = new HashSet<int>();
                 foreach (var unit in units)
@@ -752,6 +815,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     {
                         Id = unit.UnitId,
                         SourceFactionId = faction.Id,
+                        Slug = unit.Slug,
                         Name = unit.Name,
                         Type = unit.Type,
                         Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
@@ -767,6 +831,28 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
                 Units.Add(unit);
+            }
+
+            foreach (var team in mergedTeams.Values
+                         .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                var allowedProfiles = team.UnitLimits
+                    .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(x => new ArmyTeamUnitLimitItem
+                    {
+                        Name = x.Key,
+                        Min = x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
+                        Max = x.Value.Max.ToString(),
+                        Slug = x.Value.Slug
+                    })
+                    .ToList();
+
+                TeamEntries.Add(new ArmyTeamListItem
+                {
+                    Name = team.Name,
+                    TeamCountsText = $"D: {team.Duo}  H: {team.Haris}  C: {team.Core}",
+                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
+                });
             }
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
@@ -1015,11 +1101,137 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 _selectedUnit = null;
                 ResetUnitDetails();
             }
+
+            RefreshTeamEntryVisibility();
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
         }
+    }
+
+    private void RefreshTeamEntryVisibility()
+    {
+        if (TeamEntries.Count == 0)
+        {
+            return;
+        }
+
+        var visibleUnitNames = new HashSet<string>(
+            Units.Where(x => x.IsVisible).Select(x => x.Name),
+            StringComparer.OrdinalIgnoreCase);
+        var visibleUnitSlugs = new HashSet<string>(
+            Units.Where(x => x.IsVisible)
+                .Select(x => x.Slug?.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))!
+                .Select(x => x!),
+            StringComparer.OrdinalIgnoreCase);
+
+        var visibleNormalizedNames = Units
+            .Where(x => x.IsVisible)
+            .Select(x => NormalizeTeamUnitName(x.Name))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        foreach (var team in TeamEntries)
+        {
+            var visibleAllowedCount = 0;
+            foreach (var allowed in team.AllowedProfiles)
+            {
+                var isVisible = IsVisibleTeamAllowedProfile(
+                    allowed.Name,
+                    allowed.Slug,
+                    visibleUnitNames,
+                    visibleUnitSlugs,
+                    visibleNormalizedNames);
+                allowed.IsVisible = isVisible;
+                if (isVisible)
+                {
+                    visibleAllowedCount++;
+                }
+            }
+
+            team.IsVisible = visibleAllowedCount > 0;
+            if (!team.IsVisible)
+            {
+                team.IsExpanded = false;
+            }
+        }
+    }
+
+    private static bool IsVisibleTeamAllowedProfile(
+        string? allowedProfileName,
+        string? allowedProfileSlug,
+        HashSet<string> visibleUnitNames,
+        HashSet<string> visibleUnitSlugs,
+        IReadOnlyList<string> visibleNormalizedNames)
+    {
+        if (!string.IsNullOrWhiteSpace(allowedProfileSlug) &&
+            visibleUnitSlugs.Contains(allowedProfileSlug.Trim()))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(allowedProfileName))
+        {
+            return false;
+        }
+
+        if (visibleUnitNames.Contains(allowedProfileName))
+        {
+            return true;
+        }
+
+        var normalizedAllowed = NormalizeTeamUnitName(allowedProfileName);
+        if (string.IsNullOrWhiteSpace(normalizedAllowed))
+        {
+            return false;
+        }
+
+        foreach (var normalizedVisible in visibleNormalizedNames)
+        {
+            if (string.Equals(normalizedAllowed, normalizedVisible, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            // Handles variants like "SQUALO MK II" vs "SQUALO".
+            if (normalizedAllowed.Length >= 4 &&
+                normalizedVisible.Length >= 4 &&
+                (normalizedVisible.Contains(normalizedAllowed, StringComparison.Ordinal) ||
+                 normalizedAllowed.Contains(normalizedVisible, StringComparison.Ordinal)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeTeamUnitName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
+        var formD = name.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(formD.Length);
+        foreach (var c in formD)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
+            {
+                continue;
+            }
+
+            if (char.IsLetterOrDigit(c))
+            {
+                builder.Append(char.ToUpperInvariant(c));
+            }
+        }
+
+        return builder.ToString();
     }
 
     private void UpdateMercsCompanyTotal()
@@ -1834,6 +2046,204 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return map;
+    }
+
+    private static void MergeFireteamEntries(
+        string? fireteamChartJson,
+        Dictionary<string, TeamAggregate> target)
+    {
+        if (string.IsNullOrWhiteSpace(fireteamChartJson))
+        {
+            return;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(fireteamChartJson);
+            if (!doc.RootElement.TryGetProperty("teams", out var teamsElement) ||
+                teamsElement.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (var teamElement in teamsElement.EnumerateArray())
+            {
+                var name = ReadString(teamElement, "name", string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                var (duo, haris, core) = ReadTeamTypeCounts(teamElement);
+                if (!target.TryGetValue(name, out var aggregate))
+                {
+                    aggregate = new TeamAggregate(name);
+                    target[name] = aggregate;
+                }
+
+                aggregate.AddCounts(duo, haris, core);
+
+                foreach (var limit in ReadTeamUnitLimits(teamElement))
+                {
+                    aggregate.MergeUnitLimit(limit.Name, limit.Min, limit.Max, limit.Slug, limit.MinAsterisk);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage MergeFireteamEntries failed: {ex.Message}");
+        }
+    }
+
+    private static (int Duo, int Haris, int Core) ReadTeamTypeCounts(JsonElement teamElement)
+    {
+        var duo = 0;
+        var haris = 0;
+        var core = 0;
+
+        if (!teamElement.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.Array)
+        {
+            return (duo, haris, core);
+        }
+
+        foreach (var type in typeElement.EnumerateArray())
+        {
+            if (type.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var value = type.GetString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            if (value.Equals("DUO", StringComparison.OrdinalIgnoreCase))
+            {
+                duo++;
+            }
+            else if (value.Equals("HARIS", StringComparison.OrdinalIgnoreCase))
+            {
+                haris++;
+            }
+            else if (value.Equals("CORE", StringComparison.OrdinalIgnoreCase))
+            {
+                core++;
+            }
+        }
+
+        return (duo, haris, core);
+    }
+
+    private static List<(string Name, int Min, int Max, string? Slug, bool MinAsterisk)> ReadTeamUnitLimits(JsonElement teamElement)
+    {
+        var results = new List<(string Name, int Min, int Max, string? Slug, bool MinAsterisk)>();
+        if (!teamElement.TryGetProperty("units", out var unitsElement) || unitsElement.ValueKind != JsonValueKind.Array)
+        {
+            return results;
+        }
+
+        foreach (var unitElement in unitsElement.EnumerateArray())
+        {
+            var name = ReadString(unitElement, "name", string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = ReadString(unitElement, "slug", "Unknown");
+            }
+
+            var comment = ReadString(unitElement, "comment", string.Empty).Trim();
+            var slug = ReadString(unitElement, "slug", string.Empty).Trim();
+            var displayName = name;
+            if (!string.IsNullOrWhiteSpace(comment))
+            {
+                displayName = $"{name} {comment}".Trim();
+            }
+
+            var min = ReadInt(unitElement, "min", 0);
+            var max = ReadInt(unitElement, "max", 0);
+            var minAsterisk = HasAsteriskMin(unitElement) || ReadBool(unitElement, "required", false);
+            results.Add((displayName, min, max, string.IsNullOrWhiteSpace(slug) ? null : slug, minAsterisk));
+        }
+
+        return results;
+    }
+
+    private static bool HasAsteriskMin(JsonElement element)
+    {
+        if (!element.TryGetProperty("min", out var value) || value.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var text = value.GetString();
+        return string.Equals(text?.Trim(), "*", StringComparison.Ordinal);
+    }
+
+    private static string ReadString(JsonElement element, string propertyName, string fallback)
+    {
+        if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.String)
+        {
+            return fallback;
+        }
+
+        var text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? fallback : text;
+    }
+
+    private static int ReadInt(JsonElement element, string propertyName, int fallback)
+    {
+        if (!element.TryGetProperty(propertyName, out var value))
+        {
+            return fallback;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
+        {
+            return number;
+        }
+
+        if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var parsed))
+        {
+            return parsed;
+        }
+
+        return fallback;
+    }
+
+    private static bool ReadBool(JsonElement element, string propertyName, bool fallback)
+    {
+        if (!element.TryGetProperty(propertyName, out var value))
+        {
+            return fallback;
+        }
+
+        if (value.ValueKind == JsonValueKind.True)
+        {
+            return true;
+        }
+
+        if (value.ValueKind == JsonValueKind.False)
+        {
+            return false;
+        }
+
+        if (value.ValueKind == JsonValueKind.String && bool.TryParse(value.GetString(), out var parsed))
+        {
+            return parsed;
+        }
+
+        return fallback;
+    }
+
+    private void ToggleTeamEntry(ArmyTeamListItem? item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        item.IsExpanded = !item.IsExpanded;
     }
 
     private static bool UnitHasLieutenantOption(string? profileGroupsJson, IReadOnlyDictionary<int, string> skillsLookup)
@@ -3659,6 +4069,7 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
 {
     public int Id { get; init; }
     public int SourceFactionId { get; init; }
+    public string? Slug { get; init; }
 
     public int? Type { get; init; }
 
@@ -3700,6 +4111,69 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
             }
 
             _isSelected = value;
+            OnPropertyChanged();
+        }
+    }
+}
+
+public class ArmyTeamListItem : BaseViewModel
+{
+    public string Name { get; init; } = string.Empty;
+    public string TeamCountsText { get; init; } = string.Empty;
+    public ObservableCollection<ArmyTeamUnitLimitItem> AllowedProfiles { get; init; } = [];
+
+    private bool _isVisible = true;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set
+        {
+            if (_isVisible == value)
+            {
+                return;
+            }
+
+            _isVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isExpanded;
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value)
+            {
+                return;
+            }
+
+            _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+}
+
+public class ArmyTeamUnitLimitItem : BaseViewModel
+{
+    public string Name { get; init; } = string.Empty;
+    public string Min { get; init; } = "0";
+    public string Max { get; init; } = "0";
+    public string? Slug { get; init; }
+
+    private bool _isVisible = true;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set
+        {
+            if (_isVisible == value)
+            {
+                return;
+            }
+
+            _isVisible = value;
             OnPropertyChanged();
         }
     }

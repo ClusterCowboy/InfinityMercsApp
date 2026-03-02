@@ -151,7 +151,9 @@
                                     Text="UNIT SELECTION"
                                     FontSize="24"
                                     FontAttributes="Bold"
-                                    HorizontalTextAlignment="Start">
+                                    HorizontalTextAlignment="Start"
+                                    VerticalTextAlignment="Center"
+                                    VerticalOptions="Center">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
                                             <Setter Property="TextColor" Value="White" />
@@ -162,10 +164,16 @@
                                     </Label.Triggers>
                                 </Label>
                             </Border>
-                            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                                <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
-                                <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                    <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+                                    <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                    <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
+                                    <Label Text="Teams View" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
                         </Grid>
                     </Border>
                 </Grid>
@@ -220,7 +228,9 @@
                                         Text="UNIT SELECTION"
                                         FontSize="24"
                                         FontAttributes="Bold"
-                                        HorizontalTextAlignment="Start">
+                                        HorizontalTextAlignment="Start"
+                                        VerticalTextAlignment="Center"
+                                        VerticalOptions="Center">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
                                                 <Setter Property="TextColor" Value="White" />
@@ -231,19 +241,63 @@
                                         </Label.Triggers>
                                     </Label>
                                 </Border>
-                                <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                                    <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
-                                    <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                        <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+                                        <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+                                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                        <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
+                                        <Label Text="Teams View" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
                             </Grid>
 
-                            <ScrollView Grid.Row="1">
+                            <ScrollView Grid.Row="1" IsVisible="{Binding ShowUnitsList}">
                                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <controls:FactionListItemView
                                                 ItemTapped="OnUnitItemTappedFromView"
                                                 IsVisible="{Binding IsVisible}" />
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                            </ScrollView>
+
+                            <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding TeamEntries}" Spacing="0">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border StrokeThickness="1" Padding="8,6" MinimumHeightRequest="50" IsVisible="{Binding IsVisible}">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.ToggleTeamEntryCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                                </Border.GestureRecognizers>
+                                                <VerticalStackLayout Spacing="4">
+                                                    <Label Text="{Binding Name}" />
+                                                    <Label Text="{Binding TeamCountsText}" FontSize="12" TextColor="#9CA3AF" />
+                                                    <VerticalStackLayout IsVisible="{Binding IsExpanded}" Spacing="3">
+                                                        <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8">
+                                                            <Label Grid.Column="0" Text="MIN" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                                            <Label Grid.Column="1" Text="MAX" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                                            <Label Grid.Column="2" Text="UNIT" FontAttributes="Bold" />
+                                                        </Grid>
+                                                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding AllowedProfiles}" Spacing="2">
+                                                            <BindableLayout.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8" IsVisible="{Binding IsVisible}">
+                                                                        <Label Grid.Column="0" Text="{Binding Min}" HorizontalTextAlignment="Center" />
+                                                                        <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" />
+                                                                        <Label Grid.Column="2" Text="{Binding Name}" LineBreakMode="WordWrap" />
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </BindableLayout.ItemTemplate>
+                                                        </VerticalStackLayout>
+                                                    </VerticalStackLayout>
+                                                </VerticalStackLayout>
+                                            </Border>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
                                 </VerticalStackLayout>
