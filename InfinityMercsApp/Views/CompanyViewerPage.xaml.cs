@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
@@ -209,12 +210,31 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
             CompanyNameHeading = companyName;
             CompanySubtitle = string.Empty;
+            var captainStats = payload.ImprovedCaptainStats;
+            var captainWeaponChoices = captainStats.IsEnabled
+                ? CollectCaptainChoices(captainStats.WeaponChoice1, captainStats.WeaponChoice2, captainStats.WeaponChoice3)
+                : [];
+            var captainSkillChoices = captainStats.IsEnabled
+                ? CollectCaptainChoices(captainStats.SkillChoice1, captainStats.SkillChoice2, captainStats.SkillChoice3)
+                : [];
+            var captainEquipmentChoices = captainStats.IsEnabled
+                ? CollectCaptainChoices(captainStats.EquipmentChoice1, captainStats.EquipmentChoice2, captainStats.EquipmentChoice3)
+                : [];
 
             for (var i = 0; i < payload.Entries.Count; i++)
             {
                 var entry = payload.Entries[i];
                 var displayName = string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name;
                 var subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty;
+                var savedRangedWeapons = entry.SavedRangedWeapons;
+                var savedSkills = entry.SavedSkills;
+                var savedEquipment = entry.SavedEquipment;
+                if (entry.IsLieutenant && captainStats.IsEnabled)
+                {
+                    savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
+                    savedSkills = AppendChoices(savedSkills, captainSkillChoices);
+                    savedEquipment = AppendChoices(savedEquipment, captainEquipmentChoices);
+                }
 
                 CompanyUnits.Add(new CompanyViewerUnitListItem
                 {
@@ -225,9 +245,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     ProfileKey = entry.ProfileKey,
                     IsLieutenant = entry.IsLieutenant,
                     Cost = entry.Cost,
-                    SavedEquipment = entry.SavedEquipment,
-                    SavedSkills = entry.SavedSkills,
-                    SavedRangedWeapons = entry.SavedRangedWeapons,
+                    SavedEquipment = savedEquipment,
+                    SavedSkills = savedSkills,
+                    SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
@@ -276,12 +296,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.CachedLogoPath,
             item.PackagedLogoPath);
 
-        if (!HasSufficientLoadedProfileDetails(item))
-        {
-            var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
-            _viewerViewModel.Profiles.Clear();
-            _viewerViewModel.Profiles.Add(BuildMergedProfileItem(item, loadedProfile));
-        }
+        var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
+        _viewerViewModel.Profiles.Clear();
+        _viewerViewModel.Profiles.Add(BuildMergedProfileItem(item, loadedProfile));
 
         UpdateCurrentWeaponsDisplay();
     }
@@ -340,29 +357,33 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private static ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
     {
-        var rangedWeapons = !IsDashOrEmpty(loadedProfile?.RangedWeapons) ? loadedProfile!.RangedWeapons : item.SavedRangedWeapons;
-        var meleeWeapons = !IsDashOrEmpty(loadedProfile?.MeleeWeapons) ? loadedProfile!.MeleeWeapons : item.SavedCcWeapons;
-        var uniqueEquipment = !IsDashOrEmpty(loadedProfile?.UniqueEquipment) ? loadedProfile!.UniqueEquipment : item.SavedEquipment;
-        var uniqueSkills = !IsDashOrEmpty(loadedProfile?.UniqueSkills) ? loadedProfile!.UniqueSkills : item.SavedSkills;
+        var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
+        var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
+        var uniqueEquipment = MergeProfileSectionText(loadedProfile?.UniqueEquipment, item.SavedEquipment);
+        var uniqueSkills = MergeProfileSectionText(loadedProfile?.UniqueSkills, item.SavedSkills);
+        var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
+        var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
+        var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
+        var keepLoadedSkillsFormatting = string.Equals(loadedProfile?.UniqueSkills?.Trim(), uniqueSkills.Trim(), StringComparison.OrdinalIgnoreCase);
 
         return new ViewerProfileItem
         {
             Name = loadedProfile?.Name ?? item.Name,
             NameFormatted = loadedProfile?.NameFormatted,
             RangedWeapons = rangedWeapons,
-            RangedWeaponsFormatted = !IsDashOrEmpty(loadedProfile?.RangedWeapons) && loadedProfile?.RangedWeaponsFormatted is not null
+            RangedWeaponsFormatted = keepLoadedRangedFormatting && loadedProfile?.RangedWeaponsFormatted is not null
                 ? loadedProfile.RangedWeaponsFormatted
                 : BuildSimpleFormatted(rangedWeapons, Color.FromArgb("#EF4444")),
             MeleeWeapons = meleeWeapons,
-            MeleeWeaponsFormatted = !IsDashOrEmpty(loadedProfile?.MeleeWeapons) && loadedProfile?.MeleeWeaponsFormatted is not null
+            MeleeWeaponsFormatted = keepLoadedMeleeFormatting && loadedProfile?.MeleeWeaponsFormatted is not null
                 ? loadedProfile.MeleeWeaponsFormatted
                 : BuildSimpleFormatted(meleeWeapons, Color.FromArgb("#22C55E")),
             UniqueEquipment = uniqueEquipment,
-            UniqueEquipmentFormatted = !IsDashOrEmpty(loadedProfile?.UniqueEquipment) && loadedProfile?.UniqueEquipmentFormatted is not null
+            UniqueEquipmentFormatted = keepLoadedEquipmentFormatting && loadedProfile?.UniqueEquipmentFormatted is not null
                 ? loadedProfile.UniqueEquipmentFormatted
                 : BuildSimpleFormatted(uniqueEquipment, Color.FromArgb("#06B6D4")),
             UniqueSkills = uniqueSkills,
-            UniqueSkillsFormatted = !IsDashOrEmpty(loadedProfile?.UniqueSkills) && loadedProfile?.UniqueSkillsFormatted is not null
+            UniqueSkillsFormatted = keepLoadedSkillsFormatting && loadedProfile?.UniqueSkillsFormatted is not null
                 ? loadedProfile.UniqueSkillsFormatted
                 : BuildSimpleFormatted(uniqueSkills, Color.FromArgb("#F59E0B")),
             Peripherals = loadedProfile?.Peripherals ?? "-",
@@ -687,6 +708,75 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     {
         var level = UnitExperienceRanks.GetRankLevel(experiencePoints);
         return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/noun-{level}-stars.svg";
+    }
+
+    private static List<string> CollectCaptainChoices(params string[] choices)
+    {
+        return choices
+            .Select(NormalizeCaptainChoice)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string NormalizeCaptainChoice(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed == "-")
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(trimmed, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
+    }
+
+    private static string AppendChoices(string? baseText, IReadOnlyList<string> additions)
+    {
+        var lines = SplitProfileText(baseText);
+        var existing = new HashSet<string>(lines, StringComparer.OrdinalIgnoreCase);
+        foreach (var addition in additions)
+        {
+            if (existing.Add(addition))
+            {
+                lines.Add(addition);
+            }
+        }
+
+        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+    }
+
+    private static string MergeProfileSectionText(string? loadedText, string? savedText)
+    {
+        var lines = SplitProfileText(loadedText);
+        var existing = new HashSet<string>(lines, StringComparer.OrdinalIgnoreCase);
+        foreach (var savedLine in SplitProfileText(savedText))
+        {
+            if (existing.Add(savedLine))
+            {
+                lines.Add(savedLine);
+            }
+        }
+
+        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+    }
+
+    private static List<string> SplitProfileText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return [];
+        }
+
+        return text
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+            .ToList();
     }
 }
 

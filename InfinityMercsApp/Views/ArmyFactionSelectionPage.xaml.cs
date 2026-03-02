@@ -10,8 +10,10 @@ using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Devices;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
+using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 
 namespace InfinityMercsApp.Views;
@@ -1610,6 +1612,19 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
+            var captainEntry = MercsCompanyEntries.FirstOrDefault(x => x.IsLieutenant) ?? MercsCompanyEntries.FirstOrDefault();
+            if (captainEntry is null)
+            {
+                await DisplayAlert("Save Failed", "Add at least one unit before starting a company.", "OK");
+                return;
+            }
+
+            var improvedCaptainStats = await ShowImprovedCaptainConfigurationAsync(captainEntry);
+            if (improvedCaptainStats is null)
+            {
+                return;
+            }
+
             var now = DateTimeOffset.UtcNow;
             var companyName = CompanyName.Trim();
             var companyType = GetCompanyTypeLabel();
@@ -1633,7 +1648,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
                 PointsLimit = int.TryParse(SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
                 CurrentPoints = int.TryParse(SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
-                ImprovedCaptainStats = new SavedImprovedCaptainStats(),
+                ImprovedCaptainStats = improvedCaptainStats,
                 SourceFactions = GetUnitSourceFactions()
                     .Select(faction => new SavedCompanyFaction
                     {
@@ -1663,13 +1678,226 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 filePath,
                 JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
 
-            await DisplayAlert("Company Saved", $"Saved '{companyName}'.", "OK");
+            var encodedPath = Uri.EscapeDataString(filePath);
+            await Shell.Current.GoToAsync($"{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
             await DisplayAlert("Save Failed", ex.Message, "OK");
         }
+    }
+
+    private async Task<SavedImprovedCaptainStats?> ShowImprovedCaptainConfigurationAsync(MercsCompanyEntry captainEntry, CancellationToken cancellationToken = default)
+    {
+        var sourceFactionId = ResolveCaptainSourceFactionId(captainEntry.SourceFactionId);
+        var optionFactionId = ResolveCaptainOptionFactionId(sourceFactionId);
+        var options = await LoadCaptainUpgradeOptionsAsync(optionFactionId, cancellationToken);
+
+        if (options.IsEmpty && optionFactionId != sourceFactionId)
+        {
+            options = await LoadCaptainUpgradeOptionsAsync(sourceFactionId, cancellationToken);
+            optionFactionId = sourceFactionId;
+        }
+
+        var unitInfo = new CaptainUnitPopupInfo
+        {
+            Name = captainEntry.Name,
+            Cost = captainEntry.CostValue,
+            Statline = captainEntry.Subtitle ?? "-",
+            RangedWeapons = captainEntry.SavedRangedWeapons,
+            CcWeapons = captainEntry.SavedCcWeapons,
+            Skills = captainEntry.SavedSkills,
+            Equipment = captainEntry.SavedEquipment,
+            CachedLogoPath = captainEntry.CachedLogoPath,
+            PackagedLogoPath = captainEntry.PackagedLogoPath
+        };
+
+        var context = new CaptainUpgradePopupContext
+        {
+            Unit = unitInfo,
+            OptionFactionId = optionFactionId,
+            OptionFactionName = Factions.FirstOrDefault(x => x.Id == optionFactionId)?.Name ?? $"Faction {optionFactionId}",
+            WeaponOptions = options.Weapons,
+            SkillOptions = options.Skills,
+            EquipmentOptions = options.Equipment
+        };
+
+        return await ConfigureCaptainPopupPage.ShowAsync(Navigation, context);
+    }
+
+    private int ResolveCaptainSourceFactionId(int fallbackSourceFactionId)
+    {
+        if (fallbackSourceFactionId > 0)
+        {
+            return fallbackSourceFactionId;
+        }
+
+        var firstSource = GetUnitSourceFactions().FirstOrDefault();
+        return firstSource?.Id ?? fallbackSourceFactionId;
+    }
+
+    private int ResolveCaptainOptionFactionId(int sourceFactionId)
+    {
+        if (sourceFactionId <= 0)
+        {
+            return sourceFactionId;
+        }
+
+        var sourceFaction = Factions.FirstOrDefault(x => x.Id == sourceFactionId);
+        if (sourceFaction is null)
+        {
+            return sourceFactionId;
+        }
+
+        return sourceFaction.ParentId > 0 ? sourceFaction.ParentId : sourceFactionId;
+    }
+
+    private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
+    {
+        if (_armyDataAccessor is null || factionId <= 0)
+        {
+            return CaptainUpgradeOptionSet.Empty;
+        }
+
+        try
+        {
+            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+            var skillLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
+            var weaponLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+            var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
+
+            var skillRecords = await _armyDataAccessor.GetSpecopsSkillsByFactionAsync(factionId, cancellationToken);
+            var equipRecords = await _armyDataAccessor.GetSpecopsEquipsByFactionAsync(factionId, cancellationToken);
+            var weaponRecords = await _armyDataAccessor.GetSpecopsWeaponsByFactionAsync(factionId, cancellationToken);
+
+            var skills = skillRecords
+                .OrderBy(x => x.EntryOrder)
+                .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var equipment = equipRecords
+                .OrderBy(x => x.EntryOrder)
+                .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var weapons = weaponRecords
+                .OrderBy(x => x.EntryOrder)
+                .Select(x => ResolveSpecopsChoiceLabel(weaponLookup, x.WeaponId, x.Exp, "Weapon", null, extrasLookup, _showUnitsInInches))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return new CaptainUpgradeOptionSet
+            {
+                Weapons = weapons,
+                Skills = skills,
+                Equipment = equipment
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadCaptainUpgradeOptionsAsync failed for faction {factionId}: {ex.Message}");
+            return CaptainUpgradeOptionSet.Empty;
+        }
+    }
+
+    private static string ResolveSpecopsChoiceLabel(
+        IReadOnlyDictionary<int, string> lookup,
+        int id,
+        int points,
+        string label,
+        string? extrasJson,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        var prefix = $"({Math.Max(0, points)}) - ";
+        var extrasSuffix = BuildExtrasSuffix(extrasJson, extrasLookup, showUnitsInInches);
+        if (lookup.TryGetValue(id, out var value) && !string.IsNullOrWhiteSpace(value))
+        {
+            return $"{prefix}{value.Trim()}{extrasSuffix}";
+        }
+
+        return $"{prefix}{label} {id}{extrasSuffix}";
+    }
+
+    private static string BuildExtrasSuffix(
+        string? extrasJson,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        if (string.IsNullOrWhiteSpace(extrasJson))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(extrasJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return string.Empty;
+            }
+
+            var extras = new List<string>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                var parsedId = TryParseExtraId(element);
+                if (!parsedId.HasValue)
+                {
+                    continue;
+                }
+
+                if (extrasLookup.TryGetValue(parsedId.Value, out var resolved) && !string.IsNullOrWhiteSpace(resolved.Name))
+                {
+                    extras.Add(FormatExtraDisplay(resolved, showUnitsInInches));
+                }
+                else
+                {
+                    extras.Add(parsedId.Value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            if (extras.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return $" ({string.Join(", ", extras.Distinct(StringComparer.OrdinalIgnoreCase))})";
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static int? TryParseExtraId(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numberId))
+        {
+            return numberId;
+        }
+
+        if (element.ValueKind == JsonValueKind.String && int.TryParse(element.GetString(), out var stringId))
+        {
+            return stringId;
+        }
+
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty("id", out var idElement))
+        {
+            if (idElement.ValueKind == JsonValueKind.Number && idElement.TryGetInt32(out var objectNumberId))
+            {
+                return objectNumberId;
+            }
+
+            if (idElement.ValueKind == JsonValueKind.String && int.TryParse(idElement.GetString(), out var objectStringId))
+            {
+                return objectStringId;
+            }
+        }
+
+        return null;
     }
 
     private void UpdateMercsCompanyTotal()
@@ -4814,6 +5042,17 @@ public sealed class SavedImprovedCaptainStats
     public int ArmBonus { get; init; }
     public int BtsBonus { get; init; }
     public int VitalityBonus { get; init; }
+    public string WeaponChoice1 { get; init; } = string.Empty;
+    public string WeaponChoice2 { get; init; } = string.Empty;
+    public string WeaponChoice3 { get; init; } = string.Empty;
+    public string SkillChoice1 { get; init; } = string.Empty;
+    public string SkillChoice2 { get; init; } = string.Empty;
+    public string SkillChoice3 { get; init; } = string.Empty;
+    public string EquipmentChoice1 { get; init; } = string.Empty;
+    public string EquipmentChoice2 { get; init; } = string.Empty;
+    public string EquipmentChoice3 { get; init; } = string.Empty;
+    public int OptionFactionId { get; init; }
+    public string OptionFactionName { get; init; } = string.Empty;
 }
 
 public sealed class SavedCompanyFaction
@@ -4837,6 +5076,573 @@ public sealed class SavedCompanyEntry
     public string SavedCcWeapons { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+}
+
+public sealed class CaptainUpgradeOptionSet
+{
+    public static CaptainUpgradeOptionSet Empty { get; } = new();
+    public List<string> Weapons { get; init; } = [];
+    public List<string> Skills { get; init; } = [];
+    public List<string> Equipment { get; init; } = [];
+    public bool IsEmpty => Weapons.Count == 0 && Skills.Count == 0 && Equipment.Count == 0;
+}
+
+public sealed class CaptainUnitPopupInfo
+{
+    public string Name { get; init; } = string.Empty;
+    public int Cost { get; init; }
+    public string Statline { get; init; } = "-";
+    public string RangedWeapons { get; init; } = "-";
+    public string CcWeapons { get; init; } = "-";
+    public string Skills { get; init; } = "-";
+    public string Equipment { get; init; } = "-";
+    public string? CachedLogoPath { get; init; }
+    public string? PackagedLogoPath { get; init; }
+}
+
+public sealed class CaptainUpgradePopupContext
+{
+    public CaptainUnitPopupInfo Unit { get; init; } = new();
+    public int OptionFactionId { get; init; }
+    public string OptionFactionName { get; init; } = string.Empty;
+    public List<string> WeaponOptions { get; init; } = [];
+    public List<string> SkillOptions { get; init; } = [];
+    public List<string> EquipmentOptions { get; init; } = [];
+}
+
+public sealed class ConfigureCaptainPopupPage : ContentPage
+{
+    private static readonly IReadOnlyList<string> StatBonusOptions = ["0", "+1", "+2", "+3"];
+    private const string NoneChoice = "(None)";
+
+    private readonly CaptainUpgradePopupContext _context;
+    private readonly TaskCompletionSource<SavedImprovedCaptainStats?> _resultSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly SKCanvasView _logoCanvas;
+    private readonly Picker _ccPicker;
+    private readonly Picker _bsPicker;
+    private readonly Picker _phPicker;
+    private readonly Picker _wipPicker;
+    private readonly Picker _armPicker;
+    private readonly Picker _btsPicker;
+    private readonly Picker _vitaPicker;
+    private readonly Picker _weapon1Picker;
+    private readonly Picker _weapon2Picker;
+    private readonly Picker _weapon3Picker;
+    private readonly Picker _skill1Picker;
+    private readonly Picker _skill2Picker;
+    private readonly Picker _skill3Picker;
+    private readonly Picker _equipment1Picker;
+    private readonly Picker _equipment2Picker;
+    private readonly Picker _equipment3Picker;
+    private readonly Label _rangedValueLabel;
+    private readonly Label _ccValueLabel;
+    private readonly Label _skillsValueLabel;
+    private readonly Label _equipmentValueLabel;
+    private readonly Label _upgradeOptionsHeaderLabel;
+    private readonly Button _foundCompanyButton;
+    private SKPicture? _logoPicture;
+
+    private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
+    {
+        _context = context;
+        var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
+        BackgroundColor = Color.FromRgba(0, 0, 0, 180);
+        Title = "Captain Configuration";
+
+        _logoCanvas = new SKCanvasView
+        {
+            WidthRequest = 80,
+            HeightRequest = 80,
+            VerticalOptions = LayoutOptions.Start
+        };
+        _logoCanvas.PaintSurface += OnLogoCanvasPaintSurface;
+
+        _ccPicker = BuildStatPicker();
+        _bsPicker = BuildStatPicker();
+        _phPicker = BuildStatPicker();
+        _wipPicker = BuildStatPicker();
+        _armPicker = BuildStatPicker();
+        _btsPicker = BuildStatPicker();
+        _vitaPicker = BuildStatPicker();
+
+        _weapon1Picker = BuildChoicePicker(context.WeaponOptions);
+        _weapon2Picker = BuildChoicePicker(context.WeaponOptions);
+        _weapon3Picker = BuildChoicePicker(context.WeaponOptions);
+        _skill1Picker = BuildChoicePicker(context.SkillOptions);
+        _skill2Picker = BuildChoicePicker(context.SkillOptions);
+        _skill3Picker = BuildChoicePicker(context.SkillOptions);
+        _equipment1Picker = BuildChoicePicker(context.EquipmentOptions);
+        _equipment2Picker = BuildChoicePicker(context.EquipmentOptions);
+        _equipment3Picker = BuildChoicePicker(context.EquipmentOptions);
+        HookSelectionChanged(_weapon1Picker);
+        HookSelectionChanged(_weapon2Picker);
+        HookSelectionChanged(_weapon3Picker);
+        HookSelectionChanged(_skill1Picker);
+        HookSelectionChanged(_skill2Picker);
+        HookSelectionChanged(_skill3Picker);
+        HookSelectionChanged(_equipment1Picker);
+        HookSelectionChanged(_equipment2Picker);
+        HookSelectionChanged(_equipment3Picker);
+
+        var cancelButton = new Button
+        {
+            Text = "BACK",
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Colors.White,
+            Command = new Command(async () => await CloseAsync(false))
+        };
+        _foundCompanyButton = new Button
+        {
+            Text = "FOUND COMPANY",
+            BackgroundColor = Color.FromArgb("#7C3AED"),
+            TextColor = Colors.Black,
+            Command = new Command(async () => await CloseAsync(true))
+        };
+
+        var actions = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition { Width = GridLength.Auto },
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Auto }
+            },
+            ColumnSpacing = 10,
+            HorizontalOptions = LayoutOptions.Fill,
+            Children = { cancelButton, _foundCompanyButton }
+        };
+        Grid.SetColumn(cancelButton, 0);
+        Grid.SetColumn(_foundCompanyButton, 2);
+
+        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#EF4444"), out _rangedValueLabel);
+        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
+        var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
+        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
+
+        var leftColumn = new VerticalStackLayout
+        {
+            Spacing = 8,
+            Children =
+            {
+                new Label { Text = "Captain Profile", FontAttributes = FontAttributes.Bold, FontSize = 18 },
+                _logoCanvas,
+                new Label { Text = context.Unit.Name, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.WordWrap },
+                new Label { Text = context.Unit.Statline, FontSize = 12, LineBreakMode = LineBreakMode.WordWrap },
+                rangedBlock,
+                ccBlock,
+                skillsBlock,
+                equipmentBlock
+            }
+        };
+
+        _upgradeOptionsHeaderLabel = new Label
+        {
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 18,
+            TextColor = Colors.White
+        };
+
+        var rightColumn = new VerticalStackLayout
+        {
+            Spacing = 8,
+            Children =
+            {
+                _upgradeOptionsHeaderLabel,
+                BuildStatRow("CC", _ccPicker),
+                BuildStatRow("BS", _bsPicker),
+                BuildStatRow("PH", _phPicker),
+                BuildStatRow("WIP", _wipPicker),
+                BuildStatRow("ARM", _armPicker),
+                BuildStatRow("BTS", _btsPicker),
+                BuildStatRow("VITA", _vitaPicker),
+                BuildCategorySection("Weapons", _weapon1Picker, _weapon2Picker, _weapon3Picker),
+                BuildCategorySection("Skills", _skill1Picker, _skill2Picker, _skill3Picker),
+                BuildCategorySection("Equipment", _equipment1Picker, _equipment2Picker, _equipment3Picker)
+            }
+        };
+
+        var leftScroll = new ScrollView { Content = leftColumn };
+        var rightScroll = new ScrollView { Content = rightColumn };
+        var columnsGrid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Star }
+            },
+            ColumnSpacing = 18,
+            Children = { leftScroll, rightScroll }
+        };
+        Grid.SetColumn(rightScroll, 1);
+
+        var cardContent = new Grid
+        {
+            WidthRequest = 980,
+            RowDefinitions = new RowDefinitionCollection
+            {
+                new RowDefinition { Height = GridLength.Star },
+                new RowDefinition { Height = GridLength.Auto }
+            },
+            RowSpacing = 14,
+            Children = { columnsGrid, actions }
+        };
+        var actionsHost = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Star }
+            },
+            Children = { actions }
+        };
+        Grid.SetColumn(actions, 0);
+        Grid.SetRow(actions, 1);
+        cardContent.Children.Remove(actions);
+        cardContent.Children.Add(actionsHost);
+        Grid.SetRow(actionsHost, 1);
+
+        var card = new Border
+        {
+            BackgroundColor = Color.FromArgb("#111827"),
+            Stroke = Color.FromArgb("#374151"),
+            StrokeThickness = 1,
+            Padding = new Thickness(16),
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+            HeightRequest = popupHeight,
+            Content = cardContent
+        };
+
+        Content = new Grid
+        {
+            Children = { card }
+        };
+
+        UpdateProfilePreviewFromSelections();
+        _ = LoadLogoAsync();
+    }
+
+    public static async Task<SavedImprovedCaptainStats?> ShowAsync(INavigation navigation, CaptainUpgradePopupContext context)
+    {
+        var page = new ConfigureCaptainPopupPage(context);
+        await navigation.PushModalAsync(page, false);
+        return await page._resultSource.Task;
+    }
+
+    protected override bool OnBackButtonPressed()
+    {
+        _ = CloseAsync(false);
+        return true;
+    }
+
+    private async Task LoadLogoAsync()
+    {
+        _logoPicture?.Dispose();
+        _logoPicture = null;
+
+        try
+        {
+            Stream? stream = null;
+            if (!string.IsNullOrWhiteSpace(_context.Unit.CachedLogoPath) && File.Exists(_context.Unit.CachedLogoPath))
+            {
+                stream = File.OpenRead(_context.Unit.CachedLogoPath);
+            }
+            else if (!string.IsNullOrWhiteSpace(_context.Unit.PackagedLogoPath))
+            {
+                stream = await FileSystem.Current.OpenAppPackageFileAsync(_context.Unit.PackagedLogoPath);
+            }
+
+            if (stream is null)
+            {
+                _logoCanvas.InvalidateSurface();
+                return;
+            }
+
+            await using (stream)
+            {
+                var svg = new SKSvg();
+                _logoPicture = svg.Load(stream);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ConfigureCaptainPopupPage LoadLogoAsync failed: {ex.Message}");
+            _logoPicture = null;
+        }
+
+        _logoCanvas.InvalidateSurface();
+    }
+
+    private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_logoPicture is null)
+        {
+            return;
+        }
+
+        var bounds = _logoPicture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_logoPicture);
+    }
+
+    private async Task CloseAsync(bool confirmed)
+    {
+        if (!confirmed)
+        {
+            if (_resultSource.TrySetResult(null))
+            {
+                await Navigation.PopModalAsync(false);
+            }
+
+            return;
+        }
+
+        var stats = new SavedImprovedCaptainStats
+        {
+            IsEnabled = true,
+            CcBonus = ReadStatBonus(_ccPicker),
+            BsBonus = ReadStatBonus(_bsPicker),
+            PhBonus = ReadStatBonus(_phPicker),
+            WipBonus = ReadStatBonus(_wipPicker),
+            ArmBonus = ReadStatBonus(_armPicker),
+            BtsBonus = ReadStatBonus(_btsPicker),
+            VitalityBonus = ReadStatBonus(_vitaPicker),
+            WeaponChoice1 = ReadChoice(_weapon1Picker),
+            WeaponChoice2 = ReadChoice(_weapon2Picker),
+            WeaponChoice3 = ReadChoice(_weapon3Picker),
+            SkillChoice1 = ReadChoice(_skill1Picker),
+            SkillChoice2 = ReadChoice(_skill2Picker),
+            SkillChoice3 = ReadChoice(_skill3Picker),
+            EquipmentChoice1 = ReadChoice(_equipment1Picker),
+            EquipmentChoice2 = ReadChoice(_equipment2Picker),
+            EquipmentChoice3 = ReadChoice(_equipment3Picker),
+            OptionFactionId = _context.OptionFactionId,
+            OptionFactionName = _context.OptionFactionName
+        };
+
+        if (_resultSource.TrySetResult(stats))
+        {
+            await Navigation.PopModalAsync(false);
+        }
+    }
+
+    private static Picker BuildStatPicker()
+    {
+        var picker = new Picker
+        {
+            WidthRequest = 120,
+            HorizontalOptions = LayoutOptions.Start,
+            ItemsSource = StatBonusOptions.ToList(),
+            SelectedIndex = 0
+        };
+
+        return picker;
+    }
+
+    private static Picker BuildChoicePicker(IEnumerable<string> options)
+    {
+        var values = new List<string> { NoneChoice };
+        values.AddRange(options.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase));
+
+        return new Picker
+        {
+            WidthRequest = 280,
+            HorizontalOptions = LayoutOptions.Start,
+            ItemsSource = values,
+            SelectedIndex = 0
+        };
+    }
+
+    private static View BuildStatRow(string label, Picker picker)
+    {
+        return new VerticalStackLayout
+        {
+            Spacing = 2,
+            Children =
+            {
+                new Label { Text = label },
+                picker
+            }
+        };
+    }
+
+    private static View BuildCategorySection(string title, Picker first, Picker second, Picker third)
+    {
+        return new VerticalStackLayout
+        {
+            Spacing = 4,
+            Margin = new Thickness(0, 8, 0, 0),
+            Children =
+            {
+                new Label { Text = title, FontAttributes = FontAttributes.Bold },
+                first,
+                second,
+                third
+            }
+        };
+    }
+
+    private static int ReadStatBonus(Picker picker)
+    {
+        var raw = picker.SelectedItem?.ToString() ?? "0";
+        var normalized = raw.Trim().TrimStart('+');
+        return int.TryParse(normalized, out var value) ? value : 0;
+    }
+
+    private static string ReadChoice(Picker picker)
+    {
+        var value = picker.SelectedItem?.ToString() ?? string.Empty;
+        if (string.Equals(value, NoneChoice, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        var normalized = Regex.Replace(value, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
+        return normalized;
+    }
+
+    private static string NormalizeText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private static View BuildProfileDetailBlock(string label, Color valueColor, out Label valueLabel)
+    {
+        valueLabel = new Label
+        {
+            Text = "-",
+            FontSize = 12,
+            TextColor = valueColor,
+            HorizontalTextAlignment = TextAlignment.End,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        return new VerticalStackLayout
+        {
+            Spacing = 1,
+            Children =
+            {
+                new Label
+                {
+                    Text = $"{label}:",
+                    FontSize = 12,
+                    LineBreakMode = LineBreakMode.WordWrap
+                },
+                valueLabel
+            }
+        };
+    }
+
+    private void HookSelectionChanged(Picker picker)
+    {
+        picker.SelectedIndexChanged += (_, _) => UpdateProfilePreviewFromSelections();
+    }
+
+    private void UpdateProfilePreviewFromSelections()
+    {
+        _rangedValueLabel.Text = BuildUpdatedProfileSection(
+            _context.Unit.RangedWeapons,
+            GetSelectedChoices(_weapon1Picker, _weapon2Picker, _weapon3Picker),
+            prependPlus: true);
+        _ccValueLabel.Text = NormalizeText(_context.Unit.CcWeapons);
+        _skillsValueLabel.Text = BuildUpdatedProfileSection(
+            _context.Unit.Skills,
+            GetSelectedChoices(_skill1Picker, _skill2Picker, _skill3Picker),
+            prependPlus: true);
+        _equipmentValueLabel.Text = BuildUpdatedProfileSection(
+            _context.Unit.Equipment,
+            GetSelectedChoices(_equipment1Picker, _equipment2Picker, _equipment3Picker),
+            prependPlus: true);
+        UpdateUpgradeOptionsHeader();
+    }
+
+    private void UpdateUpgradeOptionsHeader()
+    {
+        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
+        var selectedCost =
+            ReadChoicePoints(_weapon1Picker) +
+            ReadChoicePoints(_weapon2Picker) +
+            ReadChoicePoints(_weapon3Picker) +
+            ReadChoicePoints(_skill1Picker) +
+            ReadChoicePoints(_skill2Picker) +
+            ReadChoicePoints(_skill3Picker) +
+            ReadChoicePoints(_equipment1Picker) +
+            ReadChoicePoints(_equipment2Picker) +
+            ReadChoicePoints(_equipment3Picker);
+        var experienceRemaining = baseExperience - selectedCost;
+
+        _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName}) - Exp Remaining: {experienceRemaining}";
+        _upgradeOptionsHeaderLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
+        _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
+        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
+    }
+
+    private static List<string> GetSelectedChoices(params Picker[] pickers)
+    {
+        return pickers
+            .Select(ReadChoice)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static int ReadChoicePoints(Picker picker)
+    {
+        var rawValue = picker.SelectedItem?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rawValue) ||
+            string.Equals(rawValue, NoneChoice, StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        var match = Regex.Match(rawValue, @"^\s*\(([-+]?\d+)\)");
+        if (!match.Success)
+        {
+            return 0;
+        }
+
+        return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : 0;
+    }
+
+    private static string BuildUpdatedProfileSection(string? baseText, IReadOnlyList<string> additions, bool prependPlus)
+    {
+        var lines = SplitProfileText(baseText);
+        foreach (var addition in additions)
+        {
+            lines.Add(prependPlus ? $"+ {addition}" : addition);
+        }
+
+        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+    }
+
+    private static List<string> SplitProfileText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return [];
+        }
+
+        return text
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+            .ToList();
+    }
 }
 
 public static class UnitExperienceRanks

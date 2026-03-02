@@ -705,7 +705,7 @@ public class ViewerViewModel : BaseViewModel
         ProfilesStatus = "1 configuration loaded.";
     }
 
-    private void ApplySelectedProfileTopSummaries(ViewerProfileItem matchedProfile)
+    public void ApplySelectedProfileTopSummaries(ViewerProfileItem matchedProfile)
     {
         var mergedEquipment = MergeSummaryAndUnique(EquipmentSummary, matchedProfile.UniqueEquipment);
         var mergedSkills = MergeSummaryAndUnique(SpecialSkillsSummary, matchedProfile.UniqueSkills);
