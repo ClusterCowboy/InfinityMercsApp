@@ -1041,6 +1041,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipmentText = JoinOrDash(combinedEquipment);
+        var combinedSkillsText = JoinOrDash(combinedSkills);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var entry = new MercsCompanyEntry
         {
@@ -1055,9 +1057,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
             SourceFactionId = _selectedUnit.SourceFactionId,
             CachedLogoPath = _selectedUnit.CachedLogoPath,
             PackagedLogoPath = _selectedUnit.PackagedLogoPath,
-            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", JoinOrDash(combinedEquipment), Color.FromArgb("#06B6D4")),
+            SavedEquipment = combinedEquipmentText,
+            SavedSkills = combinedSkillsText,
+            SavedRangedWeapons = profile.RangedWeapons,
+            SavedCcWeapons = profile.MeleeWeapons,
+            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
             HasEquipmentLine = combinedEquipment.Count > 0,
-            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", JoinOrDash(combinedSkills), Color.FromArgb("#F59E0B")),
+            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
             RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
             CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E"))
@@ -1641,7 +1647,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     Cost = entry.CostValue,
-                    IsLieutenant = entry.IsLieutenant
+                    IsLieutenant = entry.IsLieutenant,
+                    SavedEquipment = entry.SavedEquipment,
+                    SavedSkills = entry.SavedSkills,
+                    SavedRangedWeapons = entry.SavedRangedWeapons,
+                    SavedCcWeapons = entry.SavedCcWeapons
                 }).ToList()
             };
 
@@ -2058,7 +2068,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 }
 
                 var isLieutenant = IsLieutenantOption(option, skillsLookup);
-                var profileKey = $"{groupName}|{optionName}|{cost}";
+                var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
                 Profiles.Add(new ViewerProfileItem
                 {
                     GroupName = groupName,
@@ -4727,6 +4737,10 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public string? PackagedLogoPath { get; init; }
 
     public string? Subtitle { get; init; }
+    public string SavedEquipment { get; init; } = "-";
+    public string SavedSkills { get; init; } = "-";
+    public string SavedRangedWeapons { get; init; } = "-";
+    public string SavedCcWeapons { get; init; } = "-";
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
@@ -4782,4 +4796,8 @@ public sealed class SavedCompanyEntry
     public int SourceUnitId { get; init; }
     public int Cost { get; init; }
     public bool IsLieutenant { get; init; }
+    public string SavedEquipment { get; init; } = "-";
+    public string SavedSkills { get; init; } = "-";
+    public string SavedRangedWeapons { get; init; } = "-";
+    public string SavedCcWeapons { get; init; } = "-";
 }

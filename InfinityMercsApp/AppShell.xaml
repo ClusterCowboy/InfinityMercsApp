@@ -23,6 +23,11 @@
         Route="LoadCompanyPage" />
 
     <ShellContent
+        Title="Company Viewer"
+        ContentTemplate="{DataTemplate views:CompanyViewerPage}"
+        Route="CompanyViewerPage" />
+
+    <ShellContent
         Title="Viewer"
         ContentTemplate="{DataTemplate views:ViewerPage}"
         Route="ViewerPage" />

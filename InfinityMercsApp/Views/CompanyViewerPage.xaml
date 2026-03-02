@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.CompanyViewerPage"
+             x:Name="CompanyViewerRoot"
+             Title="Company Viewer">
+
+    <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+        <Label Grid.Row="0"
+               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyNameHeading}"
+               FontSize="26"
+               FontAttributes="Bold" />
+        <Label Grid.Row="1"
+               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanySubtitle}"
+               FontSize="12"
+               TextColor="#9CA3AF" />
+
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" StrokeThickness="1" Padding="10">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <Label Text="Company Units"
+                           FontSize="20"
+                           FontAttributes="Bold" />
+                    <Label Grid.Row="1"
+                           Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnitsStatus}"
+                           TextColor="#6B7280" />
+                    <ScrollView Grid.Row="2">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
+                                             Spacing="0">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:FactionListItemView
+                                        ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
+                                        ItemTappedCommandParameter="{Binding .}" />
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" StrokeThickness="1" Padding="12">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="4">
+                        <Label Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                        <skia:SKCanvasView
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            x:Name="TopIconRowCanvas"
+                            HeightRequest="24"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Center"
+                            IsVisible="{Binding HasAnyTopHeaderIcons}"
+                            PaintSurface="OnTopIconRowCanvasPaintSurface" />
+                        <skia:SKCanvasView
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            x:Name="BottomIconRowCanvas"
+                            HeightRequest="24"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Center"
+                            IsVisible="{Binding HasAnyBottomHeaderIcons}"
+                            PaintSurface="OnBottomIconRowCanvasPaintSurface" />
+                    </Grid>
+
+                    <Grid Grid.Row="1" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    </Grid>
+
+                    <Grid Grid.Row="2" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="{Binding UnitMov}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="{Binding UnitCc}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="2" Text="{Binding UnitBs}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="3" Text="{Binding UnitPh}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="4" Text="{Binding UnitWip}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="5" Text="{Binding UnitArm}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="6" Text="{Binding UnitBts}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="7" Text="{Binding UnitVitality}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="8" Text="{Binding UnitS}" HorizontalTextAlignment="Center" />
+                        <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" />
+                    </Grid>
+
+                    <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
+                    <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
+                    <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
+                    <Label Grid.Row="6" Text="{Binding ProfilesStatus}" TextColor="#6B7280" />
+                    <ScrollView Grid.Row="7">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="72" />
+                                                    <ColumnDefinition Width="56" />
+                                                </Grid.ColumnDefinitions>
+                                                <Label Grid.Column="0" FormattedText="{Binding NameFormatted}" FontAttributes="Bold" />
+                                                <Label Grid.Column="1" Text="{Binding SwcDisplay}" FontSize="12" HorizontalTextAlignment="End" />
+                                                <Label Grid.Column="2" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                            </Grid>
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                                <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
+                                                <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                                <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                            </Grid>
+                                            <Label FormattedText="{Binding PeripheralsFormatted}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

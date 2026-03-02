@@ -631,6 +631,104 @@ public class ViewerViewModel : BaseViewModel
     public ICommand ShowUnitsTabCommand { get; }
     public ICommand ShowFireteamsTabCommand { get; }
 
+    public async Task LoadSpecificUnitAsync(
+        int sourceFactionId,
+        int sourceUnitId,
+        string unitName,
+        string? cachedLogoPath = null,
+        string? packagedLogoPath = null,
+        CancellationToken cancellationToken = default)
+    {
+        SelectedFaction = new ViewerFactionItem
+        {
+            Id = sourceFactionId,
+            Name = string.Empty
+        };
+
+        SelectedUnit = new ViewerUnitItem
+        {
+            Id = sourceUnitId,
+            Name = unitName,
+            CachedLogoPath = cachedLogoPath,
+            PackagedLogoPath = packagedLogoPath
+        };
+
+        await LoadProfilesForSelectedUnitAsync(cancellationToken);
+    }
+
+    public async Task LoadSpecificConfigurationAsync(
+        int sourceFactionId,
+        int sourceUnitId,
+        string unitName,
+        string profileKey,
+        bool isLieutenant,
+        string? cachedLogoPath = null,
+        string? packagedLogoPath = null,
+        CancellationToken cancellationToken = default)
+    {
+        await LoadSpecificUnitAsync(
+            sourceFactionId,
+            sourceUnitId,
+            unitName,
+            cachedLogoPath,
+            packagedLogoPath,
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(profileKey))
+        {
+            return;
+        }
+
+        var matchedProfile = Profiles
+            .FirstOrDefault(x =>
+                ProfileKeysMatch(x.ProfileKey, profileKey) &&
+                x.IsLieutenant == isLieutenant);
+
+        matchedProfile ??= Profiles
+            .FirstOrDefault(x => ProfileKeysMatch(x.ProfileKey, profileKey));
+
+        if (matchedProfile is null)
+        {
+            Profiles.Clear();
+            ProfilesStatus = "Saved configuration not found for this unit.";
+            return;
+        }
+
+        Profiles.Clear();
+        Profiles.Add(matchedProfile);
+
+        ProfilesStatus = "1 configuration loaded.";
+    }
+
+    private static bool ProfileKeysMatch(string candidateKey, string requestedKey)
+    {
+        if (string.Equals(candidateKey, requestedKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return string.Equals(
+            BuildLegacyProfileKey(candidateKey),
+            BuildLegacyProfileKey(requestedKey),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string BuildLegacyProfileKey(string profileKey)
+    {
+        if (string.IsNullOrWhiteSpace(profileKey))
+        {
+            return string.Empty;
+        }
+
+        var parts = profileKey.Split('|');
+        if (parts.Length < 3)
+        {
+            return profileKey;
+        }
+
+        return $"{parts[0]}|{parts[1]}|{parts[2]}";
+    }
+
     public bool MercsOnlyUnits
     {
         get => _mercsOnlyUnits;
@@ -2860,7 +2958,6 @@ public class ViewerViewModel : BaseViewModel
                                 extrasLookup,
                                 ShowUnitsInInches)
                             .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
-                            .Where(x => !x.Name.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
                             .ToList();
                     var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));
 
@@ -2873,6 +2970,8 @@ public class ViewerViewModel : BaseViewModel
                     var peripherals = JoinOrDash(peripheralEntries.Select(x => x.Name));
                     var swc = ReadOptionSwc(option);
                     var cost = ReadOptionCost(option);
+                    var isLieutenant = IsLieutenantOption(option, skillsLookup);
+                    var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
 
                     if (MercsOnlyUnits && IsPositiveSwc(swc))
                     {
@@ -2895,6 +2994,8 @@ public class ViewerViewModel : BaseViewModel
                     {
                         GroupName = groupName,
                         Name = displayName,
+                        ProfileKey = profileKey,
+                        IsLieutenant = isLieutenant,
                         NameFormatted = BuildNameFormatted(displayName),
                         RangedWeapons = rangedWeapons,
                         RangedWeaponsFormatted = BuildLinkedFormattedString(rangedLines, Color.FromArgb("#EF4444")),

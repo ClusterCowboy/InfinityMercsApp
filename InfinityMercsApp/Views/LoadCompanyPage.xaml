@@ -26,6 +26,9 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border StrokeThickness="1" Padding="10" Margin="0,0,0,8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnLoadRecordTapped" />
+                            </Border.GestureRecognizers>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <HorizontalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="Center">
                                     <skia:SKCanvasView

@@ -156,6 +156,22 @@ public partial class LoadCompanyPage : ContentPage
         }
     }
 
+    private async void OnLoadRecordTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not BindableObject bindable || bindable.BindingContext is not LoadCompanyRecordItem item)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.FilePath))
+        {
+            return;
+        }
+
+        var encodedPath = Uri.EscapeDataString(item.FilePath);
+        await Shell.Current.GoToAsync($"{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+    }
+
     private void OnTrashIconPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
