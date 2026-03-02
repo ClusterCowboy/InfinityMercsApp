@@ -38,6 +38,10 @@ public class DatabaseContext : IDatabaseContext
         await Connection.CreateTableAsync<ArmyFactionRecord>();
         await Connection.CreateTableAsync<ArmyUnitRecord>();
         await Connection.CreateTableAsync<ArmyResumeRecord>();
+        await Connection.CreateTableAsync<ArmySpecopsSkillRecord>();
+        await Connection.CreateTableAsync<ArmySpecopsEquipRecord>();
+        await Connection.CreateTableAsync<ArmySpecopsWeaponRecord>();
+        await Connection.CreateTableAsync<ArmySpecopsUnitRecord>();
         _isInitialized = true;
     }
 }

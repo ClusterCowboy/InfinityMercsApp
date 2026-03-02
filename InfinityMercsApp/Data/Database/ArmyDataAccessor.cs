@@ -20,6 +20,8 @@ public class ArmyDataAccessor : IArmyDataAccessor
 
     private readonly IDatabaseContext _databaseContext;
     private readonly SQLiteAsyncConnection _connection;
+    private readonly SemaphoreSlim _specopsBackfillGate = new(1, 1);
+    private bool _specopsBackfillCompleted;
 
     public ArmyDataAccessor(IDatabaseContext databaseContext)
     {
@@ -80,8 +82,17 @@ public class ArmyDataAccessor : IArmyDataAccessor
             Category = x.Category
         }).ToList();
 
+        var specopsSkills = BuildSpecopsSkillRecords(factionId, document.Specops);
+        var specopsEquips = BuildSpecopsEquipRecords(factionId, document.Specops);
+        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, document.Specops);
+        var specopsUnits = BuildSpecopsUnitRecords(factionId, document.Specops);
+
         await _connection.ExecuteAsync("DELETE FROM army_units WHERE FactionId = ?", factionId);
         await _connection.ExecuteAsync("DELETE FROM army_resume WHERE FactionId = ?", factionId);
+        await _connection.ExecuteAsync("DELETE FROM army_specops_skills WHERE FactionId = ?", factionId);
+        await _connection.ExecuteAsync("DELETE FROM army_specops_equips WHERE FactionId = ?", factionId);
+        await _connection.ExecuteAsync("DELETE FROM army_specops_weapons WHERE FactionId = ?", factionId);
+        await _connection.ExecuteAsync("DELETE FROM army_specops_units WHERE FactionId = ?", factionId);
         await _connection.DeleteAsync<ArmyFactionRecord>(factionId);
 
         await _connection.InsertAsync(snapshot);
@@ -95,6 +106,26 @@ public class ArmyDataAccessor : IArmyDataAccessor
         {
             await _connection.InsertAllAsync(resume);
         }
+
+        if (specopsSkills.Count > 0)
+        {
+            await _connection.InsertAllAsync(specopsSkills);
+        }
+
+        if (specopsEquips.Count > 0)
+        {
+            await _connection.InsertAllAsync(specopsEquips);
+        }
+
+        if (specopsWeapons.Count > 0)
+        {
+            await _connection.InsertAllAsync(specopsWeapons);
+        }
+
+        if (specopsUnits.Count > 0)
+        {
+            await _connection.InsertAllAsync(specopsUnits);
+        }
     }
 
     public async Task ImportFactionArmyFromFileAsync(int factionId, string filePath, CancellationToken cancellationToken = default)
@@ -107,6 +138,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         return await _connection.Table<ArmyFactionRecord>().Where(x => x.FactionId == factionId).CountAsync() > 0;
     }
 
@@ -114,6 +146,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         var snapshots = await _connection.Table<ArmyFactionRecord>().OrderBy(x => x.FactionId).ToListAsync();
         return snapshots.Select(x => x.FactionId).ToList();
     }
@@ -122,6 +155,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         return await _connection.FindAsync<ArmyFactionRecord>(factionId);
     }
 
@@ -129,6 +163,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         const string sql = """
             SELECT *
             FROM army_units
@@ -144,6 +179,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         const string sql = """
             SELECT *
             FROM army_units
@@ -161,6 +197,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
 
         var term = searchTerm?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(term))
@@ -219,6 +256,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
         const string sql = """
             SELECT *
             FROM army_resume
@@ -234,6 +272,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
 
         const string sql = """
             SELECT r.*
@@ -261,6 +300,66 @@ public class ArmyDataAccessor : IArmyDataAccessor
             VehicleType);
     }
 
+    public async Task<IReadOnlyList<ArmySpecopsSkillRecord>> GetSpecopsSkillsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
+        const string sql = """
+            SELECT *
+            FROM army_specops_skills
+            WHERE FactionId = ?
+            ORDER BY EntryOrder
+            """;
+
+        return await _connection.QueryAsync<ArmySpecopsSkillRecord>(sql, factionId);
+    }
+
+    public async Task<IReadOnlyList<ArmySpecopsEquipRecord>> GetSpecopsEquipsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
+        const string sql = """
+            SELECT *
+            FROM army_specops_equips
+            WHERE FactionId = ?
+            ORDER BY EntryOrder
+            """;
+
+        return await _connection.QueryAsync<ArmySpecopsEquipRecord>(sql, factionId);
+    }
+
+    public async Task<IReadOnlyList<ArmySpecopsWeaponRecord>> GetSpecopsWeaponsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
+        const string sql = """
+            SELECT *
+            FROM army_specops_weapons
+            WHERE FactionId = ?
+            ORDER BY EntryOrder
+            """;
+
+        return await _connection.QueryAsync<ArmySpecopsWeaponRecord>(sql, factionId);
+    }
+
+    public async Task<IReadOnlyList<ArmySpecopsUnitRecord>> GetSpecopsUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+        await EnsureSpecopsIndexedAsync(cancellationToken);
+        const string sql = """
+            SELECT *
+            FROM army_specops_units
+            WHERE FactionId = ?
+            ORDER BY EntryOrder
+            """;
+
+        return await _connection.QueryAsync<ArmySpecopsUnitRecord>(sql, factionId);
+    }
+
     private static string BuildUnitKey(int factionId, ArmyUnitDto unit)
     {
         return $"{factionId}:{unit.Id}:{unit.IdArmy ?? 0}:{unit.Slug ?? string.Empty}";
@@ -269,6 +368,300 @@ public class ArmyDataAccessor : IArmyDataAccessor
     private static string BuildResumeKey(int factionId, ArmyResumeDto unit)
     {
         return $"{factionId}:{unit.Id}:{unit.Slug ?? string.Empty}";
+    }
+
+    private async Task EnsureSpecopsIndexedAsync(CancellationToken cancellationToken)
+    {
+        if (_specopsBackfillCompleted)
+        {
+            return;
+        }
+
+        await _specopsBackfillGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_specopsBackfillCompleted)
+            {
+                return;
+            }
+
+            var snapshots = await _connection.Table<ArmyFactionRecord>().ToListAsync();
+            foreach (var snapshot in snapshots)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
+                {
+                    continue;
+                }
+
+                var existingCount = await _connection.ExecuteScalarAsync<int>(
+                    """
+                    SELECT
+                        (SELECT COUNT(*) FROM army_specops_skills WHERE FactionId = ?)
+                      + (SELECT COUNT(*) FROM army_specops_equips WHERE FactionId = ?)
+                      + (SELECT COUNT(*) FROM army_specops_weapons WHERE FactionId = ?)
+                      + (SELECT COUNT(*) FROM army_specops_units WHERE FactionId = ?)
+                    """,
+                    snapshot.FactionId,
+                    snapshot.FactionId,
+                    snapshot.FactionId,
+                    snapshot.FactionId);
+
+                if (existingCount > 0)
+                {
+                    continue;
+                }
+
+                using var specopsDoc = JsonDocument.Parse(snapshot.SpecopsJson);
+                var specopsRoot = specopsDoc.RootElement;
+                var skillRows = BuildSpecopsSkillRecords(snapshot.FactionId, specopsRoot);
+                var equipRows = BuildSpecopsEquipRecords(snapshot.FactionId, specopsRoot);
+                var weaponRows = BuildSpecopsWeaponRecords(snapshot.FactionId, specopsRoot);
+                var unitRows = BuildSpecopsUnitRecords(snapshot.FactionId, specopsRoot);
+
+                if (skillRows.Count > 0)
+                {
+                    await _connection.InsertAllAsync(skillRows);
+                }
+
+                if (equipRows.Count > 0)
+                {
+                    await _connection.InsertAllAsync(equipRows);
+                }
+
+                if (weaponRows.Count > 0)
+                {
+                    await _connection.InsertAllAsync(weaponRows);
+                }
+
+                if (unitRows.Count > 0)
+                {
+                    await _connection.InsertAllAsync(unitRows);
+                }
+            }
+
+            _specopsBackfillCompleted = true;
+        }
+        finally
+        {
+            _specopsBackfillGate.Release();
+        }
+    }
+
+    private static List<ArmySpecopsSkillRecord> BuildSpecopsSkillRecords(int factionId, JsonElement specops)
+    {
+        var records = new List<ArmySpecopsSkillRecord>();
+        if (!TryGetSpecopsArray(specops, "skills", out var array))
+        {
+            return records;
+        }
+
+        var entryOrder = 0;
+        foreach (var entry in array.EnumerateArray())
+        {
+            if (!TryReadIntProperty(entry, "id", out var skillId))
+            {
+                continue;
+            }
+
+            var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
+            records.Add(new ArmySpecopsSkillRecord
+            {
+                SpecopsSkillKey = $"{factionId}:{entryOrder}:{skillId}:{exp}",
+                FactionId = factionId,
+                EntryOrder = entryOrder,
+                SkillId = skillId,
+                Exp = exp,
+                ExtrasJson = TryReadJsonProperty(entry, "extras"),
+                EquipJson = TryReadJsonProperty(entry, "equip"),
+                WeaponsJson = TryReadJsonProperty(entry, "weapons"),
+                RawJson = entry.GetRawText()
+            });
+
+            entryOrder++;
+        }
+
+        return records;
+    }
+
+    private static List<ArmySpecopsEquipRecord> BuildSpecopsEquipRecords(int factionId, JsonElement specops)
+    {
+        var records = new List<ArmySpecopsEquipRecord>();
+        if (!TryGetSpecopsArray(specops, "equip", out var array))
+        {
+            return records;
+        }
+
+        var entryOrder = 0;
+        foreach (var entry in array.EnumerateArray())
+        {
+            if (!TryReadIntProperty(entry, "id", out var equipId))
+            {
+                continue;
+            }
+
+            var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
+            records.Add(new ArmySpecopsEquipRecord
+            {
+                SpecopsEquipKey = $"{factionId}:{entryOrder}:{equipId}:{exp}",
+                FactionId = factionId,
+                EntryOrder = entryOrder,
+                EquipId = equipId,
+                Exp = exp,
+                ExtrasJson = TryReadJsonProperty(entry, "extras"),
+                SkillsJson = TryReadJsonProperty(entry, "skills"),
+                WeaponsJson = TryReadJsonProperty(entry, "weapons"),
+                RawJson = entry.GetRawText()
+            });
+
+            entryOrder++;
+        }
+
+        return records;
+    }
+
+    private static List<ArmySpecopsWeaponRecord> BuildSpecopsWeaponRecords(int factionId, JsonElement specops)
+    {
+        var records = new List<ArmySpecopsWeaponRecord>();
+        if (!TryGetSpecopsArray(specops, "weapons", out var array))
+        {
+            return records;
+        }
+
+        var entryOrder = 0;
+        foreach (var entry in array.EnumerateArray())
+        {
+            if (!TryReadIntProperty(entry, "id", out var weaponId))
+            {
+                continue;
+            }
+
+            var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
+            records.Add(new ArmySpecopsWeaponRecord
+            {
+                SpecopsWeaponKey = $"{factionId}:{entryOrder}:{weaponId}:{exp}",
+                FactionId = factionId,
+                EntryOrder = entryOrder,
+                WeaponId = weaponId,
+                Exp = exp,
+                RawJson = entry.GetRawText()
+            });
+
+            entryOrder++;
+        }
+
+        return records;
+    }
+
+    private static List<ArmySpecopsUnitRecord> BuildSpecopsUnitRecords(int factionId, JsonElement specops)
+    {
+        var records = new List<ArmySpecopsUnitRecord>();
+        if (!TryGetSpecopsArray(specops, "units", out var array))
+        {
+            return records;
+        }
+
+        var entryOrder = 0;
+        foreach (var entry in array.EnumerateArray())
+        {
+            if (!TryReadIntProperty(entry, "id", out var unitId))
+            {
+                continue;
+            }
+
+            records.Add(new ArmySpecopsUnitRecord
+            {
+                SpecopsUnitKey = $"{factionId}:{entryOrder}:{unitId}",
+                FactionId = factionId,
+                EntryOrder = entryOrder,
+                UnitId = unitId,
+                IdArmy = TryReadNullableIntProperty(entry, "idArmy"),
+                Canonical = TryReadNullableIntProperty(entry, "canonical"),
+                Isc = TryReadStringProperty(entry, "isc"),
+                IscAbbr = TryReadStringProperty(entry, "iscAbbr"),
+                Name = TryReadStringProperty(entry, "name") ?? string.Empty,
+                Slug = TryReadStringProperty(entry, "slug"),
+                ProfileGroupsJson = TryReadJsonProperty(entry, "profileGroups"),
+                OptionsJson = TryReadJsonProperty(entry, "options"),
+                FiltersJson = TryReadJsonProperty(entry, "filters"),
+                FactionsJson = TryReadJsonProperty(entry, "factions"),
+                RawJson = entry.GetRawText()
+            });
+
+            entryOrder++;
+        }
+
+        return records;
+    }
+
+    private static bool TryGetSpecopsArray(JsonElement specops, string propertyName, out JsonElement array)
+    {
+        array = default;
+        return specops.ValueKind == JsonValueKind.Object &&
+               specops.TryGetProperty(propertyName, out array) &&
+               array.ValueKind == JsonValueKind.Array;
+    }
+
+    private static bool TryReadIntProperty(JsonElement container, string propertyName, out int value)
+    {
+        value = default;
+        if (container.ValueKind != JsonValueKind.Object ||
+            !container.TryGetProperty(propertyName, out var propertyElement))
+        {
+            return false;
+        }
+
+        return TryReadInt(propertyElement, out value);
+    }
+
+    private static int? TryReadNullableIntProperty(JsonElement container, string propertyName)
+    {
+        if (!TryReadIntProperty(container, propertyName, out var value))
+        {
+            return null;
+        }
+
+        return value;
+    }
+
+    private static bool TryReadInt(JsonElement element, out int value)
+    {
+        value = default;
+        if (element.ValueKind == JsonValueKind.Number)
+        {
+            return element.TryGetInt32(out value);
+        }
+
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            return int.TryParse(element.GetString(), out value);
+        }
+
+        return false;
+    }
+
+    private static string? TryReadStringProperty(JsonElement container, string propertyName)
+    {
+        if (container.ValueKind != JsonValueKind.Object ||
+            !container.TryGetProperty(propertyName, out var propertyElement) ||
+            propertyElement.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        return propertyElement.GetString();
+    }
+
+    private static string? TryReadJsonProperty(JsonElement container, string propertyName)
+    {
+        if (container.ValueKind != JsonValueKind.Object ||
+            !container.TryGetProperty(propertyName, out var propertyElement))
+        {
+            return null;
+        }
+
+        return ToJsonOrNull(propertyElement);
     }
 
     private static string? ToJsonOrNull(JsonElement element)
