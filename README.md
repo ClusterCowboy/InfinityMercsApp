@@ -28,7 +28,8 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Spec Ops Implementation
  - [ ] Spec Ops for the captain
  - [ ] Choosing a captain should give a pool of points for improvement based on the per-scenario options
- - [ ] The ability to purchase upgrades and reflect this in the stat line of the unitw
+ - [ ] The ability to purchase upgrades and reflect this in the stat line of the units
+
 #### Saving
  - [ ] Saving a custom captain
 	 - [ ] Loading a custom captain
@@ -41,8 +42,8 @@ This is an app in C# which will allow for the easy creation and managment of a c
 
 ### Company Types
 
-- [ ] Be able to set army points, default to 75 points
-- [ ] Have a slot at the top for the captain, make it clear
+- [X] Be able to set army points, default to 75 points
+- [X] Have a slot at the top for the captain, make it clear
 #### Implement Standard Company
 - [X] Be able to select two sectorials or one vanilla army
 #### Implement Cohesive Company

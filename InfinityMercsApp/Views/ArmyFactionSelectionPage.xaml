@@ -448,12 +448,21 @@
         </Border>
 
         <Border Grid.Row="1" StrokeThickness="1" Padding="10">
-            <Grid RowDefinitions="Auto,*" RowSpacing="8">
-                <Label
-                    Grid.Row="0"
-                    Text="Mercs Company"
-                    FontSize="20"
-                    FontAttributes="Bold" />
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                <HorizontalStackLayout Grid.Row="0" Spacing="8" VerticalOptions="Center">
+                    <Label
+                        Text="Mercs Company"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center" />
+                    <Label Text="-" VerticalOptions="Center" />
+                    <Entry
+                        WidthRequest="220"
+                        Text="{Binding CompanyName}"
+                        Placeholder="Company Name"
+                        ClearButtonVisibility="WhileEditing"
+                        VerticalOptions="Center" />
+                </HorizontalStackLayout>
                 <CollectionView
                     Grid.Row="1"
                     ItemsSource="{Binding MercsCompanyEntries}"
@@ -501,6 +510,12 @@
                         <Label Text="No units added yet." TextColor="#6B7280" />
                     </CollectionView.EmptyView>
                 </CollectionView>
+                <Button
+                    Grid.Row="2"
+                    Text="START COMPANY"
+                    HorizontalOptions="End"
+                    VerticalOptions="End"
+                    IsEnabled="{Binding IsCompanyValid}" />
             </Grid>
         </Border>
         </Grid>

@@ -13,6 +13,16 @@
         Route="MainPage" />
 
     <ShellContent
+        Title="Create New Army"
+        ContentTemplate="{DataTemplate views:CreateNewArmyPage}"
+        Route="CreateNewArmyPage" />
+
+    <ShellContent
+        Title="Load Company"
+        ContentTemplate="{DataTemplate views:LoadCompanyPage}"
+        Route="LoadCompanyPage" />
+
+    <ShellContent
         Title="Viewer"
         ContentTemplate="{DataTemplate views:ViewerPage}"
         Route="ViewerPage" />

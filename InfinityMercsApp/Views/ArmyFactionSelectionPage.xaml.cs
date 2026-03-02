@@ -92,6 +92,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private SKPicture? _seasonCheckIconPicture;
     private SKPicture? _seasonXIconPicture;
     private bool _showSeasonCheckIcon;
+    private bool _isCompanyValid;
+    private string _companyName = "Company Name";
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
@@ -245,6 +247,36 @@ public partial class ArmyFactionSelectionPage : ContentPage
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
             _ = ApplyUnitVisibilityFiltersAsync();
+        }
+    }
+
+    public string CompanyName
+    {
+        get => _companyName;
+        set
+        {
+            if (_companyName == value)
+            {
+                return;
+            }
+
+            _companyName = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsCompanyValid
+    {
+        get => _isCompanyValid;
+        private set
+        {
+            if (_isCompanyValid == value)
+            {
+                return;
+            }
+
+            _isCompanyValid = value;
+            OnPropertyChanged();
         }
     }
     public bool IsFactionSelectionActive
@@ -1503,6 +1535,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
         var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
         var shouldShowCheck = hasLieutenant && currentPoints <= pointsLimit;
+        IsCompanyValid = shouldShowCheck;
 
         if (_showSeasonCheckIcon == shouldShowCheck)
         {
