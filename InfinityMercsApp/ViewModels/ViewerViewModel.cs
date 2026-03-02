@@ -3098,6 +3098,22 @@ public class ViewerProfileItem : BaseViewModel
 
     public string Cost { get; init; } = "-";
 
+    private bool _isVisible = true;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set
+        {
+            if (_isVisible == value)
+            {
+                return;
+            }
+
+            _isVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
     private bool _isLieutenantBlocked;
     public bool IsLieutenantBlocked
     {

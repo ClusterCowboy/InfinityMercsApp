@@ -186,6 +186,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
+            _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
 
@@ -203,6 +204,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
+            _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
     public bool IsFactionSelectionActive
@@ -374,7 +376,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _lieutenantOnlyUnits = value;
             OnPropertyChanged();
-            _ = LoadUnitsForActiveSlotAsync();
+            ApplyLieutenantVisualStates();
+            _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
 
@@ -661,7 +664,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     if (UnitHasVisibleOption(
                             unitRecord?.ProfileGroupsJson,
                             skillsLookup,
-                            requireLieutenant: LieutenantOnlyUnits,
+                            requireLieutenant: false,
                             requireZeroSwc: true))
                     {
                         filteredIds.Add(unit.UnitId);
@@ -702,6 +705,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             {
                 Units.Add(unit);
             }
+
+            await ApplyUnitVisibilityFiltersAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -770,6 +775,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         UpdateMercsCompanyTotal();
         ApplyLieutenantVisualStates();
+        _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
@@ -782,6 +788,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
         ApplyLieutenantVisualStates();
+        _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void ApplyLieutenantVisualStates()
@@ -790,17 +797,82 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
         var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
         var pointsRemaining = pointsLimit - currentPoints;
+        var visibleProfiles = 0;
 
         foreach (var profile in Profiles)
         {
             var profileCost = ParseCostValue(profile.Cost);
             var overRemainingPoints = profileCost > pointsRemaining;
+            var lieutenantFilteredOut = LieutenantOnlyUnits && !profile.IsLieutenant;
+
+            profile.IsVisible = !lieutenantFilteredOut && !overRemainingPoints;
             profile.IsLieutenantBlocked =
                 (hasActiveLieutenant && profile.IsLieutenant) ||
                 overRemainingPoints;
+
+            if (profile.IsVisible)
+            {
+                visibleProfiles++;
+            }
         }
 
+        ProfilesStatus = visibleProfiles == 0
+            ? "No configurations found for this unit."
+            : $"{visibleProfiles} configurations loaded.";
+
         UpdateSeasonValidationState();
+    }
+
+    private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
+    {
+        if (_armyDataAccessor is null || Units.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+            var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
+            var pointsRemaining = pointsLimit - currentPoints;
+
+            var factions = GetUnitSourceFactions();
+            var skillsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
+            foreach (var faction in factions)
+            {
+                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            }
+
+            foreach (var unit in Units)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!skillsLookupByFaction.TryGetValue(unit.SourceFactionId, out var skillsLookup))
+                {
+                    unit.IsVisible = false;
+                    continue;
+                }
+
+                var unitRecord = await _armyDataAccessor.GetUnitAsync(unit.SourceFactionId, unit.Id, cancellationToken);
+                unit.IsVisible = UnitHasVisibleOption(
+                    unitRecord?.ProfileGroupsJson,
+                    skillsLookup,
+                    requireLieutenant: LieutenantOnlyUnits,
+                    requireZeroSwc: true,
+                    maxCost: pointsRemaining);
+            }
+
+            if (_selectedUnit is not null && !_selectedUnit.IsVisible)
+            {
+                _selectedUnit.IsSelected = false;
+                _selectedUnit = null;
+                ResetUnitDetails();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+        }
     }
 
     private void UpdateMercsCompanyTotal()
@@ -1030,11 +1102,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                if (LieutenantOnlyUnits && !IsLieutenantOption(option, skillsLookup))
-                {
-                    continue;
-                }
-
                 if (IsPositiveSwc(ReadOptionSwc(option)))
                 {
                     continue;
@@ -1075,11 +1142,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                if (LieutenantOnlyUnits && !IsLieutenantOption(option, skillsLookup))
-                {
-                    continue;
-                }
-
                 var swc = ReadOptionSwc(option);
                 if (IsPositiveSwc(swc))
                 {
@@ -1179,10 +1241,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         ApplyLieutenantVisualStates();
-
-        ProfilesStatus = Profiles.Count == 0
-            ? "No configurations found for this unit."
-            : $"{Profiles.Count} configurations loaded.";
     }
 
     private static List<string> GetOrderedIdDisplayNamesFromEntries(
@@ -1674,7 +1732,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         string? profileGroupsJson,
         IReadOnlyDictionary<int, string> skillsLookup,
         bool requireLieutenant,
-        bool requireZeroSwc)
+        bool requireZeroSwc,
+        int? maxCost = null)
     {
         if (string.IsNullOrWhiteSpace(profileGroupsJson))
         {
@@ -1704,6 +1763,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     }
 
                     if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
+                    {
+                        continue;
+                    }
+
+                    if (maxCost.HasValue && ParseCostValue(ReadOptionCost(option)) > maxCost.Value)
                     {
                         continue;
                     }
@@ -3460,6 +3524,22 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
     public string? Subtitle { get; init; }
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+
+    private bool _isVisible = true;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set
+        {
+            if (_isVisible == value)
+            {
+                return;
+            }
+
+            _isVisible = value;
+            OnPropertyChanged();
+        }
+    }
 
     private bool _isSelected;
     public bool IsSelected
