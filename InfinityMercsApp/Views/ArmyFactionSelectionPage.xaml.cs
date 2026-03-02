@@ -175,7 +175,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
-        ToggleTeamEntryCommand = new Command<ArmyTeamListItem>(ToggleTeamEntry);
 
         BindingContext = this;
         SetActiveSlot(0);
@@ -196,7 +195,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
-    public ICommand ToggleTeamEntryCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
     public string PageHeading
@@ -773,6 +771,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             var mergedUnits = new Dictionary<string, ArmyUnitSelectionItem>(StringComparer.OrdinalIgnoreCase);
             var mergedTeams = new Dictionary<string, TeamAggregate>(StringComparer.OrdinalIgnoreCase);
+            var wildcardUnitLimits = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var faction in factions)
             {
@@ -834,9 +833,54 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             foreach (var team in mergedTeams.Values
+                         .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
-                var allowedProfiles = team.UnitLimits
+                var allowedProfiles = BuildAllowedTeamProfiles(team.UnitLimits);
+                if (ShouldSkipTeamEntry(allowedProfiles))
+                {
+                    continue;
+                }
+
+                TeamEntries.Add(new ArmyTeamListItem
+                {
+                    Name = team.Name,
+                    TeamCountsText = $"D: {team.Duo}",
+                    IsExpanded = true,
+                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
+                });
+            }
+
+            foreach (var team in mergedTeams.Values)
+            {
+                var isWildcardTeam = IsWildcardTeamName(team.Name);
+                foreach (var entry in team.UnitLimits)
+                {
+                    var unitName = entry.Key;
+                    var value = entry.Value;
+                    if (!isWildcardTeam && !IsWildcardEntry(unitName, value.Slug))
+                    {
+                        continue;
+                    }
+
+                    if (wildcardUnitLimits.TryGetValue(unitName, out var existing))
+                    {
+                        wildcardUnitLimits[unitName] = (
+                            Math.Min(existing.Min, value.Min),
+                            Math.Max(existing.Max, value.Max),
+                            string.IsNullOrWhiteSpace(existing.Slug) ? value.Slug : existing.Slug,
+                            existing.MinAsterisk || value.MinAsterisk);
+                    }
+                    else
+                    {
+                        wildcardUnitLimits[unitName] = value;
+                    }
+                }
+            }
+
+            if (wildcardUnitLimits.Count > 0)
+            {
+                var wildcardAllowedProfiles = wildcardUnitLimits
                     .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
                     .Select(x => new ArmyTeamUnitLimitItem
                     {
@@ -849,9 +893,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
                 TeamEntries.Add(new ArmyTeamListItem
                 {
-                    Name = team.Name,
-                    TeamCountsText = $"D: {team.Duo}  H: {team.Haris}  C: {team.Core}",
-                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
+                    Name = "Wildcards",
+                    TeamCountsText = string.Empty,
+                    IsWildcardBucket = true,
+                    IsExpanded = true,
+                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(wildcardAllowedProfiles)
                 });
             }
 
@@ -1144,7 +1190,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     allowed.Slug,
                     visibleUnitNames,
                     visibleUnitSlugs,
-                    visibleNormalizedNames);
+                    visibleNormalizedNames,
+                    treatWildcardAsAlwaysVisible: !team.IsWildcardBucket);
                 allowed.IsVisible = isVisible;
                 if (isVisible)
                 {
@@ -1152,11 +1199,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 }
             }
 
-            team.IsVisible = visibleAllowedCount > 0;
-            if (!team.IsVisible)
-            {
-                team.IsExpanded = false;
-            }
+            var hideSingleMaxOne = team.IsWildcardBucket
+                ? false
+                : ShouldSkipVisibleTeamEntry(team.AllowedProfiles);
+            team.IsVisible = visibleAllowedCount > 0 && !hideSingleMaxOne;
+            team.IsExpanded = true;
         }
     }
 
@@ -1165,8 +1212,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
         string? allowedProfileSlug,
         HashSet<string> visibleUnitNames,
         HashSet<string> visibleUnitSlugs,
-        IReadOnlyList<string> visibleNormalizedNames)
+        IReadOnlyList<string> visibleNormalizedNames,
+        bool treatWildcardAsAlwaysVisible = true)
     {
+        if (treatWildcardAsAlwaysVisible && IsWildcardEntry(allowedProfileName, allowedProfileSlug))
+        {
+            return true;
+        }
+
         if (!string.IsNullOrWhiteSpace(allowedProfileSlug) &&
             visibleUnitSlugs.Contains(allowedProfileSlug.Trim()))
         {
@@ -1207,6 +1260,103 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return false;
+    }
+
+    private static List<ArmyTeamUnitLimitItem> BuildAllowedTeamProfiles(
+        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits)
+    {
+        var merged = new Dictionary<string, (string Name, int Min, int Max, string? Slug, bool MinAsterisk, bool IsWildcard)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in unitLimits)
+        {
+            var name = entry.Key;
+            var value = entry.Value;
+            var isWildcard = IsWildcardEntry(name, value.Slug);
+            var key = isWildcard ? "__WILDCARD__" : name.Trim();
+            var normalizedName = isWildcard ? "Wildcards" : name;
+
+            if (merged.TryGetValue(key, out var existing))
+            {
+                merged[key] = (
+                    existing.Name,
+                    Math.Min(existing.Min, value.Min),
+                    Math.Max(existing.Max, value.Max),
+                    string.IsNullOrWhiteSpace(existing.Slug) ? value.Slug : existing.Slug,
+                    existing.MinAsterisk || value.MinAsterisk,
+                    true == existing.IsWildcard || isWildcard);
+                continue;
+            }
+
+            merged[key] = (
+                normalizedName,
+                value.Min,
+                value.Max,
+                value.Slug,
+                value.MinAsterisk,
+                isWildcard);
+        }
+
+        return merged.Values
+            .OrderBy(x => x.IsWildcard ? 1 : 0)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => new ArmyTeamUnitLimitItem
+            {
+                Name = x.Name,
+                Min = x.MinAsterisk ? "*" : x.Min.ToString(),
+                Max = x.Max.ToString(),
+                Slug = x.Slug
+            })
+            .ToList();
+    }
+
+    private static bool ShouldSkipTeamEntry(IReadOnlyList<ArmyTeamUnitLimitItem> allowedProfiles)
+    {
+        if (allowedProfiles.Count != 1)
+        {
+            return false;
+        }
+
+        var only = allowedProfiles[0];
+        if (IsWildcardEntry(only.Name, only.Slug))
+        {
+            return false;
+        }
+
+        return string.Equals(only.Max?.Trim(), "1", StringComparison.Ordinal);
+    }
+
+    private static bool ShouldSkipVisibleTeamEntry(IReadOnlyList<ArmyTeamUnitLimitItem> allowedProfiles)
+    {
+        var visible = allowedProfiles.Where(x => x.IsVisible).ToList();
+        if (visible.Count != 1)
+        {
+            return false;
+        }
+
+        var only = visible[0];
+        if (IsWildcardEntry(only.Name, only.Slug))
+        {
+            return false;
+        }
+
+        return string.Equals(only.Max?.Trim(), "1", StringComparison.Ordinal);
+    }
+
+    private static bool IsWildcardEntry(string? name, string? slug)
+    {
+        return ContainsWildcardToken(name) || ContainsWildcardToken(slug);
+    }
+
+    private static bool ContainsWildcardToken(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               (value.IndexOf("wildcard", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                value.IndexOf("wild", StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private static bool IsWildcardTeamName(string? teamName)
+    {
+        return ContainsWildcardToken(teamName);
     }
 
     private static string NormalizeTeamUnitName(string? name)
@@ -2234,16 +2384,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return fallback;
-    }
-
-    private void ToggleTeamEntry(ArmyTeamListItem? item)
-    {
-        if (item is null)
-        {
-            return;
-        }
-
-        item.IsExpanded = !item.IsExpanded;
     }
 
     private static bool UnitHasLieutenantOption(string? profileGroupsJson, IReadOnlyDictionary<int, string> skillsLookup)
@@ -4120,6 +4260,8 @@ public class ArmyTeamListItem : BaseViewModel
 {
     public string Name { get; init; } = string.Empty;
     public string TeamCountsText { get; init; } = string.Empty;
+    public bool HasTeamCounts => !string.IsNullOrWhiteSpace(TeamCountsText);
+    public bool IsWildcardBucket { get; init; }
     public ObservableCollection<ArmyTeamUnitLimitItem> AllowedProfiles { get; init; } = [];
 
     private bool _isVisible = true;

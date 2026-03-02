@@ -171,7 +171,7 @@
                                 </HorizontalStackLayout>
                                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                                     <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
-                                    <Label Text="Teams View" VerticalOptions="Center" />
+                                    <Label Text="Duo Teams View" VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
                         </Grid>
@@ -248,7 +248,7 @@
                                     </HorizontalStackLayout>
                                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                                         <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
-                                        <Label Text="Teams View" VerticalOptions="Center" />
+                                        <Label Text="Duo Teams View" VerticalOptions="Center" />
                                     </HorizontalStackLayout>
                                 </VerticalStackLayout>
                             </Grid>
@@ -266,19 +266,18 @@
                             </ScrollView>
 
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
-                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding TeamEntries}" Spacing="0">
+                                <VerticalStackLayout Spacing="0">
+                                    <Label
+                                        Text="One Duo fireteam per company"
+                                        FontAttributes="Bold"
+                                        Margin="8,6,8,8" />
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding TeamEntries}" Spacing="0">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <Border StrokeThickness="1" Padding="8,6" MinimumHeightRequest="50" IsVisible="{Binding IsVisible}">
-                                                <Border.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.ToggleTeamEntryCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </Border.GestureRecognizers>
                                                 <VerticalStackLayout Spacing="4">
                                                     <Label Text="{Binding Name}" />
-                                                    <Label Text="{Binding TeamCountsText}" FontSize="12" TextColor="#9CA3AF" />
-                                                    <VerticalStackLayout IsVisible="{Binding IsExpanded}" Spacing="3">
+                                                    <VerticalStackLayout Spacing="3">
                                                         <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8">
                                                             <Label Grid.Column="0" Text="MIN" FontAttributes="Bold" HorizontalTextAlignment="Center" />
                                                             <Label Grid.Column="1" Text="MAX" FontAttributes="Bold" HorizontalTextAlignment="Center" />
@@ -300,6 +299,7 @@
                                             </Border>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
                                 </VerticalStackLayout>
                             </ScrollView>
                         </Grid>
