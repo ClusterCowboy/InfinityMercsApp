@@ -672,8 +672,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
         AutoSelectEmptySlot();
         if (factionChanged)
         {
+            ResetMercsCompany();
             _ = LoadUnitsForActiveSlotAsync();
         }
+    }
+
+    private void ResetMercsCompany()
+    {
+        if (MercsCompanyEntries.Count == 0)
+        {
+            UpdateMercsCompanyTotal();
+            return;
+        }
+
+        MercsCompanyEntries.Clear();
+        UpdateMercsCompanyTotal();
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -3898,6 +3911,40 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         SetSelectedUnit(item);
+    }
+
+    private void OnTeamAllowedProfileTappedFromView(object? sender, EventArgs e)
+    {
+        if (sender is not FactionListItemView view || view.BindingContext is not ArmyTeamUnitLimitItem teamItem)
+        {
+            Console.Error.WriteLine("ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
+            return;
+        }
+
+        ArmyUnitSelectionItem? resolved = null;
+        if (teamItem.ResolvedUnitId.HasValue && teamItem.ResolvedSourceFactionId.HasValue)
+        {
+            resolved = Units.FirstOrDefault(x =>
+                x.Id == teamItem.ResolvedUnitId.Value &&
+                x.SourceFactionId == teamItem.ResolvedSourceFactionId.Value);
+        }
+
+        resolved ??= Units.FirstOrDefault(x =>
+            !string.IsNullOrWhiteSpace(teamItem.Slug) &&
+            !string.IsNullOrWhiteSpace(x.Slug) &&
+            string.Equals(x.Slug.Trim(), teamItem.Slug.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        resolved ??= Units.FirstOrDefault(x =>
+            string.Equals(x.Name, teamItem.Name, StringComparison.OrdinalIgnoreCase));
+
+        if (resolved is null)
+        {
+            Console.Error.WriteLine(
+                $"ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: unable to resolve unit for team entry '{teamItem.Name}'.");
+            return;
+        }
+
+        SetSelectedUnit(resolved);
     }
 
     private async Task LoadSlotIconAsync(int slotIndex, string? cachedPath, string? packagedPath)

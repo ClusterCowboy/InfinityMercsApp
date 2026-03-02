@@ -18,7 +18,11 @@
                 FontAttributes="Bold"
                 VerticalOptions="Center" />
             <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                <Label Text="Points to start season:" VerticalOptions="Center" />
+                <Label
+                    WidthRequest="70"
+                    Text="{Binding SeasonPointsCapText}"
+                    VerticalOptions="Center" />
+                <Label Text="/" VerticalOptions="Center" />
                 <Picker
                     WidthRequest="80"
                     SelectedItem="{Binding SelectedStartSeasonPoints}">
@@ -30,11 +34,7 @@
                         </x:Array>
                     </Picker.ItemsSource>
                 </Picker>
-                <Label Text="/" VerticalOptions="Center" />
-                <Label
-                    WidthRequest="70"
-                    Text="{Binding SeasonPointsCapText}"
-                    VerticalOptions="Center" />
+                <Label Text="Points to start season" VerticalOptions="Center" />
                 <skia:SKCanvasView
                     x:Name="SeasonValidationCanvas"
                     WidthRequest="24"
@@ -289,7 +289,9 @@
                                                                     <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8" IsVisible="{Binding IsVisible}" MinimumHeightRequest="50">
                                                                         <Label Grid.Column="0" Text="{Binding Min}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
                                                                         <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
-                                                                        <controls:FactionListItemView Grid.Column="2" />
+                                                                        <controls:FactionListItemView
+                                                                            Grid.Column="2"
+                                                                            ItemTapped="OnTeamAllowedProfileTappedFromView" />
                                                                     </Grid>
                                                                 </DataTemplate>
                                                             </BindableLayout.ItemTemplate>
