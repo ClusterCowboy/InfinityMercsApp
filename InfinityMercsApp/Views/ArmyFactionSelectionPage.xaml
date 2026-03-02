@@ -3,11 +3,44 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             xmlns:shell="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
              x:Class="InfinityMercsApp.Views.ArmyFactionSelectionPage"
              x:Name="ArmyFactionSelectionRoot"
              Title="">
 
-    <Grid Padding="16" ColumnDefinitions="*,*" ColumnSpacing="12">
+    <shell:Shell.TitleView>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+            <Label
+                Grid.Column="0"
+                Text="{Binding PageHeading}"
+                TextColor="#A78BFA"
+                FontSize="36"
+                FontAttributes="Bold"
+                VerticalOptions="Center" />
+            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                <Label Text="Points to start season:" VerticalOptions="Center" />
+                <Picker
+                    WidthRequest="80"
+                    SelectedItem="{Binding SelectedStartSeasonPoints}">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>60</x:String>
+                            <x:String>75</x:String>
+                            <x:String>90</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+                <Label Text="/" VerticalOptions="Center" />
+                <Label
+                    WidthRequest="70"
+                    Text="{Binding SeasonPointsCapText}"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Grid>
+    </shell:Shell.TitleView>
+
+    <Grid Padding="16" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="10">
+
         <Grid Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="10">
             <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="10" HeightRequest="50">
                 <Border StrokeThickness="2" Stroke="{Binding LeftSlotBorderColor}" Padding="8">
@@ -217,7 +250,7 @@
         <Border Grid.Column="1" StrokeThickness="1" Padding="10">
             <Grid RowDefinitions="Auto" RowSpacing="8">
                 <Border StrokeThickness="1" Padding="8">
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="6">
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="56,*,140" ColumnSpacing="10" RowSpacing="4">
                             <skia:SKCanvasView
                                 x:Name="SelectedUnitCanvas"
@@ -298,6 +331,40 @@
                         </Grid>
                         <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
                         <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
+                        <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
+                        <ScrollView Grid.Row="6">
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
+                                            <VerticalStackLayout Spacing="2">
+                                                <Grid ColumnSpacing="12">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="56" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Label Grid.Column="0" FormattedText="{Binding NameFormatted}" FontAttributes="Bold" />
+                                                    <Label Grid.Column="1" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                                </Grid>
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                                    <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
+                                                    <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                                    <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                                </Grid>
+                                                <Label FormattedText="{Binding PeripheralsFormatted}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Grid>
                 </Border>
             </Grid>

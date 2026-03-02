@@ -1463,7 +1463,10 @@ public class ViewerViewModel : BaseViewModel
     }
 
     private static bool IsMeleeWeaponName(string weaponName) =>
-        weaponName.Contains("cc", StringComparison.OrdinalIgnoreCase);
+        Regex.IsMatch(
+            weaponName,
+            @"\bccw\b|\bda ccw\b|\bap ccw\b|\bknife\b|\bsword\b|\bmonofilament\b|\bviral ccw\b|\bpistols?\b|\bclose combat weapon\b|\bcc\s*weapon\b|\bc\.?\s*c\.?\s*weapon\b|\bpara\s*cc\s*weapon\b",
+            RegexOptions.IgnoreCase);
 
     private static string JoinOrDash(IEnumerable<string> values)
     {
