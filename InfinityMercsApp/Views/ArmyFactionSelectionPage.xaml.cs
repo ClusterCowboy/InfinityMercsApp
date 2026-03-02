@@ -53,6 +53,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private SKPicture? _cubeIconPicture;
     private SKPicture? _cube2IconPicture;
     private SKPicture? _hackableIconPicture;
+    private SKPicture? _seasonCheckIconPicture;
+    private SKPicture? _seasonXIconPicture;
+    private bool _showSeasonCheckIcon;
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
@@ -140,6 +143,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
         SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
         _ = LoadHeaderIconsAsync();
+        _ = LoadSeasonValidationIconsAsync();
     }
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
@@ -180,6 +184,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _selectedStartSeasonPoints = value;
             OnPropertyChanged();
+            UpdateSeasonValidationState();
+            ApplyLieutenantVisualStates();
         }
     }
 
@@ -195,6 +201,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _seasonPointsCapText = value;
             OnPropertyChanged();
+            UpdateSeasonValidationState();
+            ApplyLieutenantVisualStates();
         }
     }
     public bool IsFactionSelectionActive
@@ -732,12 +740,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
-        MercsCompanyEntries.Add(new MercsCompanyEntry
+        var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
+            NameFormatted = profile.NameFormatted ?? BuildNameFormatted(profile.Name),
             Subtitle = statline,
             CostDisplay = $"C {profile.Cost}",
             CostValue = ParseCostValue(profile.Cost),
+            IsLieutenant = profile.IsLieutenant,
+            ProfileKey = profile.ProfileKey,
             CachedLogoPath = _selectedUnit.CachedLogoPath,
             PackagedLogoPath = _selectedUnit.PackagedLogoPath,
             EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", JoinOrDash(combinedEquipment), Color.FromArgb("#06B6D4")),
@@ -746,8 +757,19 @@ public partial class ArmyFactionSelectionPage : ContentPage
             HasSkillsLine = combinedSkills.Count > 0,
             RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
             CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E"))
-        });
+        };
+
+        if (entry.IsLieutenant)
+        {
+            MercsCompanyEntries.Insert(0, entry);
+        }
+        else
+        {
+            MercsCompanyEntries.Add(entry);
+        }
+
         UpdateMercsCompanyTotal();
+        ApplyLieutenantVisualStates();
     }
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
@@ -759,12 +781,48 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
+        ApplyLieutenantVisualStates();
+    }
+
+    private void ApplyLieutenantVisualStates()
+    {
+        var hasActiveLieutenant = MercsCompanyEntries.Any(x => x.IsLieutenant);
+        var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+        var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
+        var pointsRemaining = pointsLimit - currentPoints;
+
+        foreach (var profile in Profiles)
+        {
+            var profileCost = ParseCostValue(profile.Cost);
+            var overRemainingPoints = profileCost > pointsRemaining;
+            profile.IsLieutenantBlocked =
+                (hasActiveLieutenant && profile.IsLieutenant) ||
+                overRemainingPoints;
+        }
+
+        UpdateSeasonValidationState();
     }
 
     private void UpdateMercsCompanyTotal()
     {
         var totalCost = MercsCompanyEntries.Sum(x => x.CostValue);
         SeasonPointsCapText = totalCost.ToString();
+    }
+
+    private void UpdateSeasonValidationState()
+    {
+        var hasLieutenant = MercsCompanyEntries.Any(x => x.IsLieutenant);
+        var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+        var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
+        var shouldShowCheck = hasLieutenant && currentPoints <= pointsLimit;
+
+        if (_showSeasonCheckIcon == shouldShowCheck)
+        {
+            return;
+        }
+
+        _showSeasonCheckIcon = shouldShowCheck;
+        SeasonValidationCanvas.InvalidateSurface();
     }
 
     private static int ParseCostValue(string? cost)
@@ -1094,10 +1152,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     continue;
                 }
 
+                var isLieutenant = IsLieutenantOption(option, skillsLookup);
+                var profileKey = $"{groupName}|{optionName}|{cost}";
                 Profiles.Add(new ViewerProfileItem
                 {
                     GroupName = groupName,
                     Name = optionName,
+                    ProfileKey = profileKey,
+                    IsLieutenant = isLieutenant,
                     NameFormatted = BuildNameFormatted(optionName),
                     RangedWeapons = JoinOrDash(rangedWeaponNames),
                     RangedWeaponsFormatted = BuildListFormattedString(rangedWeaponNames, Color.FromArgb("#EF4444")),
@@ -1115,6 +1177,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 });
             }
         }
+
+        ApplyLieutenantVisualStates();
 
         ProfilesStatus = Profiles.Count == 0
             ? "No configurations found for this unit."
@@ -3140,6 +3204,39 @@ public partial class ArmyFactionSelectionPage : ContentPage
         BottomIconRowCanvas.InvalidateSurface();
     }
 
+    private async Task LoadSeasonValidationIconsAsync()
+    {
+        _seasonCheckIconPicture?.Dispose();
+        _seasonCheckIconPicture = null;
+        _seasonXIconPicture?.Dispose();
+        _seasonXIconPicture = null;
+
+        try
+        {
+            await using var checkStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
+            var checkSvg = new SKSvg();
+            _seasonCheckIconPicture = checkSvg.Load(checkStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage season check icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var xStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
+            var xSvg = new SKSvg();
+            _seasonXIconPicture = xSvg.Load(xStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage season x icon load failed: {ex.Message}");
+        }
+
+        UpdateSeasonValidationState();
+        SeasonValidationCanvas.InvalidateSurface();
+    }
+
     private void InvalidateSlotCanvas(int slotIndex)
     {
         if (slotIndex == 0)
@@ -3190,6 +3287,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
         canvas.Clear(SKColors.Transparent);
         var pictures = BuildBottomIconPictures();
         DrawIconRow(canvas, e.Info, pictures);
+    }
+
+    private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var icon = _showSeasonCheckIcon ? _seasonCheckIconPicture : _seasonXIconPicture;
+        DrawSlotPicture(icon, e);
     }
 
     private List<SKPicture> BuildTopIconPictures()
@@ -3378,8 +3481,11 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
 public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
+    public FormattedString? NameFormatted { get; init; }
     public string CostDisplay { get; init; } = string.Empty;
     public int CostValue { get; init; }
+    public string ProfileKey { get; init; } = string.Empty;
+    public bool IsLieutenant { get; init; }
 
     public string? CachedLogoPath { get; init; }
 

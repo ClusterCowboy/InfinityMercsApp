@@ -22,6 +22,11 @@ public partial class FactionListItemView : ContentView
             nameof(ItemTappedCommandParameter),
             typeof(object),
             typeof(FactionListItemView));
+    public static readonly BindableProperty TitleFormattedProperty =
+        BindableProperty.Create(
+            nameof(TitleFormatted),
+            typeof(FormattedString),
+            typeof(FactionListItemView));
     public static readonly BindableProperty TrailingTextProperty =
         BindableProperty.Create(
             nameof(TrailingText),
@@ -51,6 +56,12 @@ public partial class FactionListItemView : ContentView
     {
         get => GetValue(ItemTappedCommandParameterProperty);
         set => SetValue(ItemTappedCommandParameterProperty, value);
+    }
+
+    public FormattedString? TitleFormatted
+    {
+        get => (FormattedString?)GetValue(TitleFormattedProperty);
+        set => SetValue(TitleFormattedProperty, value);
     }
 
     public string TrailingText

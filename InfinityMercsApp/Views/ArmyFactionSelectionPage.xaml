@@ -35,6 +35,12 @@
                     WidthRequest="70"
                     Text="{Binding SeasonPointsCapText}"
                     VerticalOptions="Center" />
+                <skia:SKCanvasView
+                    x:Name="SeasonValidationCanvas"
+                    WidthRequest="24"
+                    HeightRequest="24"
+                    VerticalOptions="Center"
+                    PaintSurface="OnSeasonValidationCanvasPaintSurface" />
             </HorizontalStackLayout>
         </Grid>
     </shell:Shell.TitleView>
@@ -338,6 +344,14 @@
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
                                         <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsLieutenantBlocked}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#7F1D1D" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsLieutenantBlocked}" Value="False">
+                                                    <Setter Property="BackgroundColor" Value="Transparent" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer
                                                     Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.AddProfileToMercsCompanyCommand}"
@@ -390,20 +404,29 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border StrokeThickness="1" Padding="8" Margin="0,0,0,6">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="#004219" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
-                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TrailingText="{Binding CostDisplay}" />
-                                    <Button
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        Text="X"
-                                        WidthRequest="28"
-                                        HeightRequest="28"
-                                        Padding="0"
-                                        FontAttributes="Bold"
-                                        VerticalOptions="Start"
-                                        HorizontalOptions="End"
-                                        Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
-                                        CommandParameter="{Binding .}" />
+                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding NameFormatted}" />
+                                    <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
+                                        <Label Text="{Binding CostDisplay}" VerticalOptions="Center" />
+                                        <Button
+                                            Text="X"
+                                            WidthRequest="28"
+                                            HeightRequest="28"
+                                            Padding="0"
+                                            FontAttributes="Bold"
+                                            VerticalOptions="Start"
+                                            HorizontalOptions="End"
+                                            Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </HorizontalStackLayout>
                                     <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding EquipmentLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasEquipmentLine}" />
                                     <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
                                     <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />

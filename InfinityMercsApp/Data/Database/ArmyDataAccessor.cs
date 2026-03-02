@@ -8,6 +8,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
 {
     private const int CharacterCategory = 10;
     private const int TagType = 4;
+    private const int VehicleType = 8;
     private const string MercSlugPrefix = "merc-%";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -247,6 +248,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
               AND (r.Slug IS NULL OR r.Slug NOT LIKE ?)
               AND (r.Category IS NULL OR r.Category <> ?)
               AND (r.Type IS NULL OR r.Type <> ?)
+              AND (r.Type IS NULL OR r.Type <> ?)
             ORDER BY r.Name
             """;
 
@@ -255,7 +257,8 @@ public class ArmyDataAccessor : IArmyDataAccessor
             factionId,
             MercSlugPrefix,
             CharacterCategory,
-            TagType);
+            TagType,
+            VehicleType);
     }
 
     private static string BuildUnitKey(int factionId, ArmyUnitDto unit)

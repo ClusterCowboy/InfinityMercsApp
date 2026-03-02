@@ -3063,11 +3063,15 @@ public class FireteamUnitLimitItem
     public string Max { get; init; } = "0";
 }
 
-public class ViewerProfileItem
+public class ViewerProfileItem : BaseViewModel
 {
     public string GroupName { get; init; } = string.Empty;
 
     public string Name { get; init; } = string.Empty;
+
+    public string ProfileKey { get; init; } = string.Empty;
+
+    public bool IsLieutenant { get; init; }
 
     public FormattedString? NameFormatted { get; init; }
 
@@ -3093,4 +3097,20 @@ public class ViewerProfileItem
     public string SwcDisplay { get; init; } = string.Empty;
 
     public string Cost { get; init; } = "-";
+
+    private bool _isLieutenantBlocked;
+    public bool IsLieutenantBlocked
+    {
+        get => _isLieutenantBlocked;
+        set
+        {
+            if (_isLieutenantBlocked == value)
+            {
+                return;
+            }
+
+            _isLieutenantBlocked = value;
+            OnPropertyChanged();
+        }
+    }
 }
