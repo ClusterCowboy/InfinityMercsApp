@@ -137,6 +137,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         });
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
+        SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
 
         BindingContext = this;
         SetActiveSlot(0);
@@ -155,6 +156,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand SelectUnitCommand { get; }
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
+    public ICommand SelectMercsCompanyEntryCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
     public string PageHeading
@@ -481,6 +483,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 filtered = filtered.Where(x => x.Id != x.ParentId);
             }
 
+            // Hide Non-Aligned Armies from this selector.
+            filtered = filtered.Where(x => !IsNonAlignedArmyName(x.Name));
+
+            // If both variants exist, keep only the non-all-caps "Contracted Back-Up".
+            filtered = CollapseContractedBackUpVariants(filtered);
+
             var items = filtered
                 .OrderBy(x => x.Name)
                 .Select(faction => new ArmyFactionSelectionItem
@@ -504,6 +512,61 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage LoadFactionsAsync failed: {ex.Message}");
         }
+    }
+
+    private static IEnumerable<FactionRecord> CollapseContractedBackUpVariants(IEnumerable<FactionRecord> factions)
+    {
+        var list = factions.ToList();
+        var contracted = list
+            .Where(x => IsContractedBackUpName(x.Name))
+            .ToList();
+
+        if (contracted.Count <= 1)
+        {
+            return list;
+        }
+
+        var preferred = contracted.FirstOrDefault(x => !LooksAllCaps(x.Name))
+            ?? contracted.First();
+
+        return list.Where(x => !IsContractedBackUpName(x.Name) || x.Id == preferred.Id);
+    }
+
+    private static bool IsNonAlignedArmyName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        return name.Trim().Equals("Non-Aligned Armies", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsContractedBackUpName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        var normalized = Regex.Replace(name.Trim(), @"[\s\-]+", " ").ToLowerInvariant();
+        return normalized == "contracted back up";
+    }
+
+    private static bool LooksAllCaps(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var letters = value.Where(char.IsLetter).ToArray();
+        if (letters.Length == 0)
+        {
+            return false;
+        }
+
+        return letters.All(char.IsUpper);
     }
 
     private void SetSelectedFaction(ArmyFactionSelectionItem item)
@@ -742,6 +805,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
             return;
         }
 
+        // Block add for configurations currently marked unavailable (points, lieutenant, AVA, etc).
+        if (!profile.IsVisible || profile.IsLieutenantBlocked)
+        {
+            return;
+        }
+
         var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
@@ -754,6 +823,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             CostValue = ParseCostValue(profile.Cost),
             IsLieutenant = profile.IsLieutenant,
             ProfileKey = profile.ProfileKey,
+            SourceUnitId = _selectedUnit.Id,
+            SourceFactionId = _selectedUnit.SourceFactionId,
             CachedLogoPath = _selectedUnit.CachedLogoPath,
             PackagedLogoPath = _selectedUnit.PackagedLogoPath,
             EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", JoinOrDash(combinedEquipment), Color.FromArgb("#06B6D4")),
@@ -791,12 +862,65 @@ public partial class ArmyFactionSelectionPage : ContentPage
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
+    private async Task SelectMercsCompanyEntryAsync(MercsCompanyEntry? entry, CancellationToken cancellationToken = default)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Prefer existing unit item (even if hidden), otherwise build a temporary item
+            // so details can load regardless of current list visibility filters.
+            var unitItem = Units.FirstOrDefault(x =>
+                x.Id == entry.SourceUnitId &&
+                x.SourceFactionId == entry.SourceFactionId);
+
+            if (unitItem is null)
+            {
+                var unitRecord = await _armyDataAccessor!.GetUnitAsync(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
+                var unitName = !string.IsNullOrWhiteSpace(unitRecord?.Name)
+                    ? unitRecord.Name
+                    : entry.Name;
+
+                unitItem = new ArmyUnitSelectionItem
+                {
+                    Id = entry.SourceUnitId,
+                    SourceFactionId = entry.SourceFactionId,
+                    Name = unitName,
+                    CachedLogoPath = entry.CachedLogoPath,
+                    PackagedLogoPath = entry.PackagedLogoPath,
+                    Subtitle = null,
+                    IsVisible = false
+                };
+            }
+
+            SetSelectedUnit(unitItem);
+            // Force-refresh details/configurations even if the selected unit instance
+            // did not change (SetSelectedUnit can short-circuit on same instance).
+            await LoadSelectedUnitDetailsAsync(cancellationToken);
+            IsFactionSelectionActive = false;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage SelectMercsCompanyEntryAsync failed: {ex.Message}");
+        }
+    }
+
     private void ApplyLieutenantVisualStates()
     {
         var hasActiveLieutenant = MercsCompanyEntries.Any(x => x.IsLieutenant);
         var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
         var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
         var pointsRemaining = pointsLimit - currentPoints;
+        var avaLimit = ParseAvaLimit(UnitAva);
+        var selectedUnitCountInCompany = _selectedUnit is null
+            ? 0
+            : MercsCompanyEntries.Count(x =>
+                x.SourceUnitId == _selectedUnit.Id &&
+                x.SourceFactionId == _selectedUnit.SourceFactionId);
+        var avaReached = avaLimit.HasValue && selectedUnitCountInCompany >= avaLimit.Value;
         var visibleProfiles = 0;
 
         foreach (var profile in Profiles)
@@ -808,7 +932,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             profile.IsVisible = !lieutenantFilteredOut && !overRemainingPoints;
             profile.IsLieutenantBlocked =
                 (hasActiveLieutenant && profile.IsLieutenant) ||
-                overRemainingPoints;
+                overRemainingPoints ||
+                avaReached;
 
             if (profile.IsVisible)
             {
@@ -821,6 +946,28 @@ public partial class ArmyFactionSelectionPage : ContentPage
             : $"{visibleProfiles} configurations loaded.";
 
         UpdateSeasonValidationState();
+    }
+
+    private static int? ParseAvaLimit(string? ava)
+    {
+        if (string.IsNullOrWhiteSpace(ava))
+        {
+            return null;
+        }
+
+        var trimmed = ava.Trim();
+        if (trimmed is "-" or "T")
+        {
+            return null;
+        }
+
+        if (!int.TryParse(trimmed, out var parsed))
+        {
+            return null;
+        }
+
+        // App convention: 255 means Total (no cap).
+        return parsed >= 255 ? null : parsed;
     }
 
     private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
@@ -3566,6 +3713,8 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public int CostValue { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
     public bool IsLieutenant { get; init; }
+    public int SourceUnitId { get; init; }
+    public int SourceFactionId { get; init; }
 
     public string? CachedLogoPath { get; init; }
 
