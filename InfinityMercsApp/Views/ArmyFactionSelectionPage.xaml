@@ -166,10 +166,16 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnLieutenantOnlyUnitsRowTapped" />
+                                    </HorizontalStackLayout.GestureRecognizers>
                                     <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
                                     <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnTeamsViewRowTapped" />
+                                    </HorizontalStackLayout.GestureRecognizers>
                                     <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
                                     <Label Text="Duo Teams View" VerticalOptions="Center" />
                                 </HorizontalStackLayout>
@@ -243,10 +249,16 @@
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                        <HorizontalStackLayout.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnLieutenantOnlyUnitsRowTapped" />
+                                        </HorizontalStackLayout.GestureRecognizers>
                                         <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
                                         <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
                                     </HorizontalStackLayout>
                                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                        <HorizontalStackLayout.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnTeamsViewRowTapped" />
+                                        </HorizontalStackLayout.GestureRecognizers>
                                         <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
                                         <Label Text="Duo Teams View" VerticalOptions="Center" />
                                     </HorizontalStackLayout>
@@ -456,12 +468,19 @@
                         FontAttributes="Bold"
                         VerticalOptions="Center" />
                     <Label Text="-" VerticalOptions="Center" />
-                    <Entry
-                        WidthRequest="220"
-                        Text="{Binding CompanyName}"
-                        Placeholder="Company Name"
-                        ClearButtonVisibility="WhileEditing"
-                        VerticalOptions="Center" />
+                    <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                        <Entry
+                            WidthRequest="220"
+                            Text="{Binding CompanyName}"
+                            Placeholder="Company Name"
+                            ClearButtonVisibility="WhileEditing"
+                            VerticalOptions="Center" />
+                    </Border>
+                    <Label
+                        Text="Enter Company Name"
+                        TextColor="#EF4444"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding ShowCompanyNameValidationError}" />
                 </HorizontalStackLayout>
                 <CollectionView
                     Grid.Row="1"
@@ -515,6 +534,7 @@
                     Text="START COMPANY"
                     HorizontalOptions="End"
                     VerticalOptions="End"
+                    Command="{Binding StartCompanyCommand}"
                     IsEnabled="{Binding IsCompanyValid}" />
             </Grid>
         </Border>

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -94,6 +95,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showSeasonCheckIcon;
     private bool _isCompanyValid;
     private string _companyName = "Company Name";
+    private readonly Command _startCompanyCommand;
+    private bool _showCompanyNameValidationError;
+    private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
@@ -177,6 +181,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
+        _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
+        StartCompanyCommand = _startCompanyCommand;
 
         BindingContext = this;
         SetActiveSlot(0);
@@ -197,6 +203,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
+    public ICommand StartCompanyCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
     public string PageHeading
@@ -262,6 +269,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _companyName = value;
             OnPropertyChanged();
+            if (_showCompanyNameValidationError && IsCompanyNameValid(value))
+            {
+                SetCompanyNameValidationError(false);
+            }
         }
     }
 
@@ -276,6 +287,37 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             _isCompanyValid = value;
+            OnPropertyChanged();
+            _startCompanyCommand.ChangeCanExecute();
+        }
+    }
+
+    public bool ShowCompanyNameValidationError
+    {
+        get => _showCompanyNameValidationError;
+        private set
+        {
+            if (_showCompanyNameValidationError == value)
+            {
+                return;
+            }
+
+            _showCompanyNameValidationError = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public Color CompanyNameBorderColor
+    {
+        get => _companyNameBorderColor;
+        private set
+        {
+            if (_companyNameBorderColor == value)
+            {
+                return;
+            }
+
+            _companyNameBorderColor = value;
             OnPropertyChanged();
         }
     }
@@ -793,6 +835,16 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         IsFactionSelectionActive = false;
+    }
+
+    private void OnLieutenantOnlyUnitsRowTapped(object? sender, TappedEventArgs e)
+    {
+        LieutenantOnlyUnits = !LieutenantOnlyUnits;
+    }
+
+    private void OnTeamsViewRowTapped(object? sender, TappedEventArgs e)
+    {
+        TeamsView = !TeamsView;
     }
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
@@ -1523,10 +1575,152 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return builder.ToString();
     }
 
+    private bool IsCompanyNameValid(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return !string.Equals(value.Trim(), "Company Name", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SetCompanyNameValidationError(bool showError)
+    {
+        ShowCompanyNameValidationError = showError;
+        CompanyNameBorderColor = showError ? Color.FromArgb("#EF4444") : Color.FromArgb("#6B7280");
+    }
+
+    private async Task StartCompanyAsync()
+    {
+        if (!IsCompanyNameValid(CompanyName))
+        {
+            SetCompanyNameValidationError(true);
+            return;
+        }
+
+        SetCompanyNameValidationError(false);
+
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var companyName = CompanyName.Trim();
+            var companyType = GetCompanyTypeLabel();
+            var safeFileName = Regex.Replace(companyName.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+            if (string.IsNullOrWhiteSpace(safeFileName))
+            {
+                safeFileName = "company";
+            }
+
+            var saveDir = Path.Combine(FileSystem.Current.AppDataDirectory, "MercenaryRecords");
+            Directory.CreateDirectory(saveDir);
+            var companyIndex = GetNextCompanyIndex(saveDir, companyName, safeFileName);
+            var fileName = $"{safeFileName}-{companyIndex:D4}.json";
+
+            var payload = new SavedCompanyFile
+            {
+                CompanyName = companyName,
+                CompanyType = companyType,
+                CompanyIdentifier = ComputeCompanyIdentifier(fileName),
+                CompanyIndex = companyIndex,
+                CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
+                PointsLimit = int.TryParse(SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
+                CurrentPoints = int.TryParse(SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
+                SourceFactions = GetUnitSourceFactions()
+                    .Select(faction => new SavedCompanyFaction
+                    {
+                        FactionId = faction.Id,
+                        FactionName = faction.Name
+                    })
+                    .ToList(),
+                Entries = MercsCompanyEntries.Select((entry, entryIndex) => new SavedCompanyEntry
+                {
+                    EntryIndex = entryIndex,
+                    Name = entry.Name,
+                    ProfileKey = entry.ProfileKey,
+                    SourceFactionId = entry.SourceFactionId,
+                    SourceUnitId = entry.SourceUnitId,
+                    Cost = entry.CostValue,
+                    IsLieutenant = entry.IsLieutenant
+                }).ToList()
+            };
+
+            var filePath = Path.Combine(saveDir, fileName);
+            await File.WriteAllTextAsync(
+                filePath,
+                JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
+
+            await DisplayAlert("Company Saved", $"Saved '{companyName}'.", "OK");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
+            await DisplayAlert("Save Failed", ex.Message, "OK");
+        }
+    }
+
     private void UpdateMercsCompanyTotal()
     {
         var totalCost = MercsCompanyEntries.Sum(x => x.CostValue);
         SeasonPointsCapText = totalCost.ToString();
+    }
+
+    private static string ComputeCompanyIdentifier(string fileName)
+    {
+        var bytes = Encoding.UTF8.GetBytes(fileName);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash);
+    }
+
+    private static int GetNextCompanyIndex(string saveDir, string companyName, string safeFileName)
+    {
+        var maxIndex = 0;
+        var files = Directory.EnumerateFiles(saveDir, "*.json");
+
+        foreach (var file in files)
+        {
+            try
+            {
+                var json = File.ReadAllText(file);
+                using var doc = JsonDocument.Parse(json);
+                if (!doc.RootElement.TryGetProperty(nameof(SavedCompanyFile.CompanyName), out var nameElement) ||
+                    !string.Equals(nameElement.GetString(), companyName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (doc.RootElement.TryGetProperty(nameof(SavedCompanyFile.CompanyIndex), out var indexElement) &&
+                    indexElement.ValueKind == JsonValueKind.Number &&
+                    indexElement.TryGetInt32(out var parsedIndex))
+                {
+                    maxIndex = Math.Max(maxIndex, parsedIndex);
+                    continue;
+                }
+            }
+            catch
+            {
+                // Ignore malformed records and continue.
+            }
+
+            var baseName = Path.GetFileNameWithoutExtension(file);
+            var match = Regex.Match(baseName, $"^{Regex.Escape(safeFileName)}-(\\d+)$", RegexOptions.IgnoreCase);
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var fallbackIndex))
+            {
+                maxIndex = Math.Max(maxIndex, fallbackIndex);
+            }
+        }
+
+        return maxIndex + 1;
+    }
+
+    private string GetCompanyTypeLabel()
+    {
+        return _mode switch
+        {
+            ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
+            ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
+            _ => "Unknown Company Type"
+        };
     }
 
     private void UpdateSeasonValidationState()
@@ -4558,4 +4752,34 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
             OnPropertyChanged();
         }
     }
+}
+
+public sealed class SavedCompanyFile
+{
+    public string CompanyName { get; init; } = string.Empty;
+    public string CompanyType { get; init; } = string.Empty;
+    public string CompanyIdentifier { get; init; } = string.Empty;
+    public int CompanyIndex { get; init; }
+    public string CreatedUtc { get; init; } = string.Empty;
+    public int PointsLimit { get; init; }
+    public int CurrentPoints { get; init; }
+    public List<SavedCompanyFaction> SourceFactions { get; init; } = [];
+    public List<SavedCompanyEntry> Entries { get; init; } = [];
+}
+
+public sealed class SavedCompanyFaction
+{
+    public int FactionId { get; init; }
+    public string FactionName { get; init; } = string.Empty;
+}
+
+public sealed class SavedCompanyEntry
+{
+    public int EntryIndex { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string ProfileKey { get; init; } = string.Empty;
+    public int SourceFactionId { get; init; }
+    public int SourceUnitId { get; init; }
+    public int Cost { get; init; }
+    public bool IsLieutenant { get; init; }
 }

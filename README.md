@@ -33,7 +33,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
 #### Saving
  - [ ] Saving a custom captain
 	 - [ ] Loading a custom captain
- - [ ] Saving a Company
+ - [X] Saving a Company
 	 - [ ] Loading a custom company
  - [ ] Saving custom Gear and Skills
 	 - [ ] Loading custom Gear and Skills
