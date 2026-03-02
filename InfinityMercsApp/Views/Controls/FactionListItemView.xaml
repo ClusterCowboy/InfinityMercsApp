@@ -23,7 +23,7 @@
         <Grid
             Padding="8,6"
             MinimumHeightRequest="50"
-            ColumnDefinitions="Auto,*"
+            ColumnDefinitions="Auto,*,Auto"
             ColumnSpacing="10">
             <skia:SKCanvasView
                 x:Name="LogoCanvas"
@@ -39,6 +39,12 @@
                     TextColor="#6B7280"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
+            <Label
+                Grid.Column="2"
+                Text="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TrailingText}"
+                FontAttributes="Bold"
+                VerticalOptions="Start"
+                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=HasTrailingText}" />
         </Grid>
     </Border>
 

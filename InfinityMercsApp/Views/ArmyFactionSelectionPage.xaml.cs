@@ -59,7 +59,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
     private string _selectedStartSeasonPoints = "75";
-    private string _seasonPointsCapText = "777";
+    private string _seasonPointsCapText = "0";
     private ArmyUnitSelectionItem? _selectedUnit;
     private string _leftSlotText = string.Empty;
     private string _rightSlotText = string.Empty;
@@ -92,6 +92,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
+    private List<string> _selectedUnitCommonEquipment = [];
+    private List<string> _selectedUnitCommonSkills = [];
 
     public ArmyFactionSelectionPage(ArmySourceSelectionMode mode)
     {
@@ -130,6 +132,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             Console.WriteLine($"ArmyFactionSelectionPage SelectUnitCommand: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
             SetSelectedUnit(item);
         });
+        AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
+        RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
 
         BindingContext = this;
         SetActiveSlot(0);
@@ -141,9 +145,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
     public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
     public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
+    public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
 
     public ICommand SelectFactionCommand { get; }
     public ICommand SelectUnitCommand { get; }
+    public ICommand AddProfileToMercsCompanyCommand { get; }
+    public ICommand RemoveMercsCompanyEntryCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
     public string PageHeading
@@ -715,6 +722,67 @@ public partial class ArmyFactionSelectionPage : ContentPage
         _ = LoadSelectedUnitDetailsAsync();
     }
 
+    private void AddProfileToMercsCompany(ViewerProfileItem? profile)
+    {
+        if (profile is null || _selectedUnit is null)
+        {
+            return;
+        }
+
+        var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
+        var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
+        MercsCompanyEntries.Add(new MercsCompanyEntry
+        {
+            Name = profile.Name,
+            Subtitle = statline,
+            CostDisplay = $"C {profile.Cost}",
+            CostValue = ParseCostValue(profile.Cost),
+            CachedLogoPath = _selectedUnit.CachedLogoPath,
+            PackagedLogoPath = _selectedUnit.PackagedLogoPath,
+            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", JoinOrDash(combinedEquipment), Color.FromArgb("#06B6D4")),
+            HasEquipmentLine = combinedEquipment.Count > 0,
+            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", JoinOrDash(combinedSkills), Color.FromArgb("#F59E0B")),
+            HasSkillsLine = combinedSkills.Count > 0,
+            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E"))
+        });
+        UpdateMercsCompanyTotal();
+    }
+
+    private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        MercsCompanyEntries.Remove(entry);
+        UpdateMercsCompanyTotal();
+    }
+
+    private void UpdateMercsCompanyTotal()
+    {
+        var totalCost = MercsCompanyEntries.Sum(x => x.CostValue);
+        SeasonPointsCapText = totalCost.ToString();
+    }
+
+    private static int ParseCostValue(string? cost)
+    {
+        if (string.IsNullOrWhiteSpace(cost))
+        {
+            return 0;
+        }
+
+        if (int.TryParse(cost, out var parsed))
+        {
+            return parsed;
+        }
+
+        var match = Regex.Match(cost, "\\d+");
+        return match.Success && int.TryParse(match.Value, out var fallback) ? fallback : 0;
+    }
+
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
         ResetUnitDetails(clearLogo: false);
@@ -811,6 +879,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 stableSkills = stableSkills
                     .Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
                     .ToList();
+                _selectedUnitCommonEquipment = stableEquip;
+                _selectedUnitCommonSkills = stableSkills;
                 Console.WriteLine(
                     $"ArmyFactionSelectionPage summary extraction: unit='{_selectedUnit.Name}', options={visibleOptions.Count}, " +
                     $"commonEquip={stableEquip.Count}, commonSkills={stableSkills.Count}.");
@@ -1726,6 +1796,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
+        _selectedUnitCommonEquipment = [];
+        _selectedUnitCommonSkills = [];
         EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
         SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
         Profiles.Clear();
@@ -1737,6 +1809,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
         ShowCubeIcon = false;
         ShowCube2Icon = false;
         ShowHackableIcon = false;
+    }
+
+    private static List<string> MergeCommonAndUnique(IEnumerable<string> commonValues, string? uniqueValues)
+    {
+        var merged = new List<string>();
+        foreach (var value in commonValues)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                merged.Add(value.Trim());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(uniqueValues) && uniqueValues != "-")
+        {
+            var uniqueParts = uniqueValues
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Where(x => !string.Equals(x, "-", StringComparison.Ordinal))
+                .Select(x => x.Trim());
+            merged.AddRange(uniqueParts);
+        }
+
+        return merged
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void ResetUnitStatsOnly()
@@ -2376,6 +2473,28 @@ public partial class ArmyFactionSelectionPage : ContentPage
             });
         }
 
+        return formatted;
+    }
+
+    private static FormattedString BuildMercsCompanyLineFormatted(string label, string? value, Color accentColor)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value)
+            ? "-"
+            : value
+                .Replace("\r\n", ", ", StringComparison.Ordinal)
+                .Replace("\n", ", ", StringComparison.Ordinal)
+                .Replace("\r", ", ", StringComparison.Ordinal);
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span
+        {
+            Text = $"{label}: "
+        });
+        formatted.Spans.Add(new Span
+        {
+            Text = normalized,
+            TextColor = accentColor
+        });
         return formatted;
     }
 
@@ -3238,6 +3357,44 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
     public string? Subtitle { get; init; }
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
+            OnPropertyChanged();
+        }
+    }
+}
+
+public class MercsCompanyEntry : BaseViewModel, IViewerListItem
+{
+    public string Name { get; init; } = string.Empty;
+    public string CostDisplay { get; init; } = string.Empty;
+    public int CostValue { get; init; }
+
+    public string? CachedLogoPath { get; init; }
+
+    public string? PackagedLogoPath { get; init; }
+
+    public string? Subtitle { get; init; }
+
+    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+
+    public FormattedString EquipmentLineFormatted { get; init; } = new();
+    public bool HasEquipmentLine { get; init; }
+    public FormattedString SkillsLineFormatted { get; init; } = new();
+    public bool HasSkillsLine { get; init; }
+    public FormattedString RangedLineFormatted { get; init; } = new();
+    public FormattedString CcLineFormatted { get; init; } = new();
 
     private bool _isSelected;
     public bool IsSelected

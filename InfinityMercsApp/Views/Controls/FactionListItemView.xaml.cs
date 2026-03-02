@@ -22,6 +22,19 @@ public partial class FactionListItemView : ContentView
             nameof(ItemTappedCommandParameter),
             typeof(object),
             typeof(FactionListItemView));
+    public static readonly BindableProperty TrailingTextProperty =
+        BindableProperty.Create(
+            nameof(TrailingText),
+            typeof(string),
+            typeof(FactionListItemView),
+            string.Empty,
+            propertyChanged: OnTrailingTextChanged);
+    public static readonly BindableProperty HasTrailingTextProperty =
+        BindableProperty.Create(
+            nameof(HasTrailingText),
+            typeof(bool),
+            typeof(FactionListItemView),
+            false);
 
     public FactionListItemView()
     {
@@ -38,6 +51,26 @@ public partial class FactionListItemView : ContentView
     {
         get => GetValue(ItemTappedCommandParameterProperty);
         set => SetValue(ItemTappedCommandParameterProperty, value);
+    }
+
+    public string TrailingText
+    {
+        get => (string)GetValue(TrailingTextProperty);
+        set => SetValue(TrailingTextProperty, value);
+    }
+
+    public bool HasTrailingText
+    {
+        get => (bool)GetValue(HasTrailingTextProperty);
+        private set => SetValue(HasTrailingTextProperty, value);
+    }
+
+    private static void OnTrailingTextChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is FactionListItemView view)
+        {
+            view.HasTrailingText = !string.IsNullOrWhiteSpace(newValue as string);
+        }
     }
 
     protected override void OnBindingContextChanged()

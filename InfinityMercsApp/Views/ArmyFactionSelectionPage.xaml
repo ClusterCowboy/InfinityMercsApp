@@ -247,9 +247,10 @@
             </Grid>
         </Grid>
 
-        <Border Grid.Column="1" StrokeThickness="1" Padding="10">
-            <Grid RowDefinitions="Auto" RowSpacing="8">
-                <Border StrokeThickness="1" Padding="8">
+        <Grid Grid.Column="1" RowDefinitions="*,*" RowSpacing="10">
+        <Border Grid.Row="0" StrokeThickness="1" Padding="10">
+            <Grid RowDefinitions="*" RowSpacing="8">
+                <Border Grid.Row="0" StrokeThickness="1" Padding="8" VerticalOptions="Fill">
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="6">
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="56,*,140" ColumnSpacing="10" RowSpacing="4">
                             <skia:SKCanvasView
@@ -332,11 +333,16 @@
                         <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
                         <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
                         <Label Grid.Row="5" Text="Configurations" FontSize="20" FontAttributes="Bold" />
-                        <ScrollView Grid.Row="6">
+                        <ScrollView Grid.Row="6" VerticalOptions="FillAndExpand">
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
                                         <Border StrokeThickness="1" Padding="10" MinimumHeightRequest="50">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.AddProfileToMercsCompanyCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
                                             <VerticalStackLayout Spacing="2">
                                                 <Grid ColumnSpacing="12">
                                                     <Grid.ColumnDefinitions>
@@ -369,5 +375,49 @@
                 </Border>
             </Grid>
         </Border>
+
+        <Border Grid.Row="1" StrokeThickness="1" Padding="10">
+            <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                <Label
+                    Grid.Row="0"
+                    Text="Mercs Company"
+                    FontSize="20"
+                    FontAttributes="Bold" />
+                <CollectionView
+                    Grid.Row="1"
+                    ItemsSource="{Binding MercsCompanyEntries}"
+                    SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="1" Padding="8" Margin="0,0,0,6">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TrailingText="{Binding CostDisplay}" />
+                                    <Button
+                                        Grid.Row="0"
+                                        Grid.Column="1"
+                                        Text="X"
+                                        WidthRequest="28"
+                                        HeightRequest="28"
+                                        Padding="0"
+                                        FontAttributes="Bold"
+                                        VerticalOptions="Start"
+                                        HorizontalOptions="End"
+                                        Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
+                                        CommandParameter="{Binding .}" />
+                                    <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding EquipmentLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasEquipmentLine}" />
+                                    <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
+                                    <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                                    <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding CcLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No units added yet." TextColor="#6B7280" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </Grid>
+        </Border>
+        </Grid>
     </Grid>
 </ContentPage>
