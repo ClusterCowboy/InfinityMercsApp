@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "title": "BS Attack (T2/DA/EXP/CONT)",
+      "hasDelta": true,
+      "markdownFile": "bs-attack-t2-da-exp-cont.md"
+    },
+    {
+      "title": "Speedball",
+      "hasDelta": true,
+      "markdownFile": "speedball.md"
+    },
+    {
+      "title": "Transmutation (Auto)",
+      "hasDelta": true,
+      "markdownFile": "transmutation-auto.md"
+    },
+    {
+      "title": "MERCS: Extra Order",
+      "hasDelta": false,
+      "markdownFile": "mercs-extra-order.md"
+    },
+    {
+      "title": "Command Tokens",
+      "hasDelta": true,
+      "markdownFile": "command-tokens.md"
+    },
+    {
+      "title": "CC Attack",
+      "hasDelta": true,
+      "markdownFile": "cc-attack.md"
+    },
+    {
+      "title": "Fireteams",
+      "hasDelta": true,
+      "markdownFile": "fireteams.md"
+    },
+    {
+      "title": "Peripherals",
+      "hasDelta": true,
+      "markdownFile": "peripherals.md"
+    },
+    {
+      "title": "Lieutenants",
+      "hasDelta": true,
+      "markdownFile": "lieutenants.md"
+    },
+    {
+      "title": "Loss Of Lieutenant",
+      "hasDelta": true,
+      "markdownFile": "loss-of-lieutenant.md"
+    },
+    {
+      "title": "Retreat!",
+      "hasDelta": true,
+      "markdownFile": "retreat!.md"
+    },
+    {
+      "title": "Healing and Recovery",
+      "hasDelta": true,
+      "markdownFile": "HealingAndRecovery.md"
+    }
+  ]
+}

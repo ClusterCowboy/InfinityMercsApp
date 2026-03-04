@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.MercsGlossaryPage"
+             x:Name="MercsGlossaryRoot"
+             Title="Mercs Glossary">
+
+    <Grid Padding="16" ColumnDefinitions="3*,7*" ColumnSpacing="16">
+        <Border Grid.Column="0" StrokeThickness="1" Padding="12">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Rules Index" HorizontalTextAlignment="Center" FontSize="20" FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                    <skia:SKCanvasView x:Name="LegendDeltaCanvas"
+                                       WidthRequest="20"
+                                       HeightRequest="20"
+                                       VerticalOptions="Center"
+                                       PaintSurface="OnLegendDeltaCanvasPaintSurface" />
+                    <Label Text=" - Rules Changed From Base" VerticalTextAlignment="Center" FontSize="20" />
+                </HorizontalStackLayout>
+                <CollectionView ItemsSource="{Binding Source={x:Reference MercsGlossaryRoot}, Path=GlossaryItems}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding Source={x:Reference MercsGlossaryRoot}, Path=SelectedItem, Mode=TwoWay}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="6,4">
+                                <Label Grid.Column="0" Text="{Binding Title}" VerticalTextAlignment="Center" FontSize="20" />
+                                <skia:SKCanvasView Grid.Column="1"
+                                                   WidthRequest="18"
+                                                   HeightRequest="18"
+                                                   VerticalOptions="Center"
+                                                   IsVisible="{Binding HasDelta}"
+                                                   PaintSurface="OnListDeltaCanvasPaintSurface" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Column="1" StrokeThickness="1" Padding="14">
+            <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                <Label Grid.Row="0"
+                       Text="{Binding Source={x:Reference MercsGlossaryRoot}, Path=SelectedTitle}"
+                       FontSize="18"
+                       FontAttributes="Bold" />
+                <WebView Grid.Row="1"
+                         x:Name="GlossaryWebView"
+                         VerticalOptions="Fill"
+                         HorizontalOptions="Fill" />
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentPage>

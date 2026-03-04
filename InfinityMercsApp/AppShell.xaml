@@ -38,6 +38,11 @@
         Route="SettingsPage" />
 
     <ShellContent
+        Title="Mercs Glossary"
+        ContentTemplate="{DataTemplate views:MercsGlossaryPage}"
+        Route="MercsGlossaryPage" />
+
+    <ShellContent
         Title="About"
         ContentTemplate="{DataTemplate views:AboutPage}"
         Route="AboutPage" />

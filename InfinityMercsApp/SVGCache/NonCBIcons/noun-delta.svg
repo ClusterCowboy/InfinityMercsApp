@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   data-name="Layer 1"
+   viewBox="0 0 340.58978 295.83496"
+   x="0px"
+   y="0px"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="noun-delta.svg"
+   width="340.58978"
+   height="295.83496"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.3121"
+     inkscape:cx="170.40786"
+     inkscape:cy="184.89685"
+     inkscape:window-width="2484"
+     inkscape:window-height="1057"
+     inkscape:window-x="1988"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3" />
+  <title
+     id="title1">Delta-RAD</title>
+  <path
+     style="fill:#ff0000"
+     d="M 169.54284,7.3526233 7.7851306,289.34735 l 6.9201164,3.89257 322.217903,-0.43251 z"
+     id="path3" />
+  <path
+     style="fill:#ffffff"
+     d="M 156.56763,60.551015 34.168073,273.77709 282.85974,274.64211 Z"
+     id="path4" />
+  <path
+     d="M 336.84029,295.83497 H 3.7494748 a 3.75,3.75 0 0 1 -3.24707004,-5.625 L 167.04537,1.743167 a 3.89581,3.89581 0 0 1 6.49414,0 L 340.08736,290.20997 a 3.75,3.75 0 0 1 -3.24707,5.625 z m -326.596675,-7.5 H 330.34615 L 170.29244,11.118167 Z"
+     id="path1"
+     style="fill:#ffd42a" />
+  <path
+     d="M 282.65084,279.46779 H 32.099075 a 3.75,3.75 0 0 1 -3.24707,-5.625 L 153.98383,57.109387 a 3.75071,3.75071 0 0 1 3.24707,-1.875 v 0 a 3.758,3.758 0 0 1 3.24707,1.87012 L 285.89791,273.8379 a 3.75245,3.75245 0 0 1 -3.24707,5.62989 z m -244.057615,-7.5 H 276.14693 L 157.2358,66.479507 Z"
+     id="path2"
+     style="fill:#ffd42a" />
+  <metadata
+     id="metadata3">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Delta-RAD</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

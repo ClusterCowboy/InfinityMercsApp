@@ -96,7 +96,11 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [X] Have buttons to click on to remove anything added
  - [ ] Have a reset button
 
-## Phase 2+
+## Phase 2
+ - [ ] Transmutation (Auto) - only allow one form
+
+
+## Phase 3 +
  - [ ] Season management
 	 - [ ] Import/Export profiles
  - [ ] Classified Objective picker
