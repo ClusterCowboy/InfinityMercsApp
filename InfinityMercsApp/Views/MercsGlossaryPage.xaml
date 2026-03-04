@@ -8,9 +8,13 @@
 
     <Grid Padding="16" ColumnDefinitions="3*,7*" ColumnSpacing="16">
         <Border Grid.Column="0" StrokeThickness="1" Padding="12">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="Rules Index" HorizontalTextAlignment="Center" FontSize="20" FontAttributes="Bold" />
-                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                <Label Grid.Row="0"
+                       Text="Rules Index"
+                       HorizontalTextAlignment="Center"
+                       FontSize="20"
+                       FontAttributes="Bold" />
+                <HorizontalStackLayout Grid.Row="1" Spacing="6" VerticalOptions="Center">
                     <skia:SKCanvasView x:Name="LegendDeltaCanvas"
                                        WidthRequest="20"
                                        HeightRequest="20"
@@ -18,7 +22,9 @@
                                        PaintSurface="OnLegendDeltaCanvasPaintSurface" />
                     <Label Text=" - Rules Changed From Base" VerticalTextAlignment="Center" FontSize="20" />
                 </HorizontalStackLayout>
-                <CollectionView ItemsSource="{Binding Source={x:Reference MercsGlossaryRoot}, Path=GlossaryItems}"
+                <CollectionView Grid.Row="2"
+                                VerticalOptions="FillAndExpand"
+                                ItemsSource="{Binding Source={x:Reference MercsGlossaryRoot}, Path=GlossaryItems}"
                                 SelectionMode="Single"
                                 SelectedItem="{Binding Source={x:Reference MercsGlossaryRoot}, Path=SelectedItem, Mode=TwoWay}">
                     <CollectionView.ItemTemplate>
@@ -35,7 +41,7 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-            </VerticalStackLayout>
+            </Grid>
         </Border>
 
         <Border Grid.Column="1" StrokeThickness="1" Padding="14">

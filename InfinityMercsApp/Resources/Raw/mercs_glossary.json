@@ -11,8 +11,8 @@
       "markdownFile": "speedball.md"
     },
     {
-      "title": "Transmutation (Auto)",
-      "hasDelta": true,
+      "title": "Transmutation (Auto) - List Selection",
+      "hasDelta": false,
       "markdownFile": "transmutation-auto.md"
     },
     {
@@ -27,12 +27,12 @@
     },
     {
       "title": "CC Attack",
-      "hasDelta": true,
+      "hasDelta": false,
       "markdownFile": "cc-attack.md"
     },
     {
       "title": "Fireteams",
-      "hasDelta": true,
+      "hasDelta": false,
       "markdownFile": "fireteams.md"
     },
     {
@@ -52,13 +52,135 @@
     },
     {
       "title": "Retreat!",
-      "hasDelta": true,
+      "hasDelta": false,
       "markdownFile": "retreat!.md"
     },
     {
       "title": "Healing and Recovery",
-      "hasDelta": true,
+      "hasDelta": false,
       "markdownFile": "HealingAndRecovery.md"
+    },
+    {
+      "title": "Regeneration (Skill)",
+      "hasDelta": true,
+      "markdownFile": "regeneration.md"
+    },
+    {
+      "title": "Wounds (Profile Stat)",
+      "hasDelta": true,
+      "markdownFile": "wounds_skill.md"
+    },
+    {
+      "title": "Counterintelligence (Skill)",
+      "hasDelta": true,
+      "markdownFile": "counterintelligence.md"
+    },
+    {
+      "title": "Strategos (Skill)",
+      "hasDelta": true,
+      "markdownFile": "strategos.md"
+    },
+    {
+      "title": "Impersonation (Skill)",
+      "hasDelta": true,
+      "markdownFile": "impersonation.md"
+    },
+    {
+      "title": "Transmutation (X/WIP/Hatching) (Skill)",
+      "hasDelta": true,
+      "markdownFile": "transmutation-other.md"
+    },
+    {
+      "title": "Sepsitorized/Possessed (State)",
+      "hasDelta": false,
+      "markdownFile": "seppos.md"
+    },
+    {
+      "title": "Shasvastii",
+      "hasDelta": false,
+      "markdownFile": "shasvastii.md"
+    },
+    {
+      "title": "Booty (Skill)",
+      "hasDelta": true,
+      "markdownFile": "booty.md"
+    },
+    {
+      "title": "Metachemsitry (Skill)",
+      "hasDelta": true,
+      "markdownFile": "metachemistry.md"
+    },
+    {
+      "title": "Morpho-Scan",
+      "hasDelta": false,
+      "markdownFile": "Morpho-Scan.md"
+    },
+    {
+      "title": "Journalist",
+      "hasDelta": false,
+      "markdownFile": "journalist.md"
+    } ,
+    {
+      "title": "Holomask",
+      "hasDelta": false,
+      "markdownFile": "holomask.md"
+    } ,
+    {
+      "title": "Dogged",
+      "hasDelta": false,
+      "markdownFile": "dogged.md"
+    } ,
+    {
+      "title": "Marker State",
+      "hasDelta": false,
+      "markdownFile": "marker_state.md"
+    } ,
+    {
+      "title": "Chain of Command",
+      "hasDelta": false,
+      "markdownFile": "chainofcommand.md"
+    } ,
+    {
+      "title": "Number 2",
+      "hasDelta": false,
+      "markdownFile": "number2.md"
+    } ,
+    {
+      "title": "NFB",
+      "hasDelta": false,
+      "markdownFile": "NFB.md"
+    },
+    {
+      "title": "Loot Boxes",
+      "hasDelta": true,
+      "markdownFile": "LootBoxes.md"
+    },
+    {
+      "title": "Tag and Bag (Skill) - MERCS",
+      "hasDelta": true,
+      "markdownFile": "tagandbag.md"
+    },
+    {
+      "title": "Scan (Skill) - MERCS",
+      "hasDelta": true,
+      "markdownFile": "scan.md"
+    },
+    {
+      "title": "Covering Fire (Skill) - MERCS",
+      "hasDelta": true,
+      "markdownFile": "coveringfire.md"
+    },
+    {
+      "title": "Network Support (Skill) - MERCS",
+      "hasDelta": true,
+      "markdownFile": "networksupport.md"
+    },
+    {
+      "title": "Logistician (Skill) - MERCS",
+      "hasDelta": true,
+      "markdownFile": "logistician.md"
     }
+
+    
   ]
 }

@@ -1,0 +1,1 @@
+After performing a Morpho-scan, the bonuses are persistent until the skill is performed again in later contracts. 

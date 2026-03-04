@@ -1,0 +1,1 @@
+Units that gain marker states cannot use that marker state if they are impetuous. In addition, repeaters are inactive while a unit is in a marker state. 
