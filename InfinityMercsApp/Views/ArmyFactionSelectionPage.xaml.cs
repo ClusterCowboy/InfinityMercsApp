@@ -1718,6 +1718,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 {
                     EntryIndex = entryIndex,
                     Name = entry.Name,
+                    BaseUnitName = entry.Name,
+                    CustomName = entry.IsLieutenant
+                        ? (string.IsNullOrWhiteSpace(improvedCaptainStats.CaptainName) ? "Captain" : improvedCaptainStats.CaptainName.Trim())
+                        : "Trooper",
                     ProfileKey = entry.ProfileKey,
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
@@ -5254,6 +5258,7 @@ public sealed class SavedCompanyFile
 public sealed class SavedImprovedCaptainStats
 {
     public bool IsEnabled { get; init; }
+    public string CaptainName { get; init; } = string.Empty;
     public int CcTier { get; init; }
     public int BsTier { get; init; }
     public int PhTier { get; init; }
@@ -5291,6 +5296,8 @@ public sealed class SavedCompanyEntry
 {
     public int EntryIndex { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string BaseUnitName { get; set; } = string.Empty;
+    public string CustomName { get; set; } = string.Empty;
     public string ProfileKey { get; init; } = string.Empty;
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
@@ -5381,8 +5388,20 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Label _experienceRemainingLabel;
     private readonly Button _foundCompanyButton;
     private readonly IReadOnlyDictionary<string, int> _baseStats;
-    private readonly Label _statlineLabel;
+    private readonly Grid _statsGrid;
+    private readonly List<string> _statGridOrder = [];
+    private readonly Dictionary<string, string> _statGridBaseValues = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Label> _statGridValueLabels = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Entry _captainNameEntry;
+    private readonly Label _captainNameHeadingLabel;
+    private readonly SKCanvasView _editCaptainNameCanvas;
+    private readonly SKCanvasView _saveCaptainNameCanvas;
+    private readonly SKCanvasView _rejectCaptainNameCanvas;
+    private string _captainNameCommitted = "Captain";
     private SKPicture? _logoPicture;
+    private SKPicture? _editCaptainNamePicture;
+    private SKPicture? _saveCaptainNamePicture;
+    private SKPicture? _rejectCaptainNamePicture;
     private int _isClosing;
 
     private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
@@ -5471,15 +5490,62 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
         var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
 
+        _captainNameEntry = new Entry
+        {
+            Text = _captainNameCommitted,
+            IsReadOnly = true,
+            FontSize = 22,
+            HorizontalOptions = LayoutOptions.Fill
+        };
+        _captainNameHeadingLabel = new Label
+        {
+            Text = _captainNameCommitted,
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 22,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+        _editCaptainNameCanvas = BuildCaptainNameIconCanvas(OnEditCaptainNameTapped);
+        _editCaptainNameCanvas.PaintSurface += OnEditCaptainNameCanvasPaintSurface;
+        _saveCaptainNameCanvas = BuildCaptainNameIconCanvas(OnSaveCaptainNameTapped);
+        _saveCaptainNameCanvas.PaintSurface += OnSaveCaptainNameCanvasPaintSurface;
+        _rejectCaptainNameCanvas = BuildCaptainNameIconCanvas(OnRejectCaptainNameTapped);
+        _rejectCaptainNameCanvas.PaintSurface += OnRejectCaptainNameCanvasPaintSurface;
+        SetCaptainNameEditMode(isEditing: false);
+
+        var captainNameRow = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Auto },
+                new ColumnDefinition { Width = GridLength.Auto },
+                new ColumnDefinition { Width = GridLength.Auto }
+            },
+            ColumnSpacing = 8,
+            Children =
+            {
+                _captainNameEntry,
+                _editCaptainNameCanvas,
+                _saveCaptainNameCanvas,
+                _rejectCaptainNameCanvas
+            }
+        };
+        Grid.SetColumn(_captainNameEntry, 0);
+        Grid.SetColumn(_editCaptainNameCanvas, 1);
+        Grid.SetColumn(_saveCaptainNameCanvas, 2);
+        Grid.SetColumn(_rejectCaptainNameCanvas, 3);
+
+        _statsGrid = BuildStatsGrid(_context.Unit.Statline);
+
         var leftColumn = new VerticalStackLayout
         {
             Spacing = 8,
             Children =
             {
-                new Label { Text = "Captain Profile", FontAttributes = FontAttributes.Bold, FontSize = 18 },
+                captainNameRow,
                 _logoCanvas,
-                new Label { Text = context.Unit.Name, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.WordWrap },
-                (_statlineLabel = new Label { FontSize = 12, LineBreakMode = LineBreakMode.WordWrap }),
+                _captainNameHeadingLabel,
+                _statsGrid,
                 rangedBlock,
                 ccBlock,
                 skillsBlock,
@@ -5579,6 +5645,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         UpdateProfilePreviewFromSelections();
         _ = LoadLogoAsync();
+        _ = LoadCaptainNameActionIconsAsync();
     }
 
     public static async Task<SavedImprovedCaptainStats?> ShowAsync(INavigation navigation, CaptainUpgradePopupContext context)
@@ -5667,14 +5734,18 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         if (!confirmed)
         {
             _resultSource.TrySetResult(null);
+            DisposeCaptainNameActionIcons();
             await DismissModalIfTopAsync();
 
             return;
         }
 
+        CommitCaptainNameFromEntry();
+
         var stats = new SavedImprovedCaptainStats
         {
             IsEnabled = true,
+            CaptainName = _captainNameCommitted,
             CcTier = ReadStatTier(_ccPicker),
             BsTier = ReadStatTier(_bsPicker),
             PhTier = ReadStatTier(_phPicker),
@@ -5703,6 +5774,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
 
         _resultSource.TrySetResult(stats);
+        DisposeCaptainNameActionIcons();
         await DismissModalIfTopAsync();
     }
 
@@ -5825,7 +5897,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         valueLabel = new Label
         {
             Text = "-",
-            FontSize = 12,
+            FontSize = 19,
             TextColor = valueColor,
             HorizontalTextAlignment = TextAlignment.End,
             LineBreakMode = LineBreakMode.WordWrap
@@ -5839,7 +5911,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 new Label
                 {
                     Text = $"{label}:",
-                    FontSize = 12,
+                    FontSize = 22,
                     LineBreakMode = LineBreakMode.WordWrap
                 },
                 valueLabel
@@ -5902,7 +5974,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private void UpdateStatlinePreview()
     {
-        _statlineLabel.FormattedText = BuildUpdatedStatlineFormatted(_context.Unit.Statline);
+        UpdateStatsGridValues();
     }
 
     private int ReadBaseStat(params string[] statNames)
@@ -5985,49 +6057,113 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return values;
     }
 
-    private FormattedString BuildUpdatedStatlineFormatted(string? statline)
+    private Grid BuildStatsGrid(string? statline)
     {
-        var formatted = new FormattedString();
-        if (string.IsNullOrWhiteSpace(statline))
+        var entries = ParseStatsGridEntries(statline);
+        var grid = new Grid
         {
-            formatted.Spans.Add(new Span { Text = "-", TextColor = DefaultStatColor });
-            return formatted;
+            ColumnSpacing = 10,
+            RowSpacing = 2,
+            RowDefinitions = new RowDefinitionCollection
+            {
+                new RowDefinition { Height = GridLength.Auto },
+                new RowDefinition { Height = GridLength.Auto }
+            }
+        };
+
+        if (entries.Count == 0)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            var empty = new Label
+            {
+                Text = "-",
+                FontSize = 19,
+                LineBreakMode = LineBreakMode.WordWrap
+            };
+            grid.Children.Add(empty);
+            Grid.SetRow(empty, 0);
+            return grid;
         }
 
-        var segments = statline.Split('|', StringSplitOptions.TrimEntries);
-        for (var i = 0; i < segments.Length; i++)
+        for (var i = 0; i < entries.Count; i++)
         {
-            var segment = segments[i];
-            var match = Regex.Match(segment, @"^\s*(CC|BS|PH|WIP|ARM|BTS|VITA|STR|W)\s+(\d+)\s*$", RegexOptions.IgnoreCase);
+            var (key, value) = entries[i];
+            _statGridOrder.Add(key);
+            _statGridBaseValues[key] = value;
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            var keyLabel = new Label
+            {
+                Text = key,
+                FontSize = 19,
+                FontAttributes = FontAttributes.Bold,
+                HorizontalTextAlignment = TextAlignment.Center
+            };
+            var valueLabel = new Label
+            {
+                Text = value,
+                FontSize = 19,
+                HorizontalTextAlignment = TextAlignment.Center,
+                TextColor = DefaultStatColor
+            };
+
+            _statGridValueLabels[key] = valueLabel;
+            grid.Children.Add(keyLabel);
+            grid.Children.Add(valueLabel);
+            Grid.SetColumn(keyLabel, i);
+            Grid.SetRow(keyLabel, 0);
+            Grid.SetColumn(valueLabel, i);
+            Grid.SetRow(valueLabel, 1);
+        }
+
+        return grid;
+    }
+
+    private static List<(string Key, string Value)> ParseStatsGridEntries(string? statline)
+    {
+        var entries = new List<(string Key, string Value)>();
+        if (string.IsNullOrWhiteSpace(statline))
+        {
+            return entries;
+        }
+
+        foreach (var segment in statline.Split('|', StringSplitOptions.TrimEntries))
+        {
+            var match = Regex.Match(segment, @"^\s*([A-Za-z]+)\s+(.+)\s*$", RegexOptions.IgnoreCase);
             if (!match.Success)
             {
-                formatted.Spans.Add(new Span { Text = segment, TextColor = DefaultStatColor });
+                continue;
+            }
+
+            entries.Add((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value.Trim()));
+        }
+
+        return entries;
+    }
+
+    private void UpdateStatsGridValues()
+    {
+        foreach (var key in _statGridOrder)
+        {
+            if (!_statGridValueLabels.TryGetValue(key, out var valueLabel) ||
+                !_statGridBaseValues.TryGetValue(key, out var rawValue))
+            {
+                continue;
+            }
+
+            if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericBase))
+            {
+                var bonus = ReadStatlineBonus(key);
+                var modifiedValue = numericBase + bonus;
+                valueLabel.Text = modifiedValue.ToString(CultureInfo.InvariantCulture);
+                valueLabel.TextColor = modifiedValue == numericBase ? DefaultStatColor : ModifiedStatColor;
             }
             else
             {
-                var statKey = match.Groups[1].Value.ToUpperInvariant();
-                var baseValue = int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
-                    ? parsed
-                    : 0;
-                var bonus = ReadStatlineBonus(statKey);
-                var modifiedValue = baseValue + bonus;
-                var isModified = modifiedValue != baseValue;
-
-                formatted.Spans.Add(new Span { Text = $"{statKey} ", TextColor = DefaultStatColor });
-                formatted.Spans.Add(new Span
-                {
-                    Text = modifiedValue.ToString(CultureInfo.InvariantCulture),
-                    TextColor = isModified ? ModifiedStatColor : DefaultStatColor
-                });
-            }
-
-            if (i < segments.Length - 1)
-            {
-                formatted.Spans.Add(new Span { Text = " | ", TextColor = DefaultStatColor });
+                valueLabel.Text = rawValue;
+                valueLabel.TextColor = DefaultStatColor;
             }
         }
-
-        return formatted;
     }
 
     private int ReadStatlineBonus(string statKey)
@@ -6052,6 +6188,147 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static SKCanvasView BuildCaptainNameIconCanvas(EventHandler<TappedEventArgs> tappedHandler)
+    {
+        var canvas = new SKCanvasView
+        {
+            WidthRequest = 28,
+            HeightRequest = 28,
+            VerticalOptions = LayoutOptions.Center
+        };
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += tappedHandler;
+        canvas.GestureRecognizers.Add(tap);
+        return canvas;
+    }
+
+    private void SetCaptainNameEditMode(bool isEditing)
+    {
+        _captainNameEntry.IsEnabled = isEditing;
+        _captainNameEntry.IsReadOnly = !isEditing;
+        _editCaptainNameCanvas.IsVisible = !isEditing;
+        _saveCaptainNameCanvas.IsVisible = isEditing;
+        _rejectCaptainNameCanvas.IsVisible = isEditing;
+    }
+
+    private void OnEditCaptainNameTapped(object? sender, TappedEventArgs e)
+    {
+        SetCaptainNameEditMode(isEditing: true);
+        _captainNameEntry.Focus();
+    }
+
+    private void OnSaveCaptainNameTapped(object? sender, TappedEventArgs e)
+    {
+        CommitCaptainNameFromEntry();
+    }
+
+    private void OnRejectCaptainNameTapped(object? sender, TappedEventArgs e)
+    {
+        _captainNameEntry.Text = _captainNameCommitted;
+        SetCaptainNameEditMode(isEditing: false);
+    }
+
+    private void CommitCaptainNameFromEntry()
+    {
+        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? "Captain" : _captainNameEntry.Text.Trim();
+        _captainNameCommitted = normalized;
+        _captainNameEntry.Text = _captainNameCommitted;
+        _captainNameHeadingLabel.Text = _captainNameCommitted;
+        SetCaptainNameEditMode(isEditing: false);
+    }
+
+    private async Task LoadCaptainNameActionIconsAsync()
+    {
+        DisposeCaptainNameActionIcons();
+
+        try
+        {
+            await using var editStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-edit-333556.svg");
+            var svg = new SKSvg();
+            _editCaptainNamePicture = svg.Load(editStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ConfigureCaptainPopupPage edit icon load failed: {ex.Message}");
+            _editCaptainNamePicture = null;
+        }
+
+        try
+        {
+            await using var saveStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
+            var svg = new SKSvg();
+            _saveCaptainNamePicture = svg.Load(saveStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ConfigureCaptainPopupPage save icon load failed: {ex.Message}");
+            _saveCaptainNamePicture = null;
+        }
+
+        try
+        {
+            await using var rejectStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
+            var svg = new SKSvg();
+            _rejectCaptainNamePicture = svg.Load(rejectStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ConfigureCaptainPopupPage reject icon load failed: {ex.Message}");
+            _rejectCaptainNamePicture = null;
+        }
+
+        _editCaptainNameCanvas.InvalidateSurface();
+        _saveCaptainNameCanvas.InvalidateSurface();
+        _rejectCaptainNameCanvas.InvalidateSurface();
+    }
+
+    private void DisposeCaptainNameActionIcons()
+    {
+        _editCaptainNamePicture?.Dispose();
+        _editCaptainNamePicture = null;
+        _saveCaptainNamePicture?.Dispose();
+        _saveCaptainNamePicture = null;
+        _rejectCaptainNamePicture?.Dispose();
+        _rejectCaptainNamePicture = null;
+    }
+
+    private static void DrawActionIcon(SKCanvas canvas, SKImageInfo info, SKPicture? picture)
+    {
+        canvas.Clear(SKColors.Transparent);
+        if (picture is null)
+        {
+            return;
+        }
+
+        var bounds = picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(info.Width / bounds.Width, info.Height / bounds.Height);
+        var x = (info.Width - (bounds.Width * scale)) / 2f;
+        var y = (info.Height - (bounds.Height * scale)) / 2f;
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(picture);
+    }
+
+    private void OnEditCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawActionIcon(e.Surface.Canvas, e.Info, _editCaptainNamePicture);
+    }
+
+    private void OnSaveCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawActionIcon(e.Surface.Canvas, e.Info, _saveCaptainNamePicture);
+    }
+
+    private void OnRejectCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawActionIcon(e.Surface.Canvas, e.Info, _rejectCaptainNamePicture);
     }
 
     private static int ReadChoicePoints(Picker picker)

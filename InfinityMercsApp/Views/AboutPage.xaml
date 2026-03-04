@@ -281,7 +281,7 @@
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">
-                    <Label Text="noun-hack.svg hack by WEBTECHOPS LLP from " />
+                    <Label Text="noun-hack-2277937.svg hack by WEBTECHOPS LLP from " />
                     <Label
                         Text="Noun Project"
                         TextColor="#2563EB"
@@ -307,7 +307,7 @@
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">
-                    <Label Text="noun-team.svg team by Hanbai from " />
+                    <Label Text="noun-team-7662436.svg team by Hanbai from " />
                     <Label
                         Text="Noun Project"
                         TextColor="#2563EB"
@@ -658,9 +658,16 @@
                 </FlexLayout>
             </Grid>
 
-            <Grid ColumnDefinitions="*" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon25Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon25CanvasPaintSurface" />
+
                 <FlexLayout
-                    Grid.Column="0"
+                    Grid.Column="1"
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">
@@ -677,9 +684,16 @@
                 </FlexLayout>
             </Grid>
 
-            <Grid ColumnDefinitions="*" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon26Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon26CanvasPaintSurface" />
+
                 <FlexLayout
-                    Grid.Column="0"
+                    Grid.Column="1"
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">

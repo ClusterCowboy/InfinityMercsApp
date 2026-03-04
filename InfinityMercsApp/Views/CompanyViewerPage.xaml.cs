@@ -37,8 +37,12 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private SKPicture? _cubeIconPicture;
     private SKPicture? _cube2IconPicture;
     private SKPicture? _hackableIconPicture;
+    private SKPicture? _nameEditIconPicture;
+    private SKPicture? _nameSaveIconPicture;
+    private SKPicture? _nameRejectIconPicture;
     private string? _companyFilePath;
     private bool _loadAttempted;
+    private CompanyViewerUnitListItem? _selectedCompanyUnit;
     private string _companyNameHeading = "Company Viewer";
     private string _companySubtitle = string.Empty;
     private string _companyUnitsStatus = string.Empty;
@@ -47,9 +51,57 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private FormattedString _currentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
     private bool _hasCurrentPeripherals;
     private SavedImprovedCaptainStats _loadedCaptainStats = new();
+    private string _selectedCaptainNameHeading = string.Empty;
+    private string _selectedProfileBaseNameHeading = string.Empty;
+    private bool _hasSelectedProfileBaseNameHeading;
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
+
+    public string SelectedCaptainNameHeading
+    {
+        get => _selectedCaptainNameHeading;
+        private set
+        {
+            if (_selectedCaptainNameHeading == value)
+            {
+                return;
+            }
+
+            _selectedCaptainNameHeading = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SelectedProfileBaseNameHeading
+    {
+        get => _selectedProfileBaseNameHeading;
+        private set
+        {
+            if (_selectedProfileBaseNameHeading == value)
+            {
+                return;
+            }
+
+            _selectedProfileBaseNameHeading = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasSelectedProfileBaseNameHeading
+    {
+        get => _hasSelectedProfileBaseNameHeading;
+        private set
+        {
+            if (_hasSelectedProfileBaseNameHeading == value)
+            {
+                return;
+            }
+
+            _hasSelectedProfileBaseNameHeading = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string CompanyNameHeading
     {
@@ -157,8 +209,18 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var bottomTap = new TapGestureRecognizer();
         bottomTap.Tapped += OnBottomIconRowTapped;
         BottomIconRowCanvas.GestureRecognizers.Add(bottomTap);
+        var saveNameTap = new TapGestureRecognizer();
+        saveNameTap.Tapped += OnSelectedNameSaveTapped;
+        SelectedNameSaveCanvas.GestureRecognizers.Add(saveNameTap);
+        var rejectNameTap = new TapGestureRecognizer();
+        rejectNameTap.Tapped += OnSelectedNameRejectTapped;
+        SelectedNameRejectCanvas.GestureRecognizers.Add(rejectNameTap);
+        var editNameTap = new TapGestureRecognizer();
+        editNameTap.Tapped += OnSelectedNameEditTapped;
+        SelectedNameEditCanvas.GestureRecognizers.Add(editNameTap);
 
         _ = LoadHeaderIconsAsync();
+        _ = LoadNameEditIconsAsync();
     }
 
     protected override async void OnAppearing()
@@ -193,6 +255,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             CompanyNameHeading = "Company Viewer";
             CompanySubtitle = "Saved company file was not found.";
             CompanyUnitsStatus = "Saved company file was not found.";
+            SelectedCaptainNameHeading = string.Empty;
+            SelectedProfileBaseNameHeading = string.Empty;
+            HasSelectedProfileBaseNameHeading = false;
             return;
         }
 
@@ -205,6 +270,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 CompanyNameHeading = "Company Viewer";
                 CompanySubtitle = "Unable to read saved company data.";
                 CompanyUnitsStatus = "Unable to read saved company data.";
+                SelectedCaptainNameHeading = string.Empty;
+                SelectedProfileBaseNameHeading = string.Empty;
+                HasSelectedProfileBaseNameHeading = false;
                 return;
             }
 
@@ -216,6 +284,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             CompanySubtitle = string.Empty;
             var captainStats = payload.ImprovedCaptainStats;
             _loadedCaptainStats = captainStats;
+            var captainDisplayName = string.IsNullOrWhiteSpace(captainStats.CaptainName)
+                ? "Captain"
+                : captainStats.CaptainName.Trim();
             var captainWeaponChoices = captainStats.IsEnabled
                 ? CollectCaptainChoices(captainStats.WeaponChoice1, captainStats.WeaponChoice2, captainStats.WeaponChoice3)
                 : [];
@@ -229,7 +300,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             for (var i = 0; i < payload.Entries.Count; i++)
             {
                 var entry = payload.Entries[i];
-                var displayName = string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name;
+                var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
+                    ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
+                    : entry.BaseUnitName;
+                var defaultDisplayName = entry.IsLieutenant ? captainDisplayName : "Trooper";
+                var displayName = string.IsNullOrWhiteSpace(entry.CustomName)
+                    ? defaultDisplayName
+                    : entry.CustomName.Trim();
                 var subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty;
                 var savedRangedWeapons = entry.SavedRangedWeapons;
                 var savedSkills = entry.SavedSkills;
@@ -244,6 +321,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 CompanyUnits.Add(new CompanyViewerUnitListItem
                 {
                     Name = displayName,
+                    EntryIndex = entry.EntryIndex,
+                    BaseUnitName = baseUnitName,
                     Subtitle = subtitle,
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
@@ -277,6 +356,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             CompanyNameHeading = "Company Viewer";
             CompanySubtitle = $"Failed to load company: {ex.Message}";
             CompanyUnitsStatus = $"Failed to load company: {ex.Message}";
+            SelectedCaptainNameHeading = string.Empty;
+            SelectedProfileBaseNameHeading = string.Empty;
+            HasSelectedProfileBaseNameHeading = false;
         }
     }
 
@@ -291,6 +373,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         {
             unit.IsSelected = ReferenceEquals(unit, item);
         }
+        _selectedCompanyUnit = item;
 
         await _viewerViewModel.LoadSpecificConfigurationAsync(
             item.SourceFactionId,
@@ -318,6 +401,22 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var mergedProfile = BuildMergedProfileItem(item, loadedProfile);
         _viewerViewModel.Profiles.Add(mergedProfile);
         _viewerViewModel.ApplySelectedProfileTopSummaries(mergedProfile);
+        SelectedCaptainNameHeading = item.Name;
+        var baseHeading = string.IsNullOrWhiteSpace(item.BaseUnitName)
+            ? (string.IsNullOrWhiteSpace(mergedProfile.Name) ? item.Name : mergedProfile.Name)
+            : item.BaseUnitName;
+        if (string.Equals(baseHeading?.Trim(), item.Name?.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedProfileBaseNameHeading = string.Empty;
+            HasSelectedProfileBaseNameHeading = false;
+        }
+        else
+        {
+            SelectedProfileBaseNameHeading = baseHeading ?? string.Empty;
+            HasSelectedProfileBaseNameHeading = !string.IsNullOrWhiteSpace(baseHeading);
+        }
+        SetSelectedNameEditMode(false);
+        SelectedNameEntry.Text = item.Name;
 
         UpdateCurrentWeaponsDisplay();
         TopIconRowCanvas.InvalidateSurface();
@@ -566,6 +665,53 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         BottomIconRowCanvas.InvalidateSurface();
     }
 
+    private async Task LoadNameEditIconsAsync()
+    {
+        _nameEditIconPicture?.Dispose();
+        _nameEditIconPicture = null;
+        _nameSaveIconPicture?.Dispose();
+        _nameSaveIconPicture = null;
+        _nameRejectIconPicture?.Dispose();
+        _nameRejectIconPicture = null;
+
+        try
+        {
+            await using var editStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-edit-333556.svg");
+            var editSvg = new SKSvg();
+            _nameEditIconPicture = editSvg.Load(editStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage name edit icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var saveStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
+            var saveSvg = new SKSvg();
+            _nameSaveIconPicture = saveSvg.Load(saveStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage name save icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var rejectStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
+            var rejectSvg = new SKSvg();
+            _nameRejectIconPicture = rejectSvg.Load(rejectStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage name reject icon load failed: {ex.Message}");
+        }
+
+        SelectedNameEditCanvas.InvalidateSurface();
+        SelectedNameSaveCanvas.InvalidateSurface();
+        SelectedNameRejectCanvas.InvalidateSurface();
+    }
+
     private void OnViewerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
@@ -596,6 +742,140 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
         DrawIconRow(canvas, e.Info, BuildBottomIconEntries().Select(x => x.Picture).ToList());
+    }
+
+    private void OnSelectedNameSaveCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        if (_nameSaveIconPicture is null)
+        {
+            return;
+        }
+
+        DrawPictureInRect(canvas, _nameSaveIconPicture, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+    }
+
+    private void OnSelectedNameEditCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        if (_nameEditIconPicture is null)
+        {
+            return;
+        }
+
+        DrawPictureInRect(canvas, _nameEditIconPicture, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+    }
+
+    private void OnSelectedNameRejectCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        if (_nameRejectIconPicture is null)
+        {
+            return;
+        }
+
+        DrawPictureInRect(canvas, _nameRejectIconPicture, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+    }
+
+    private void OnSelectedNameLabelTapped(object? sender, TappedEventArgs args)
+    {
+        BeginSelectedNameEdit();
+    }
+
+    private void OnSelectedNameEditTapped(object? sender, TappedEventArgs args)
+    {
+        BeginSelectedNameEdit();
+    }
+
+    private void BeginSelectedNameEdit()
+    {
+        if (_selectedCompanyUnit is null)
+        {
+            return;
+        }
+
+        SelectedNameEntry.Text = SelectedCaptainNameHeading;
+        SetSelectedNameEditMode(true);
+        SelectedNameEntry.Focus();
+    }
+
+    private async void OnSelectedNameSaveTapped(object? sender, TappedEventArgs args)
+    {
+        if (_selectedCompanyUnit is null)
+        {
+            return;
+        }
+
+        var fallback = string.IsNullOrWhiteSpace(SelectedCaptainNameHeading)
+            ? (_selectedCompanyUnit.IsLieutenant ? "Captain" : "Trooper")
+            : SelectedCaptainNameHeading;
+        var normalized = string.IsNullOrWhiteSpace(SelectedNameEntry.Text)
+            ? fallback
+            : SelectedNameEntry.Text.Trim();
+
+        _selectedCompanyUnit.Name = normalized;
+        SelectedCaptainNameHeading = normalized;
+        SelectedNameEntry.Text = normalized;
+        await PersistUnitCustomNameAsync(_selectedCompanyUnit, normalized);
+        SetSelectedNameEditMode(false);
+    }
+
+    private void OnSelectedNameRejectTapped(object? sender, TappedEventArgs args)
+    {
+        SelectedNameEntry.Text = SelectedCaptainNameHeading;
+        SetSelectedNameEditMode(false);
+    }
+
+    private void SetSelectedNameEditMode(bool isEditing)
+    {
+        SelectedNameDisplayRow.IsVisible = !isEditing;
+        SelectedNameEditRow.IsVisible = isEditing;
+    }
+
+    private async Task PersistUnitCustomNameAsync(CompanyViewerUnitListItem item, string customName)
+    {
+        if (string.IsNullOrWhiteSpace(_companyFilePath) || !File.Exists(_companyFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(_companyFilePath);
+            var payload = JsonSerializer.Deserialize<SavedCompanyFile>(json, JsonOptions);
+            if (payload is null)
+            {
+                return;
+            }
+
+            var matched = payload.Entries.FirstOrDefault(x => x.EntryIndex == item.EntryIndex)
+                ?? payload.Entries.FirstOrDefault(x =>
+                    x.SourceFactionId == item.SourceFactionId &&
+                    x.SourceUnitId == item.SourceUnitId &&
+                    string.Equals(x.ProfileKey ?? string.Empty, item.ProfileKey ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+            if (matched is null)
+            {
+                return;
+            }
+
+            matched.CustomName = customName;
+            if (string.IsNullOrWhiteSpace(matched.BaseUnitName))
+            {
+                matched.BaseUnitName = string.IsNullOrWhiteSpace(item.BaseUnitName) ? matched.Name : item.BaseUnitName;
+            }
+
+            await File.WriteAllTextAsync(
+                _companyFilePath,
+                JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage failed to persist unit custom name: {ex.Message}");
+        }
     }
 
     private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
@@ -987,6 +1267,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
 public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 {
+    public int EntryIndex { get; init; }
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
@@ -1001,7 +1282,22 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
     public string CaptainIconPackagedPath { get; init; } = string.Empty;
     public string ExperienceIconPackagedPath { get; init; } = string.Empty;
-    public string Name { get; init; } = string.Empty;
+    private string _name = string.Empty;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name == value)
+            {
+                return;
+            }
+
+            _name = value;
+            OnPropertyChanged();
+        }
+    }
+    public string BaseUnitName { get; init; } = string.Empty;
     public string? CachedLogoPath { get; init; }
     public string? PackagedLogoPath { get; init; }
     public string? Subtitle { get; init; }
