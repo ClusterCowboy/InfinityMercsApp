@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.FeedbackBugsPage"
+             Title="Feedback/Bugs">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label
+                Text="Feedback/Bugs"
+                FontAttributes="Bold"
+                FontSize="26" />
+
+            <Label
+                Text="This page automatically emails feedback/bug details to jeremiahpatrick@protonmail.com."
+                LineBreakMode="WordWrap" />
+
+            <BoxView HeightRequest="1" Opacity="0.4" />
+
+            <Label Text="Your Email" FontAttributes="Bold" />
+            <Entry x:Name="UserEmailEntry"
+                   Keyboard="Email"
+                   Placeholder="you@example.com" />
+
+            <Label Text="Category" FontAttributes="Bold" />
+            <Picker x:Name="CategoryPicker"
+                    Title="Select category">
+                <Picker.Items>
+                    <x:String>Bug</x:String>
+                    <x:String>Feedback</x:String>
+                </Picker.Items>
+            </Picker>
+
+            <Label Text="Title" FontAttributes="Bold" />
+            <Entry x:Name="TitleEntry" Placeholder="Short summary" />
+
+            <Label Text="Description" FontAttributes="Bold" />
+            <Editor x:Name="DescriptionEditor"
+                    AutoSize="TextChanges"
+                    MinimumHeightRequest="180"
+                    Placeholder="Describe the issue or feedback." />
+
+            <Button x:Name="SubmitButton"
+                    Text="Submit Ticket"
+                    Clicked="OnSubmitClicked" />
+
+            <ActivityIndicator x:Name="SubmitIndicator"
+                               IsVisible="False"
+                               IsRunning="False" />
+
+            <Label x:Name="StatusLabel"
+                   LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

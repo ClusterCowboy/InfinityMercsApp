@@ -47,5 +47,10 @@
         ContentTemplate="{DataTemplate views:AboutPage}"
         Route="AboutPage" />
 
+    <!-- <ShellContent
+        Title="Feedback/Bugs"
+        ContentTemplate="{DataTemplate views:FeedbackBugsPage}"
+        Route="FeedbackBugsPage" /> -->
+
 
 </Shell>

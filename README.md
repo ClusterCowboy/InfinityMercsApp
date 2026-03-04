@@ -112,3 +112,6 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Company Deployment
  - [ ] Experience Points during play
 And more
+
+## Known Defects
+- [ ] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
