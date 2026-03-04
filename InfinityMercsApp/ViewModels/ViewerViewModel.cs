@@ -715,23 +715,6 @@ public class ViewerViewModel : BaseViewModel
         EquipmentSummary = $"Equipment: {mergedEquipment}";
         SpecialSkillsSummary = $"Special Skills: {mergedSkills}";
 
-        if (matchedProfile.IsLieutenant)
-        {
-            EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
-                "Equipment",
-                mergedEquipmentValues,
-                _currentEquipmentLookup,
-                _currentEquipmentLinks,
-                null);
-            SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
-                "Special Skills",
-                mergedSkillValues,
-                _currentSkillsLookup,
-                _currentSkillsLinks,
-                null);
-            return;
-        }
-
         EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
             "Equipment",
             mergedEquipmentValues,
@@ -801,7 +784,7 @@ public class ViewerViewModel : BaseViewModel
         }
 
         return payload
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Split([',', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .Where(x => !string.Equals(x, "-", StringComparison.Ordinal));
     }
 

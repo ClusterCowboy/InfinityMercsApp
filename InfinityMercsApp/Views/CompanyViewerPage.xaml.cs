@@ -30,6 +30,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
+    private SKPicture? _lieutenantOrderIconPicture;
     private SKPicture? _commandTokenIconPicture;
     private SKPicture? _impetuousIconPicture;
     private SKPicture? _tacticalAwarenessIconPicture;
@@ -314,7 +315,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
         _viewerViewModel.Profiles.Clear();
-        _viewerViewModel.Profiles.Add(BuildMergedProfileItem(item, loadedProfile));
+        var mergedProfile = BuildMergedProfileItem(item, loadedProfile);
+        _viewerViewModel.Profiles.Add(mergedProfile);
+        _viewerViewModel.ApplySelectedProfileTopSummaries(mergedProfile);
 
         UpdateCurrentWeaponsDisplay();
         TopIconRowCanvas.InvalidateSurface();
@@ -377,7 +380,12 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
         var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
         var uniqueEquipment = MergeProfileSectionText(loadedProfile?.UniqueEquipment, item.SavedEquipment);
+        var isLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant;
         var uniqueSkills = MergeProfileSectionText(loadedProfile?.UniqueSkills, item.SavedSkills);
+        if (isLieutenant)
+        {
+            uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
+        }
         var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -408,7 +416,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             Cost = loadedProfile?.Cost ?? item.Cost.ToString(),
             Swc = loadedProfile?.Swc ?? "-",
             SwcDisplay = loadedProfile?.SwcDisplay ?? string.Empty,
-            IsLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant,
+            IsLieutenant = isLieutenant,
             ProfileKey = loadedProfile?.ProfileKey ?? item.ProfileKey
         };
     }
@@ -440,6 +448,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _regularOrderIconPicture = null;
         _irregularOrderIconPicture?.Dispose();
         _irregularOrderIconPicture = null;
+        _lieutenantOrderIconPicture?.Dispose();
+        _lieutenantOrderIconPicture = null;
         _commandTokenIconPicture?.Dispose();
         _commandTokenIconPicture = null;
         _impetuousIconPicture?.Dispose();
@@ -473,6 +483,17 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanyViewerPage irregular order icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var lieutenantStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-upload-2450840.svg");
+            var lieutenantSvg = new SKSvg();
+            _lieutenantOrderIconPicture = lieutenantSvg.Load(lieutenantStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage lieutenant order icon load failed: {ex.Message}");
         }
 
         try
@@ -587,15 +608,35 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var profile = _viewerViewModel.Profiles.FirstOrDefault();
-        var bonusRegularOrders = CountBonusRegularOrders(profile?.UniqueSkills);
-        for (var i = 0; i < bonusRegularOrders; i++)
+        var isLieutenantProfile = profile?.IsLieutenant == true;
+        if (isLieutenantProfile && _lieutenantOrderIconPicture is not null)
         {
-            if (_regularOrderIconPicture is null)
+            entries.Add((_lieutenantOrderIconPicture, null));
+        }
+
+        var bonusRegularOrders = CountBonusRegularOrders(profile?.UniqueSkills);
+        if (!isLieutenantProfile)
+        {
+            for (var i = 0; i < bonusRegularOrders; i++)
+            {
+                if (_regularOrderIconPicture is null)
+                {
+                    break;
+                }
+
+                entries.Add((_regularOrderIconPicture, null));
+            }
+        }
+
+        var bonusLieutenantOrders = CountBonusLieutenantOrders(profile?.UniqueSkills);
+        for (var i = 0; i < bonusLieutenantOrders; i++)
+        {
+            if (_lieutenantOrderIconPicture is null)
             {
                 break;
             }
 
-            entries.Add((_regularOrderIconPicture, null));
+            entries.Add((_lieutenantOrderIconPicture, null));
         }
 
         var bonusCommandTokens = CountBonusCommandTokens(profile?.UniqueSkills);
@@ -818,6 +859,26 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
     }
 
+    private static string NormalizeLieutenantOrderEntries(string? skillsText)
+    {
+        var lines = SplitProfileText(skillsText);
+        if (lines.Count == 0)
+        {
+            return "-";
+        }
+
+        for (var i = 0; i < lines.Count; i++)
+        {
+            lines[i] = Regex.Replace(
+                lines[i],
+                @"\+(\d+)\s*(?:regular\s*)?orders?\b",
+                "+$1 Lt Order",
+                RegexOptions.IgnoreCase);
+        }
+
+        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+    }
+
     private static List<string> SplitProfileText(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -878,6 +939,37 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             }
 
             var matches = Regex.Matches(line, @"\+(\d+)\s*command\s*tokens?\b", RegexOptions.IgnoreCase);
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                total += Math.Max(0, value);
+            }
+        }
+
+        return total;
+    }
+
+    private static int CountBonusLieutenantOrders(string? uniqueSkills)
+    {
+        if (string.IsNullOrWhiteSpace(uniqueSkills))
+        {
+            return 0;
+        }
+
+        var total = 0;
+        foreach (var line in SplitProfileText(uniqueSkills))
+        {
+            if (!line.Contains("lt order", StringComparison.OrdinalIgnoreCase) &&
+                !line.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var matches = Regex.Matches(line, @"\+(\d+)\s*(?:lt|lieutenant)\s*orders?\b", RegexOptions.IgnoreCase);
             foreach (Match match in matches)
             {
                 if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))

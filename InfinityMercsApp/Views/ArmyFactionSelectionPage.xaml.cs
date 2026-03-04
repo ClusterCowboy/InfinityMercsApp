@@ -1775,7 +1775,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             Unit = unitInfo,
             OptionFactionId = optionFactionId,
-            OptionFactionName = Factions.FirstOrDefault(x => x.Id == optionFactionId)?.Name ?? $"Faction {optionFactionId}",
+            OptionFactionName = await ResolveCaptainOptionFactionNameAsync(sourceFactionId, optionFactionId, cancellationToken),
             WeaponOptions = options.Weapons,
             SkillOptions = options.Skills,
             EquipmentOptions = options.Equipment
@@ -1809,6 +1809,57 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return sourceFaction.ParentId > 0 ? sourceFaction.ParentId : sourceFactionId;
+    }
+
+    private async Task<string> ResolveCaptainOptionFactionNameAsync(
+        int sourceFactionId,
+        int optionFactionId,
+        CancellationToken cancellationToken)
+    {
+        if (sourceFactionId > 0)
+        {
+            var sourceName = Factions.FirstOrDefault(x => x.Id == sourceFactionId)?.Name;
+            if (!string.IsNullOrWhiteSpace(sourceName))
+            {
+                return sourceName;
+            }
+        }
+
+        if (optionFactionId > 0)
+        {
+            var optionName = Factions.FirstOrDefault(x => x.Id == optionFactionId)?.Name;
+            if (!string.IsNullOrWhiteSpace(optionName))
+            {
+                return optionName;
+            }
+        }
+
+        if (_metadataAccessor is not null)
+        {
+            if (sourceFactionId > 0)
+            {
+                var sourceFaction = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(sourceFaction?.Name))
+                {
+                    return sourceFaction.Name;
+                }
+            }
+
+            if (optionFactionId > 0)
+            {
+                var optionFaction = await _metadataAccessor.GetFactionByIdAsync(optionFactionId, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(optionFaction?.Name))
+                {
+                    return optionFaction.Name;
+                }
+            }
+        }
+
+        return optionFactionId > 0
+            ? $"Faction {optionFactionId}"
+            : sourceFactionId > 0
+                ? $"Faction {sourceFactionId}"
+                : "Faction";
     }
 
     private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
@@ -5327,10 +5378,12 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Label _skillsValueLabel;
     private readonly Label _equipmentValueLabel;
     private readonly Label _upgradeOptionsHeaderLabel;
+    private readonly Label _experienceRemainingLabel;
     private readonly Button _foundCompanyButton;
     private readonly IReadOnlyDictionary<string, int> _baseStats;
     private readonly Label _statlineLabel;
     private SKPicture? _logoPicture;
+    private int _isClosing;
 
     private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
     {
@@ -5440,6 +5493,12 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             FontSize = 18,
             TextColor = Colors.White
         };
+        _experienceRemainingLabel = new Label
+        {
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 15,
+            TextColor = Colors.White
+        };
 
         var rightColumn = new VerticalStackLayout
         {
@@ -5447,6 +5506,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             Children =
             {
                 _upgradeOptionsHeaderLabel,
+                _experienceRemainingLabel,
                 BuildStatRow("CC", _ccPicker),
                 BuildStatRow("BS", _bsPicker),
                 BuildStatRow("PH", _phPicker),
@@ -5599,12 +5659,15 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private async Task CloseAsync(bool confirmed)
     {
+        if (Interlocked.Exchange(ref _isClosing, 1) == 1)
+        {
+            return;
+        }
+
         if (!confirmed)
         {
-            if (_resultSource.TrySetResult(null))
-            {
-                await Navigation.PopModalAsync(false);
-            }
+            _resultSource.TrySetResult(null);
+            await DismissModalIfTopAsync();
 
             return;
         }
@@ -5639,9 +5702,36 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             OptionFactionName = _context.OptionFactionName
         };
 
-        if (_resultSource.TrySetResult(stats))
+        _resultSource.TrySetResult(stats);
+        await DismissModalIfTopAsync();
+    }
+
+    private async Task DismissModalIfTopAsync()
+    {
+        try
         {
-            await Navigation.PopModalAsync(false);
+            var navigation = Navigation;
+            var modalStack = navigation?.ModalStack;
+            if (modalStack is null || modalStack.Count == 0)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(modalStack[^1], this))
+            {
+                return;
+            }
+
+            if (navigation is null)
+            {
+                return;
+            }
+
+            await navigation.PopModalAsync(false);
+        }
+        catch (ArgumentException ex) when (ex.Message.Contains("Ambiguous routes matched", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine($"ConfigureCaptainPopupPage DismissModalIfTopAsync ignored ambiguous route pop: {ex.Message}");
         }
     }
 
@@ -5803,8 +5893,9 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             ReadChoicePoints(_equipment3Picker);
         var experienceRemaining = baseExperience - selectedCost;
 
-        _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName}) - Exp Remaining: {experienceRemaining}";
-        _upgradeOptionsHeaderLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
+        _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName})";
+        _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
+        _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
         _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
     }
