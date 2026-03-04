@@ -51,14 +51,19 @@
             </Border>
 
             <Border Grid.Column="1" StrokeThickness="1" Padding="12">
+                <Border.Resources>
+                    <Style TargetType="Label">
+                        <Setter Property="FontSize" Value="24" />
+                    </Style>
+                </Border.Resources>
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
                     <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="4">
-                        <Label Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Label Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="34" FontAttributes="Bold" VerticalOptions="Center" />
                         <skia:SKCanvasView
                             Grid.Row="0"
                             Grid.Column="1"
                             x:Name="TopIconRowCanvas"
-                            HeightRequest="24"
+                            HeightRequest="75"
                             HorizontalOptions="Fill"
                             VerticalOptions="Center"
                             IsVisible="{Binding HasAnyTopHeaderIcons}"
@@ -67,7 +72,7 @@
                             Grid.Row="1"
                             Grid.Column="1"
                             x:Name="BottomIconRowCanvas"
-                            HeightRequest="24"
+                            HeightRequest="75"
                             HorizontalOptions="Fill"
                             VerticalOptions="Center"
                             IsVisible="{Binding HasAnyBottomHeaderIcons}"
@@ -129,10 +134,10 @@
                     <ScrollView Grid.Row="5">
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                <Label Text="Weapons" FontSize="20" FontAttributes="Bold" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentRangedWeaponsFormatted}" FontSize="12" LineBreakMode="WordWrap" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentMeleeWeaponsFormatted}" FontSize="12" LineBreakMode="WordWrap" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentPeripheralsFormatted}" FontSize="12" LineBreakMode="WordWrap" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasCurrentPeripherals}" />
+                                <Label Text="Weapons" FontSize="30" FontAttributes="Bold" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentRangedWeaponsFormatted}" FontSize="22" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentMeleeWeaponsFormatted}" FontSize="22" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentPeripheralsFormatted}" FontSize="22" LineBreakMode="WordWrap" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasCurrentPeripherals}" />
                             </VerticalStackLayout>
                             <Grid Grid.Column="1" />
                         </Grid>

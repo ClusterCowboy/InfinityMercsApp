@@ -30,6 +30,8 @@ public partial class AboutPage : ContentPage
     private SKPicture? _attributionIcon22Picture;
     private SKPicture? _attributionIcon23Picture;
     private SKPicture? _attributionIcon24Picture;
+    private SKPicture? _attributionIcon25Picture;
+    private SKPicture? _attributionIcon26Picture;
 
     public AboutPage()
     {
@@ -72,6 +74,11 @@ public partial class AboutPage : ContentPage
     private async void OnNounProjectAttributionTapped(object? sender, TappedEventArgs e)
     {
         await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/arrow/");
+    }
+
+    private async void OnNounEditAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/edit/");
     }
 
     private async void OnNounCircleArrowAttributionTapped(object? sender, TappedEventArgs e)
@@ -174,6 +181,16 @@ public partial class AboutPage : ContentPage
         await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/options/");
     }
 
+    private async void OnNounOkAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/ok/");
+    }
+
+    private async void OnNounRejectAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/reject/");
+    }
+
     private async Task LoadAttributionIconsAsync()
     {
         _attributionIconPicture?.Dispose();
@@ -224,6 +241,10 @@ public partial class AboutPage : ContentPage
         _attributionIcon23Picture = null;
         _attributionIcon24Picture?.Dispose();
         _attributionIcon24Picture = null;
+        _attributionIcon25Picture?.Dispose();
+        _attributionIcon25Picture = null;
+        _attributionIcon26Picture?.Dispose();
+        _attributionIcon26Picture = null;
 
         try
         {
@@ -251,7 +272,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/arrow-circle-up-svgrepo-com.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-edit-333556.svg");
             var svg = new SKSvg();
             _attributionIcon3Picture = svg.Load(stream);
         }
@@ -335,7 +356,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-hack.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/MercsIcons/noun-hack-2277937.svg");
             var svg = new SKSvg();
             _attributionIcon10Picture = svg.Load(stream);
         }
@@ -347,7 +368,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-team.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/MercsIcons/noun-team-7662436.svg");
             var svg = new SKSvg();
             _attributionIcon11Picture = svg.Load(stream);
         }
@@ -522,8 +543,33 @@ public partial class AboutPage : ContentPage
             _attributionIcon24Picture = null;
         }
 
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-ok-5506550.svg");
+            var svg = new SKSvg();
+            _attributionIcon25Picture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AboutPage attribution icon 25 load failed: {ex.Message}");
+            _attributionIcon25Picture = null;
+        }
+
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-reject-8230150.svg");
+            var svg = new SKSvg();
+            _attributionIcon26Picture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AboutPage attribution icon 26 load failed: {ex.Message}");
+            _attributionIcon26Picture = null;
+        }
+
         AttributionIconCanvas.InvalidateSurface();
         AttributionIcon2Canvas.InvalidateSurface();
+        AttributionIcon3Canvas.InvalidateSurface();
         AttributionIcon4Canvas.InvalidateSurface();
         AttributionIcon5Canvas.InvalidateSurface();
         AttributionIcon6Canvas.InvalidateSurface();
@@ -545,6 +591,8 @@ public partial class AboutPage : ContentPage
         AttributionIcon22Canvas.InvalidateSurface();
         AttributionIcon23Canvas.InvalidateSurface();
         AttributionIcon24Canvas.InvalidateSurface();
+        AttributionIcon25Canvas.InvalidateSurface();
+        AttributionIcon26Canvas.InvalidateSurface();
     }
 
     private void OnAttributionIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -1145,5 +1193,55 @@ public partial class AboutPage : ContentPage
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_attributionIcon24Picture);
+    }
+
+    private void OnAttributionIcon25CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_attributionIcon25Picture is null)
+        {
+            return;
+        }
+
+        var bounds = _attributionIcon25Picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_attributionIcon25Picture);
+    }
+
+    private void OnAttributionIcon26CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_attributionIcon26Picture is null)
+        {
+            return;
+        }
+
+        var bounds = _attributionIcon26Picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_attributionIcon26Picture);
     }
 }

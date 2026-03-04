@@ -16,7 +16,7 @@ namespace InfinityMercsApp.Views;
 public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 {
     private const int MaxIconsPerRow = 6;
-    private const float IconSize = 24f;
+    private const float IconSize = 75f;
     private const float IconGap = 20f;
     private const float RightPadding = 24f;
 
