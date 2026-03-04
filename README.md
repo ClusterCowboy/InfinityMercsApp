@@ -25,18 +25,19 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [ ] Show bonuses from fireteams in the statline
 #### Mercs Features
 
- - [ ] Spec Ops Implementation
- - [ ] Spec Ops for the captain
- - [ ] Choosing a captain should give a pool of points for improvement based on the per-scenario options
- - [ ] The ability to purchase upgrades and reflect this in the stat line of the units
+ - [X] Spec Ops Implementation
+ - [X] Spec Ops for the captain
+ - [X] Choosing a captain should give a pool of points for improvement based on the per-scenario options
+ - [X] The ability to purchase upgrades and reflect this in the stat line of the units
 
 #### Saving
- - [ ] Saving a custom captain
-	 - [ ] Loading a custom captain
+ - [X] Saving a custom captain
+	 - [X] Loading a custom captain
  - [X] Saving a Company
-	 - [ ] Loading a custom company
+	 - [X] Loading a custom company
  - [ ] Saving custom Gear and Skills
-	 - [ ] Loading custom Gear and Skills
+	 - [ ] Loading custom Gear and Skills from an initial spec ops
+	 - [ ] Loading custom Gear and Skills for everything else
  - [ ] Saving Injuries
 	 - [ ] Loading Injuries
 
@@ -86,12 +87,12 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Show notes and denote when skills are different to how they normally are
  
 ### Captain
- - [ ] Give the ability for the captain to track how many XP is left at the start
- - [ ] Give drop down options for the user to improve the skills of the unit
- - [ ] Have buttons to click on to add gear
- - [ ] Have buttons to click on to add skills
- - [ ] Have buttons to click on to add equipment
- - [ ] Have buttons to click on to remove anything added
+ - [X] Give the ability for the captain to track how many XP is left at the start
+ - [X] Give drop down options for the user to improve the skills of the unit
+ - [X] Have buttons to click on to add gear
+ - [X] Have buttons to click on to add skills
+ - [X] Have buttons to click on to add equipment
+ - [X] Have buttons to click on to remove anything added
  - [ ] Have a reset button
 
 ## Phase 2+

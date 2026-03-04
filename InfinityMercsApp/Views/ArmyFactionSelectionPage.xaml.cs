@@ -2280,11 +2280,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
                 }
 
-                foreach (var name in GetOrderedIdDisplayNamesFromEntries(
-                             GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
-                             skillsLookup,
-                             extrasLookup,
-                             _showUnitsInInches))
+                var optionSkillNames = BuildConfigurationSkillNames(
+                    GetOrderedIdDisplayNamesFromEntries(
+                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
+                        skillsLookup,
+                        extrasLookup,
+                        _showUnitsInInches));
+                foreach (var name in optionSkillNames)
                 {
                     skillUsageCounts[name] = skillUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
                 }
@@ -2346,15 +2348,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         .ToList();
                 }
 
-                var optionSkillsNames = GetOrderedIdDisplayNamesFromEntries(
+                var optionSkillsNames = BuildConfigurationSkillNames(
+                    GetOrderedIdDisplayNamesFromEntries(
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches)
-                    .ToList();
-                optionSkillsNames = optionSkillsNames
-                    .Where(x => !IsCommonSpecOpsSkill(x))
-                    .ToList();
+                        _showUnitsInInches));
                 var uniqueSkillsNames = optionSkillsNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
                     .ToList();
@@ -2831,7 +2830,55 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
-               skillName.Contains("infinity spec-ops", StringComparison.OrdinalIgnoreCase);
+               skillName.Contains("infinity spec-ops", StringComparison.OrdinalIgnoreCase) ||
+               skillName.Contains("infinity spec ops", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static List<string> BuildConfigurationSkillNames(IEnumerable<string> rawSkillNames)
+    {
+        var result = new List<string>();
+        foreach (var rawName in rawSkillNames)
+        {
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                continue;
+            }
+
+            var skillName = rawName.Trim();
+            if (!IsCommonSpecOpsSkill(skillName))
+            {
+                result.Add(skillName);
+                continue;
+            }
+
+            var lieutenantDetail = ExtractLieutenantSkillDetail(skillName);
+            if (!string.IsNullOrWhiteSpace(lieutenantDetail))
+            {
+                result.Add(lieutenantDetail);
+            }
+        }
+
+        return result
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string? ExtractLieutenantSkillDetail(string skillName)
+    {
+        if (!skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var detail = Regex.Replace(skillName, "lieutenant", string.Empty, RegexOptions.IgnoreCase).Trim();
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return null;
+        }
+
+        detail = detail.Trim('(', ')', '[', ']', '-', ':', ',', ';', ' ');
+        return string.IsNullOrWhiteSpace(detail) ? null : detail;
     }
 
     private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)

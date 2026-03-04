@@ -608,6 +608,32 @@
 
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
+                    x:Name="AttributionIcon24Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon24CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-options-6682476.svg options by Rusurinusuhu from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounOptionsAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
                     x:Name="AttributionIcon2Canvas"
                     WidthRequest="50"
                     HeightRequest="50"

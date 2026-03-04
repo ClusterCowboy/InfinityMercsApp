@@ -1932,6 +1932,66 @@ public class ViewerViewModel : BaseViewModel
                value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static List<(int Id, string Name)> BuildConfigurationSkillEntries(IEnumerable<(int Id, string Name)> rawEntries)
+    {
+        var normalized = new List<(int Id, string Name)>();
+        foreach (var entry in rawEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Name))
+            {
+                continue;
+            }
+
+            var skillName = entry.Name.Trim();
+            if (!IsCommonSpecOpsSkill(skillName))
+            {
+                normalized.Add((entry.Id, skillName));
+                continue;
+            }
+
+            var lieutenantDetail = ExtractLieutenantSkillDetail(skillName);
+            if (!string.IsNullOrWhiteSpace(lieutenantDetail))
+            {
+                normalized.Add((0, lieutenantDetail));
+            }
+        }
+
+        return normalized
+            .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static bool IsCommonSpecOpsSkill(string? skillName)
+    {
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return false;
+        }
+
+        return skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
+               skillName.Contains("infinity spec-ops", StringComparison.OrdinalIgnoreCase) ||
+               skillName.Contains("infinity spec ops", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? ExtractLieutenantSkillDetail(string skillName)
+    {
+        if (!skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var detail = Regex.Replace(skillName, "lieutenant", string.Empty, RegexOptions.IgnoreCase).Trim();
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return null;
+        }
+
+        detail = detail.Trim('(', ')', '[', ']', '-', ':', ',', ';', ' ');
+        return string.IsNullOrWhiteSpace(detail) ? null : detail;
+    }
+
     private static string ReadOptionSwc(JsonElement option)
     {
         if (!option.TryGetProperty("swc", out var swcElement))
@@ -3033,11 +3093,13 @@ public class ViewerViewModel : BaseViewModel
                         equipUsageCounts[equipName] = equipUsageCounts.TryGetValue(equipName, out var count) ? count + 1 : 1;
                     }
 
-                    foreach (var skillName in GetOrderedIdDisplayNamesFromEntries(
-                                 GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "skills"),
-                                 skillsLookup,
-                                 extrasLookup,
-                                 ShowUnitsInInches).Select(x => x.Name))
+                    var usageSkillEntries = BuildConfigurationSkillEntries(
+                        GetOrderedIdDisplayNamesFromEntries(
+                            GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "skills"),
+                            skillsLookup,
+                            extrasLookup,
+                            ShowUnitsInInches));
+                    foreach (var skillName in usageSkillEntries.Select(x => x.Name))
                     {
                         skillUsageCounts[skillName] = skillUsageCounts.TryGetValue(skillName, out var count) ? count + 1 : 1;
                     }
@@ -3128,11 +3190,12 @@ public class ViewerViewModel : BaseViewModel
                             .ToList();
                     var uniqueEquipment = JoinOrDash(uniqueEquipmentEntries.Select(x => x.Name));
 
-                    var uniqueSkillsEntries = GetOrderedIdDisplayNamesFromEntries(
+                    var uniqueSkillsEntries = BuildConfigurationSkillEntries(
+                            GetOrderedIdDisplayNamesFromEntries(
                                 GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"),
                                 skillsLookup,
                                 extrasLookup,
-                                ShowUnitsInInches)
+                                ShowUnitsInInches))
                             .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
                             .ToList();
                     var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));

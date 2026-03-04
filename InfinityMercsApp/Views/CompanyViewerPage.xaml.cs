@@ -15,7 +15,7 @@ namespace InfinityMercsApp.Views;
 
 public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 {
-    private const int MaxIconsPerRow = 3;
+    private const int MaxIconsPerRow = 6;
     private const float IconSize = 24f;
     private const float IconGap = 20f;
     private const float RightPadding = 24f;
@@ -30,6 +30,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
+    private SKPicture? _commandTokenIconPicture;
     private SKPicture? _impetuousIconPicture;
     private SKPicture? _tacticalAwarenessIconPicture;
     private SKPicture? _cubeIconPicture;
@@ -316,6 +317,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _viewerViewModel.Profiles.Add(BuildMergedProfileItem(item, loadedProfile));
 
         UpdateCurrentWeaponsDisplay();
+        TopIconRowCanvas.InvalidateSurface();
     }
 
     private bool HasSufficientLoadedProfileDetails(CompanyViewerUnitListItem item)
@@ -438,6 +440,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _regularOrderIconPicture = null;
         _irregularOrderIconPicture?.Dispose();
         _irregularOrderIconPicture = null;
+        _commandTokenIconPicture?.Dispose();
+        _commandTokenIconPicture = null;
         _impetuousIconPicture?.Dispose();
         _impetuousIconPicture = null;
         _tacticalAwarenessIconPicture?.Dispose();
@@ -469,6 +473,17 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanyViewerPage irregular order icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var commandTokenStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-options-6682476.svg");
+            var commandTokenSvg = new SKSvg();
+            _commandTokenIconPicture = commandTokenSvg.Load(commandTokenStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage command token icon load failed: {ex.Message}");
         }
 
         try
@@ -569,6 +584,29 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         if (_viewerViewModel.HasOrderTypeIcon && orderTypePicture is not null)
         {
             entries.Add((orderTypePicture, null));
+        }
+
+        var profile = _viewerViewModel.Profiles.FirstOrDefault();
+        var bonusRegularOrders = CountBonusRegularOrders(profile?.UniqueSkills);
+        for (var i = 0; i < bonusRegularOrders; i++)
+        {
+            if (_regularOrderIconPicture is null)
+            {
+                break;
+            }
+
+            entries.Add((_regularOrderIconPicture, null));
+        }
+
+        var bonusCommandTokens = CountBonusCommandTokens(profile?.UniqueSkills);
+        for (var i = 0; i < bonusCommandTokens; i++)
+        {
+            if (_commandTokenIconPicture is null)
+            {
+                break;
+            }
+
+            entries.Add((_commandTokenIconPicture, null));
         }
 
         if (_viewerViewModel.ShowImpetuousIcon && _impetuousIconPicture is not null)
@@ -792,6 +830,66 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             .Select(x => x.Trim())
             .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
             .ToList();
+    }
+
+    private static int CountBonusRegularOrders(string? uniqueSkills)
+    {
+        if (string.IsNullOrWhiteSpace(uniqueSkills))
+        {
+            return 0;
+        }
+
+        var total = 0;
+        foreach (var line in SplitProfileText(uniqueSkills))
+        {
+            if (!line.Contains("order", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var matches = Regex.Matches(line, @"\+(\d+)\s*(?:regular\s*)?orders?\b", RegexOptions.IgnoreCase);
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                total += Math.Max(0, value);
+            }
+        }
+
+        return total;
+    }
+
+    private static int CountBonusCommandTokens(string? uniqueSkills)
+    {
+        if (string.IsNullOrWhiteSpace(uniqueSkills))
+        {
+            return 0;
+        }
+
+        var total = 0;
+        foreach (var line in SplitProfileText(uniqueSkills))
+        {
+            if (!line.Contains("command token", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var matches = Regex.Matches(line, @"\+(\d+)\s*command\s*tokens?\b", RegexOptions.IgnoreCase);
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                total += Math.Max(0, value);
+            }
+        }
+
+        return total;
     }
 }
 
