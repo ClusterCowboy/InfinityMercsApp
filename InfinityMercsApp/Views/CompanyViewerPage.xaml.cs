@@ -54,6 +54,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private string _selectedCaptainNameHeading = string.Empty;
     private string _selectedProfileBaseNameHeading = string.Empty;
     private bool _hasSelectedProfileBaseNameHeading;
+    private string _selectedUnitTypeHeading = string.Empty;
+    private bool _hasSelectedUnitTypeHeading;
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
@@ -88,6 +90,21 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
+    public string SelectedUnitTypeHeading
+    {
+        get => _selectedUnitTypeHeading;
+        private set
+        {
+            if (_selectedUnitTypeHeading == value)
+            {
+                return;
+            }
+
+            _selectedUnitTypeHeading = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool HasSelectedProfileBaseNameHeading
     {
         get => _hasSelectedProfileBaseNameHeading;
@@ -99,6 +116,21 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             }
 
             _hasSelectedProfileBaseNameHeading = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasSelectedUnitTypeHeading
+    {
+        get => _hasSelectedUnitTypeHeading;
+        private set
+        {
+            if (_hasSelectedUnitTypeHeading == value)
+            {
+                return;
+            }
+
+            _hasSelectedUnitTypeHeading = value;
             OnPropertyChanged();
         }
     }
@@ -258,6 +290,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             SelectedCaptainNameHeading = string.Empty;
             SelectedProfileBaseNameHeading = string.Empty;
             HasSelectedProfileBaseNameHeading = false;
+            SelectedUnitTypeHeading = string.Empty;
+            HasSelectedUnitTypeHeading = false;
             return;
         }
 
@@ -273,6 +307,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 SelectedCaptainNameHeading = string.Empty;
                 SelectedProfileBaseNameHeading = string.Empty;
                 HasSelectedProfileBaseNameHeading = false;
+                SelectedUnitTypeHeading = string.Empty;
+                HasSelectedUnitTypeHeading = false;
                 return;
             }
 
@@ -323,6 +359,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     Name = displayName,
                     EntryIndex = entry.EntryIndex,
                     BaseUnitName = baseUnitName,
+                    UnitTypeCode = NormalizeUnitTypeCode(entry.UnitTypeCode),
                     Subtitle = subtitle,
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
@@ -359,6 +396,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             SelectedCaptainNameHeading = string.Empty;
             SelectedProfileBaseNameHeading = string.Empty;
             HasSelectedProfileBaseNameHeading = false;
+            SelectedUnitTypeHeading = string.Empty;
+            HasSelectedUnitTypeHeading = false;
         }
     }
 
@@ -415,6 +454,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             SelectedProfileBaseNameHeading = baseHeading ?? string.Empty;
             HasSelectedProfileBaseNameHeading = !string.IsNullOrWhiteSpace(baseHeading);
         }
+        SelectedUnitTypeHeading = item.UnitTypeCode;
+        HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
         SetSelectedNameEditMode(false);
         SelectedNameEntry.Text = item.Name;
 
@@ -1084,6 +1125,22 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/noun-{level}-stars.svg";
     }
 
+    private static string NormalizeUnitTypeCode(string? unitTypeCode)
+    {
+        if (string.IsNullOrWhiteSpace(unitTypeCode))
+        {
+            return string.Empty;
+        }
+
+        var normalized = unitTypeCode.Trim().ToUpperInvariant();
+        if (normalized == "MOV")
+        {
+            return string.Empty;
+        }
+
+        return normalized;
+    }
+
     private static List<string> CollectCaptainChoices(params string[] choices)
     {
         return choices
@@ -1298,6 +1355,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
         }
     }
     public string BaseUnitName { get; init; } = string.Empty;
+    public string UnitTypeCode { get; init; } = string.Empty;
     public string? CachedLogoPath { get; init; }
     public string? PackagedLogoPath { get; init; }
     public string? Subtitle { get; init; }

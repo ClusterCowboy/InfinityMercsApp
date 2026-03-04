@@ -91,6 +91,7 @@
                                     PaintSurface="OnSelectedNameRejectCanvasPaintSurface" />
                             </Grid>
                             <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}" FontSize="28" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
+                            <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}" FontSize="24" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
                         </VerticalStackLayout>
                         <skia:SKCanvasView
                             Grid.Row="0"

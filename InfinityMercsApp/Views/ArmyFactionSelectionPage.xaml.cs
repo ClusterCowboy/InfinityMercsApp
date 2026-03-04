@@ -1094,6 +1094,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             Name = profile.Name,
             NameFormatted = profile.NameFormatted ?? BuildNameFormatted(profile.Name),
             Subtitle = statline,
+            UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
             CostDisplay = $"C {profile.Cost}",
             CostValue = ParseCostValue(profile.Cost),
             IsLieutenant = profile.IsLieutenant,
@@ -1722,6 +1723,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     CustomName = entry.IsLieutenant
                         ? (string.IsNullOrWhiteSpace(improvedCaptainStats.CaptainName) ? "Captain" : improvedCaptainStats.CaptainName.Trim())
                         : "Trooper",
+                    UnitTypeCode = string.IsNullOrWhiteSpace(entry.UnitTypeCode)
+                        ? string.Empty
+                        : entry.UnitTypeCode.Trim().ToUpperInvariant(),
                     ProfileKey = entry.ProfileKey,
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
@@ -1786,6 +1790,19 @@ public partial class ArmyFactionSelectionPage : ContentPage
         };
 
         return await ConfigureCaptainPopupPage.ShowAsync(Navigation, context);
+    }
+
+    private static string ExtractUnitTypeCode(string? subtitle)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return string.Empty;
+        }
+
+        var firstToken = subtitle
+            .Split([' ', '-', '–', '—'], StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault();
+        return string.IsNullOrWhiteSpace(firstToken) ? string.Empty : firstToken.Trim().ToUpperInvariant();
     }
 
     private int ResolveCaptainSourceFactionId(int fallbackSourceFactionId)
@@ -5191,6 +5208,7 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public string? PackagedLogoPath { get; init; }
 
     public string? Subtitle { get; init; }
+    public string UnitTypeCode { get; init; } = string.Empty;
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
@@ -5298,6 +5316,7 @@ public sealed class SavedCompanyEntry
     public string Name { get; init; } = string.Empty;
     public string BaseUnitName { get; set; } = string.Empty;
     public string CustomName { get; set; } = string.Empty;
+    public string UnitTypeCode { get; set; } = string.Empty;
     public string ProfileKey { get; init; } = string.Empty;
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
