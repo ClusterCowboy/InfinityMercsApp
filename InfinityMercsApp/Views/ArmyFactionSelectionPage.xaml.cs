@@ -5566,28 +5566,41 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             TextColor = Colors.White
         };
 
-        var rightColumn = new VerticalStackLayout
+        var rightColumnBody = new VerticalStackLayout
         {
             Spacing = 8,
             Children =
             {
-                _upgradeOptionsHeaderLabel,
-                _experienceRemainingLabel,
-                BuildStatRow("CC", _ccPicker),
-                BuildStatRow("BS", _bsPicker),
-                BuildStatRow("PH", _phPicker),
-                BuildStatRow("WIP", _wipPicker),
-                BuildStatRow("ARM", _armPicker),
-                BuildStatRow("BTS", _btsPicker),
-                BuildStatRow("VITA", _vitaPicker),
+                BuildStatRowPair(("CC", _ccPicker), ("BS", _bsPicker)),
+                BuildStatRowPair(("PH", _phPicker), ("WIP", _wipPicker)),
+                BuildStatRowPair(("ARM", _armPicker), ("BTS", _btsPicker)),
+                BuildStatRowPair(("VITA", _vitaPicker), null),
                 BuildCategorySection("Weapons", _weapon1Picker, _weapon2Picker, _weapon3Picker),
                 BuildCategorySection("Skills", _skill1Picker, _skill2Picker, _skill3Picker),
                 BuildCategorySection("Equipment", _equipment1Picker, _equipment2Picker, _equipment3Picker)
             }
         };
 
+        var rightBodyScroll = new ScrollView { Content = rightColumnBody };
         var leftScroll = new ScrollView { Content = leftColumn };
-        var rightScroll = new ScrollView { Content = rightColumn };
+        var rightColumn = new Grid
+        {
+            RowDefinitions = new RowDefinitionCollection
+            {
+                new RowDefinition { Height = GridLength.Auto },
+                new RowDefinition { Height = GridLength.Auto },
+                new RowDefinition { Height = GridLength.Star }
+            },
+            RowSpacing = 6,
+            Children =
+            {
+                _upgradeOptionsHeaderLabel,
+                _experienceRemainingLabel,
+                rightBodyScroll
+            }
+        };
+        Grid.SetRow(_experienceRemainingLabel, 1);
+        Grid.SetRow(rightBodyScroll, 2);
         var columnsGrid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitionCollection
@@ -5596,9 +5609,9 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 new ColumnDefinition { Width = GridLength.Star }
             },
             ColumnSpacing = 18,
-            Children = { leftScroll, rightScroll }
+            Children = { leftScroll, rightColumn }
         };
-        Grid.SetColumn(rightScroll, 1);
+        Grid.SetColumn(rightColumn, 1);
 
         var cardContent = new Grid
         {
@@ -5812,8 +5825,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var options = BuildStatOptions(statName, baseValue);
         var picker = new Picker
         {
-            WidthRequest = UnifiedPickerWidth,
-            HorizontalOptions = LayoutOptions.Start,
+            HorizontalOptions = LayoutOptions.Fill,
+            HorizontalTextAlignment = TextAlignment.Center,
             ItemsSource = options,
             ItemDisplayBinding = new Binding(nameof(StatPickerOption.Label)),
             SelectedIndex = 0
@@ -5831,6 +5844,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         {
             WidthRequest = UnifiedPickerWidth,
             HorizontalOptions = LayoutOptions.Start,
+            HorizontalTextAlignment = TextAlignment.Center,
             ItemsSource = values,
             SelectedIndex = 0
         };
@@ -5838,15 +5852,33 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private static View BuildStatRow(string label, Picker picker)
     {
-        return new VerticalStackLayout
+        return picker;
+    }
+
+    private static View BuildStatRowPair((string Label, Picker Picker) first, (string Label, Picker Picker)? second)
+    {
+        var grid = new Grid
         {
-            Spacing = 2,
-            Children =
+            ColumnSpacing = 8,
+            ColumnDefinitions = new ColumnDefinitionCollection
             {
-                new Label { Text = label },
-                picker
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Star }
             }
         };
+
+        var firstCell = BuildStatRow(first.Label, first.Picker);
+        grid.Children.Add(firstCell);
+        Grid.SetColumn(firstCell, 0);
+
+        if (second.HasValue)
+        {
+            var secondCell = BuildStatRow(second.Value.Label, second.Value.Picker);
+            grid.Children.Add(secondCell);
+            Grid.SetColumn(secondCell, 1);
+        }
+
+        return grid;
     }
 
     private static View BuildCategorySection(string title, Picker first, Picker second, Picker third)
@@ -5994,12 +6026,12 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     {
         if (!StatDefinitions.TryGetValue(statName, out var definition))
         {
-            return [new StatPickerOption(0, 0, 0)];
+            return [new StatPickerOption(statName, 0, 0, 0)];
         }
 
         var options = new List<StatPickerOption>
         {
-            new(0, 0, 0)
+            new(statName, 0, 0, 0)
         };
 
         var currentValue = baseValue;
@@ -6019,7 +6051,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
             var appliedBonus = Math.Max(0, targetValue - baseValue);
             cumulativeCost += definition.CostsByTier[tier];
-            options.Add(new StatPickerOption(tier, appliedBonus, cumulativeCost));
+            options.Add(new StatPickerOption(statName, tier, appliedBonus, cumulativeCost));
             currentValue = targetValue;
         }
 
@@ -6382,9 +6414,9 @@ public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IRea
     public int MaxTier => Math.Min(BonusesByTier.Count, CostsByTier.Count) - 1;
 }
 
-public sealed record StatPickerOption(int Tier, int Bonus, int Cost)
+public sealed record StatPickerOption(string Stat, int Tier, int Bonus, int Cost)
 {
-    public string Label => Tier == 0 ? "Tier 0 (+0 | 0 XP)" : $"Tier {Tier} (+{Bonus} | {Cost} XP)";
+    public string Label => $"{Stat.ToUpperInvariant()} +{Bonus} | {Cost}xp";
 }
 
 public static class UnitExperienceRanks

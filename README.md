@@ -12,7 +12,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [ ] Give list of valid profiles in army list to link peripherals to
 	 - [ ] Have the peripheral show up as equipment in the linked to unit
 	 - [ ] Only allow one peripheral, subtract cost of additional peripherals       
-	 
+
  - [X] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
 	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
@@ -36,8 +36,8 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [X] Loading a custom captain
  - [X] Saving a Company
 	 - [X] Loading a custom company
- - [ ] Saving custom Gear and Skills
-	 - [ ] Loading custom Gear and Skills from an initial spec ops
+ - [X] Saving custom Gear and Skills
+	 - [X] Loading custom Gear and Skills from an initial spec ops
 	 - [ ] Loading custom Gear and Skills for everything else
  - [ ] Saving Injuries
 	 - [ ] Loading Injuries
