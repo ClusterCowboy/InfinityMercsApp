@@ -875,6 +875,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
             foreach (var faction in factions)
             {
                 var units = await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(faction.Id, cancellationToken);
+                var resumeByUnitId = units
+                    .GroupBy(x => x.UnitId)
+                    .ToDictionary(x => x.Key, x => x.First());
+                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
+                var specopsByUnitId = specopsUnits
+                    .GroupBy(x => x.UnitId)
+                    .ToDictionary(x => x.Key, x => x.First());
                 var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
                 var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
@@ -885,8 +892,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 foreach (var unit in units)
                 {
                     var unitRecord = await _armyDataAccessor.GetUnitAsync(faction.Id, unit.UnitId, cancellationToken);
+                    var profileGroupsJson = unitRecord?.ProfileGroupsJson;
+                    if (string.IsNullOrWhiteSpace(profileGroupsJson) &&
+                        specopsByUnitId.TryGetValue(unit.UnitId, out var specopsUnit))
+                    {
+                        profileGroupsJson = specopsUnit.ProfileGroupsJson;
+                    }
+
                     if (UnitHasVisibleOption(
-                            unitRecord?.ProfileGroupsJson,
+                            profileGroupsJson,
                             skillsLookup,
                             requireLieutenant: false,
                             requireZeroSwc: true))
@@ -917,9 +931,38 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         Name = unit.Name,
                         Type = unit.Type,
                         Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
+                        IsSpecOps = false,
                         CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, unit.UnitId),
                         PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, unit.UnitId)
                             ?? $"SVGCache/units/{faction.Id}-{unit.UnitId}.svg"
+                    };
+                }
+
+                foreach (var specopsUnit in specopsUnits.OrderBy(x => x.EntryOrder))
+                {
+                    var baseName = string.IsNullOrWhiteSpace(specopsUnit.Name)
+                        ? units.FirstOrDefault(x => x.UnitId == specopsUnit.UnitId)?.Name ?? $"Unit {specopsUnit.UnitId}"
+                        : specopsUnit.Name.Trim();
+                    var key = $"{baseName} - Spec Ops";
+                    if (string.IsNullOrWhiteSpace(key) || mergedUnits.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    mergedUnits[key] = new ArmyUnitSelectionItem
+                    {
+                        Id = specopsUnit.UnitId,
+                        SourceFactionId = faction.Id,
+                        Slug = specopsUnit.Slug,
+                        Name = key,
+                        Type = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var resumeUnit) ? resumeUnit.Type : null,
+                        Subtitle = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var subtitleUnit)
+                            ? BuildUnitSubtitle(subtitleUnit, typeLookup, categoryLookup)
+                            : "Spec Ops",
+                        IsSpecOps = true,
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, specopsUnit.UnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, specopsUnit.UnitId)
+                            ?? $"SVGCache/units/{faction.Id}-{specopsUnit.UnitId}.svg"
                     };
                 }
             }
@@ -1222,10 +1265,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             var factions = GetUnitSourceFactions();
             var skillsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
+            var specopsByFaction = new Dictionary<int, Dictionary<int, ArmySpecopsUnitRecord>>();
             foreach (var faction in factions)
             {
                 var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
                 skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
+                specopsByFaction[faction.Id] = specopsUnits
+                    .GroupBy(x => x.UnitId)
+                    .ToDictionary(x => x.Key, x => x.First());
             }
 
             foreach (var unit in Units)
@@ -1238,10 +1286,20 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 }
 
                 var unitRecord = await _armyDataAccessor.GetUnitAsync(unit.SourceFactionId, unit.Id, cancellationToken);
+                var profileGroupsJson = unitRecord?.ProfileGroupsJson;
+                if (specopsByFaction.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
+                    specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit))
+                {
+                    if (unit.IsSpecOps || string.IsNullOrWhiteSpace(profileGroupsJson))
+                    {
+                        profileGroupsJson = specopsUnit.ProfileGroupsJson;
+                    }
+                }
+
                 unit.IsVisible = UnitHasVisibleOption(
-                    unitRecord?.ProfileGroupsJson,
+                    profileGroupsJson,
                     skillsLookup,
-                    requireLieutenant: LieutenantOnlyUnits,
+                    requireLieutenant: LieutenantOnlyUnits && !unit.IsSpecOps,
                     requireZeroSwc: true,
                     maxCost: pointsRemaining);
             }
@@ -1679,7 +1737,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
 
             var encodedPath = Uri.EscapeDataString(filePath);
-            await Shell.Current.GoToAsync($"{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+            await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
         }
         catch (Exception ex)
         {
@@ -2011,10 +2069,28 @@ public partial class ArmyFactionSelectionPage : ContentPage
             Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync started: id={_selectedUnit.Id}, faction={_selectedUnit.SourceFactionId}, name='{_selectedUnit.Name}'.");
             UnitNameHeading = _selectedUnit.Name;
             var unit = await _armyDataAccessor.GetUnitAsync(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(_selectedUnit.SourceFactionId, cancellationToken);
-            if (unit is null)
+            ArmySpecopsUnitRecord? specopsUnit = null;
+            if (_selectedUnit.IsSpecOps || unit is null)
             {
-                Console.Error.WriteLine($"ArmyFactionSelectionPage: unit record not found for faction={_selectedUnit.SourceFactionId}, unit={_selectedUnit.Id}.");
+                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(_selectedUnit.SourceFactionId, cancellationToken);
+                specopsUnit = specopsUnits.FirstOrDefault(x => x.UnitId == _selectedUnit.Id);
+            }
+            var treatAsSpecOps = _selectedUnit.IsSpecOps || (unit is null && specopsUnit is not null);
+
+            var profileGroupsJson = unit?.ProfileGroupsJson;
+            if (treatAsSpecOps && !string.IsNullOrWhiteSpace(specopsUnit?.ProfileGroupsJson))
+            {
+                profileGroupsJson = specopsUnit.ProfileGroupsJson;
+            }
+            else if (string.IsNullOrWhiteSpace(profileGroupsJson))
+            {
+                profileGroupsJson = specopsUnit?.ProfileGroupsJson;
+            }
+
+            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(_selectedUnit.SourceFactionId, cancellationToken);
+            if (string.IsNullOrWhiteSpace(profileGroupsJson))
+            {
+                Console.Error.WriteLine($"ArmyFactionSelectionPage: profile groups not found for faction={_selectedUnit.SourceFactionId}, unit={_selectedUnit.Id}.");
                 return;
             }
 
@@ -2023,13 +2099,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
-            if (!string.IsNullOrWhiteSpace(unit.ProfileGroupsJson))
+            if (!string.IsNullOrWhiteSpace(profileGroupsJson))
             {
-                using var doc = JsonDocument.Parse(unit.ProfileGroupsJson);
+                using var doc = JsonDocument.Parse(profileGroupsJson);
                 var options = EnumerateOptions(doc.RootElement).ToList();
                 var visibleOptions = options
                     .Where(option => !IsPositiveSwc(ReadOptionSwc(option)))
-                    .Where(option => !LieutenantOnlyUnits || IsLieutenantOption(option, skillsLookup))
+                    .Where(option => !treatAsSpecOps && LieutenantOnlyUnits ? IsLieutenantOption(option, skillsLookup) : true)
                     .ToList();
                 PopulateUnitStatsFromFirstProfile(doc.RootElement);
                 var orderTraits = ParseUnitOrderTraits(doc.RootElement);
@@ -2043,7 +2119,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 ShowHackableIcon = techTraits.HasHackable;
 
                 var stableEquipFromProfiles = ComputeCommonDisplayNamesFromProfiles(
-                    unit.ProfileGroupsJson,
+                    profileGroupsJson,
                     "equip",
                     equipLookup,
                     extrasLookup,
@@ -2067,7 +2143,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     .ToList();
 
                 var stableSkillsFromProfiles = ComputeCommonDisplayNamesFromProfiles(
-                    unit.ProfileGroupsJson,
+                    profileGroupsJson,
                     "skills",
                     skillsLookup,
                     extrasLookup,
@@ -2090,9 +2166,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                stableSkills = stableSkills
-                    .Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
+                stableSkills = treatAsSpecOps
+                    ? EnsureLieutenantSkill(stableSkills)
+                    : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
                 _selectedUnitCommonEquipment = stableEquip;
                 _selectedUnitCommonSkills = stableSkills;
                 Console.WriteLine(
@@ -2102,8 +2178,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 EquipmentSummary = $"Equipment: {(stableEquip.Count == 0 ? "-" : string.Join(", ", stableEquip))}";
                 SpecialSkillsSummary = $"Special Skills: {(stableSkills.Count == 0 ? "-" : string.Join(", ", stableSkills))}";
                 EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", stableEquip, Color.FromArgb("#06B6D4"));
-                SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", stableSkills, Color.FromArgb("#F59E0B"));
-                PopulateProfilesFromProfileGroups(doc.RootElement, snapshot?.FiltersJson);
+                SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+                    "Special Skills",
+                    stableSkills,
+                    Color.FromArgb("#F59E0B"),
+                    highlightLieutenantPurple: treatAsSpecOps);
+                PopulateProfilesFromProfileGroups(doc.RootElement, snapshot?.FiltersJson, forceLieutenant: treatAsSpecOps);
                 Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
                 return;
             }
@@ -2157,7 +2237,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         SelectedUnitCanvas.InvalidateSurface();
     }
 
-    private void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson)
+    private void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson, bool forceLieutenant = false)
     {
         Profiles.Clear();
         ProfilesStatus = "Loading profiles...";
@@ -2271,7 +2351,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         skillsLookup,
                         extrasLookup,
                         _showUnitsInInches)
-                    .Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                optionSkillsNames = optionSkillsNames
+                    .Where(x => !IsCommonSpecOpsSkill(x))
                     .ToList();
                 var uniqueSkillsNames = optionSkillsNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
@@ -2298,7 +2380,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     continue;
                 }
 
-                var isLieutenant = IsLieutenantOption(option, skillsLookup);
+                var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
                 var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
                 Profiles.Add(new ViewerProfileItem
                 {
@@ -2314,7 +2396,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     UniqueEquipment = JoinOrDash(uniqueEquipmentNames),
                     UniqueEquipmentFormatted = BuildListFormattedString(uniqueEquipmentNames, Color.FromArgb("#06B6D4")),
                     UniqueSkills = JoinOrDash(uniqueSkillsNames),
-                    UniqueSkillsFormatted = BuildListFormattedString(uniqueSkillsNames, Color.FromArgb("#F59E0B")),
+                    UniqueSkillsFormatted = BuildListFormattedString(
+                        uniqueSkillsNames,
+                        Color.FromArgb("#F59E0B"),
+                        highlightLieutenantPurple: forceLieutenant),
                     Peripherals = JoinOrDash(peripheralNames),
                     PeripheralsFormatted = BuildListFormattedString(peripheralNames, Color.FromArgb("#FACC15")),
                     Swc = swc,
@@ -2364,6 +2449,25 @@ public partial class ArmyFactionSelectionPage : ContentPage
     {
         var list = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
         return list.Count == 0 ? "-" : string.Join(Environment.NewLine, list);
+    }
+
+    private static List<string> EnsureLieutenantSkill(IEnumerable<string> skills)
+    {
+        var list = skills
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (!list.Any(x => x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)))
+        {
+            list.Add("Lieutenant");
+        }
+
+        return list
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string ReadOptionSwc(JsonElement option)
@@ -2571,7 +2675,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return formatted;
     }
 
-    private static FormattedString BuildListFormattedString(IEnumerable<string> values, Color textColor)
+    private static FormattedString BuildListFormattedString(IEnumerable<string> values, Color textColor, bool highlightLieutenantPurple = false)
     {
         var formatted = new FormattedString();
         var lines = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
@@ -2588,7 +2692,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 formatted.Spans.Add(new Span { Text = Environment.NewLine, TextColor = textColor });
             }
 
-            formatted.Spans.Add(new Span { Text = lines[i], TextColor = textColor });
+            var lineColor = highlightLieutenantPurple && lines[i].Contains("lieutenant", StringComparison.OrdinalIgnoreCase)
+                ? Color.FromArgb("#C084FC")
+                : textColor;
+            formatted.Spans.Add(new Span { Text = lines[i], TextColor = lineColor });
         }
 
         return formatted;
@@ -2714,6 +2821,17 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return list;
+    }
+
+    private static bool IsCommonSpecOpsSkill(string? skillName)
+    {
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return false;
+        }
+
+        return skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
+               skillName.Contains("infinity spec-ops", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)
@@ -3843,7 +3961,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
 
-    private static FormattedString BuildNamedSummaryFormatted(string label, IEnumerable<string> values, Color accentColor)
+    private static FormattedString BuildNamedSummaryFormatted(string label, IEnumerable<string> values, Color accentColor, bool highlightLieutenantPurple = false)
     {
         var list = values
             .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -3869,7 +3987,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
             formatted.Spans.Add(new Span
             {
                 Text = list[i],
-                TextColor = accentColor
+                TextColor = highlightLieutenantPurple && list[i].Contains("lieutenant", StringComparison.OrdinalIgnoreCase)
+                    ? Color.FromArgb("#C084FC")
+                    : accentColor
             });
         }
 
@@ -4829,6 +4949,7 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
     public string? PackagedLogoPath { get; init; }
 
     public string? Subtitle { get; init; }
+    public bool IsSpecOps { get; init; }
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
@@ -5035,6 +5156,13 @@ public sealed class SavedCompanyFile
 public sealed class SavedImprovedCaptainStats
 {
     public bool IsEnabled { get; init; }
+    public int CcTier { get; init; }
+    public int BsTier { get; init; }
+    public int PhTier { get; init; }
+    public int WipTier { get; init; }
+    public int ArmTier { get; init; }
+    public int BtsTier { get; init; }
+    public int VitalityTier { get; init; }
     public int CcBonus { get; init; }
     public int BsBonus { get; init; }
     public int PhBonus { get; init; }
@@ -5112,7 +5240,20 @@ public sealed class CaptainUpgradePopupContext
 
 public sealed class ConfigureCaptainPopupPage : ContentPage
 {
-    private static readonly IReadOnlyList<string> StatBonusOptions = ["0", "+1", "+2", "+3"];
+    private const double UnifiedPickerWidth = 280;
+    private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
+    private static readonly Color DefaultStatColor = Colors.White;
+    private static readonly IReadOnlyDictionary<string, StatPickerDefinition> StatDefinitions = new Dictionary<string, StatPickerDefinition>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CC"] = new StatPickerDefinition([0, 2, 5, 10], [0, 2, 3, 5]),
+        ["BS"] = new StatPickerDefinition([0, 1, 2, 3], [0, 2, 3, 5]),
+        ["PH"] = new StatPickerDefinition([0, 1, 3], [0, 2, 3], 14),
+        ["WIP"] = new StatPickerDefinition([0, 1, 3, 6], [0, 2, 3, 5], 15),
+        ["ARM"] = new StatPickerDefinition([0, 1, 3], [0, 5, 5]),
+        ["BTS"] = new StatPickerDefinition([0, 3, 6, 9], [0, 2, 3, 5]),
+        ["VITA"] = new StatPickerDefinition([0, 1], [0, 10], 2),
+        ["STR"] = new StatPickerDefinition([0, 1], [0, 10], 2)
+    };
     private const string NoneChoice = "(None)";
 
     private readonly CaptainUpgradePopupContext _context;
@@ -5140,11 +5281,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Label _equipmentValueLabel;
     private readonly Label _upgradeOptionsHeaderLabel;
     private readonly Button _foundCompanyButton;
+    private readonly IReadOnlyDictionary<string, int> _baseStats;
+    private readonly Label _statlineLabel;
     private SKPicture? _logoPicture;
 
     private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
     {
         _context = context;
+        _baseStats = ParseBaseStats(context.Unit.Statline);
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
         BackgroundColor = Color.FromRgba(0, 0, 0, 180);
         Title = "Captain Configuration";
@@ -5157,13 +5301,21 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
         _logoCanvas.PaintSurface += OnLogoCanvasPaintSurface;
 
-        _ccPicker = BuildStatPicker();
-        _bsPicker = BuildStatPicker();
-        _phPicker = BuildStatPicker();
-        _wipPicker = BuildStatPicker();
-        _armPicker = BuildStatPicker();
-        _btsPicker = BuildStatPicker();
-        _vitaPicker = BuildStatPicker();
+        _ccPicker = BuildStatPicker("CC", ReadBaseStat("CC"));
+        _bsPicker = BuildStatPicker("BS", ReadBaseStat("BS"));
+        _phPicker = BuildStatPicker("PH", ReadBaseStat("PH"));
+        _wipPicker = BuildStatPicker("WIP", ReadBaseStat("WIP"));
+        _armPicker = BuildStatPicker("ARM", ReadBaseStat("ARM"));
+        _btsPicker = BuildStatPicker("BTS", ReadBaseStat("BTS"));
+        _vitaPicker = BuildStatPicker("VITA", ReadBaseStat("VITA", "STR", "W"));
+
+        HookSelectionChanged(_ccPicker);
+        HookSelectionChanged(_bsPicker);
+        HookSelectionChanged(_phPicker);
+        HookSelectionChanged(_wipPicker);
+        HookSelectionChanged(_armPicker);
+        HookSelectionChanged(_btsPicker);
+        HookSelectionChanged(_vitaPicker);
 
         _weapon1Picker = BuildChoicePicker(context.WeaponOptions);
         _weapon2Picker = BuildChoicePicker(context.WeaponOptions);
@@ -5227,7 +5379,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 new Label { Text = "Captain Profile", FontAttributes = FontAttributes.Bold, FontSize = 18 },
                 _logoCanvas,
                 new Label { Text = context.Unit.Name, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.WordWrap },
-                new Label { Text = context.Unit.Statline, FontSize = 12, LineBreakMode = LineBreakMode.WordWrap },
+                (_statlineLabel = new Label { FontSize = 12, LineBreakMode = LineBreakMode.WordWrap }),
                 rangedBlock,
                 ccBlock,
                 skillsBlock,
@@ -5413,6 +5565,13 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var stats = new SavedImprovedCaptainStats
         {
             IsEnabled = true,
+            CcTier = ReadStatTier(_ccPicker),
+            BsTier = ReadStatTier(_bsPicker),
+            PhTier = ReadStatTier(_phPicker),
+            WipTier = ReadStatTier(_wipPicker),
+            ArmTier = ReadStatTier(_armPicker),
+            BtsTier = ReadStatTier(_btsPicker),
+            VitalityTier = ReadStatTier(_vitaPicker),
             CcBonus = ReadStatBonus(_ccPicker),
             BsBonus = ReadStatBonus(_bsPicker),
             PhBonus = ReadStatBonus(_phPicker),
@@ -5439,13 +5598,15 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         }
     }
 
-    private static Picker BuildStatPicker()
+    private static Picker BuildStatPicker(string statName, int baseValue)
     {
+        var options = BuildStatOptions(statName, baseValue);
         var picker = new Picker
         {
-            WidthRequest = 120,
+            WidthRequest = UnifiedPickerWidth,
             HorizontalOptions = LayoutOptions.Start,
-            ItemsSource = StatBonusOptions.ToList(),
+            ItemsSource = options,
+            ItemDisplayBinding = new Binding(nameof(StatPickerOption.Label)),
             SelectedIndex = 0
         };
 
@@ -5459,7 +5620,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         return new Picker
         {
-            WidthRequest = 280,
+            WidthRequest = UnifiedPickerWidth,
             HorizontalOptions = LayoutOptions.Start,
             ItemsSource = values,
             SelectedIndex = 0
@@ -5495,11 +5656,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
     }
 
+    private static int ReadStatTier(Picker picker)
+    {
+        return picker.SelectedItem is StatPickerOption option ? option.Tier : 0;
+    }
+
     private static int ReadStatBonus(Picker picker)
     {
-        var raw = picker.SelectedItem?.ToString() ?? "0";
-        var normalized = raw.Trim().TrimStart('+');
-        return int.TryParse(normalized, out var value) ? value : 0;
+        return picker.SelectedItem is StatPickerOption option ? option.Bonus : 0;
     }
 
     private static string ReadChoice(Picker picker)
@@ -5553,6 +5717,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private void UpdateProfilePreviewFromSelections()
     {
+        UpdateStatlinePreview();
         _rangedValueLabel.Text = BuildUpdatedProfileSection(
             _context.Unit.RangedWeapons,
             GetSelectedChoices(_weapon1Picker, _weapon2Picker, _weapon3Picker),
@@ -5573,6 +5738,13 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     {
         var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
         var selectedCost =
+            ReadStatPoints(_ccPicker) +
+            ReadStatPoints(_bsPicker) +
+            ReadStatPoints(_phPicker) +
+            ReadStatPoints(_wipPicker) +
+            ReadStatPoints(_armPicker) +
+            ReadStatPoints(_btsPicker) +
+            ReadStatPoints(_vitaPicker) +
             ReadChoicePoints(_weapon1Picker) +
             ReadChoicePoints(_weapon2Picker) +
             ReadChoicePoints(_weapon3Picker) +
@@ -5588,6 +5760,151 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _upgradeOptionsHeaderLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
         _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
+    }
+
+    private void UpdateStatlinePreview()
+    {
+        _statlineLabel.FormattedText = BuildUpdatedStatlineFormatted(_context.Unit.Statline);
+    }
+
+    private int ReadBaseStat(params string[] statNames)
+    {
+        foreach (var statName in statNames)
+        {
+            if (_baseStats.TryGetValue(statName, out var value))
+            {
+                return value;
+            }
+        }
+
+        return 0;
+    }
+
+    private static List<StatPickerOption> BuildStatOptions(string statName, int baseValue)
+    {
+        if (!StatDefinitions.TryGetValue(statName, out var definition))
+        {
+            return [new StatPickerOption(0, 0, 0)];
+        }
+
+        var options = new List<StatPickerOption>
+        {
+            new(0, 0, 0)
+        };
+
+        var currentValue = baseValue;
+        var cumulativeCost = 0;
+        for (var tier = 1; tier <= definition.MaxTier; tier++)
+        {
+            if (definition.HardCap.HasValue && currentValue >= definition.HardCap.Value)
+            {
+                break;
+            }
+
+            var targetValue = baseValue + definition.BonusesByTier[tier];
+            if (definition.HardCap.HasValue)
+            {
+                targetValue = Math.Min(targetValue, definition.HardCap.Value);
+            }
+
+            var appliedBonus = Math.Max(0, targetValue - baseValue);
+            cumulativeCost += definition.CostsByTier[tier];
+            options.Add(new StatPickerOption(tier, appliedBonus, cumulativeCost));
+            currentValue = targetValue;
+        }
+
+        return options;
+    }
+
+    private static int ReadStatPoints(Picker picker)
+    {
+        return picker.SelectedItem is StatPickerOption option ? option.Cost : 0;
+    }
+
+    private static IReadOnlyDictionary<string, int> ParseBaseStats(string? statline)
+    {
+        var values = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(statline))
+        {
+            return values;
+        }
+
+        var matches = Regex.Matches(statline, @"\b(CC|BS|PH|WIP|ARM|BTS|VITA|STR|W)\s+(\d+)\b", RegexOptions.IgnoreCase);
+        foreach (Match match in matches)
+        {
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            var key = match.Groups[1].Value.ToUpperInvariant();
+            if (int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            {
+                values[key] = parsed;
+            }
+        }
+
+        return values;
+    }
+
+    private FormattedString BuildUpdatedStatlineFormatted(string? statline)
+    {
+        var formatted = new FormattedString();
+        if (string.IsNullOrWhiteSpace(statline))
+        {
+            formatted.Spans.Add(new Span { Text = "-", TextColor = DefaultStatColor });
+            return formatted;
+        }
+
+        var segments = statline.Split('|', StringSplitOptions.TrimEntries);
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var segment = segments[i];
+            var match = Regex.Match(segment, @"^\s*(CC|BS|PH|WIP|ARM|BTS|VITA|STR|W)\s+(\d+)\s*$", RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                formatted.Spans.Add(new Span { Text = segment, TextColor = DefaultStatColor });
+            }
+            else
+            {
+                var statKey = match.Groups[1].Value.ToUpperInvariant();
+                var baseValue = int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+                    ? parsed
+                    : 0;
+                var bonus = ReadStatlineBonus(statKey);
+                var modifiedValue = baseValue + bonus;
+                var isModified = modifiedValue != baseValue;
+
+                formatted.Spans.Add(new Span { Text = $"{statKey} ", TextColor = DefaultStatColor });
+                formatted.Spans.Add(new Span
+                {
+                    Text = modifiedValue.ToString(CultureInfo.InvariantCulture),
+                    TextColor = isModified ? ModifiedStatColor : DefaultStatColor
+                });
+            }
+
+            if (i < segments.Length - 1)
+            {
+                formatted.Spans.Add(new Span { Text = " | ", TextColor = DefaultStatColor });
+            }
+        }
+
+        return formatted;
+    }
+
+    private int ReadStatlineBonus(string statKey)
+    {
+        return statKey switch
+        {
+            "CC" => ReadStatBonus(_ccPicker),
+            "BS" => ReadStatBonus(_bsPicker),
+            "PH" => ReadStatBonus(_phPicker),
+            "WIP" => ReadStatBonus(_wipPicker),
+            "ARM" => ReadStatBonus(_armPicker),
+            "BTS" => ReadStatBonus(_btsPicker),
+            "VITA" or "STR" or "W" => ReadStatBonus(_vitaPicker),
+            _ => 0
+        };
     }
 
     private static List<string> GetSelectedChoices(params Picker[] pickers)
@@ -5643,6 +5960,16 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
             .ToList();
     }
+}
+
+public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)
+{
+    public int MaxTier => Math.Min(BonusesByTier.Count, CostsByTier.Count) - 1;
+}
+
+public sealed record StatPickerOption(int Tier, int Bonus, int Cost)
+{
+    public string Label => Tier == 0 ? "Tier 0 (+0 | 0 XP)" : $"Tier {Tier} (+{Bonus} | {Cost} XP)";
 }
 
 public static class UnitExperienceRanks

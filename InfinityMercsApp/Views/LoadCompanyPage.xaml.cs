@@ -169,7 +169,7 @@ public partial class LoadCompanyPage : ContentPage
         }
 
         var encodedPath = Uri.EscapeDataString(item.FilePath);
-        await Shell.Current.GoToAsync($"{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+        await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
     }
 
     private void OnTrashIconPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

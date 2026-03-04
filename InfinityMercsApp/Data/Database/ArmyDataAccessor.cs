@@ -283,6 +283,11 @@ public class ArmyDataAccessor : IArmyDataAccessor
                     FROM army_units u
                     WHERE u.FactionId = r.FactionId
                       AND u.UnitId = r.UnitId
+                    UNION
+                    SELECT 1
+                    FROM army_specops_units su
+                    WHERE su.FactionId = r.FactionId
+                      AND su.UnitId = r.UnitId
                 )
               AND (r.Slug IS NULL OR r.Slug NOT LIKE ?)
               AND (r.Category IS NULL OR r.Category <> ?)

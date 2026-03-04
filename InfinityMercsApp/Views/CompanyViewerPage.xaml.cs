@@ -44,6 +44,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private FormattedString _currentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#22C55E"));
     private FormattedString _currentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
     private bool _hasCurrentPeripherals;
+    private SavedImprovedCaptainStats _loadedCaptainStats = new();
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
@@ -183,6 +184,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     {
         _loadAttempted = true;
         CompanyUnits.Clear();
+        _loadedCaptainStats = new SavedImprovedCaptainStats();
 
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
         {
@@ -211,6 +213,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             CompanyNameHeading = companyName;
             CompanySubtitle = string.Empty;
             var captainStats = payload.ImprovedCaptainStats;
+            _loadedCaptainStats = captainStats;
             var captainWeaponChoices = captainStats.IsEnabled
                 ? CollectCaptainChoices(captainStats.WeaponChoice1, captainStats.WeaponChoice2, captainStats.WeaponChoice3)
                 : [];
@@ -295,6 +298,18 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.IsLieutenant,
             item.CachedLogoPath,
             item.PackagedLogoPath);
+
+        if (item.IsLieutenant && _loadedCaptainStats.IsEnabled)
+        {
+            _viewerViewModel.ApplyCaptainStatBonuses(
+                _loadedCaptainStats.CcBonus,
+                _loadedCaptainStats.BsBonus,
+                _loadedCaptainStats.PhBonus,
+                _loadedCaptainStats.WipBonus,
+                _loadedCaptainStats.ArmBonus,
+                _loadedCaptainStats.BtsBonus,
+                _loadedCaptainStats.VitalityBonus);
+        }
 
         var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
         _viewerViewModel.Profiles.Clear();

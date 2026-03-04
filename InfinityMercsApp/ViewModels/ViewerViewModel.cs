@@ -746,6 +746,24 @@ public class ViewerViewModel : BaseViewModel
             Color.FromArgb("#F59E0B"));
     }
 
+    public void ApplyCaptainStatBonuses(
+        int ccBonus,
+        int bsBonus,
+        int phBonus,
+        int wipBonus,
+        int armBonus,
+        int btsBonus,
+        int vitalityBonus)
+    {
+        UnitCc = ApplyNumericBonus(UnitCc, ccBonus);
+        UnitBs = ApplyNumericBonus(UnitBs, bsBonus);
+        UnitPh = ApplyNumericBonus(UnitPh, phBonus);
+        UnitWip = ApplyNumericBonus(UnitWip, wipBonus);
+        UnitArm = ApplyNumericBonus(UnitArm, armBonus);
+        UnitBts = ApplyNumericBonus(UnitBts, btsBonus);
+        UnitVitality = ApplyNumericBonus(UnitVitality, vitalityBonus);
+    }
+
     private static string MergeSummaryAndUnique(string summaryLine, string uniqueValues)
     {
         var merged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -785,6 +803,18 @@ public class ViewerViewModel : BaseViewModel
         return payload
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .Where(x => !string.Equals(x, "-", StringComparison.Ordinal));
+    }
+
+    private static string ApplyNumericBonus(string value, int bonus)
+    {
+        if (bonus == 0)
+        {
+            return value;
+        }
+
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? (parsed + bonus).ToString(CultureInfo.InvariantCulture)
+            : value;
     }
 
     private static bool ProfileKeysMatch(string candidateKey, string requestedKey)
