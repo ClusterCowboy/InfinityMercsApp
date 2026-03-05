@@ -1,0 +1,1 @@
+Sepsitorized and Total Control states function as normal except that they are automatically cancelled at the end of the turn (not round) that it was gained.

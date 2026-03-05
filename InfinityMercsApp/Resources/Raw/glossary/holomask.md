@@ -1,0 +1,1 @@
+This skill works as described in N5 rules. However, the imitated model must be a unit already existing in the Company roster. 

@@ -1,0 +1,1 @@
+Shasvastii units are counted as not in null state at the end of the game for all purposes if they are in the Shasvastii embryo state. 

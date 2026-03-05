@@ -18,7 +18,7 @@
                 FontAttributes="Bold" />
 
             <Label
-                Text="This page can be used for app information, version notes, and credits."
+                Text="Current Version: 0.1.0-alpha, 'Pano Was a Mistake'"
                 LineBreakMode="WordWrap" />
 
             <Label
@@ -652,6 +652,48 @@
                         TextDecorations="Underline">
                         <Label.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnNounOptionsAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <FlexLayout
+                Direction="Row"
+                Wrap="Wrap"
+                AlignItems="Start">
+                <Label Text="noun-filter.svg filter by Rahmat Hamid from " />
+                <Label
+                    Text="Noun Project"
+                    TextColor="#2563EB"
+                    TextDecorations="Underline">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnNounFilterAttributionTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <Label Text=" (CC BY 3.0)" />
+            </FlexLayout>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon27Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon27CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-delta.svg Delta by Tom Fricker from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounDeltaAttributionTapped" />
                         </Label.GestureRecognizers>
                     </Label>
                     <Label Text=" (CC BY 3.0)" />

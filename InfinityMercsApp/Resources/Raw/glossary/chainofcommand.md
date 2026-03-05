@@ -1,0 +1,1 @@
+All units with the Chain of Command skill count as if they have the NCO skill. 

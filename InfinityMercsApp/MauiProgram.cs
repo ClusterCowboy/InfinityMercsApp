@@ -38,12 +38,14 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<FactionLogoCacheService>();
 		builder.Services.AddSingleton<AppSettingsService>();
+		builder.Services.AddSingleton<IFeedbackService, FeedbackService>();
 		builder.Services.AddSingleton<AppInitializationService>();
 		builder.Services.AddTransient<MainViewModel>();
 		builder.Services.AddTransient<ViewerViewModel>();
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<SplashPage>();
 		builder.Services.AddTransient<ViewerPage>();
+		builder.Services.AddTransient<FeedbackBugsPage>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

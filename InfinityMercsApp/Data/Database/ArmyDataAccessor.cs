@@ -10,6 +10,10 @@ public class ArmyDataAccessor : IArmyDataAccessor
     private const int TagType = 4;
     private const int VehicleType = 8;
     private const string MercSlugPrefix = "merc-%";
+    private const int YuJingFactionId = 201;
+    private const int JsaFactionId = 1101;
+    private const int JsaShindenbutaiFactionId = 1102;
+    private const int JsaObanFactionId = 1103;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -82,9 +86,13 @@ public class ArmyDataAccessor : IArmyDataAccessor
             Category = x.Category
         }).ToList();
 
-        var specopsSkills = BuildSpecopsSkillRecords(factionId, document.Specops);
-        var specopsEquips = BuildSpecopsEquipRecords(factionId, document.Specops);
-        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, document.Specops);
+        var yuJingSpecops = IsJsaFaction(factionId)
+            ? await TryGetFactionSpecopsRootAsync(YuJingFactionId, cancellationToken)
+            : default;
+
+        var specopsSkills = BuildSpecopsSkillRecords(factionId, document.Specops, yuJingSpecops);
+        var specopsEquips = BuildSpecopsEquipRecords(factionId, document.Specops, yuJingSpecops);
+        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, document.Specops, yuJingSpecops);
         var specopsUnits = BuildSpecopsUnitRecords(factionId, document.Specops);
 
         await _connection.ExecuteAsync("DELETE FROM army_units WHERE FactionId = ?", factionId);
@@ -391,6 +399,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
             }
 
             var snapshots = await _connection.Table<ArmyFactionRecord>().ToListAsync();
+            var yuJingSpecops = TryGetFactionSpecopsRootFromSnapshots(snapshots, YuJingFactionId);
             foreach (var snapshot in snapshots)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -413,17 +422,28 @@ public class ArmyDataAccessor : IArmyDataAccessor
                     snapshot.FactionId,
                     snapshot.FactionId);
 
-                if (existingCount > 0)
+                var fallbackSpecops = IsJsaFaction(snapshot.FactionId) ? yuJingSpecops : default;
+                var shouldForceReindexForJsa = IsJsaFaction(snapshot.FactionId) && HasAnySpecopsArray(fallbackSpecops);
+
+                if (existingCount > 0 && !shouldForceReindexForJsa)
                 {
                     continue;
                 }
 
                 using var specopsDoc = JsonDocument.Parse(snapshot.SpecopsJson);
                 var specopsRoot = specopsDoc.RootElement;
-                var skillRows = BuildSpecopsSkillRecords(snapshot.FactionId, specopsRoot);
-                var equipRows = BuildSpecopsEquipRecords(snapshot.FactionId, specopsRoot);
-                var weaponRows = BuildSpecopsWeaponRecords(snapshot.FactionId, specopsRoot);
+                var skillRows = BuildSpecopsSkillRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
+                var equipRows = BuildSpecopsEquipRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
+                var weaponRows = BuildSpecopsWeaponRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
                 var unitRows = BuildSpecopsUnitRecords(snapshot.FactionId, specopsRoot);
+
+                if (existingCount > 0)
+                {
+                    await _connection.ExecuteAsync("DELETE FROM army_specops_skills WHERE FactionId = ?", snapshot.FactionId);
+                    await _connection.ExecuteAsync("DELETE FROM army_specops_equips WHERE FactionId = ?", snapshot.FactionId);
+                    await _connection.ExecuteAsync("DELETE FROM army_specops_weapons WHERE FactionId = ?", snapshot.FactionId);
+                    await _connection.ExecuteAsync("DELETE FROM army_specops_units WHERE FactionId = ?", snapshot.FactionId);
+                }
 
                 if (skillRows.Count > 0)
                 {
@@ -454,10 +474,47 @@ public class ArmyDataAccessor : IArmyDataAccessor
         }
     }
 
-    private static List<ArmySpecopsSkillRecord> BuildSpecopsSkillRecords(int factionId, JsonElement specops)
+    private async Task<JsonElement> TryGetFactionSpecopsRootAsync(int factionId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var snapshot = await _connection.FindAsync<ArmyFactionRecord>(factionId);
+        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
+        {
+            return default;
+        }
+
+        using var doc = JsonDocument.Parse(snapshot.SpecopsJson);
+        return doc.RootElement.Clone();
+    }
+
+    private static JsonElement TryGetFactionSpecopsRootFromSnapshots(IEnumerable<ArmyFactionRecord> snapshots, int factionId)
+    {
+        var snapshot = snapshots.FirstOrDefault(x => x.FactionId == factionId);
+        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
+        {
+            return default;
+        }
+
+        using var doc = JsonDocument.Parse(snapshot.SpecopsJson);
+        return doc.RootElement.Clone();
+    }
+
+    private static bool IsJsaFaction(int factionId)
+    {
+        return factionId is JsaFactionId or JsaShindenbutaiFactionId or JsaObanFactionId;
+    }
+
+    private static bool HasAnySpecopsArray(JsonElement specops)
+    {
+        return TryGetSpecopsArray(specops, "skills", out _) ||
+               TryGetSpecopsArray(specops, "equip", out _) ||
+               TryGetSpecopsArray(specops, "weapons", out _);
+    }
+
+    private static List<ArmySpecopsSkillRecord> BuildSpecopsSkillRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
         var records = new List<ArmySpecopsSkillRecord>();
-        if (!TryGetSpecopsArray(specops, "skills", out var array))
+        if (!TryGetSpecopsArray(specops, fallbackSpecops, "skills", out var array))
         {
             return records;
         }
@@ -490,10 +547,10 @@ public class ArmyDataAccessor : IArmyDataAccessor
         return records;
     }
 
-    private static List<ArmySpecopsEquipRecord> BuildSpecopsEquipRecords(int factionId, JsonElement specops)
+    private static List<ArmySpecopsEquipRecord> BuildSpecopsEquipRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
         var records = new List<ArmySpecopsEquipRecord>();
-        if (!TryGetSpecopsArray(specops, "equip", out var array))
+        if (!TryGetSpecopsArray(specops, fallbackSpecops, "equip", out var array))
         {
             return records;
         }
@@ -526,10 +583,10 @@ public class ArmyDataAccessor : IArmyDataAccessor
         return records;
     }
 
-    private static List<ArmySpecopsWeaponRecord> BuildSpecopsWeaponRecords(int factionId, JsonElement specops)
+    private static List<ArmySpecopsWeaponRecord> BuildSpecopsWeaponRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
         var records = new List<ArmySpecopsWeaponRecord>();
-        if (!TryGetSpecopsArray(specops, "weapons", out var array))
+        if (!TryGetSpecopsArray(specops, fallbackSpecops, "weapons", out var array))
         {
             return records;
         }
@@ -606,6 +663,16 @@ public class ArmyDataAccessor : IArmyDataAccessor
         return specops.ValueKind == JsonValueKind.Object &&
                specops.TryGetProperty(propertyName, out array) &&
                array.ValueKind == JsonValueKind.Array;
+    }
+
+    private static bool TryGetSpecopsArray(JsonElement specops, JsonElement fallbackSpecops, string propertyName, out JsonElement array)
+    {
+        if (TryGetSpecopsArray(specops, propertyName, out array))
+        {
+            return true;
+        }
+
+        return TryGetSpecopsArray(fallbackSpecops, propertyName, out array);
     }
 
     private static bool TryReadIntProperty(JsonElement container, string propertyName, out int value)

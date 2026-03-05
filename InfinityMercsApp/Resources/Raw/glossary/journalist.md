@@ -1,0 +1,1 @@
+A unit possessing the Journalist skill may add or subtract 1 Notoriety from their company at the end of the game in which it is deployed. 

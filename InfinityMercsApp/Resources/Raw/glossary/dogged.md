@@ -1,0 +1,1 @@
+This skill works differently compared to the base Infinity rules. When a unit enters the Dogged state, instead of dying at the end of the round they go to the unconscious state instead. 

@@ -1,0 +1,1 @@
+By performing any Skill on the active turn, a Trooper may switch which NFB listed in their Unit Profile is active. This change always happens at the beginning of the order, applying the new Unit Profile until the next change. Note that albedo and mimetism are NFB.

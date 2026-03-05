@@ -17,6 +17,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
 	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
+ - [ ] Filter units by stats
+ - [ ] Filter units by equipment
+ - [ ] Filter units by skills
+ - [ ] Filter units by weapons
  - [X] Show the unit as having a cube
  - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
@@ -96,7 +100,11 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [X] Have buttons to click on to remove anything added
  - [ ] Have a reset button
 
-## Phase 2+
+## Phase 2
+ - [ ] Transmutation (Auto) - only allow one form
+
+
+## Phase 3 +
  - [ ] Season management
 	 - [ ] Import/Export profiles
  - [ ] Classified Objective picker
@@ -108,3 +116,6 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Company Deployment
  - [ ] Experience Points during play
 And more
+
+## Known Defects
+- [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
