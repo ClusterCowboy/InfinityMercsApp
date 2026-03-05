@@ -1519,9 +1519,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             var profileCost = ParseCostValue(profile.Cost);
             var overRemainingPoints = profileCost > pointsRemaining;
+            var belowMinFilterPoints = _activeUnitFilter.MinPoints.HasValue && profileCost < _activeUnitFilter.MinPoints.Value;
+            var aboveMaxFilterPoints = _activeUnitFilter.MaxPoints.HasValue && profileCost > _activeUnitFilter.MaxPoints.Value;
             var lieutenantFilteredOut = LieutenantOnlyUnits && !profile.IsLieutenant;
 
-            profile.IsVisible = !lieutenantFilteredOut && !overRemainingPoints;
+            profile.IsVisible = !lieutenantFilteredOut &&
+                                !overRemainingPoints &&
+                                !belowMinFilterPoints &&
+                                !aboveMaxFilterPoints;
             profile.IsLieutenantBlocked =
                 (hasActiveLieutenant && profile.IsLieutenant) ||
                 overRemainingPoints ||
@@ -1647,6 +1652,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 _selectedUnit.IsSelected = false;
                 _selectedUnit = null;
                 ResetUnitDetails();
+            }
+            else if (_selectedUnit is not null)
+            {
+                // Recompute configuration visibility for the selected unit after filter changes.
+                ApplyLieutenantVisualStates();
             }
 
             RefreshTeamEntryVisibility();

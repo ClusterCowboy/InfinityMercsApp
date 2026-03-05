@@ -17,10 +17,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
 	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
- - [ ] Filter units by stats
- - [ ] Filter units by equipment
- - [ ] Filter units by skills
- - [ ] Filter units by weapons
+ - [X] Filter units by stats
+ - [X] Filter units by equipment
+ - [X] Filter units by skills
+ - [X] Filter units by weapons
  - [X] Show the unit as having a cube
  - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
@@ -89,7 +89,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Notoriety
 
 ### Custom Skills
- - [ ] Show notes and denote when skills are different to how they normally are
+ - [X] Show notes and denote when skills are different to how they normally are
  
 ### Captain
  - [X] Give the ability for the captain to track how many XP is left at the start
