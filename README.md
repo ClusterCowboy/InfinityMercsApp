@@ -17,6 +17,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
 	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
+ - [ ] Filter units by stats
+ - [ ] Filter units by equipment
+ - [ ] Filter units by skills
+ - [ ] Filter units by weapons
  - [X] Show the unit as having a cube
  - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
