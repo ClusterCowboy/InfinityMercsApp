@@ -135,7 +135,7 @@
 
                     <Border Grid.Row="1" StrokeThickness="1" Padding="10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
-                            <Border Grid.Column="0" Padding="12,8">
+                            <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderInactive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnUnitSelectionHeaderTapped" />
                                 </Border.GestureRecognizers>
@@ -147,22 +147,47 @@
                                         <Setter Property="BackgroundColor" Value="Transparent" />
                                     </DataTrigger>
                                 </Border.Triggers>
-                                <Label
-                                    Text="UNIT SELECTION"
-                                    FontSize="24"
-                                    FontAttributes="Bold"
-                                    HorizontalTextAlignment="Start"
-                                    VerticalTextAlignment="Center"
-                                    VerticalOptions="Center">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                            <Setter Property="TextColor" Value="White" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                            <Setter Property="TextColor" Value="#A78BFA" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
+                                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="UNIT SELECTION"
+                                        FontSize="24"
+                                        FontAttributes="Bold"
+                                        HorizontalTextAlignment="Start"
+                                        VerticalTextAlignment="Center"
+                                        VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
+                                                <Setter Property="TextColor" Value="#A78BFA" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                    <Border
+                                        Grid.Column="1"
+                                        x:Name="UnitSelectionFilterButtonInactive"
+                                        IsVisible="{Binding IsUnitSelectionActive}"
+                                        StrokeThickness="1"
+                                        Stroke="#111111"
+                                        BackgroundColor="Transparent"
+                                        Padding="2"
+                                        Margin="0,0,12,0"
+                                        VerticalOptions="Center"
+                                        HorizontalOptions="End">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnUnitSelectionFilterButtonTapped" />
+                                        </Border.GestureRecognizers>
+                                        <skia:SKCanvasView
+                                            x:Name="UnitSelectionFilterCanvasInactive"
+                                            WidthRequest="20"
+                                            HeightRequest="20"
+                                            VerticalOptions="Center"
+                                            HorizontalOptions="Center"
+                                            PaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
+                                    </Border>
+                                </Grid>
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
@@ -218,7 +243,7 @@
                     <Border Grid.Row="1" StrokeThickness="1" Padding="10">
                         <Grid RowDefinitions="Auto,*" RowSpacing="8">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
-                                <Border Grid.Column="0" Padding="12,8">
+                                <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderActive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnUnitSelectionHeaderTapped" />
                                     </Border.GestureRecognizers>
@@ -230,22 +255,47 @@
                                             <Setter Property="BackgroundColor" Value="Transparent" />
                                         </DataTrigger>
                                     </Border.Triggers>
-                                    <Label
-                                        Text="UNIT SELECTION"
-                                        FontSize="24"
-                                        FontAttributes="Bold"
-                                        HorizontalTextAlignment="Start"
-                                        VerticalTextAlignment="Center"
-                                        VerticalOptions="Center">
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                                <Setter Property="TextColor" Value="White" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                                <Setter Property="TextColor" Value="#A78BFA" />
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
+                                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                        <Label
+                                            Grid.Column="0"
+                                            Text="UNIT SELECTION"
+                                            FontSize="24"
+                                            FontAttributes="Bold"
+                                            HorizontalTextAlignment="Start"
+                                            VerticalTextAlignment="Center"
+                                            VerticalOptions="Center">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
+                                                    <Setter Property="TextColor" Value="White" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
+                                                    <Setter Property="TextColor" Value="#A78BFA" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                        <Border
+                                            Grid.Column="1"
+                                            x:Name="UnitSelectionFilterButtonActive"
+                                            IsVisible="{Binding IsUnitSelectionActive}"
+                                            StrokeThickness="1"
+                                            Stroke="#111111"
+                                            BackgroundColor="Transparent"
+                                            Padding="2"
+                                            Margin="0,0,12,0"
+                                            VerticalOptions="Center"
+                                            HorizontalOptions="End">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnUnitSelectionFilterButtonTapped" />
+                                            </Border.GestureRecognizers>
+                                            <skia:SKCanvasView
+                                                x:Name="UnitSelectionFilterCanvasActive"
+                                                WidthRequest="20"
+                                                HeightRequest="20"
+                                                VerticalOptions="Center"
+                                                HorizontalOptions="Center"
+                                                PaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
+                                        </Border>
+                                    </Grid>
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
@@ -538,6 +588,20 @@
                     IsEnabled="{Binding IsCompanyValid}" />
             </Grid>
         </Border>
+        </Grid>
+
+        <Grid
+            x:Name="UnitFilterOverlay"
+            Grid.ColumnSpan="2"
+            IsVisible="False"
+            BackgroundColor="#88000000"
+            InputTransparent="False"
+            ZIndex="100">
+            <ContentView
+                x:Name="UnitFilterPopupHost"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MaximumWidthRequest="700" />
         </Grid>
     </Grid>
 </ContentPage>

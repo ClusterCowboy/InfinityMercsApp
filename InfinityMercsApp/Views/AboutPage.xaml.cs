@@ -182,6 +182,11 @@ public partial class AboutPage : ContentPage
         await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/options/");
     }
 
+    private async void OnNounFilterAttributionTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/filter/");
+    }
+
     private async void OnNounOkAttributionTapped(object? sender, TappedEventArgs e)
     {
         await Launcher.Default.OpenAsync("https://thenounproject.com/browse/icons/term/ok/");
