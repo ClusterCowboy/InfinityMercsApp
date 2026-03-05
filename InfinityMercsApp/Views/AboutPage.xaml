@@ -18,7 +18,7 @@
                 FontAttributes="Bold" />
 
             <Label
-                Text="This page can be used for app information, version notes, and credits."
+                Text="Current Version: 0.1.0-alpha, 'Pano Was a Mistake'"
                 LineBreakMode="WordWrap" />
 
             <Label
