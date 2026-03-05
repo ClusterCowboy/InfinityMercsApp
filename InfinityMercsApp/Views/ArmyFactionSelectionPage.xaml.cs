@@ -57,10 +57,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
     }
 
-    private const int MaxIconsPerRow = 3;
+    private const int MaxHeaderIcons = 6;
     private const float IconSize = 24f;
-    private const float IconGap = 20f;
-    private const float RightPadding = 24f;
+    private const float IconVerticalGap = 5f;
+    private const double UnitNameHeadingMaxFontSize = 24d;
+    private const double UnitNameHeadingMinFontSize = 11d;
+    private const double UnitNameHeadingFontStep = 0.5d;
     private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
     private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
     private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
@@ -126,6 +128,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _unitVitality = "-";
     private string _unitS = "-";
     private string _unitAva = "-";
+    private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
@@ -344,7 +347,35 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
-    public string UnitNameHeading { get => _unitNameHeading; private set { if (_unitNameHeading != value) { _unitNameHeading = value; OnPropertyChanged(); } } }
+    public string UnitNameHeading
+    {
+        get => _unitNameHeading;
+        private set
+        {
+            if (_unitNameHeading == value)
+            {
+                return;
+            }
+
+            _unitNameHeading = value;
+            OnPropertyChanged();
+            UpdateUnitNameHeadingFontSize();
+        }
+    }
+    public double UnitNameHeadingFontSize
+    {
+        get => _unitNameHeadingFontSize;
+        private set
+        {
+            if (Math.Abs(_unitNameHeadingFontSize - value) < 0.01d)
+            {
+                return;
+            }
+
+            _unitNameHeadingFontSize = value;
+            OnPropertyChanged();
+        }
+    }
     public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
     public string UnitCc { get => _unitCc; private set { if (_unitCc != value) { _unitCc = value; OnPropertyChanged(); } } }
     public string UnitBs { get => _unitBs; private set { if (_unitBs != value) { _unitBs = value; OnPropertyChanged(); } } }
@@ -363,6 +394,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public FormattedString SpecialSkillsSummaryFormatted { get => _specialSkillsSummaryFormatted; private set { _specialSkillsSummaryFormatted = value; OnPropertyChanged(); } }
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
+    public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
     public bool ShowRegularOrderIcon
     {
@@ -377,7 +409,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showRegularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -394,7 +427,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showIrregularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -411,7 +445,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showImpetuousIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -428,7 +463,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showTacticalAwarenessIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -445,7 +481,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showCubeIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -462,7 +499,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showCube2Icon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -479,7 +517,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showHackableIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -847,7 +886,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new UnitFilterPopupPage(options, _activeUnitFilter);
+            var popup = new UnitFilterPopupPage(
+                options,
+                _activeUnitFilter,
+                lieutenantOnlyUnits: LieutenantOnlyUnits,
+                teamsView: TeamsView);
             popup.FilterArmyApplied += OnFilterArmyApplied;
             popup.CloseRequested += OnUnitFilterPopupCloseRequested;
             _activeUnitFilterPopup = popup;
@@ -863,6 +906,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
         _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
+        if (criteria is not null)
+        {
+            LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
+            TeamsView = criteria.TeamsView;
+        }
         CloseUnitFilterPopup(sender as UnitFilterPopupPage);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1148,16 +1196,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             target.Add(value.Trim());
         }
-    }
-
-    private void OnLieutenantOnlyUnitsRowTapped(object? sender, TappedEventArgs e)
-    {
-        LieutenantOnlyUnits = !LieutenantOnlyUnits;
-    }
-
-    private void OnTeamsViewRowTapped(object? sender, TappedEventArgs e)
-    {
-        TeamsView = !TeamsView;
     }
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
@@ -5415,8 +5453,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             Console.Error.WriteLine($"ArmyFactionSelectionPage filter icon load failed: {ex.Message}");
         }
 
-        TopIconRowCanvas.InvalidateSurface();
-        BottomIconRowCanvas.InvalidateSurface();
+        HeaderIconsCanvas.InvalidateSurface();
         UnitSelectionFilterCanvasInactive.InvalidateSurface();
         UnitSelectionFilterCanvasActive.InvalidateSurface();
     }
@@ -5490,20 +5527,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
         DrawSlotPicture(_selectedUnitPicture, e);
     }
 
-    private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    private void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
-        var pictures = BuildTopIconPictures();
-        DrawIconRow(canvas, e.Info, pictures);
-    }
-
-    private void OnBottomIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var pictures = BuildBottomIconPictures();
-        DrawIconRow(canvas, e.Info, pictures);
+        var pictures = BuildHeaderIconPictures();
+        DrawIconColumn(canvas, e.Info, pictures);
     }
 
     private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -5517,9 +5546,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
         DrawSlotPicture(_filterIconPicture, e);
     }
 
+    private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
+    {
+        UpdateUnitNameHeadingFontSize();
+    }
+
     private List<SKPicture> BuildTopIconPictures()
     {
-        var pictures = new List<SKPicture>(MaxIconsPerRow);
+        var pictures = new List<SKPicture>(3);
         var orderTypePicture = ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
         if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
         {
@@ -5541,7 +5575,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private List<SKPicture> BuildBottomIconPictures()
     {
-        var pictures = new List<SKPicture>(MaxIconsPerRow);
+        var pictures = new List<SKPicture>(3);
         if (ShowCubeIcon && _cubeIconPicture is not null)
         {
             pictures.Add(_cubeIconPicture);
@@ -5560,26 +5594,41 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return pictures;
     }
 
-    private static void DrawIconRow(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
+    private List<SKPicture> BuildHeaderIconPictures()
+    {
+        var pictures = BuildTopIconPictures();
+        pictures.AddRange(BuildBottomIconPictures());
+        if (pictures.Count <= MaxHeaderIcons)
+        {
+            return pictures;
+        }
+
+        return pictures.Take(MaxHeaderIcons).ToList();
+    }
+
+    private static void DrawIconColumn(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
     {
         if (pictures.Count == 0)
         {
             return;
         }
 
-        var drawCount = Math.Min(MaxIconsPerRow, pictures.Count);
-        var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-        var startX = info.Width - RightPadding - rowWidth;
-        if (startX < 0)
+        var drawCount = pictures.Count;
+        var totalGap = (drawCount - 1) * IconVerticalGap;
+        var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
+        var iconSize = Math.Max(1f, Math.Min(IconSize, maxIconSizeFromHeight));
+        var totalHeight = (drawCount * iconSize) + totalGap;
+        var startY = (info.Height - totalHeight) / 2f;
+        if (startY < 0f)
         {
-            startX = 0;
+            startY = 0f;
         }
 
         for (var i = 0; i < drawCount; i++)
         {
-            var x = startX + (i * (IconSize + IconGap));
-            var y = (info.Height - IconSize) / 2f;
-            var destination = new SKRect(x, y, x + IconSize, y + IconSize);
+            var x = (info.Width - iconSize) / 2f;
+            var y = startY + (i * (iconSize + IconVerticalGap));
+            var destination = new SKRect(x, y, x + iconSize, y + iconSize);
             DrawPictureInRect(canvas, pictures[i], destination);
         }
     }
@@ -5595,6 +5644,34 @@ public partial class ArmyFactionSelectionPage : ContentPage
         buttonBorder.HeightRequest = iconButtonSize;
         iconCanvas.WidthRequest = iconButtonSize;
         iconCanvas.HeightRequest = iconButtonSize;
+    }
+
+    private void UpdateUnitNameHeadingFontSize()
+    {
+        if (UnitNameHeadingLabel is null)
+        {
+            return;
+        }
+
+        var availableWidth = UnitNameHeadingLabel.Width;
+        if (availableWidth <= 0)
+        {
+            UnitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
+            return;
+        }
+
+        var measuredWidth = double.PositiveInfinity;
+        for (var size = UnitNameHeadingMaxFontSize; size >= UnitNameHeadingMinFontSize; size -= UnitNameHeadingFontStep)
+        {
+            UnitNameHeadingFontSize = size;
+            measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
+            if (measuredWidth <= availableWidth)
+            {
+                return;
+            }
+        }
+
+        UnitNameHeadingFontSize = UnitNameHeadingMinFontSize;
     }
 
     private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)

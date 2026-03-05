@@ -24,6 +24,8 @@ public sealed class UnitFilterCriteria
     public string? Ammo { get; init; }
     public int? MinPoints { get; init; }
     public int? MaxPoints { get; init; }
+    public bool LieutenantOnlyUnits { get; init; }
+    public bool TeamsView { get; init; }
 
     public static UnitFilterCriteria None { get; } = new();
 }
@@ -49,13 +51,19 @@ public partial class UnitFilterPopupPage : ContentView
     public string? SelectedAmmo { get; set; }
     public string? SelectedMinPoints { get; set; }
     public string? SelectedMaxPoints { get; set; }
+    public bool SelectedLieutenantOnlyUnits { get; set; }
+    public bool SelectedTeamsView { get; set; }
 
     public UnitFilterPopupPage()
-        : this(new UnitFilterPopupOptions(), UnitFilterCriteria.None)
+        : this(new UnitFilterPopupOptions(), UnitFilterCriteria.None, lieutenantOnlyUnits: false, teamsView: false)
     {
     }
 
-    public UnitFilterPopupPage(UnitFilterPopupOptions options, UnitFilterCriteria? existingCriteria = null)
+    public UnitFilterPopupPage(
+        UnitFilterPopupOptions options,
+        UnitFilterCriteria? existingCriteria = null,
+        bool lieutenantOnlyUnits = false,
+        bool teamsView = false)
     {
         InitializeComponent();
         ClassificationOptions = BuildOptionCollection(options.Classification);
@@ -68,7 +76,7 @@ public partial class UnitFilterPopupPage : ContentView
         var maxPoints = Math.Max(minPoints, options.MaxPoints);
         PointsOptions = BuildPointsOptions(minPoints, maxPoints);
         BindingContext = this;
-        ApplySelections(existingCriteria ?? UnitFilterCriteria.None, minPoints, maxPoints);
+        ApplySelections(existingCriteria ?? UnitFilterCriteria.None, minPoints, maxPoints, lieutenantOnlyUnits, teamsView);
     }
 
     private static ObservableCollection<string> BuildOptionCollection(IEnumerable<string> values)
@@ -106,6 +114,8 @@ public partial class UnitFilterPopupPage : ContentView
         SelectedAmmo = AmmoOptions[0];
         SelectedMinPoints = minPoints.ToString();
         SelectedMaxPoints = maxPoints.ToString();
+        SelectedLieutenantOnlyUnits = false;
+        SelectedTeamsView = false;
         OnPropertyChanged(nameof(SelectedClassification));
         OnPropertyChanged(nameof(SelectedCharacteristics));
         OnPropertyChanged(nameof(SelectedSkills));
@@ -114,9 +124,16 @@ public partial class UnitFilterPopupPage : ContentView
         OnPropertyChanged(nameof(SelectedAmmo));
         OnPropertyChanged(nameof(SelectedMinPoints));
         OnPropertyChanged(nameof(SelectedMaxPoints));
+        OnPropertyChanged(nameof(SelectedLieutenantOnlyUnits));
+        OnPropertyChanged(nameof(SelectedTeamsView));
     }
 
-    private void ApplySelections(UnitFilterCriteria criteria, int minPoints, int maxPoints)
+    private void ApplySelections(
+        UnitFilterCriteria criteria,
+        int minPoints,
+        int maxPoints,
+        bool lieutenantOnlyUnits,
+        bool teamsView)
     {
         if (criteria is null)
         {
@@ -132,6 +149,8 @@ public partial class UnitFilterPopupPage : ContentView
         SelectedAmmo = ResolveSelection(AmmoOptions, criteria.Ammo);
         SelectedMinPoints = ResolvePointsSelection(minPoints, maxPoints, criteria.MinPoints, minPoints);
         SelectedMaxPoints = ResolvePointsSelection(minPoints, maxPoints, criteria.MaxPoints, maxPoints);
+        SelectedLieutenantOnlyUnits = lieutenantOnlyUnits;
+        SelectedTeamsView = teamsView;
         OnPropertyChanged(nameof(SelectedClassification));
         OnPropertyChanged(nameof(SelectedCharacteristics));
         OnPropertyChanged(nameof(SelectedSkills));
@@ -140,6 +159,8 @@ public partial class UnitFilterPopupPage : ContentView
         OnPropertyChanged(nameof(SelectedAmmo));
         OnPropertyChanged(nameof(SelectedMinPoints));
         OnPropertyChanged(nameof(SelectedMaxPoints));
+        OnPropertyChanged(nameof(SelectedLieutenantOnlyUnits));
+        OnPropertyChanged(nameof(SelectedTeamsView));
     }
 
     private static string ResolveSelection(ObservableCollection<string> options, string? value)
@@ -201,7 +222,9 @@ public partial class UnitFilterPopupPage : ContentView
             Weapons = NormalizeChoice(SelectedWeapons),
             Ammo = NormalizeChoice(SelectedAmmo),
             MinPoints = minPoints,
-            MaxPoints = maxPoints
+            MaxPoints = maxPoints,
+            LieutenantOnlyUnits = SelectedLieutenantOnlyUnits,
+            TeamsView = SelectedTeamsView
         };
         FilterArmyApplied?.Invoke(this, criteria);
         CloseRequested?.Invoke(this, EventArgs.Empty);
