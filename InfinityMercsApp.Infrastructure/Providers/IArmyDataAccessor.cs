@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Data.Database;
+namespace InfinityMercsApp.Infrastructure.Providers;
 
 public interface IArmyDataAccessor
 {

@@ -1,10 +1,15 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using InfinityMercsApp.Infrastructure.API.InfinityArmy;
+using InfinityMercsApp.Infrastructure.API.InfinityArmy.Models.Army;
+using InfinityMercsApp.Infrastructure.Repositories;
+using InfinityMercsApp.Infrastructure.Repositories.Models.Army;
 using SQLite;
 
-namespace InfinityMercsApp.Data.Database;
+namespace InfinityMercsApp.Infrastructure.Providers;
 
-public class ArmyDataAccessor : IArmyDataAccessor
+/// <inheritdoc/>
+public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyAPI infinityArmyAPI) : IArmyDataAccessor
 {
     private const int CharacterCategory = 10;
     private const int TagType = 4;
@@ -21,27 +26,17 @@ public class ArmyDataAccessor : IArmyDataAccessor
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
         Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
     };
-
-    private readonly IDatabaseContext _databaseContext;
-    private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _specopsBackfillGate = new(1, 1);
     private bool _specopsBackfillCompleted;
-
-    public ArmyDataAccessor(IDatabaseContext databaseContext)
-    {
-        _databaseContext = databaseContext;
-        _connection = databaseContext.Connection;
-    }
 
     public async Task ImportFactionArmyFromJsonAsync(int factionId, string json, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
 
-        var document = JsonSerializer.Deserialize<ArmyDocument>(json, JsonOptions)
+        var document = JsonSerializer.Deserialize<API.InfinityArmy.Models.Army>(json, JsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize army JSON.");
 
-        var snapshot = new ArmyFactionRecord
+        var snapshot = new Repositories.Models.Army.Army
         {
             FactionId = factionId,
             Version = document.Version,

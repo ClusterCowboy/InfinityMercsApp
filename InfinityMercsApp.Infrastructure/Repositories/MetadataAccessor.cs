@@ -1,8 +1,10 @@
+namespace InfinityMercsApp.Infrastructure.Repositories;
+
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SQLite;
 
-namespace InfinityMercsApp.Data.Database;
+namespace InfinityMercsApp.Infrastructure.Repositories;
 
 public class MetadataAccessor : IMetadataAccessor
 {

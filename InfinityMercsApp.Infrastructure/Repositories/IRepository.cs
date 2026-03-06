@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Repositories;
+namespace InfinityMercsApp.Infrastructure.Repositories;
 
 public interface IRepository<T>
 {
