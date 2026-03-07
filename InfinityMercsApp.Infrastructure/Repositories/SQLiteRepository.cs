@@ -17,6 +17,16 @@ public class SQLiteRepository : ISQLiteRepository
     }
 
     /// <inheritdoc/>
+    public void Insert<T>(IEnumerable<T> recordsToInsert) where T : new()
+    {
+        _connection.CreateTable<T>();
+        
+        var query = _connection.Table<T>();
+
+        _connection.InsertAll(recordsToInsert);
+    }
+
+    /// <inheritdoc/>
     public T GetById<T>(int id) where T : new()
     {
         _connection.CreateTable<T>();
@@ -27,13 +37,28 @@ public class SQLiteRepository : ISQLiteRepository
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, bool>> orderBy) where T : new()
+    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, object>>? orderBy = null) where T : new()
     {
         _connection.CreateTable<T>();
 
         var query = _connection.Table<T>();
 
-        return query.Where(filter).OrderBy(orderBy).ToList();
+        if (orderBy is not null)
+        {
+            return query.Where(filter).OrderBy(orderBy).ToList();
+        }
+
+        return query.Where(filter).ToList();
+    }
+
+    /// <inheritdoc/>
+    public void Delete<T>(Expression<Func<T, bool>> filter) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        var query = _connection.Table<T>();
+
+        query.Delete(filter);
     }
 
     /// <inheritdoc/>

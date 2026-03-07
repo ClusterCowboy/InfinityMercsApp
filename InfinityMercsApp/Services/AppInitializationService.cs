@@ -1,9 +1,7 @@
+using InfinityMercsApp.Models;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Globalization;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Data.WebAccess;
-using InfinityMercsApp.Models;
 
 namespace InfinityMercsApp.Services;
 

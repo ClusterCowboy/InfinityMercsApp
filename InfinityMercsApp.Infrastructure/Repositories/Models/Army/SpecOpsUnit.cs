@@ -3,7 +3,7 @@
 using SQLite;
 
 [Table("specops_units")]
-public class SpecopsUnitRecord
+public class SpecopsUnit
 {
     [PrimaryKey]
     public string SpecopsUnitKey { get; set; } = string.Empty;

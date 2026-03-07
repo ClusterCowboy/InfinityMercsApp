@@ -8,6 +8,13 @@ using System.Linq.Expressions;
 public interface ISQLiteRepository
 {
     /// <summary>
+    /// Inserts records into a SQLite table.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="recordsToInsert"></param>
+    public void Insert<T>(IEnumerable<T> recordsToInsert) where T : new();
+
+    /// <summary>
     /// Gets a single record from a SQLite table.
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -24,7 +31,13 @@ public interface ISQLiteRepository
     /// <param name="orderBy"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, bool>> orderBy) where T: new();
+    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, object>>? orderBy = null) where T: new();
+
+    /// <summary>
+    /// Deletes all records from a SQLite table by filter.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void Delete<T>(Expression<Func<T, bool>> filter) where T : new();
 
     /// <summary>
     /// Deletes all records from a SQLite table.

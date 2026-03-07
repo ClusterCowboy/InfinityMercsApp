@@ -1,10 +1,11 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using InfinityMercsApp.Infrastructure.API.InfinityArmy;
-using InfinityMercsApp.Infrastructure.API.InfinityArmy.Models.Army;
 using InfinityMercsApp.Infrastructure.Repositories;
 using InfinityMercsApp.Infrastructure.Repositories.Models.Army;
-using SQLite;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Faction = InfinityMercsApp.Infrastructure.Repositories.Models.Army.Faction;
+using Resume = InfinityMercsApp.Infrastructure.Repositories.Models.Army.Resume;
+using Unit = InfinityMercsApp.Infrastructure.Repositories.Models.Army.Unit;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
 
@@ -16,9 +17,6 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
     private const int VehicleType = 8;
     private const string MercSlugPrefix = "merc-%";
     private const int YuJingFactionId = 201;
-    private const int JsaFactionId = 1101;
-    private const int JsaShindenbutaiFactionId = 1102;
-    private const int JsaObanFactionId = 1103;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -33,10 +31,10 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = JsonSerializer.Deserialize<API.InfinityArmy.Models.Army>(json, JsonOptions)
+        var document = JsonSerializer.Deserialize<API.InfinityArmy.Models.Army.Faction>(json, JsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize army JSON.");
 
-        var snapshot = new Repositories.Models.Army.Army
+        var faction = new Faction
         {
             FactionId = factionId,
             Version = document.Version,
@@ -50,7 +48,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             RawJson = json
         };
 
-        var units = document.Units.Select(x => new ArmyUnitRecord
+        var units = document.Units.Select(x => new Unit
         {
             UnitKey = BuildUnitKey(factionId, x),
             FactionId = factionId,
@@ -67,7 +65,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             FactionsJson = ToJsonOrNull(x.Factions)
         }).ToList();
 
-        var resume = document.Resume.Select(x => new ArmyResumeRecord
+        var resume = document.Resume.Select(x => new Resume
         {
             ResumeKey = BuildResumeKey(factionId, x),
             FactionId = factionId,
@@ -81,7 +79,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             Category = x.Category
         }).ToList();
 
-        var yuJingSpecops = IsJsaFaction(factionId)
+        var yuJingSpecops = faction.IsJsaFaction
             ? await TryGetFactionSpecopsRootAsync(YuJingFactionId, cancellationToken)
             : default;
 
@@ -90,45 +88,21 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         var specopsWeapons = BuildSpecopsWeaponRecords(factionId, document.Specops, yuJingSpecops);
         var specopsUnits = BuildSpecopsUnitRecords(factionId, document.Specops);
 
-        await _connection.ExecuteAsync("DELETE FROM army_units WHERE FactionId = ?", factionId);
-        await _connection.ExecuteAsync("DELETE FROM army_resume WHERE FactionId = ?", factionId);
-        await _connection.ExecuteAsync("DELETE FROM army_specops_skills WHERE FactionId = ?", factionId);
-        await _connection.ExecuteAsync("DELETE FROM army_specops_equips WHERE FactionId = ?", factionId);
-        await _connection.ExecuteAsync("DELETE FROM army_specops_weapons WHERE FactionId = ?", factionId);
-        await _connection.ExecuteAsync("DELETE FROM army_specops_units WHERE FactionId = ?", factionId);
-        await _connection.DeleteAsync<ArmyFactionRecord>(factionId);
+        sqliteRepository.Delete<Unit>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<Resume>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == factionId);
+        sqliteRepository.Delete<Faction>(x => x.FactionId == factionId);
 
-        await _connection.InsertAsync(snapshot);
-
-        if (units.Count > 0)
-        {
-            await _connection.InsertAllAsync(units);
-        }
-
-        if (resume.Count > 0)
-        {
-            await _connection.InsertAllAsync(resume);
-        }
-
-        if (specopsSkills.Count > 0)
-        {
-            await _connection.InsertAllAsync(specopsSkills);
-        }
-
-        if (specopsEquips.Count > 0)
-        {
-            await _connection.InsertAllAsync(specopsEquips);
-        }
-
-        if (specopsWeapons.Count > 0)
-        {
-            await _connection.InsertAllAsync(specopsWeapons);
-        }
-
-        if (specopsUnits.Count > 0)
-        {
-            await _connection.InsertAllAsync(specopsUnits);
-        }
+        sqliteRepository.Insert([faction]);
+        sqliteRepository.Insert(units);
+        sqliteRepository.Insert(resume);
+        sqliteRepository.Insert(specopsSkills);
+        sqliteRepository.Insert(specopsEquips);
+        sqliteRepository.Insert(specopsWeapons);
+        sqliteRepository.Insert(specopsUnits);
     }
 
     public async Task ImportFactionArmyFromFileAsync(int factionId, string filePath, CancellationToken cancellationToken = default)
@@ -139,243 +113,108 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
 
     public async Task<bool> HasFactionArmyAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        return await _connection.Table<ArmyFactionRecord>().Where(x => x.FactionId == factionId).CountAsync() > 0;
+        return sqliteRepository.GetAll<Faction>(x => x.FactionId == factionId).Count() > 0;
     }
 
     public async Task<IReadOnlyList<int>> GetStoredFactionIdsAsync(CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        var snapshots = await _connection.Table<ArmyFactionRecord>().OrderBy(x => x.FactionId).ToListAsync();
+        var snapshots = sqliteRepository.GetAll<Faction>(x => true, x => x.FactionId).ToList();
         return snapshots.Select(x => x.FactionId).ToList();
     }
 
-    public async Task<ArmyFactionRecord?> GetFactionSnapshotAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<Faction?> GetFactionSnapshotAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        return await _connection.FindAsync<ArmyFactionRecord>(factionId);
+        return sqliteRepository.GetById<Faction>(factionId);
     }
 
-    public async Task<IReadOnlyList<ArmyUnitRecord>> GetUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Unit>> GetUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_units
-            WHERE FactionId = ?
-              AND (Slug IS NULL OR Slug NOT LIKE ?)
-            ORDER BY Name
-            """;
-
-        return await _connection.QueryAsync<ArmyUnitRecord>(sql, factionId, MercSlugPrefix);
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null);
     }
 
-    public async Task<ArmyUnitRecord?> GetUnitAsync(int factionId, int unitId, CancellationToken cancellationToken = default)
+    public async Task<Unit?> GetUnitAsync(int factionId, int unitId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_units
-            WHERE FactionId = ?
-              AND UnitId = ?
-              AND (Slug IS NULL OR Slug NOT LIKE ?)
-            LIMIT 1
-            """;
-
-        var rows = await _connection.QueryAsync<ArmyUnitRecord>(sql, factionId, unitId, MercSlugPrefix);
-        return rows.FirstOrDefault();
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
     }
 
-    public async Task<IReadOnlyList<ArmyUnitRecord>> SearchUnitsAsync(string searchTerm, int? factionId = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Unit>> SearchUnitsAsync(string searchTerm, int? factionId = null, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
 
         var term = searchTerm?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(term))
         {
-            if (factionId.HasValue)
+            if (factionId is not null)
             {
-                const string sqlByFaction = """
-                    SELECT *
-                    FROM army_units
-                    WHERE FactionId = ?
-                      AND (Slug IS NULL OR Slug NOT LIKE ?)
-                    ORDER BY Name
-                    LIMIT 250
-                    """;
-
-                return await _connection.QueryAsync<ArmyUnitRecord>(sqlByFaction, factionId.Value, MercSlugPrefix);
+                return await GetUnitsByFactionAsync(factionId.Value, cancellationToken);
             }
 
-            const string sqlAll = """
-                SELECT *
-                FROM army_units
-                WHERE (Slug IS NULL OR Slug NOT LIKE ?)
-                ORDER BY Name
-                LIMIT 250
-                """;
-
-            return await _connection.QueryAsync<ArmyUnitRecord>(sqlAll, MercSlugPrefix);
+            return sqliteRepository.GetAll<Unit>(x => x.Slug == null || !x.Slug.Contains(MercSlugPrefix)).Take(250).ToList();
         }
 
         if (factionId.HasValue)
         {
-            const string sqlByFactionWithTerm = """
-                SELECT *
-                FROM army_units
-                WHERE FactionId = ?
-                  AND Name LIKE ?
-                  AND (Slug IS NULL OR Slug NOT LIKE ?)
-                ORDER BY Name
-                """;
-
-            return await _connection.QueryAsync<ArmyUnitRecord>(sqlByFactionWithTerm, factionId.Value, $"%{term}%", MercSlugPrefix);
+            return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term) && x.FactionId == factionId.Value && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
         }
 
-        const string sqlWithTerm = """
-            SELECT *
-            FROM army_units
-            WHERE Name LIKE ?
-              AND (Slug IS NULL OR Slug NOT LIKE ?)
-            ORDER BY Name
-            """;
-
-        return await _connection.QueryAsync<ArmyUnitRecord>(sqlWithTerm, $"%{term}%", MercSlugPrefix);
+        return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term) && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
     }
 
-    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Resume>> GetResumeByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_resume
-            WHERE FactionId = ?
-              AND (Slug IS NULL OR Slug NOT LIKE ?)
-            ORDER BY Name
-            """;
-
-        return await _connection.QueryAsync<ArmyResumeRecord>(sql, factionId, MercSlugPrefix);
+        return sqliteRepository.GetAll<Resume>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
     }
 
-    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Resume>> GetResumeByFactionMercsOnlyAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
 
-        const string sql = """
-            SELECT r.*
-            FROM army_resume r
-            WHERE r.FactionId = ?
-              AND EXISTS (
-                    SELECT 1
-                    FROM army_units u
-                    WHERE u.FactionId = r.FactionId
-                      AND u.UnitId = r.UnitId
-                    UNION
-                    SELECT 1
-                    FROM army_specops_units su
-                    WHERE su.FactionId = r.FactionId
-                      AND su.UnitId = r.UnitId
-                )
-              AND (r.Slug IS NULL OR r.Slug NOT LIKE ?)
-              AND (r.Category IS NULL OR r.Category <> ?)
-              AND (r.Type IS NULL OR r.Type <> ?)
-              AND (r.Type IS NULL OR r.Type <> ?)
-            ORDER BY r.Name
-            """;
-
-        return await _connection.QueryAsync<ArmyResumeRecord>(
-            sql,
-            factionId,
-            MercSlugPrefix,
-            CharacterCategory,
-            TagType,
-            VehicleType);
+        return sqliteRepository.GetAll<Resume>(x => x.FactionId == factionId
+                                                    && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix))
+                                                    && (x.Category == null || x.Category != CharacterCategory)
+                                                    && (x.Type == null || x.Type != TagType)
+                                                    && (x.Type == null || x.Type != VehicleType),
+                                                    orderBy: x => x.Name);
     }
 
-    public async Task<IReadOnlyList<ArmySpecopsSkillRecord>> GetSpecopsSkillsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SpecopsSkill>> GetSpecopsSkillsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_specops_skills
-            WHERE FactionId = ?
-            ORDER BY EntryOrder
-            """;
-
-        return await _connection.QueryAsync<ArmySpecopsSkillRecord>(sql, factionId);
+        return sqliteRepository.GetAll<SpecopsSkill>(x => x.FactionId == factionId, x => x.EntryOrder);
     }
 
-    public async Task<IReadOnlyList<ArmySpecopsEquipRecord>> GetSpecopsEquipsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SpecopsEquipment>> GetSpecopsEquipmentByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_specops_equips
-            WHERE FactionId = ?
-            ORDER BY EntryOrder
-            """;
-
-        return await _connection.QueryAsync<ArmySpecopsEquipRecord>(sql, factionId);
+        return sqliteRepository.GetAll<SpecopsEquipment>(x => x.FactionId == factionId, x => x.EntryOrder);
     }
 
-    public async Task<IReadOnlyList<ArmySpecopsWeaponRecord>> GetSpecopsWeaponsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SpecopsWeapon>> GetSpecopsWeaponsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_specops_weapons
-            WHERE FactionId = ?
-            ORDER BY EntryOrder
-            """;
-
-        return await _connection.QueryAsync<ArmySpecopsWeaponRecord>(sql, factionId);
+        return sqliteRepository.GetAll<SpecopsWeapon>(x => x.FactionId == factionId, x => x.EntryOrder);
     }
 
-    public async Task<IReadOnlyList<ArmySpecopsUnitRecord>> GetSpecopsUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SpecopsUnit>> GetSpecopsUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _databaseContext.InitializeAsync(cancellationToken);
         await EnsureSpecopsIndexedAsync(cancellationToken);
-        const string sql = """
-            SELECT *
-            FROM army_specops_units
-            WHERE FactionId = ?
-            ORDER BY EntryOrder
-            """;
-
-        return await _connection.QueryAsync<ArmySpecopsUnitRecord>(sql, factionId);
+        return sqliteRepository.GetAll<SpecopsUnit>(x => x.FactionId == factionId, x => x.EntryOrder);
     }
 
-    private static string BuildUnitKey(int factionId, ArmyUnitDto unit)
+    private static string BuildUnitKey(int factionId, API.InfinityArmy.Models.Army.Unit unit)
     {
         return $"{factionId}:{unit.Id}:{unit.IdArmy ?? 0}:{unit.Slug ?? string.Empty}";
     }
 
-    private static string BuildResumeKey(int factionId, ArmyResumeDto unit)
+    private static string BuildResumeKey(int factionId, API.InfinityArmy.Models.Army.Resume resume)
     {
-        return $"{factionId}:{unit.Id}:{unit.Slug ?? string.Empty}";
+        return $"{factionId}:{resume.Id}:{resume.Slug ?? string.Empty}";
     }
 
     private async Task EnsureSpecopsIndexedAsync(CancellationToken cancellationToken)
@@ -393,7 +232,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
                 return;
             }
 
-            var snapshots = await _connection.Table<ArmyFactionRecord>().ToListAsync();
+            var snapshots = sqliteRepository.GetAll<Faction>(x => true);
             var yuJingSpecops = TryGetFactionSpecopsRootFromSnapshots(snapshots, YuJingFactionId);
             foreach (var snapshot in snapshots)
             {
@@ -404,21 +243,15 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
                     continue;
                 }
 
-                var existingCount = await _connection.ExecuteScalarAsync<int>(
-                    """
-                    SELECT
-                        (SELECT COUNT(*) FROM army_specops_skills WHERE FactionId = ?)
-                      + (SELECT COUNT(*) FROM army_specops_equips WHERE FactionId = ?)
-                      + (SELECT COUNT(*) FROM army_specops_weapons WHERE FactionId = ?)
-                      + (SELECT COUNT(*) FROM army_specops_units WHERE FactionId = ?)
-                    """,
-                    snapshot.FactionId,
-                    snapshot.FactionId,
-                    snapshot.FactionId,
-                    snapshot.FactionId);
+                var existingSkills = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
+                var existingEquipment = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
+                var existingWeapons = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
+                var existingUnits = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
 
-                var fallbackSpecops = IsJsaFaction(snapshot.FactionId) ? yuJingSpecops : default;
-                var shouldForceReindexForJsa = IsJsaFaction(snapshot.FactionId) && HasAnySpecopsArray(fallbackSpecops);
+                var existingCount = existingSkills + existingEquipment + existingWeapons + existingUnits;
+
+                var fallbackSpecops = snapshot.IsJsaFaction ? yuJingSpecops : default;
+                var shouldForceReindexForJsa = snapshot.IsJsaFaction && HasAnySpecopsArray(fallbackSpecops);
 
                 if (existingCount > 0 && !shouldForceReindexForJsa)
                 {
@@ -434,31 +267,16 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
 
                 if (existingCount > 0)
                 {
-                    await _connection.ExecuteAsync("DELETE FROM army_specops_skills WHERE FactionId = ?", snapshot.FactionId);
-                    await _connection.ExecuteAsync("DELETE FROM army_specops_equips WHERE FactionId = ?", snapshot.FactionId);
-                    await _connection.ExecuteAsync("DELETE FROM army_specops_weapons WHERE FactionId = ?", snapshot.FactionId);
-                    await _connection.ExecuteAsync("DELETE FROM army_specops_units WHERE FactionId = ?", snapshot.FactionId);
+                    sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == snapshot.FactionId);
+                    sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == snapshot.FactionId);
+                    sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == snapshot.FactionId);
+                    sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == snapshot.FactionId);
                 }
 
-                if (skillRows.Count > 0)
-                {
-                    await _connection.InsertAllAsync(skillRows);
-                }
-
-                if (equipRows.Count > 0)
-                {
-                    await _connection.InsertAllAsync(equipRows);
-                }
-
-                if (weaponRows.Count > 0)
-                {
-                    await _connection.InsertAllAsync(weaponRows);
-                }
-
-                if (unitRows.Count > 0)
-                {
-                    await _connection.InsertAllAsync(unitRows);
-                }
+                sqliteRepository.Insert(skillRows);
+                sqliteRepository.Insert(equipRows);
+                sqliteRepository.Insert(weaponRows);
+                sqliteRepository.Insert(unitRows);
             }
 
             _specopsBackfillCompleted = true;
@@ -472,7 +290,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
     private async Task<JsonElement> TryGetFactionSpecopsRootAsync(int factionId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var snapshot = await _connection.FindAsync<ArmyFactionRecord>(factionId);
+        var snapshot = sqliteRepository.GetById<Repositories.Models.Army.Faction>(factionId);
         if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
         {
             return default;
@@ -482,7 +300,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         return doc.RootElement.Clone();
     }
 
-    private static JsonElement TryGetFactionSpecopsRootFromSnapshots(IEnumerable<ArmyFactionRecord> snapshots, int factionId)
+    private static JsonElement TryGetFactionSpecopsRootFromSnapshots(IEnumerable<Faction> snapshots, int factionId)
     {
         var snapshot = snapshots.FirstOrDefault(x => x.FactionId == factionId);
         if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
@@ -494,11 +312,6 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         return doc.RootElement.Clone();
     }
 
-    private static bool IsJsaFaction(int factionId)
-    {
-        return factionId is JsaFactionId or JsaShindenbutaiFactionId or JsaObanFactionId;
-    }
-
     private static bool HasAnySpecopsArray(JsonElement specops)
     {
         return TryGetSpecopsArray(specops, "skills", out _) ||
@@ -506,9 +319,9 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
                TryGetSpecopsArray(specops, "weapons", out _);
     }
 
-    private static List<ArmySpecopsSkillRecord> BuildSpecopsSkillRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
+    private static List<SpecopsSkill> BuildSpecopsSkillRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
-        var records = new List<ArmySpecopsSkillRecord>();
+        var records = new List<SpecopsSkill>();
         if (!TryGetSpecopsArray(specops, fallbackSpecops, "skills", out var array))
         {
             return records;
@@ -523,7 +336,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             }
 
             var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
-            records.Add(new ArmySpecopsSkillRecord
+            records.Add(new SpecopsSkill
             {
                 SpecopsSkillKey = $"{factionId}:{entryOrder}:{skillId}:{exp}",
                 FactionId = factionId,
@@ -542,9 +355,9 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         return records;
     }
 
-    private static List<ArmySpecopsEquipRecord> BuildSpecopsEquipRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
+    private static List<SpecopsEquipment> BuildSpecopsEquipRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
-        var records = new List<ArmySpecopsEquipRecord>();
+        var records = new List<SpecopsEquipment>();
         if (!TryGetSpecopsArray(specops, fallbackSpecops, "equip", out var array))
         {
             return records;
@@ -559,12 +372,12 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             }
 
             var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
-            records.Add(new ArmySpecopsEquipRecord
+            records.Add(new SpecopsEquipment
             {
-                SpecopsEquipKey = $"{factionId}:{entryOrder}:{equipId}:{exp}",
+                SpecopsEquipmentKey = $"{factionId}:{entryOrder}:{equipId}:{exp}",
                 FactionId = factionId,
                 EntryOrder = entryOrder,
-                EquipId = equipId,
+                EquipmentId = equipId,
                 Exp = exp,
                 ExtrasJson = TryReadJsonProperty(entry, "extras"),
                 SkillsJson = TryReadJsonProperty(entry, "skills"),
@@ -578,9 +391,9 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         return records;
     }
 
-    private static List<ArmySpecopsWeaponRecord> BuildSpecopsWeaponRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
+    private static List<SpecopsWeapon> BuildSpecopsWeaponRecords(int factionId, JsonElement specops, JsonElement fallbackSpecops = default)
     {
-        var records = new List<ArmySpecopsWeaponRecord>();
+        var records = new List<SpecopsWeapon>();
         if (!TryGetSpecopsArray(specops, fallbackSpecops, "weapons", out var array))
         {
             return records;
@@ -595,7 +408,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
             }
 
             var exp = TryReadIntProperty(entry, "exp", out var parsedExp) ? parsedExp : 0;
-            records.Add(new ArmySpecopsWeaponRecord
+            records.Add(new SpecopsWeapon
             {
                 SpecopsWeaponKey = $"{factionId}:{entryOrder}:{weaponId}:{exp}",
                 FactionId = factionId,
@@ -611,9 +424,9 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
         return records;
     }
 
-    private static List<ArmySpecopsUnitRecord> BuildSpecopsUnitRecords(int factionId, JsonElement specops)
+    private static List<SpecopsUnit> BuildSpecopsUnitRecords(int factionId, JsonElement specops)
     {
-        var records = new List<ArmySpecopsUnitRecord>();
+        var records = new List<SpecopsUnit>();
         if (!TryGetSpecopsArray(specops, "units", out var array))
         {
             return records;
@@ -627,7 +440,7 @@ public class ArmyDataAccessor(ISQLiteRepository sqliteRepository, IInfinityArmyA
                 continue;
             }
 
-            records.Add(new ArmySpecopsUnitRecord
+            records.Add(new SpecopsUnit
             {
                 SpecopsUnitKey = $"{factionId}:{entryOrder}:{unitId}",
                 FactionId = factionId,

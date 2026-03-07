@@ -3,7 +3,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-public class Army
+public class Faction
 {
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;

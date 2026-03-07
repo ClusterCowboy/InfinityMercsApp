@@ -3,10 +3,14 @@
 using SQLite;
 
 [Table("armies")]
-public class Army
+public class Faction
 {
+    private const int JsaFactionId = 1101;
+    private const int JsaShindenbutaiFactionId = 1102;
+    private const int JsaObanFactionId = 1103;
+
     [PrimaryKey]
-    public int ArmyId { get; set; }
+    public int FactionId { get; set; }
 
     public string Version { get; set; } = string.Empty;
 
@@ -25,4 +29,11 @@ public class Army
     public string? FireteamChartJson { get; set; }
 
     public string RawJson { get; set; } = string.Empty;
+
+    public bool IsJsaFaction => DetermineIsJsaFaction(FactionId);
+
+    private static bool DetermineIsJsaFaction(int factionId)
+    {
+        return factionId is JsaFactionId or JsaShindenbutaiFactionId or JsaObanFactionId;
+    }
 }
