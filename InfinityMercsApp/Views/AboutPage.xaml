@@ -61,6 +61,18 @@
                 FontAttributes="Bold"
                 Margin="0,12,0,0" />
 
+            <Label
+                Text="CBIcons"
+                FontSize="16"
+                FontAttributes="Bold" />
+            <Label Text="cube.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="cube2.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="hackable.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="impetuous.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="irregular.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="lieutenant.svg - Property of Corvus Belli, all rights reserved" />
+            <Label Text="regular.svg - Property of Corvus Belli, all rights reserved" />
+
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIconCanvas"

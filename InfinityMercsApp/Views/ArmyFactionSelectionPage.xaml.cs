@@ -63,6 +63,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private const double UnitNameHeadingMaxFontSize = 24d;
     private const double UnitNameHeadingMinFontSize = 11d;
     private const double UnitNameHeadingFontStep = 0.5d;
+    private static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
+    private static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
+    private static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
+    private static readonly Color SkillsAccentOnDarkSecondary = Color.FromArgb("#FDE68A");
+    private static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
+    private static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
     private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
     private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
@@ -129,6 +135,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _unitS = "-";
     private string _unitAva = "-";
     private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
+    private Color _unitHeaderPrimaryColor = DefaultHeaderPrimaryColor;
+    private Color _unitHeaderSecondaryColor = DefaultHeaderSecondaryColor;
+    private Color _unitHeaderPrimaryTextColor = Colors.White;
+    private Color _unitHeaderSecondaryTextColor = Colors.White;
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
@@ -141,6 +151,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showCubeIcon;
     private bool _showCube2Icon;
     private bool _showHackableIcon;
+    private bool _summaryHighlightLieutenant;
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
@@ -194,8 +205,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         BindingContext = this;
         SetActiveSlot(0);
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
+        RefreshSummaryFormatted();
         _ = LoadHeaderIconsAsync();
         _ = LoadSeasonValidationIconsAsync();
     }
@@ -373,6 +383,62 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             _unitNameHeadingFontSize = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderPrimaryColor
+    {
+        get => _unitHeaderPrimaryColor;
+        private set
+        {
+            if (_unitHeaderPrimaryColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderPrimaryColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderSecondaryColor
+    {
+        get => _unitHeaderSecondaryColor;
+        private set
+        {
+            if (_unitHeaderSecondaryColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderSecondaryColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderPrimaryTextColor
+    {
+        get => _unitHeaderPrimaryTextColor;
+        private set
+        {
+            if (_unitHeaderPrimaryTextColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderPrimaryTextColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderSecondaryTextColor
+    {
+        get => _unitHeaderSecondaryTextColor;
+        private set
+        {
+            if (_unitHeaderSecondaryTextColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderSecondaryTextColor = value;
             OnPropertyChanged();
         }
     }
@@ -2514,7 +2580,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
-        ResetUnitDetails(clearLogo: false);
+        ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
         if (_selectedUnit is null || _armyDataAccessor is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
@@ -2533,6 +2599,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 specopsUnit = specopsUnits.FirstOrDefault(x => x.UnitId == _selectedUnit.Id);
             }
             var treatAsSpecOps = _selectedUnit.IsSpecOps || (unit is null && specopsUnit is not null);
+            await ApplyUnitHeaderColorsAsync(_selectedUnit.SourceFactionId, unit, cancellationToken);
 
             var profileGroupsJson = unit?.ProfileGroupsJson;
             if (treatAsSpecOps && !string.IsNullOrWhiteSpace(specopsUnit?.ProfileGroupsJson))
@@ -2628,18 +2695,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
                 _selectedUnitCommonEquipment = stableEquip;
                 _selectedUnitCommonSkills = stableSkills;
+                _summaryHighlightLieutenant = treatAsSpecOps;
                 Console.WriteLine(
                     $"ArmyFactionSelectionPage summary extraction: unit='{_selectedUnit.Name}', options={visibleOptions.Count}, " +
                     $"commonEquip={stableEquip.Count}, commonSkills={stableSkills.Count}.");
 
                 EquipmentSummary = $"Equipment: {(stableEquip.Count == 0 ? "-" : string.Join(", ", stableEquip))}";
                 SpecialSkillsSummary = $"Special Skills: {(stableSkills.Count == 0 ? "-" : string.Join(", ", stableSkills))}";
-                EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", stableEquip, Color.FromArgb("#06B6D4"));
-                SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
-                    "Special Skills",
-                    stableSkills,
-                    Color.FromArgb("#F59E0B"),
-                    highlightLieutenantPurple: treatAsSpecOps);
+                RefreshSummaryFormatted();
                 PopulateProfilesFromProfileGroups(doc.RootElement, snapshot?.FiltersJson, forceLieutenant: treatAsSpecOps);
                 Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
                 return;
@@ -4051,9 +4114,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
             : int.MaxValue;
     }
 
-    private void ResetUnitDetails(bool clearLogo = true)
+    private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
+        if (resetHeaderColors)
+        {
+            ApplyUnitHeaderColorsByVanillaFactionName(null);
+        }
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
@@ -4066,8 +4133,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         SpecialSkillsSummary = "Special Skills: -";
         _selectedUnitCommonEquipment = [];
         _selectedUnitCommonSkills = [];
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
+        _summaryHighlightLieutenant = false;
+        RefreshSummaryFormatted();
         Profiles.Clear();
         ProfilesStatus = "Select a unit.";
         ShowRegularOrderIcon = false;
@@ -5367,7 +5434,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circle-arrow-803872.svg");
+            await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
             var regularSvg = new SKSvg();
             _regularOrderIconPicture = regularSvg.Load(regularStream);
         }
@@ -5378,7 +5445,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-arrow-963008.svg");
+            await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
             var irregularSvg = new SKSvg();
             _irregularOrderIconPicture = irregularSvg.Load(irregularStream);
         }
@@ -5389,7 +5456,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-fire-131591.svg");
+            await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
             var impetuousSvg = new SKSvg();
             _impetuousIconPicture = impetuousSvg.Load(impetuousStream);
         }
@@ -5411,7 +5478,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cube-alt-2-svgrepo-com.svg");
+            await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
             var cubeSvg = new SKSvg();
             _cubeIconPicture = cubeSvg.Load(cubeStream);
         }
@@ -5422,7 +5489,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cubes-svgrepo-com.svg");
+            await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
             var cube2Svg = new SKSvg();
             _cube2IconPicture = cube2Svg.Load(cube2Stream);
         }
@@ -5433,7 +5500,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circuit-8241852.svg");
+            await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
             var hackableSvg = new SKSvg();
             _hackableIconPicture = hackableSvg.Load(hackableStream);
         }
@@ -5672,6 +5739,246 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         UnitNameHeadingFontSize = UnitNameHeadingMinFontSize;
+    }
+
+    private async Task ApplyUnitHeaderColorsAsync(int sourceFactionId, ArmyUnitRecord? unit, CancellationToken cancellationToken)
+    {
+        if (_metadataAccessor is null)
+        {
+            ApplyUnitHeaderColorsByVanillaFactionName(null);
+            return;
+        }
+
+        string? factionName;
+        if (_mode == ArmySourceSelectionMode.Sectorials)
+        {
+            // In sectorial mode, always color by the sectorial lineage the unit was generated from.
+            factionName = await ResolveVanillaFactionNameAsync(sourceFactionId, cancellationToken);
+        }
+        else
+        {
+            factionName = await ResolveUnitVanillaFactionNameAsync(sourceFactionId, unit?.FactionsJson, cancellationToken);
+        }
+
+        ApplyUnitHeaderColorsByVanillaFactionName(factionName);
+    }
+
+    private async Task<string?> ResolveUnitVanillaFactionNameAsync(int sourceFactionId, string? unitFactionsJson, CancellationToken cancellationToken)
+    {
+        foreach (var factionId in ParseFactionIds(unitFactionsJson))
+        {
+            var candidateName = await ResolveVanillaFactionNameAsync(factionId, cancellationToken);
+            if (IsThemeFactionName(candidateName))
+            {
+                return candidateName;
+            }
+        }
+
+        return await ResolveVanillaFactionNameAsync(sourceFactionId, cancellationToken);
+    }
+
+    private async Task<string?> ResolveVanillaFactionNameAsync(int sourceFactionId, CancellationToken cancellationToken)
+    {
+        if (_metadataAccessor is null || sourceFactionId <= 0)
+        {
+            return null;
+        }
+
+        var current = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+        var safety = 0;
+        while (current is not null && safety < 8)
+        {
+            // Prefer the first recognized themed faction while walking up the lineage.
+            if (IsThemeFactionName(current.Name))
+            {
+                return current.Name;
+            }
+
+            if (current.ParentId <= 0)
+            {
+                break;
+            }
+
+            var parent = await _metadataAccessor.GetFactionByIdAsync(current.ParentId, cancellationToken);
+            if (parent is null || parent.Id == current.Id)
+            {
+                break;
+            }
+
+            current = parent;
+            safety++;
+        }
+
+        // Reinforcement families in metadata can point to intermediate parent ids that are not present.
+        // Fall back to id-family inference so reinforcement factions inherit their base faction theme.
+        var inferredThemeName = InferThemeFactionNameFromFactionId(sourceFactionId)
+            ?? (current is not null ? InferThemeFactionNameFromFactionId(current.Id) : null);
+        if (!string.IsNullOrWhiteSpace(inferredThemeName))
+        {
+            return inferredThemeName;
+        }
+
+        return current?.Name;
+    }
+
+    private void ApplyUnitHeaderColorsByVanillaFactionName(string? vanillaFactionName)
+    {
+        var (primary, secondary) = GetFactionTheme(vanillaFactionName);
+        UnitHeaderPrimaryColor = primary;
+        UnitHeaderSecondaryColor = secondary;
+        UnitHeaderPrimaryTextColor = IsLightColor(primary) ? Colors.Black : Colors.White;
+        UnitHeaderSecondaryTextColor = IsLightColor(secondary) ? Colors.Black : Colors.White;
+        RefreshSummaryFormatted();
+    }
+
+    private void RefreshSummaryFormatted()
+    {
+        var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", _selectedUnitCommonEquipment, equipmentAccent);
+        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+            "Special Skills",
+            _selectedUnitCommonSkills,
+            skillsAccent,
+            highlightLieutenantPurple: _summaryHighlightLieutenant);
+    }
+
+    private static (Color EquipmentAccent, Color SkillsAccent) GetSummaryAccentColorsForSecondaryBackground(Color secondaryBackground)
+    {
+        return IsLightColor(secondaryBackground)
+            ? (EquipmentAccentOnLightSecondary, SkillsAccentOnLightSecondary)
+            : (EquipmentAccentOnDarkSecondary, SkillsAccentOnDarkSecondary);
+    }
+
+    private static (Color Primary, Color Secondary) GetFactionTheme(string? factionName)
+    {
+        var key = NormalizeFactionName(factionName);
+        return key switch
+        {
+            "panoceania" => (Color.FromArgb("#239ac2"), Color.FromArgb("#006a91")),
+            "yujing" => (Color.FromArgb("#ff9000"), Color.FromArgb("#995601")),
+            "ariadna" => (Color.FromArgb("#007d27"), Color.FromArgb("#005825")),
+            "haqqislam" => (Color.FromArgb("#e6da9b"), Color.FromArgb("#8a835d")),
+            "nomads" => (Color.FromArgb("#ce181e"), Color.FromArgb("#7c0e13")),
+            "combinedarmy" => (Color.FromArgb("#400b5f"), Color.FromArgb("#260739")),
+            "aleph" => (Color.FromArgb("#aea6bb"), Color.FromArgb("#696471")),
+            "tohaa" => (Color.FromArgb("#3b3b3b"), Color.FromArgb("#252525")),
+            "nonalignedarmy" => (Color.FromArgb("#728868"), Color.FromArgb("#728868")),
+            "o12" => (Color.FromArgb("#005470"), Color.FromArgb("#dead33")),
+            "jsa" => (Color.FromArgb("#a6112b"), Color.FromArgb("#757575")),
+            _ => (DefaultHeaderPrimaryColor, DefaultHeaderSecondaryColor)
+        };
+    }
+
+    private static bool IsThemeFactionName(string? factionName)
+    {
+        var key = NormalizeFactionName(factionName);
+        return key is
+            "panoceania" or
+            "yujing" or
+            "ariadna" or
+            "haqqislam" or
+            "nomads" or
+            "combinedarmy" or
+            "aleph" or
+            "tohaa" or
+            "nonalignedarmy" or
+            "o12" or
+            "jsa";
+    }
+
+    private static IReadOnlyList<int> ParseFactionIds(string? factionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(factionsJson))
+        {
+            return Array.Empty<int>();
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(factionsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return Array.Empty<int>();
+            }
+
+            var ids = new List<int>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numericId))
+                {
+                    ids.Add(numericId);
+                    continue;
+                }
+
+                if (element.ValueKind == JsonValueKind.String &&
+                    int.TryParse(element.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var stringId))
+                {
+                    ids.Add(stringId);
+                }
+            }
+
+            return ids;
+        }
+        catch
+        {
+            return Array.Empty<int>();
+        }
+    }
+
+    private static string NormalizeFactionName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var cleaned = value.Trim().ToLowerInvariant();
+        cleaned = cleaned.Replace("reinforcements", string.Empty, StringComparison.Ordinal)
+                         .Replace("reinforcement", string.Empty, StringComparison.Ordinal)
+                         .Trim();
+        return cleaned switch
+        {
+            "yu jing" => "yujing",
+            "combined army" => "combinedarmy",
+            "non aligned army" => "nonalignedarmy",
+            "non-aligned armies" => "nonalignedarmy",
+            "non aligned armies" => "nonalignedarmy",
+            "non-aligned army" => "nonalignedarmy",
+            "japanese secessionist army" => "jsa",
+            "o-12" => "o12",
+            _ => new string(cleaned.Where(char.IsLetterOrDigit).ToArray())
+        };
+    }
+
+    private static bool IsLightColor(Color color)
+    {
+        var luminance = (0.299 * color.Red) + (0.587 * color.Green) + (0.114 * color.Blue);
+        return luminance >= 0.6;
+    }
+
+    private static string? InferThemeFactionNameFromFactionId(int factionId)
+    {
+        if (factionId <= 0)
+        {
+            return null;
+        }
+
+        var family = factionId / 100;
+        return family switch
+        {
+            1 => "PanOceania",
+            2 => "Yu Jing",
+            3 => "Ariadna",
+            4 => "Haqqislam",
+            5 => "Nomads",
+            6 => "Combined Army",
+            7 => "Aleph",
+            8 => "Tohaa",
+            9 => "Non-Aligned Armies",
+            10 => "O-12",
+            11 => "JSA",
+            _ => null
+        };
     }
 
     private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)

@@ -25,7 +25,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [X] Show the unit as being hackable
  - [ ] Show the unit as being a peripheral
  - [ ] Show Fireteam options
-	 - [X] Show Duo, Haris, or Core teams
+	 - [X] Show Duo teams
 	 - [ ] Highlight options when selecting a type of fireteam
 	 - [ ] Show bonuses from fireteams in the statline
 #### Mercs Features
