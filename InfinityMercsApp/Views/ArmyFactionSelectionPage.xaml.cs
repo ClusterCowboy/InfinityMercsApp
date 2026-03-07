@@ -2973,7 +2973,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
         }
 
-        var seenConfigurations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bestConfigurationByKey = new Dictionary<string, (int Index, int PeripheralCount)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
@@ -3065,15 +3065,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
                 var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
 
-                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", peripheralNames)}|{swc}|{cost}";
-                if (!seenConfigurations.Add(dedupeKey))
+                var normalizedPeripheralNames = peripheralNames
+                    .Select(NormalizePeripheralNameForDedupe)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+                var peripheralCount = GetPeripheralTotalCount(peripheralNames);
+                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", normalizedPeripheralNames)}|{swc}";
+                var hasExisting = bestConfigurationByKey.TryGetValue(dedupeKey, out var existingConfiguration);
+                if (hasExisting && peripheralCount >= existingConfiguration.PeripheralCount)
                 {
                     continue;
                 }
 
                 var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
                 var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
-                Profiles.Add(new ViewerProfileItem
+                var profileItem = new ViewerProfileItem
                 {
                     GroupName = groupName,
                     Name = optionName,
@@ -3114,7 +3120,17 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
                     Cost = cost
-                });
+                };
+
+                if (hasExisting)
+                {
+                    Profiles[existingConfiguration.Index] = profileItem;
+                    bestConfigurationByKey[dedupeKey] = (existingConfiguration.Index, peripheralCount);
+                    continue;
+                }
+
+                Profiles.Add(profileItem);
+                bestConfigurationByKey[dedupeKey] = (Profiles.Count - 1, peripheralCount);
             }
         }
 
@@ -4904,6 +4920,40 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return Regex.Replace(firstEntry, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+    }
+
+    private static string NormalizePeripheralNameForDedupe(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value == "-")
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(value, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+    }
+
+    private static int GetPeripheralTotalCount(IEnumerable<string> peripheralNames)
+    {
+        var total = 0;
+        foreach (var name in peripheralNames)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name == "-")
+            {
+                continue;
+            }
+
+            var match = Regex.Match(name, @"\((\d+)\)\s*$");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var parsedCount))
+            {
+                total += Math.Max(0, parsedCount);
+            }
+            else
+            {
+                total += 1;
+            }
+        }
+
+        return total;
     }
 
     private static bool HasStatFields(JsonElement element)
