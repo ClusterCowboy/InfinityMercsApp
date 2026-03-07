@@ -26,7 +26,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Show the unit as being a peripheral
  - [ ] Show Fireteam options
 	 - [X] Show Duo teams
-	 - [ ] Highlight options when selecting a type of fireteam
+	 - [ ] Highlight options when selecting a type of fireteam5
 	 - [ ] Show bonuses from fireteams in the statline
 #### Mercs Features
 

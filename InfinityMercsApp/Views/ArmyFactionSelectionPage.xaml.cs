@@ -1178,7 +1178,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                             continue;
                         }
 
-                        var optionCost = ParseCostValue(ReadOptionCost(option));
+                        var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
                         if (maxCost.HasValue && optionCost > maxCost.Value)
                         {
                             continue;
@@ -2776,9 +2776,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
             if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
             {
                 continue;
@@ -2817,6 +2823,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
             var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
                 ? iscElement.GetString() ?? string.Empty
                 : string.Empty;
@@ -2885,13 +2896,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         .ToList();
                 }
 
-                var peripheralNames = GetOrderedIdDisplayNamesFromEntries(
-                    GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral"),
+                var peripheralNames = GetCountedDisplayNamesFromEntries(
+                    GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
                     peripheralLookup,
                     extrasLookup,
                     _showUnitsInInches);
 
-                var cost = ReadOptionCost(option);
+                var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
 
                 var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", peripheralNames)}|{swc}|{cost}";
                 if (!seenConfigurations.Add(dedupeKey))
@@ -2954,6 +2965,63 @@ public partial class ArmyFactionSelectionPage : ContentPage
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static List<string> GetCountedDisplayNamesFromEntries(
+        IEnumerable<JsonElement> entries,
+        IReadOnlyDictionary<int, string> lookup,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in entries)
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                continue;
+            }
+
+            var quantity = ReadEntryQuantity(entry);
+            counts[displayName] = counts.TryGetValue(displayName, out var existing)
+                ? existing + quantity
+                : quantity;
+        }
+
+        return counts
+            .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(x => $"{x.Key} ({x.Value})")
+            .ToList();
+    }
+
+    private static int ReadEntryQuantity(JsonElement entry)
+    {
+        if (entry.ValueKind != JsonValueKind.Object)
+        {
+            return 1;
+        }
+
+        if (entry.TryGetProperty("q", out var quantityElement))
+        {
+            if (quantityElement.ValueKind == JsonValueKind.Number && quantityElement.TryGetInt32(out var quantityNumber))
+            {
+                return Math.Max(1, quantityNumber);
+            }
+
+            if (quantityElement.ValueKind == JsonValueKind.String &&
+                int.TryParse(quantityElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var quantityText))
+            {
+                return Math.Max(1, quantityText);
+            }
+        }
+
+        return 1;
     }
 
     private static bool IsMeleeWeaponName(string name)
@@ -3052,6 +3120,150 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return "-";
+    }
+
+    private static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
+    {
+        var baseCostText = ReadOptionCost(option);
+        if (!int.TryParse(baseCostText, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var baseCost))
+        {
+            return baseCostText;
+        }
+
+        var totalPeripheralCount = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option)
+            .Sum(ReadEntryQuantity);
+        if (totalPeripheralCount <= 1)
+        {
+            return baseCostText;
+        }
+
+        var minis = ReadOptionMinis(option);
+        if (minis <= 1 || minis <= totalPeripheralCount)
+        {
+            return baseCostText;
+        }
+
+        if (baseCost <= 0 || baseCost % minis != 0)
+        {
+            return baseCostText;
+        }
+
+        var removedPeripheralCount = totalPeripheralCount - 1;
+        var perModelCost = baseCost / minis;
+        var deduction = removedPeripheralCount * perModelCost;
+        var adjustedCost = Math.Max(0, baseCost - deduction);
+        return adjustedCost.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static IEnumerable<JsonElement> GetControllerPeripheralEntries(JsonElement group)
+    {
+        if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var collected = new List<JsonElement>();
+        foreach (var profile in profilesElement.EnumerateArray())
+        {
+            if (profile.TryGetProperty("peripheral", out var peripheralElement) &&
+                peripheralElement.ValueKind == JsonValueKind.Array &&
+                peripheralElement.GetArrayLength() > 0)
+            {
+                collected.AddRange(peripheralElement.EnumerateArray().ToList());
+            }
+        }
+
+        return collected;
+    }
+
+    private static HashSet<int> GetControllerPeripheralIds(JsonElement group)
+    {
+        var ids = new HashSet<int>();
+        foreach (var entry in GetControllerPeripheralEntries(group))
+        {
+            if (TryParseId(entry, out var id))
+            {
+                ids.Add(id);
+            }
+        }
+
+        return ids;
+    }
+
+    private static IEnumerable<JsonElement> GetFilteredOptionPeripheralEntries(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var allowedIds = GetControllerPeripheralIds(group);
+        var optionEntries = GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").ToList();
+
+        if (allowedIds.Count == 0)
+        {
+            return optionEntries;
+        }
+
+        return optionEntries
+            .Where(entry => TryParseId(entry, out var id) && allowedIds.Contains(id))
+            .ToList();
+    }
+
+    private static IEnumerable<JsonElement> GetDisplayPeripheralEntriesForOption(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var optionEntries = GetFilteredOptionPeripheralEntries(profileGroupsRoot, group, option).ToList();
+        if (optionEntries.Count > 0)
+        {
+            return optionEntries;
+        }
+
+        return GetControllerPeripheralEntries(group).ToList();
+    }
+
+    private static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
+    {
+        if (GetControllerPeripheralIds(group).Count > 0)
+        {
+            return true;
+        }
+
+        if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var option in optionsElement.EnumerateArray())
+        {
+            if (GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").Any())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int ReadOptionMinis(JsonElement option)
+    {
+        if (!option.TryGetProperty("minis", out var minisElement))
+        {
+            return 0;
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.Number && minisElement.TryGetInt32(out var minisNumber))
+        {
+            return Math.Max(0, minisNumber);
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.String &&
+            int.TryParse(minisElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minisText))
+        {
+            return Math.Max(0, minisText);
+        }
+
+        return 0;
     }
 
     private static string BuildOptionDisplayName(
@@ -3724,7 +3936,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         continue;
                     }
 
-                    if (maxCost.HasValue && ParseCostValue(ReadOptionCost(option)) > maxCost.Value)
+                    if (maxCost.HasValue && ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
                     {
                         continue;
                     }
@@ -3785,7 +3997,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         continue;
                     }
 
-                    var optionCost = ParseCostValue(ReadOptionCost(option));
+                    var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
                     if (maxCost.HasValue && optionCost > maxCost.Value)
                     {
                         continue;

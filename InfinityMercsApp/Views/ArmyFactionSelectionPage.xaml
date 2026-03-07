@@ -490,7 +490,7 @@
                                                     <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
                                                     <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
                                                 </Grid>
-                                                <Label FormattedText="{Binding PeripheralsFormatted}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
+                                                <Label Text="{Binding Peripherals, StringFormat='Peripheral: {0}'}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </DataTemplate>
