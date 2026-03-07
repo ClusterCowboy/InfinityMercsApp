@@ -3645,6 +3645,24 @@ public class ViewerProfileItem : BaseViewModel
     public FormattedString? PeripheralsFormatted { get; init; }
 
     public bool HasPeripherals => !string.IsNullOrWhiteSpace(Peripherals) && Peripherals != "-";
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    public string PeripheralMov { get; init; } = "-";
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public string PeripheralSubtitle { get; init; } = "-";
+    public FormattedString PeripheralEquipmentLineFormatted { get; init; } = new();
+    public bool HasPeripheralEquipmentLine { get; init; }
+    public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
+    public bool HasPeripheralSkillsLine { get; init; }
 
     public string Swc { get; init; } = "-";
 

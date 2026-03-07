@@ -100,6 +100,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private SKPicture? _cubeIconPicture;
     private SKPicture? _cube2IconPicture;
     private SKPicture? _hackableIconPicture;
+    private SKPicture? _peripheralIconPicture;
     private SKPicture? _filterIconPicture;
     private SKPicture? _seasonCheckIconPicture;
     private SKPicture? _seasonXIconPicture;
@@ -134,6 +135,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _unitVitality = "-";
     private string _unitS = "-";
     private string _unitAva = "-";
+    private bool _hasPeripheralStatBlock;
+    private string _peripheralNameHeading = string.Empty;
+    private string _peripheralMov = "-";
+    private string _peripheralCc = "-";
+    private string _peripheralBs = "-";
+    private string _peripheralPh = "-";
+    private string _peripheralWip = "-";
+    private string _peripheralArm = "-";
+    private string _peripheralBts = "-";
+    private string _peripheralVitalityHeader = "VITA";
+    private string _peripheralVitality = "-";
+    private string _peripheralS = "-";
+    private string _peripheralAva = "-";
+    private string _peripheralEquipment = "-";
+    private string _peripheralSkills = "-";
     private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
     private Color _unitHeaderPrimaryColor = DefaultHeaderPrimaryColor;
     private Color _unitHeaderSecondaryColor = DefaultHeaderSecondaryColor;
@@ -144,6 +160,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _profilesStatus = "Select a unit.";
     private FormattedString _equipmentSummaryFormatted = new();
     private FormattedString _specialSkillsSummaryFormatted = new();
+    private FormattedString _peripheralEquipmentFormatted = new();
+    private FormattedString _peripheralSkillsFormatted = new();
     private bool _showRegularOrderIcon;
     private bool _showIrregularOrderIcon;
     private bool _showImpetuousIcon;
@@ -155,6 +173,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
+    private int? _peripheralMoveFirstCm;
+    private int? _peripheralMoveSecondCm;
+    private string? _selectedUnitProfileGroupsJson;
+    private string? _selectedUnitFiltersJson;
     private List<string> _selectedUnitCommonEquipment = [];
     private List<string> _selectedUnitCommonSkills = [];
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
@@ -453,11 +475,58 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
     public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
     public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
+    public bool HasPeripheralStatBlock { get => _hasPeripheralStatBlock; private set { if (_hasPeripheralStatBlock != value) { _hasPeripheralStatBlock = value; OnPropertyChanged(); } } }
+    public string PeripheralNameHeading { get => _peripheralNameHeading; private set { if (_peripheralNameHeading != value) { _peripheralNameHeading = value; OnPropertyChanged(); } } }
+    public string PeripheralMov { get => _peripheralMov; private set { if (_peripheralMov != value) { _peripheralMov = value; OnPropertyChanged(); } } }
+    public string PeripheralCc { get => _peripheralCc; private set { if (_peripheralCc != value) { _peripheralCc = value; OnPropertyChanged(); } } }
+    public string PeripheralBs { get => _peripheralBs; private set { if (_peripheralBs != value) { _peripheralBs = value; OnPropertyChanged(); } } }
+    public string PeripheralPh { get => _peripheralPh; private set { if (_peripheralPh != value) { _peripheralPh = value; OnPropertyChanged(); } } }
+    public string PeripheralWip { get => _peripheralWip; private set { if (_peripheralWip != value) { _peripheralWip = value; OnPropertyChanged(); } } }
+    public string PeripheralArm { get => _peripheralArm; private set { if (_peripheralArm != value) { _peripheralArm = value; OnPropertyChanged(); } } }
+    public string PeripheralBts { get => _peripheralBts; private set { if (_peripheralBts != value) { _peripheralBts = value; OnPropertyChanged(); } } }
+    public string PeripheralVitalityHeader { get => _peripheralVitalityHeader; private set { if (_peripheralVitalityHeader != value) { _peripheralVitalityHeader = value; OnPropertyChanged(); } } }
+    public string PeripheralVitality { get => _peripheralVitality; private set { if (_peripheralVitality != value) { _peripheralVitality = value; OnPropertyChanged(); } } }
+    public string PeripheralS { get => _peripheralS; private set { if (_peripheralS != value) { _peripheralS = value; OnPropertyChanged(); } } }
+    public string PeripheralAva { get => _peripheralAva; private set { if (_peripheralAva != value) { _peripheralAva = value; OnPropertyChanged(); } } }
+    public string PeripheralEquipment
+    {
+        get => _peripheralEquipment;
+        private set
+        {
+            if (_peripheralEquipment == value)
+            {
+                return;
+            }
+
+            _peripheralEquipment = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPeripheralEquipment));
+        }
+    }
+    public string PeripheralSkills
+    {
+        get => _peripheralSkills;
+        private set
+        {
+            if (_peripheralSkills == value)
+            {
+                return;
+            }
+
+            _peripheralSkills = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPeripheralSkills));
+        }
+    }
     public string EquipmentSummary { get => _equipmentSummary; private set { if (_equipmentSummary != value) { _equipmentSummary = value; OnPropertyChanged(); } } }
     public string SpecialSkillsSummary { get => _specialSkillsSummary; private set { if (_specialSkillsSummary != value) { _specialSkillsSummary = value; OnPropertyChanged(); } } }
     public string ProfilesStatus { get => _profilesStatus; private set { if (_profilesStatus != value) { _profilesStatus = value; OnPropertyChanged(); } } }
     public FormattedString EquipmentSummaryFormatted { get => _equipmentSummaryFormatted; private set { _equipmentSummaryFormatted = value; OnPropertyChanged(); } }
     public FormattedString SpecialSkillsSummaryFormatted { get => _specialSkillsSummaryFormatted; private set { _specialSkillsSummaryFormatted = value; OnPropertyChanged(); } }
+    public FormattedString PeripheralEquipmentFormatted { get => _peripheralEquipmentFormatted; private set { _peripheralEquipmentFormatted = value; OnPropertyChanged(); } }
+    public FormattedString PeripheralSkillsFormatted { get => _peripheralSkillsFormatted; private set { _peripheralSkillsFormatted = value; OnPropertyChanged(); } }
+    public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
+    public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
@@ -1503,7 +1572,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = JoinOrDash(combinedEquipment);
         var combinedSkillsText = JoinOrDash(combinedSkills);
+        var currentUnitMove = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
+        var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
@@ -1528,7 +1599,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
             SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
             RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E"))
+            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
+            HasPeripheralStatBlock = peripheralStats is not null,
+            PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
+            PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
+            PeripheralCc = peripheralStats?.Cc ?? "-",
+            PeripheralBs = peripheralStats?.Bs ?? "-",
+            PeripheralPh = peripheralStats?.Ph ?? "-",
+            PeripheralWip = peripheralStats?.Wip ?? "-",
+            PeripheralArm = peripheralStats?.Arm ?? "-",
+            PeripheralBts = peripheralStats?.Bts ?? "-",
+            PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
+            PeripheralVitality = peripheralStats?.Vitality ?? "-",
+            PeripheralS = peripheralStats?.S ?? "-",
+            PeripheralAva = peripheralStats?.Ava ?? "-",
+            SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
+            SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
+            PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+            HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
+            PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+            HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
+            UnitMoveFirstCm = _unitMoveFirstCm,
+            UnitMoveSecondCm = _unitMoveSecondCm,
+            UnitMoveDisplay = currentUnitMove,
+            PeripheralMoveFirstCm = peripheralStats?.MoveFirstCm,
+            PeripheralMoveSecondCm = peripheralStats?.MoveSecondCm
         };
 
         if (entry.IsLieutenant)
@@ -1543,6 +1638,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
         UpdateMercsCompanyTotal();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
+    }
+
+    private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
+    {
+        var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
+        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
+            {
+                return null;
+            }
+
+            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, _selectedUnitFiltersJson);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage BuildMercsCompanyPeripheralStats failed: {ex.Message}");
+            return null;
+        }
     }
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
@@ -1646,6 +1766,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             ? "No configurations found for this unit."
             : $"{visibleProfiles} configurations loaded.";
 
+        UpdatePeripheralStatBlockFromVisibleProfiles();
         UpdateSeasonValidationState();
     }
 
@@ -2186,6 +2307,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
+                    PeripheralNameHeading = entry.PeripheralNameHeading,
+                    PeripheralMov = entry.PeripheralMov,
+                    PeripheralCc = entry.PeripheralCc,
+                    PeripheralBs = entry.PeripheralBs,
+                    PeripheralPh = entry.PeripheralPh,
+                    PeripheralWip = entry.PeripheralWip,
+                    PeripheralArm = entry.PeripheralArm,
+                    PeripheralBts = entry.PeripheralBts,
+                    PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
+                    PeripheralVitality = entry.PeripheralVitality,
+                    PeripheralS = entry.PeripheralS,
+                    PeripheralAva = entry.PeripheralAva,
+                    SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
+                    SavedPeripheralSkills = entry.SavedPeripheralSkills,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
                 }).ToList()
             };
@@ -2487,6 +2623,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
         SeasonPointsCapText = totalCost.ToString();
     }
 
+    private void RefreshMercsCompanyEntryDistanceDisplays()
+    {
+        foreach (var entry in MercsCompanyEntries)
+        {
+            var moveDisplay = FormatMoveValue(entry.UnitMoveFirstCm, entry.UnitMoveSecondCm);
+            entry.UnitMoveDisplay = moveDisplay;
+            entry.Subtitle = ReplaceSubtitleMoveDisplay(entry.Subtitle, moveDisplay);
+
+            if (entry.HasPeripheralStatBlock)
+            {
+                entry.PeripheralMov = FormatMoveValue(entry.PeripheralMoveFirstCm, entry.PeripheralMoveSecondCm);
+            }
+        }
+    }
+
     private static string ComputeCompanyIdentifier(string fileName)
     {
         var bytes = Encoding.UTF8.GetBytes(fileName);
@@ -2622,6 +2773,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
+            _selectedUnitProfileGroupsJson = profileGroupsJson;
+            _selectedUnitFiltersJson = snapshot?.FiltersJson;
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(profileGroupsJson))
             {
@@ -2704,6 +2857,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 SpecialSkillsSummary = $"Special Skills: {(stableSkills.Count == 0 ? "-" : string.Join(", ", stableSkills))}";
                 RefreshSummaryFormatted();
                 PopulateProfilesFromProfileGroups(doc.RootElement, snapshot?.FiltersJson, forceLieutenant: treatAsSpecOps);
+                UpdatePeripheralStatBlockFromVisibleProfiles();
                 Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
                 return;
             }
@@ -2901,6 +3055,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     peripheralLookup,
                     extrasLookup,
                     _showUnitsInInches);
+                var firstPeripheralName = peripheralNames.FirstOrDefault();
+                PeripheralMercsCompanyStats? peripheralStats = null;
+                if (!string.IsNullOrWhiteSpace(firstPeripheralName) &&
+                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out var peripheralProfile))
+                {
+                    peripheralStats = BuildPeripheralStatBlock(ExtractFirstPeripheralName(firstPeripheralName), peripheralProfile, filtersJson);
+                }
 
                 var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
 
@@ -2932,6 +3093,24 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         highlightLieutenantPurple: forceLieutenant),
                     Peripherals = JoinOrDash(peripheralNames),
                     PeripheralsFormatted = BuildListFormattedString(peripheralNames, Color.FromArgb("#FACC15")),
+                    HasPeripheralStatBlock = peripheralStats is not null,
+                    PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
+                    PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
+                    PeripheralCc = peripheralStats?.Cc ?? "-",
+                    PeripheralBs = peripheralStats?.Bs ?? "-",
+                    PeripheralPh = peripheralStats?.Ph ?? "-",
+                    PeripheralWip = peripheralStats?.Wip ?? "-",
+                    PeripheralArm = peripheralStats?.Arm ?? "-",
+                    PeripheralBts = peripheralStats?.Bts ?? "-",
+                    PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
+                    PeripheralVitality = peripheralStats?.Vitality ?? "-",
+                    PeripheralS = peripheralStats?.S ?? "-",
+                    PeripheralAva = peripheralStats?.Ava ?? "-",
+                    PeripheralSubtitle = BuildPeripheralSubtitle(peripheralStats),
+                    PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+                    HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
+                    PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+                    HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
                     Cost = cost
@@ -4336,10 +4515,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
-            _selectedUnitPicture?.Dispose();
-            _selectedUnitPicture = null;
-            SelectedUnitCanvas.InvalidateSurface();
-        }
+        _selectedUnitPicture?.Dispose();
+        _selectedUnitPicture = null;
+        SelectedUnitCanvas.InvalidateSurface();
+    }
+        _selectedUnitProfileGroupsJson = null;
+        _selectedUnitFiltersJson = null;
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
@@ -4398,6 +4579,30 @@ public partial class ArmyFactionSelectionPage : ContentPage
         UnitVitality = "-";
         UnitS = "-";
         UnitAva = "-";
+        ResetPeripheralStatsOnly();
+    }
+
+    private void ResetPeripheralStatsOnly()
+    {
+        _peripheralMoveFirstCm = null;
+        _peripheralMoveSecondCm = null;
+        HasPeripheralStatBlock = false;
+        PeripheralNameHeading = string.Empty;
+        PeripheralMov = "-";
+        PeripheralCc = "-";
+        PeripheralBs = "-";
+        PeripheralPh = "-";
+        PeripheralWip = "-";
+        PeripheralArm = "-";
+        PeripheralBts = "-";
+        PeripheralVitalityHeader = "VITA";
+        PeripheralVitality = "-";
+        PeripheralS = "-";
+        PeripheralAva = "-";
+        PeripheralEquipment = "-";
+        PeripheralSkills = "-";
+        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
     private static IEnumerable<JsonElement> EnumerateOptions(JsonElement profileGroupsRoot)
@@ -4526,23 +4731,360 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return ReadMove(profile);
     }
 
-    private void UpdateUnitMoveDisplay()
+    private string FormatMoveValue(int? firstCm, int? secondCm)
     {
-        if (!_unitMoveFirstCm.HasValue || !_unitMoveSecondCm.HasValue)
+        if (!firstCm.HasValue || !secondCm.HasValue)
         {
-            UnitMov = "-";
-            return;
+            return "-";
         }
 
         if (_showUnitsInInches)
         {
-            var first = (int)Math.Round(_unitMoveFirstCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            var second = (int)Math.Round(_unitMoveSecondCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            UnitMov = $"{first}-{second}";
+            var first = (int)Math.Round(firstCm.Value / 2.5, MidpointRounding.AwayFromZero);
+            var second = (int)Math.Round(secondCm.Value / 2.5, MidpointRounding.AwayFromZero);
+            return $"{first}-{second}";
+        }
+
+        return $"{firstCm.Value}-{secondCm.Value}";
+    }
+
+    private static string ReplaceSubtitleMoveDisplay(string? subtitle, string moveDisplay)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return $"MOV {moveDisplay}";
+        }
+
+        return Regex.Replace(
+            subtitle,
+            @"(?<=\bMOV\s)[^|]+",
+            moveDisplay,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private void UpdateUnitMoveDisplay()
+    {
+        UnitMov = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+    }
+
+    private void UpdatePeripheralMoveDisplay()
+    {
+        PeripheralMov = FormatMoveValue(_peripheralMoveFirstCm, _peripheralMoveSecondCm);
+    }
+
+    private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
+    {
+        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, _selectedUnitFiltersJson);
+        if (peripheralStats is null)
+        {
             return;
         }
 
-        UnitMov = $"{_unitMoveFirstCm.Value}-{_unitMoveSecondCm.Value}";
+        ApplyPeripheralStatBlock(peripheralStats);
+    }
+
+    private void UpdatePeripheralStatBlockFromVisibleProfiles()
+    {
+        ResetPeripheralStatsOnly();
+
+        if (string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        {
+            return;
+        }
+
+        var firstPeripheralProfile = Profiles.FirstOrDefault(x => x.IsVisible && x.HasPeripherals);
+        if (firstPeripheralProfile is null)
+        {
+            return;
+        }
+
+        var peripheralName = ExtractFirstPeripheralName(firstPeripheralProfile.Peripherals);
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
+            {
+                return;
+            }
+
+            PopulatePeripheralStatsFromElement(peripheralProfile, peripheralName);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage UpdatePeripheralStatBlockFromVisibleProfiles failed: {ex.Message}");
+        }
+    }
+
+    private PeripheralMercsCompanyStats? BuildPeripheralStatBlock(string peripheralName, JsonElement peripheralProfile, string? filtersJson)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return null;
+        }
+
+        var equipLookup = BuildIdNameLookup(filtersJson, "equip");
+        var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
+        var extrasLookup = BuildExtrasLookup(filtersJson);
+        var (moveFirstCm, moveSecondCm) = ParseMoveValues(peripheralProfile);
+        var equipmentNames = GetOrderedIdDisplayNamesFromEntries(
+            GetContainerEntries(peripheralProfile, "equip"),
+            equipLookup,
+            extrasLookup,
+            _showUnitsInInches);
+        var skillNames = BuildConfigurationSkillNames(
+            GetOrderedIdDisplayNamesFromEntries(
+                GetContainerEntries(peripheralProfile, "skills"),
+                skillsLookup,
+                extrasLookup,
+                _showUnitsInInches));
+        var (vitalityHeader, vitalityValue) = ReadVitality(peripheralProfile);
+
+        return new PeripheralMercsCompanyStats
+        {
+            NameHeading = $"Peripheral: {peripheralName}",
+            MoveFirstCm = moveFirstCm,
+            MoveSecondCm = moveSecondCm,
+            Mov = ReadMoveFromProfile(peripheralProfile),
+            Cc = ReadIntAsString(peripheralProfile, "cc"),
+            Bs = ReadIntAsString(peripheralProfile, "bs"),
+            Ph = ReadIntAsString(peripheralProfile, "ph"),
+            Wip = ReadIntAsString(peripheralProfile, "wip"),
+            Arm = ReadIntAsString(peripheralProfile, "arm"),
+            Bts = ReadIntAsString(peripheralProfile, "bts"),
+            VitalityHeader = vitalityHeader,
+            Vitality = vitalityValue,
+            S = ReadIntAsString(peripheralProfile, "s"),
+            Ava = ReadAvaAsString(peripheralProfile),
+            Equipment = JoinOrDash(equipmentNames),
+            Skills = JoinOrDash(skillNames)
+        };
+    }
+
+    private void ApplyPeripheralStatBlock(PeripheralMercsCompanyStats peripheralStats)
+    {
+        _peripheralMoveFirstCm = peripheralStats.MoveFirstCm;
+        _peripheralMoveSecondCm = peripheralStats.MoveSecondCm;
+        UpdatePeripheralMoveDisplay();
+        PeripheralNameHeading = peripheralStats.NameHeading;
+        PeripheralCc = peripheralStats.Cc;
+        PeripheralBs = peripheralStats.Bs;
+        PeripheralPh = peripheralStats.Ph;
+        PeripheralWip = peripheralStats.Wip;
+        PeripheralArm = peripheralStats.Arm;
+        PeripheralBts = peripheralStats.Bts;
+        PeripheralVitalityHeader = peripheralStats.VitalityHeader;
+        PeripheralVitality = peripheralStats.Vitality;
+        PeripheralS = peripheralStats.S;
+        PeripheralAva = peripheralStats.Ava;
+        PeripheralEquipment = peripheralStats.Equipment;
+        PeripheralSkills = peripheralStats.Skills;
+        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
+        HasPeripheralStatBlock = true;
+    }
+
+    private static string ExtractFirstPeripheralName(string? peripheralsText)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralsText) || peripheralsText == "-")
+        {
+            return string.Empty;
+        }
+
+        var firstEntry = peripheralsText
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(firstEntry))
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(firstEntry, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+    }
+
+    private static bool HasStatFields(JsonElement element)
+    {
+        return element.ValueKind == JsonValueKind.Object &&
+               (element.TryGetProperty("cc", out _) ||
+                element.TryGetProperty("bs", out _) ||
+                element.TryGetProperty("ph", out _) ||
+                element.TryGetProperty("wip", out _) ||
+                element.TryGetProperty("arm", out _) ||
+                element.TryGetProperty("bts", out _));
+    }
+
+    private void PopulatePeripheralStatBlock(
+        JsonElement profileGroupsRoot,
+        string? filtersJson,
+        bool forceLieutenant,
+        IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        ResetPeripheralStatsOnly();
+
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
+            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                if (IsPositiveSwc(ReadOptionSwc(option)))
+                {
+                    continue;
+                }
+
+                if (!forceLieutenant && LieutenantOnlyUnits && !IsLieutenantOption(option, skillsLookup))
+                {
+                    continue;
+                }
+
+                var peripheralEntries = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
+                foreach (var entry in peripheralEntries)
+                {
+                    if (!TryParseId(entry, out var peripheralId))
+                    {
+                        continue;
+                    }
+
+                    var peripheralName = peripheralLookup.TryGetValue(peripheralId, out var resolvedName)
+                        ? resolvedName
+                        : peripheralId.ToString(CultureInfo.InvariantCulture);
+
+                    if (!TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile))
+                    {
+                        continue;
+                    }
+
+                    PopulatePeripheralStatsFromElement(peripheralProfile, peripheralName);
+                    return;
+                }
+            }
+        }
+    }
+
+    private static bool TryFindPeripheralStatElement(
+        JsonElement profileGroupsRoot,
+        string peripheralName,
+        out JsonElement profile)
+    {
+        profile = default;
+        var expected = NormalizeComparisonToken(peripheralName);
+        if (string.IsNullOrWhiteSpace(expected) || profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            var groupIsc = group.TryGetProperty("isc", out var groupIscElement) && groupIscElement.ValueKind == JsonValueKind.String
+                ? groupIscElement.GetString() ?? string.Empty
+                : string.Empty;
+            var normalizedGroupIsc = NormalizeComparisonToken(groupIsc);
+
+            if (group.TryGetProperty("profiles", out var profilesElement) && profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var candidate in profilesElement.EnumerateArray())
+                {
+                    var profileName = candidate.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+                        ? nameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    var normalizedProfileName = NormalizeComparisonToken(profileName);
+                    if (normalizedProfileName == expected || normalizedGroupIsc == expected)
+                    {
+                        profile = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var candidateOption in optionsElement.EnumerateArray())
+                {
+                    var optionName = candidateOption.TryGetProperty("name", out var optionNameElement) && optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    var normalizedOptionName = NormalizeComparisonToken(optionName);
+                    if (normalizedOptionName == expected)
+                    {
+                        if (group.TryGetProperty("profiles", out var optionMatchedProfiles) &&
+                            optionMatchedProfiles.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var optionMatchedProfile in optionMatchedProfiles.EnumerateArray())
+                            {
+                                if (HasStatFields(optionMatchedProfile))
+                                {
+                                    profile = optionMatchedProfile;
+                                    return true;
+                                }
+                            }
+                        }
+
+                        if (HasStatFields(candidateOption))
+                        {
+                            profile = candidateOption;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (normalizedGroupIsc == expected &&
+                group.TryGetProperty("profiles", out var groupProfilesElement) &&
+                groupProfilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var fallbackProfile in groupProfilesElement.EnumerateArray())
+                {
+                    profile = fallbackProfile;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeComparisonToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(value, @"[^a-z0-9]", string.Empty, RegexOptions.IgnoreCase).ToLowerInvariant();
+    }
+
+    private static IEnumerable<JsonElement> GetContainerEntries(JsonElement container, string propertyName)
+    {
+        if (!TryGetPropertyFlexible(container, propertyName, out var entriesElement) ||
+            entriesElement.ValueKind != JsonValueKind.Array)
+        {
+            yield break;
+        }
+
+        foreach (var entry in entriesElement.EnumerateArray())
+        {
+            yield return entry.Clone();
+        }
     }
 
     private static (int? firstCm, int? secondCm) ParseMoveValues(JsonElement element)
@@ -4726,12 +5268,22 @@ public partial class ArmyFactionSelectionPage : ContentPage
         int value;
         if (avaElement.ValueKind == JsonValueKind.Number && avaElement.TryGetInt32(out value))
         {
-            return value == 255 ? "T" : value.ToString();
+            return value switch
+            {
+                < 0 => "-",
+                255 => "T",
+                _ => value.ToString()
+            };
         }
 
         if (avaElement.ValueKind == JsonValueKind.String && int.TryParse(avaElement.GetString(), out value))
         {
-            return value == 255 ? "T" : value.ToString();
+            return value switch
+            {
+                < 0 => "-",
+                255 => "T",
+                _ => value.ToString()
+            };
         }
 
         return "-";
@@ -4792,6 +5344,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _showUnitsInInches = showInches;
             UpdateUnitMoveDisplay();
+            UpdatePeripheralMoveDisplay();
+            RefreshMercsCompanyEntryDistanceDisplays();
         }
         catch (Exception ex)
         {
@@ -5045,6 +5599,32 @@ public partial class ArmyFactionSelectionPage : ContentPage
             TextColor = accentColor
         });
         return formatted;
+    }
+
+    private static string BuildPeripheralSubtitle(PeripheralMercsCompanyStats? peripheralStats)
+    {
+        if (peripheralStats is null)
+        {
+            return "-";
+        }
+
+        return $"MOV {peripheralStats.Mov} | CC {peripheralStats.Cc} | BS {peripheralStats.Bs} | PH {peripheralStats.Ph} | WIP {peripheralStats.Wip} | ARM {peripheralStats.Arm} | BTS {peripheralStats.Bts} | {peripheralStats.VitalityHeader} {peripheralStats.Vitality} | S {peripheralStats.S} | AVA {peripheralStats.Ava}";
+    }
+
+    private static List<string> SplitDisplayLine(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || text == "-")
+        {
+            return [];
+        }
+
+        return text
+            .Replace("\r\n", ",", StringComparison.Ordinal)
+            .Replace('\r', ',')
+            .Replace('\n', ',')
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+            .ToList();
     }
 
     private static List<string> IntersectNamedIds(
@@ -5641,6 +6221,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         _cube2IconPicture = null;
         _hackableIconPicture?.Dispose();
         _hackableIconPicture = null;
+        _peripheralIconPicture?.Dispose();
+        _peripheralIconPicture = null;
         _filterIconPicture?.Dispose();
         _filterIconPicture = null;
 
@@ -5723,6 +6305,17 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
+            await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
+            var peripheralSvg = new SKSvg();
+            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage peripheral icon load failed: {ex.Message}");
+        }
+
+        try
+        {
             await using var filterStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-filter.svg");
             var filterSvg = new SKSvg();
             _filterIconPicture = filterSvg.Load(filterStream);
@@ -5735,6 +6328,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         HeaderIconsCanvas.InvalidateSurface();
         UnitSelectionFilterCanvasInactive.InvalidateSurface();
         UnitSelectionFilterCanvasActive.InvalidateSurface();
+        PeripheralHeaderIconCanvas?.InvalidateSurface();
     }
 
     private async Task LoadSeasonValidationIconsAsync()
@@ -5823,6 +6417,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_filterIconPicture, e);
+    }
+
+    private void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawSlotPicture(_peripheralIconPicture, e);
     }
 
     private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
@@ -6429,12 +7028,63 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 
     public string? PackagedLogoPath { get; init; }
 
-    public string? Subtitle { get; init; }
+    private string? _subtitle;
+    public string? Subtitle
+    {
+        get => _subtitle;
+        set
+        {
+            if (_subtitle == value)
+            {
+                return;
+            }
+
+            _subtitle = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasSubtitle));
+        }
+    }
     public string UnitTypeCode { get; init; } = string.Empty;
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public int? UnitMoveFirstCm { get; init; }
+    public int? UnitMoveSecondCm { get; init; }
+    public string UnitMoveDisplay { get; set; } = "-";
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    private string _peripheralMov = "-";
+    public string PeripheralMov
+    {
+        get => _peripheralMov;
+        set
+        {
+            if (_peripheralMov == value)
+            {
+                return;
+            }
+
+            _peripheralMov = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PeripheralSubtitle));
+        }
+    }
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public int? PeripheralMoveFirstCm { get; init; }
+    public int? PeripheralMoveSecondCm { get; init; }
+    public string SavedPeripheralEquipment { get; init; } = "-";
+    public string SavedPeripheralSkills { get; init; } = "-";
+    public string PeripheralSubtitle => $"MOV {PeripheralMov} | CC {PeripheralCc} | BS {PeripheralBs} | PH {PeripheralPh} | WIP {PeripheralWip} | ARM {PeripheralArm} | BTS {PeripheralBts} | {PeripheralVitalityHeader} {PeripheralVitality} | S {PeripheralS} | AVA {PeripheralAva}";
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
@@ -6444,6 +7094,10 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public bool HasSkillsLine { get; init; }
     public FormattedString RangedLineFormatted { get; init; } = new();
     public FormattedString CcLineFormatted { get; init; } = new();
+    public FormattedString PeripheralEquipmentLineFormatted { get; init; } = new();
+    public bool HasPeripheralEquipmentLine { get; init; }
+    public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
+    public bool HasPeripheralSkillsLine { get; init; }
     private int _experiencePoints;
     public int ExperiencePoints
     {
@@ -6548,8 +7202,43 @@ public sealed class SavedCompanyEntry
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    public string PeripheralMov { get; init; } = "-";
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public string SavedPeripheralEquipment { get; init; } = "-";
+    public string SavedPeripheralSkills { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+}
+
+sealed class PeripheralMercsCompanyStats
+{
+    public string NameHeading { get; init; } = string.Empty;
+    public int? MoveFirstCm { get; init; }
+    public int? MoveSecondCm { get; init; }
+    public string Mov { get; init; } = "-";
+    public string Cc { get; init; } = "-";
+    public string Bs { get; init; } = "-";
+    public string Ph { get; init; } = "-";
+    public string Wip { get; init; } = "-";
+    public string Arm { get; init; } = "-";
+    public string Bts { get; init; } = "-";
+    public string VitalityHeader { get; init; } = "VITA";
+    public string Vitality { get; init; } = "-";
+    public string S { get; init; } = "-";
+    public string Ava { get; init; } = "-";
+    public string Equipment { get; init; } = "-";
+    public string Skills { get; init; } = "-";
 }
 
 public sealed class CaptainUpgradeOptionSet
@@ -7648,6 +8337,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
             .ToList();
     }
+
 }
 
 public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)

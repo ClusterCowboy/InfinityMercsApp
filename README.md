@@ -3,7 +3,7 @@
 This is an app in C# which will allow for the easy creation and managment of a company of mercs for a season. It is under active development right now
 
 ## Phase 1
-  
+  u
 ### Profiles
  
 #### Baseline

@@ -331,7 +331,7 @@
         <Grid Grid.Column="1" RowDefinitions="*,*" RowSpacing="10">
         <Border Grid.Row="0" StrokeThickness="1" Padding="10">
             <Grid RowDefinitions="*" RowSpacing="8">
-                    <Grid ColumnDefinitions="32,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="0" ColumnSpacing="2">
+                    <Grid ColumnDefinitions="32,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="0" ColumnSpacing="2">
                         <Border
                             Grid.Row="0"
                             Grid.RowSpan="3"
@@ -436,22 +436,100 @@
                                 <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" TextColor="#111827" />
                             </Grid>
                         </Border>
-                        <Border Grid.Row="3" Grid.ColumnSpan="3" BackgroundColor="{Binding UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
+                        <Border Grid.Row="3" Grid.Column="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding HasPeripheralStatBlock}">
+                            <VerticalStackLayout Spacing="4">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                    <skia:SKCanvasView
+                                        x:Name="PeripheralHeaderIconCanvas"
+                                        Grid.Column="0"
+                                        WidthRequest="18"
+                                        HeightRequest="18"
+                                        VerticalOptions="Center"
+                                        PaintSurface="OnPeripheralIconCanvasPaintSurface" />
+                                    <Label Grid.Column="1" Text="{Binding PeripheralNameHeading}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
+                                </Grid>
+                                <Border BackgroundColor="#D1D5DB" Stroke="#9CA3AF" StrokeThickness="1" Padding="8,2" StrokeShape="RoundRectangle 4">
+                                    <Grid ColumnSpacing="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="7" Text="{Binding PeripheralVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                    </Grid>
+                                </Border>
+                                <Border BackgroundColor="#E5E7EB" Stroke="#9CA3AF" StrokeThickness="1" Padding="8,2" StrokeShape="RoundRectangle 4">
+                                    <Grid ColumnSpacing="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Label Grid.Column="0" Text="{Binding PeripheralMov}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="1" Text="{Binding PeripheralCc}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="2" Text="{Binding PeripheralBs}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="3" Text="{Binding PeripheralPh}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="4" Text="{Binding PeripheralWip}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="5" Text="{Binding PeripheralArm}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="6" Text="{Binding PeripheralBts}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="7" Text="{Binding PeripheralVitality}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="8" Text="{Binding PeripheralS}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                        <Label Grid.Column="9" Text="{Binding PeripheralAva}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                    </Grid>
+                                </Border>
+                                <Label
+                                    FormattedText="{Binding PeripheralEquipmentFormatted}"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    LineBreakMode="WordWrap"
+                                    IsVisible="{Binding HasPeripheralEquipment}" />
+                                <Label
+                                    FormattedText="{Binding PeripheralSkillsFormatted}"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    LineBreakMode="WordWrap"
+                                    IsVisible="{Binding HasPeripheralSkills}" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Grid.Row="4" Grid.ColumnSpan="3" BackgroundColor="{Binding UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
                             <Label FormattedText="{Binding EquipmentSummaryFormatted}" TextColor="{Binding UnitHeaderSecondaryTextColor}" LineBreakMode="WordWrap">
                                 <Label.Shadow>
                                     <Shadow Brush="#CC000000" Offset="1,1" Radius="2" Opacity="0.9" />
                                 </Label.Shadow>
                             </Label>
                         </Border>
-                        <Border Grid.Row="4" Grid.ColumnSpan="3" BackgroundColor="{Binding UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
+                        <Border Grid.Row="5" Grid.ColumnSpan="3" BackgroundColor="{Binding UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
                             <Label FormattedText="{Binding SpecialSkillsSummaryFormatted}" TextColor="{Binding UnitHeaderSecondaryTextColor}" LineBreakMode="WordWrap">
                                 <Label.Shadow>
                                     <Shadow Brush="#CC000000" Offset="1,1" Radius="2" Opacity="0.9" />
                                 </Label.Shadow>
                             </Label>
                         </Border>
-                        <Label Grid.Row="5" Grid.ColumnSpan="3" Text="Configurations" FontSize="20" FontAttributes="Bold" />
-                        <ScrollView Grid.Row="6" Grid.ColumnSpan="3" VerticalOptions="FillAndExpand">
+                        <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Configurations" FontSize="20" FontAttributes="Bold" />
+                        <ScrollView Grid.Row="7" Grid.ColumnSpan="3" VerticalOptions="FillAndExpand">
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
@@ -490,7 +568,13 @@
                                                     <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
                                                     <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
                                                 </Grid>
-                                                <Label Text="{Binding Peripherals, StringFormat='Peripheral: {0}'}" FontSize="12" TextColor="#FACC15" LineBreakMode="WordWrap" IsVisible="{Binding HasPeripherals}" />
+                                                <Label
+                                                    Text="{Binding Peripherals, StringFormat='Peripheral: {0}'}"
+                                                    FontSize="12"
+                                                    TextColor="#FACC15"
+                                                    LineBreakMode="WordWrap"
+                                                    Margin="12,4,0,0"
+                                                    IsVisible="{Binding HasPeripherals}" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </DataTemplate>
@@ -544,7 +628,7 @@
                                         <Setter Property="BackgroundColor" Value="Transparent" />
                                     </DataTrigger>
                                 </Border.Triggers>
-                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
                                     <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding NameFormatted}" />
                                     <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
                                         <Label Text="{Binding CostDisplay}" VerticalOptions="Center" />
@@ -563,6 +647,34 @@
                                     <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
                                     <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                                     <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding CcLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                                    <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding HasPeripheralStatBlock}">
+                                        <VerticalStackLayout Spacing="4">
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                                <skia:SKCanvasView
+                                                    Grid.Column="0"
+                                                    WidthRequest="18"
+                                                    HeightRequest="18"
+                                                    VerticalOptions="Center"
+                                                    PaintSurface="OnPeripheralIconCanvasPaintSurface" />
+                                                <Label Grid.Column="1" Text="{Binding PeripheralNameHeading}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
+                                            </Grid>
+                                            <Label Text="{Binding PeripheralSubtitle}" FontSize="12" TextColor="#9CA3AF" LineBreakMode="WordWrap" />
+                                            <Label
+                                                FormattedText="{Binding PeripheralEquipmentLineFormatted}"
+                                                TextColor="White"
+                                                FontSize="12"
+                                                LineBreakMode="WordWrap"
+                                                HorizontalOptions="FillAndExpand"
+                                                IsVisible="{Binding HasPeripheralEquipmentLine}" />
+                                            <Label
+                                                FormattedText="{Binding PeripheralSkillsLineFormatted}"
+                                                TextColor="White"
+                                                FontSize="12"
+                                                LineBreakMode="WordWrap"
+                                                HorizontalOptions="FillAndExpand"
+                                                IsVisible="{Binding HasPeripheralSkillsLine}" />
+                                        </VerticalStackLayout>
+                                    </Border>
                                 </Grid>
                             </Border>
                         </DataTemplate>
