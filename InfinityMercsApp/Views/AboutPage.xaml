@@ -61,6 +61,84 @@
                 FontAttributes="Bold"
                 Margin="0,12,0,0" />
 
+            <Label
+                Text="CBIcons"
+                FontSize="16"
+                FontAttributes="Bold" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbCubeCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon2CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="cube.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbCube2Canvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIconCanvasPaintSurface" />
+                <Label Grid.Column="1" Text="cube2.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbHackableCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon9CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="hackable.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbImpetuousCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon6CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="impetuous.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbIrregularCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon4CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="irregular.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbLieutenantCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon7CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="lieutenant.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbRegularCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon5CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="regular.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="CbTacticalCanvas"
+                    WidthRequest="28"
+                    HeightRequest="28"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon8CanvasPaintSurface" />
+                <Label Grid.Column="1" Text="tactical.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
+            </Grid>
+
+            <!--
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIconCanvas"
@@ -241,6 +319,7 @@
                     <Label Text=" (CC BY 3.0)" />
                 </FlexLayout>
             </Grid>
+            -->
 
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
@@ -658,21 +737,31 @@
                 </FlexLayout>
             </Grid>
 
-            <FlexLayout
-                Direction="Row"
-                Wrap="Wrap"
-                AlignItems="Start">
-                <Label Text="noun-filter.svg filter by Rahmat Hamid from " />
-                <Label
-                    Text="Noun Project"
-                    TextColor="#2563EB"
-                    TextDecorations="Underline">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnNounFilterAttributionTapped" />
-                    </Label.GestureRecognizers>
-                </Label>
-                <Label Text=" (CC BY 3.0)" />
-            </FlexLayout>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon28Canvas"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon28CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-filter.svg filter by Rahmat Hamid from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounFilterAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
 
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
@@ -749,31 +838,6 @@
                         </Label.GestureRecognizers>
                     </Label>
                     <Label Text=" (CC BY 3.0)" />
-                </FlexLayout>
-            </Grid>
-
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                <skia:SKCanvasView
-                    x:Name="AttributionIcon2Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
-                    VerticalOptions="Start"
-                    PaintSurface="OnAttributionIcon2CanvasPaintSurface" />
-
-                <FlexLayout
-                    Grid.Column="1"
-                    Direction="Row"
-                    Wrap="Wrap"
-                    AlignItems="Start">
-                    <Label Text="cube-alt-2-svgrepo-com.svg Used under CC0 License, got from " />
-                    <Label
-                        Text="SVG Repo"
-                        TextColor="#2563EB"
-                        TextDecorations="Underline">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnSvgRepoAttributionTapped" />
-                        </Label.GestureRecognizers>
-                    </Label>
                 </FlexLayout>
             </Grid>
 

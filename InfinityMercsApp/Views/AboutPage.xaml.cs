@@ -33,6 +33,7 @@ public partial class AboutPage : ContentPage
     private SKPicture? _attributionIcon25Picture;
     private SKPicture? _attributionIcon26Picture;
     private SKPicture? _attributionIcon27Picture;
+    private SKPicture? _attributionIcon28Picture;
 
     public AboutPage()
     {
@@ -258,6 +259,8 @@ public partial class AboutPage : ContentPage
         _attributionIcon26Picture = null;
         _attributionIcon27Picture?.Dispose();
         _attributionIcon27Picture = null;
+        _attributionIcon28Picture?.Dispose();
+        _attributionIcon28Picture = null;
 
         try
         {
@@ -345,7 +348,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-double-arrows-7302616.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
             var svg = new SKSvg();
             _attributionIcon8Picture = svg.Load(stream);
         }
@@ -592,15 +595,29 @@ public partial class AboutPage : ContentPage
             _attributionIcon27Picture = null;
         }
 
-        AttributionIconCanvas.InvalidateSurface();
-        AttributionIcon2Canvas.InvalidateSurface();
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-filter.svg");
+            var svg = new SKSvg();
+            _attributionIcon28Picture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AboutPage attribution icon 28 load failed: {ex.Message}");
+            _attributionIcon28Picture = null;
+        }
+
+        CbCubeCanvas.InvalidateSurface();
+        CbCube2Canvas.InvalidateSurface();
+        CbHackableCanvas.InvalidateSurface();
+        CbImpetuousCanvas.InvalidateSurface();
+        CbIrregularCanvas.InvalidateSurface();
+        CbLieutenantCanvas.InvalidateSurface();
+        CbRegularCanvas.InvalidateSurface();
+        CbTacticalCanvas.InvalidateSurface();
+
+
         AttributionIcon3Canvas.InvalidateSurface();
-        AttributionIcon4Canvas.InvalidateSurface();
-        AttributionIcon5Canvas.InvalidateSurface();
-        AttributionIcon6Canvas.InvalidateSurface();
-        AttributionIcon7Canvas.InvalidateSurface();
-        AttributionIcon8Canvas.InvalidateSurface();
-        AttributionIcon9Canvas.InvalidateSurface();
         AttributionIcon10Canvas.InvalidateSurface();
         AttributionIcon11Canvas.InvalidateSurface();
         AttributionIcon12Canvas.InvalidateSurface();
@@ -619,6 +636,7 @@ public partial class AboutPage : ContentPage
         AttributionIcon25Canvas.InvalidateSurface();
         AttributionIcon26Canvas.InvalidateSurface();
         AttributionIcon27Canvas.InvalidateSurface();
+        AttributionIcon28Canvas.InvalidateSurface();
     }
 
     private void OnAttributionIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -1294,5 +1312,30 @@ public partial class AboutPage : ContentPage
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_attributionIcon27Picture);
+    }
+
+    private void OnAttributionIcon28CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_attributionIcon28Picture is null)
+        {
+            return;
+        }
+
+        var bounds = _attributionIcon28Picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
+        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
+
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(_attributionIcon28Picture);
     }
 }
