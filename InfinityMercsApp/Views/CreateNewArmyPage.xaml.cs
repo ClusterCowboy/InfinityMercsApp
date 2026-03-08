@@ -69,9 +69,9 @@ public partial class CreateNewArmyPage : ContentPage
         OnAirborneCompanyClicked(sender, EventArgs.Empty);
     }
 
-    private void OnTagCompanyClicked(object? sender, EventArgs e)
+    private async void OnTagCompanyClicked(object? sender, EventArgs e)
     {
-        Console.WriteLine("[CreateNewArmyPage] TAG Company selected.");
+        await Navigation.PushAsync(new ArmyFactionSelectionPage(ArmySourceSelectionMode.TagSingleSource));
     }
 
     private void OnTagCompanyTapped(object? sender, TappedEventArgs e)

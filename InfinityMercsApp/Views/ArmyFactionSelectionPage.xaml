@@ -557,6 +557,28 @@
                                     <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
                                         <Label Text="{Binding CostDisplay}" VerticalOptions="Center" />
                                         <Button
+                                            Text="LT"
+                                            WidthRequest="36"
+                                            HeightRequest="28"
+                                            Padding="0"
+                                            FontAttributes="Bold"
+                                            VerticalOptions="Start"
+                                            HorizontalOptions="End"
+                                            IsVisible="{Binding IsTagCompanyCustomTag}"
+                                            Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.ToggleTagCompanyLieutenantCommand}"
+                                            CommandParameter="{Binding .}">
+                                            <Button.Triggers>
+                                                <DataTrigger TargetType="Button" Binding="{Binding IsLieutenant}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#16A34A" />
+                                                    <Setter Property="TextColor" Value="#000000" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Button" Binding="{Binding IsLieutenant}" Value="False">
+                                                    <Setter Property="BackgroundColor" Value="#374151" />
+                                                    <Setter Property="TextColor" Value="#FFFFFF" />
+                                                </DataTrigger>
+                                            </Button.Triggers>
+                                        </Button>
+                                        <Button
                                             Text="X"
                                             WidthRequest="28"
                                             HeightRequest="28"
@@ -564,6 +586,7 @@
                                             FontAttributes="Bold"
                                             VerticalOptions="Start"
                                             HorizontalOptions="End"
+                                            IsVisible="{Binding CanRemove}"
                                             Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
                                             CommandParameter="{Binding .}" />
                                     </HorizontalStackLayout>

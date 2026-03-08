@@ -355,6 +355,8 @@ public partial class LoadCompanyPage : ContentPage
             "Inspiring Leader" => "SVGCache/MercsIcons/noun-leadership-7195245.svg",
             "Airborne Company" => "SVGCache/MercsIcons/noun-airborne-8005870.svg",
             "TAG Company" => "SVGCache/MercsIcons/noun-battle-mech-1731140.svg",
+            "TAG Company - Vanilla" => "SVGCache/MercsIcons/noun-battle-mech-1731140.svg",
+            "TAG Company - Sectorial" => "SVGCache/MercsIcons/noun-battle-mech-1731140.svg",
             "Proxy Pack" => "SVGCache/MercsIcons/noun-assassin-5981200.svg",
             _ => "SVGCache/MercsIcons/noun-hack-2277937.svg"
         };

@@ -61,6 +61,24 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private const float IconSize = 24f;
     private const float IconGap = 20f;
     private const float RightPadding = 24f;
+    private const string TagCompanyCustomTagName = "Custom TAG";
+    private const int TagCompanyCustomTagCost = 40;
+    private const string TagCompanyCustomTagProfileKey = "__tag-company-custom-tag__";
+    private const int TagCompanyCustomTagSourceFactionId = -2000;
+    private const int TagCompanyCustomTagSourceUnitId = -2000;
+    private const string TagCompanyCustomTagIconPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
+    private const string TagCompanyCustomTagRangedWeapons = "Combi Rifle, Pistol";
+    private const string TagCompanyCustomTagCcWeapons = "CCW(PS=6)";
+    private static readonly string[] TagCompanyCustomTagSkills =
+    [
+        "NWI",
+        "CC Weapon (Antimaterial)",
+        "Dodge(PH=11)",
+        "Gizmokit(PH=11)",
+        "Immunity(Shock)",
+        "ECM(Guided -6)"
+    ];
+    private static readonly string TagCompanyCustomTagSkillsText = string.Join(", ", TagCompanyCustomTagSkills);
     private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
     private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
     private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
@@ -146,16 +164,28 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
     private UnitFilterPopupPage? _activeUnitFilterPopup;
 
+    private bool IsTagCompanyMode => _mode is ArmySourceSelectionMode.TagVanillaFactions or ArmySourceSelectionMode.TagSectorials or ArmySourceSelectionMode.TagSingleSource;
+    private bool IsVanillaFactionMode => _mode is ArmySourceSelectionMode.VanillaFactions or ArmySourceSelectionMode.TagVanillaFactions;
+    private bool IsTagSingleSourceMode => _mode == ArmySourceSelectionMode.TagSingleSource;
+
     public ArmyFactionSelectionPage(ArmySourceSelectionMode mode)
     {
         InitializeComponent();
         _mode = mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
+        if (IsTagSingleSourceMode)
+        {
+            Title = "Choose your faction or sectorial:";
+            PageHeading = "Choose your faction or sectorial:";
+        }
+        else
+        {
+            Title = IsVanillaFactionMode
+                ? "Choose your faction:"
+                : "Choose your sectorials";
+            PageHeading = IsVanillaFactionMode
+                ? "Choose your faction:"
+                : "Choose your sectorials";
+        }
 
         var services = Application.Current?.Handler?.MauiContext?.Services;
         _metadataAccessor = services?.GetService<IMetadataAccessor>();
@@ -185,12 +215,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
         });
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
+        ToggleTagCompanyLieutenantCommand = new Command<MercsCompanyEntry>(ToggleTagCompanyCustomTagLieutenant);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
         BindingContext = this;
         SetActiveSlot(0);
+        EnsureTagCompanyCustomTagEntry();
+        UpdateMercsCompanyTotal();
         EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
         SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
         _ = LoadHeaderIconsAsync();
@@ -207,10 +240,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand SelectUnitCommand { get; }
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
+    public ICommand ToggleTagCompanyLieutenantCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
-    public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
+    public bool ShowRightSelectionBox => _mode is ArmySourceSelectionMode.Sectorials or ArmySourceSelectionMode.TagSectorials;
     public string PageHeading
     {
         get => _pageHeading;
@@ -611,7 +645,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             IEnumerable<FactionRecord> filtered = factions;
-            if (_mode == ArmySourceSelectionMode.VanillaFactions)
+            if (IsTagSingleSourceMode)
+            {
+                filtered = filtered.Where(x => x.Id > 0);
+            }
+            else if (IsVanillaFactionMode)
             {
                 filtered = filtered.Where(x => x.Id == x.ParentId);
             }
@@ -758,14 +796,55 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private void ResetMercsCompany()
     {
-        if (MercsCompanyEntries.Count == 0)
+        if (MercsCompanyEntries.Count > 0)
         {
-            UpdateMercsCompanyTotal();
+            MercsCompanyEntries.Clear();
+        }
+
+        EnsureTagCompanyCustomTagEntry();
+        UpdateMercsCompanyTotal();
+    }
+
+    private void EnsureTagCompanyCustomTagEntry()
+    {
+        if (!IsTagCompanyMode ||
+            MercsCompanyEntries.Any(x => x.IsTagCompanyCustomTag))
+        {
             return;
         }
 
-        MercsCompanyEntries.Clear();
-        UpdateMercsCompanyTotal();
+        MercsCompanyEntries.Add(BuildTagCompanyCustomTagEntry());
+    }
+
+    private MercsCompanyEntry BuildTagCompanyCustomTagEntry()
+    {
+        const string statline = "MOV 6-2 | CC 15 | BS 12 | PH 14 | WIP 12 | ARM 5 | BTS 3 | STR 2 | S 5";
+        return new MercsCompanyEntry
+        {
+            Name = TagCompanyCustomTagName,
+            NameFormatted = BuildNameFormatted(TagCompanyCustomTagName),
+            Subtitle = statline,
+            UnitTypeCode = "TAG",
+            CostDisplay = $"C {TagCompanyCustomTagCost}",
+            CostValue = TagCompanyCustomTagCost,
+            ProfileKey = TagCompanyCustomTagProfileKey,
+            SourceUnitId = TagCompanyCustomTagSourceUnitId,
+            SourceFactionId = TagCompanyCustomTagSourceFactionId,
+            PackagedLogoPath = TagCompanyCustomTagIconPath,
+            SavedEquipment = "-",
+            SavedSkills = TagCompanyCustomTagSkillsText,
+            SavedRangedWeapons = TagCompanyCustomTagRangedWeapons,
+            SavedCcWeapons = TagCompanyCustomTagCcWeapons,
+            ExperiencePoints = 0,
+            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", "-", Color.FromArgb("#06B6D4")),
+            HasEquipmentLine = false,
+            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", TagCompanyCustomTagSkillsText, Color.FromArgb("#F59E0B")),
+            HasSkillsLine = true,
+            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", TagCompanyCustomTagRangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", TagCompanyCustomTagCcWeapons, Color.FromArgb("#22C55E")),
+            CanRemove = false,
+            IsTagCompanyCustomTag = true
+        };
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -1443,13 +1522,51 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
     {
-        if (entry is null)
+        if (entry is null || !entry.CanRemove)
         {
             return;
         }
 
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
+        ApplyLieutenantVisualStates();
+        _ = ApplyUnitVisibilityFiltersAsync();
+    }
+
+    private void ToggleTagCompanyCustomTagLieutenant(MercsCompanyEntry? entry)
+    {
+        if (entry is null || !entry.IsTagCompanyCustomTag)
+        {
+            return;
+        }
+
+        var shouldBecomeLieutenant = !entry.IsLieutenant;
+        if (shouldBecomeLieutenant)
+        {
+            foreach (var other in MercsCompanyEntries.Where(x => !ReferenceEquals(x, entry) && x.IsLieutenant))
+            {
+                other.IsLieutenant = false;
+            }
+        }
+
+        entry.IsLieutenant = shouldBecomeLieutenant;
+
+        if (shouldBecomeLieutenant)
+        {
+            var currentIndex = MercsCompanyEntries.IndexOf(entry);
+            if (currentIndex > 0)
+            {
+                MercsCompanyEntries.Move(currentIndex, 0);
+            }
+        }
+
+        if (!IsFactionSelectionActive)
+        {
+            ProfilesStatus = entry.IsLieutenant
+                ? "Custom TAG is currently assigned as Lieutenant."
+                : "Tap LT to assign this Custom TAG as Lieutenant.";
+        }
+
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1463,6 +1580,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
+            if (entry.IsTagCompanyCustomTag)
+            {
+                await ShowTagCompanyCustomTagDetailsAsync(entry);
+                IsFactionSelectionActive = false;
+                return;
+            }
+
             // Prefer existing unit item (even if hidden), otherwise build a temporary item
             // so details can load regardless of current list visibility filters.
             var unitItem = Units.FirstOrDefault(x =>
@@ -1498,6 +1622,62 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage SelectMercsCompanyEntryAsync failed: {ex.Message}");
         }
+    }
+
+    private async Task ShowTagCompanyCustomTagDetailsAsync(MercsCompanyEntry entry)
+    {
+        foreach (var unit in Units)
+        {
+            unit.IsSelected = false;
+        }
+
+        _selectedUnit = null;
+        ResetUnitDetails(clearLogo: false);
+
+        UnitNameHeading = entry.Name;
+        UnitMov = "6-2";
+        UnitCc = "15";
+        UnitBs = "12";
+        UnitPh = "14";
+        UnitWip = "12";
+        UnitArm = "5";
+        UnitBts = "3";
+        UnitVitalityHeader = "STR";
+        UnitVitality = "2";
+        UnitS = "5";
+        UnitAva = "1";
+        EquipmentSummary = "Equipment: -";
+        SpecialSkillsSummary = $"Special Skills: {TagCompanyCustomTagSkillsText}";
+        EquipmentSummaryFormatted = BuildMercsCompanyLineFormatted("Equipment", "-", Color.FromArgb("#06B6D4"));
+        SpecialSkillsSummaryFormatted = BuildMercsCompanyLineFormatted("Special Skills", TagCompanyCustomTagSkillsText, Color.FromArgb("#F59E0B"));
+        Profiles.Clear();
+        ProfilesStatus = entry.IsLieutenant
+            ? "Custom TAG is currently assigned as Lieutenant."
+            : "Tap LT to assign this Custom TAG as Lieutenant.";
+
+        ShowRegularOrderIcon = false;
+        ShowIrregularOrderIcon = false;
+        ShowImpetuousIcon = false;
+        ShowTacticalAwarenessIcon = false;
+        ShowCubeIcon = false;
+        ShowCube2Icon = false;
+        ShowHackableIcon = true;
+
+        _selectedUnitPicture?.Dispose();
+        _selectedUnitPicture = null;
+
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(TagCompanyCustomTagIconPath);
+            var svg = new SKSvg();
+            _selectedUnitPicture = svg.Load(stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage TAG custom unit logo load failed: {ex.Message}");
+        }
+
+        SelectedUnitCanvas.InvalidateSurface();
     }
 
     private void ApplyLieutenantVisualStates()
@@ -2147,7 +2327,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         var firstToken = subtitle
-            .Split([' ', '-', '–', '—'], StringSplitOptions.RemoveEmptyEntries)
+            .Split([' ', '-', '\u2013', '\u2014'], StringSplitOptions.RemoveEmptyEntries)
             .FirstOrDefault();
         return string.IsNullOrWhiteSpace(firstToken) ? string.Empty : firstToken.Trim().ToUpperInvariant();
     }
@@ -2437,6 +2617,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
         {
             ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
             ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
+            ArmySourceSelectionMode.TagSingleSource => "TAG Company",
+            ArmySourceSelectionMode.TagVanillaFactions => "TAG Company - Vanilla",
+            ArmySourceSelectionMode.TagSectorials => "TAG Company - Sectorial",
             _ => "Unknown Company Type"
         };
     }
@@ -5825,7 +6008,21 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public string CostDisplay { get; init; } = string.Empty;
     public int CostValue { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
-    public bool IsLieutenant { get; init; }
+    private bool _isLieutenant;
+    public bool IsLieutenant
+    {
+        get => _isLieutenant;
+        set
+        {
+            if (_isLieutenant == value)
+            {
+                return;
+            }
+
+            _isLieutenant = value;
+            OnPropertyChanged();
+        }
+    }
     public int SourceUnitId { get; init; }
     public int SourceFactionId { get; init; }
 
@@ -5839,6 +6036,8 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public bool CanRemove { get; init; } = true;
+    public bool IsTagCompanyCustomTag { get; init; }
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
