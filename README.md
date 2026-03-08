@@ -7,11 +7,11 @@ This is an app in C# which will allow for the easy creation and managment of a c
 ### Profiles
  
 #### Baseline
- - [ ] Peripherals should be split off into separate profiles in Mercs
+ - [X] Peripherals should be split off into separate profiles in Mercs
        Only display mode, with points adjusted
 	 - [ ] Give list of valid profiles in army list to link peripherals to
 	 - [ ] Have the peripheral show up as equipment in the linked to unit
-	 - [ ] Only allow one peripheral, subtract cost of additional peripherals       
+	 - [X] Only allow one peripheral, subtract cost of additional peripherals       
 
  - [X] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
 	- [ ]  Weapons, ammo types
@@ -26,7 +26,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Show the unit as being a peripheral
  - [ ] Show Fireteam options
 	 - [X] Show Duo teams
-	 - [ ] Highlight options when selecting a type of fireteam5
+	 - [ ] Highlight options when selecting a type of fireteam
 	 - [ ] Show bonuses from fireteams in the statline
 #### Mercs Features
 

@@ -3057,13 +3057,37 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     _showUnitsInInches);
                 var firstPeripheralName = peripheralNames.FirstOrDefault();
                 PeripheralMercsCompanyStats? peripheralStats = null;
+                JsonElement peripheralProfile = default;
+                var hasPeripheralProfile = false;
                 if (!string.IsNullOrWhiteSpace(firstPeripheralName) &&
-                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out var peripheralProfile))
+                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out peripheralProfile))
                 {
+                    hasPeripheralProfile = true;
                     peripheralStats = BuildPeripheralStatBlock(ExtractFirstPeripheralName(firstPeripheralName), peripheralProfile, filtersJson);
                 }
 
                 var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
+                var displayPeripheralNames = peripheralNames;
+                var displayCost = cost;
+                if (TryBuildSinglePeripheralDisplay(peripheralNames, out var singlePeripheralName, out var singlePeripheralCount) &&
+                    singlePeripheralCount > 1)
+                {
+                    displayPeripheralNames = [$"{singlePeripheralName} (1)"];
+
+                    if (hasPeripheralProfile)
+                    {
+                        var peripheralCost = TryGetPeripheralUnitCost(profileGroupsRoot, singlePeripheralName, out var resolvedPeripheralCost)
+                            ? resolvedPeripheralCost
+                            : ParseCostValue(ReadOptionCost(peripheralProfile));
+                        var baseCost = ParseCostValue(cost);
+                        if (peripheralCost > 0 && baseCost > 0)
+                        {
+                            var removedPeripheralCount = singlePeripheralCount - 1;
+                            displayCost = Math.Max(0, baseCost - (removedPeripheralCount * peripheralCost))
+                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                    }
+                }
 
                 var normalizedPeripheralNames = peripheralNames
                     .Select(NormalizePeripheralNameForDedupe)
@@ -3078,7 +3102,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 }
 
                 var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
-                var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
+                var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
                 var profileItem = new ViewerProfileItem
                 {
                     GroupName = groupName,
@@ -3097,8 +3121,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         uniqueSkillsNames,
                         Color.FromArgb("#F59E0B"),
                         highlightLieutenantPurple: forceLieutenant),
-                    Peripherals = JoinOrDash(peripheralNames),
-                    PeripheralsFormatted = BuildListFormattedString(peripheralNames, Color.FromArgb("#FACC15")),
+                    Peripherals = JoinOrDash(displayPeripheralNames),
+                    PeripheralsFormatted = BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
                     HasPeripheralStatBlock = peripheralStats is not null,
                     PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
                     PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
@@ -3119,7 +3143,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
-                    Cost = cost
+                    Cost = displayCost
                 };
 
                 if (hasExisting)
@@ -4954,6 +4978,119 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return total;
+    }
+
+    private static bool TryBuildSinglePeripheralDisplay(
+        IReadOnlyList<string> peripheralNames,
+        out string peripheralName,
+        out int peripheralCount)
+    {
+        peripheralName = string.Empty;
+        peripheralCount = 0;
+
+        if (peripheralNames.Count != 1)
+        {
+            return false;
+        }
+
+        var only = peripheralNames[0];
+        if (string.IsNullOrWhiteSpace(only) || only == "-")
+        {
+            return false;
+        }
+
+        var match = Regex.Match(only, @"^(.*)\((\d+)\)\s*$");
+        if (!match.Success || !int.TryParse(match.Groups[2].Value, out peripheralCount))
+        {
+            return false;
+        }
+
+        peripheralName = match.Groups[1].Value.Trim();
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return false;
+        }
+
+        return peripheralCount > 0;
+    }
+
+    private static bool TryGetPeripheralUnitCost(JsonElement profileGroupsRoot, string peripheralName, out int peripheralUnitCost)
+    {
+        peripheralUnitCost = 0;
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        var expected = NormalizeComparisonToken(peripheralName);
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            return false;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            var groupIsc = group.TryGetProperty("isc", out var groupIscElement) && groupIscElement.ValueKind == JsonValueKind.String
+                ? groupIscElement.GetString() ?? string.Empty
+                : string.Empty;
+            var groupMatch = NormalizeComparisonToken(groupIsc) == expected;
+
+            if (!groupMatch &&
+                group.TryGetProperty("profiles", out var profilesElement) &&
+                profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    var profileName = profile.TryGetProperty("name", out var profileNameElement) && profileNameElement.ValueKind == JsonValueKind.String
+                        ? profileNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(profileName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch &&
+                group.TryGetProperty("options", out var matchOptionsElement) &&
+                matchOptionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var option in matchOptionsElement.EnumerateArray())
+                {
+                    var optionName = option.TryGetProperty("name", out var optionNameElement) && optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(optionName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch ||
+                !group.TryGetProperty("options", out var optionsElement) ||
+                optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                var optionCost = ParseCostValue(ReadOptionCost(option));
+                if (optionCost <= 0)
+                {
+                    continue;
+                }
+
+                var minis = Math.Max(1, ReadOptionMinis(option));
+                peripheralUnitCost = Math.Max(1, optionCost / minis);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool HasStatFields(JsonElement element)
