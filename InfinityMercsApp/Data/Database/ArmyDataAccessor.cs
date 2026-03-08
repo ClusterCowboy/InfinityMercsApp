@@ -101,6 +101,7 @@ public class ArmyDataAccessor : IArmyDataAccessor
         await _connection.ExecuteAsync("DELETE FROM army_specops_equips WHERE FactionId = ?", factionId);
         await _connection.ExecuteAsync("DELETE FROM army_specops_weapons WHERE FactionId = ?", factionId);
         await _connection.ExecuteAsync("DELETE FROM army_specops_units WHERE FactionId = ?", factionId);
+        await _connection.ExecuteAsync("DELETE FROM cc_faction_fireteam_validity WHERE FactionId = ?", factionId);
         await _connection.DeleteAsync<ArmyFactionRecord>(factionId);
 
         await _connection.InsertAsync(snapshot);
@@ -373,6 +374,56 @@ public class ArmyDataAccessor : IArmyDataAccessor
         return await _connection.QueryAsync<ArmySpecopsUnitRecord>(sql, factionId);
     }
 
+    public async Task<IReadOnlyList<CCFactionFireteamValidityRecord>> GetCCFactionFireteamValidityAsync(
+        string filterKey,
+        IReadOnlyCollection<int> factionIds,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(filterKey) || factionIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await _connection.Table<CCFactionFireteamValidityRecord>()
+            .Where(x => x.FilterKey == filterKey)
+            .ToListAsync();
+
+        var ids = new HashSet<int>(factionIds);
+        return rows.Where(x => ids.Contains(x.FactionId)).ToList();
+    }
+
+    public async Task UpsertCCFactionFireteamValidityAsync(
+        int factionId,
+        string filterKey,
+        bool hasValidCoreFireteams,
+        string? validCoreFireteamsJson,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+
+        if (factionId <= 0 || string.IsNullOrWhiteSpace(filterKey))
+        {
+            return;
+        }
+
+        var normalizedFilterKey = filterKey.Trim();
+        var record = new CCFactionFireteamValidityRecord
+        {
+            CacheKey = BuildCCFactionFireteamValidityCacheKey(factionId, normalizedFilterKey),
+            FactionId = factionId,
+            FilterKey = normalizedFilterKey,
+            HasValidCoreFireteams = hasValidCoreFireteams,
+            ValidCoreFireteamsJson = string.IsNullOrWhiteSpace(validCoreFireteamsJson) ? null : validCoreFireteamsJson,
+            EvaluatedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+
+        await _connection.InsertOrReplaceAsync(record);
+    }
+
     private static string BuildUnitKey(int factionId, ArmyUnitDto unit)
     {
         return $"{factionId}:{unit.Id}:{unit.IdArmy ?? 0}:{unit.Slug ?? string.Empty}";
@@ -381,6 +432,11 @@ public class ArmyDataAccessor : IArmyDataAccessor
     private static string BuildResumeKey(int factionId, ArmyResumeDto unit)
     {
         return $"{factionId}:{unit.Id}:{unit.Slug ?? string.Empty}";
+    }
+
+    private static string BuildCCFactionFireteamValidityCacheKey(int factionId, string filterKey)
+    {
+        return $"{factionId}:{filterKey}";
     }
 
     private async Task EnsureSpecopsIndexedAsync(CancellationToken cancellationToken)

@@ -551,10 +551,18 @@
                                                 <Grid ColumnSpacing="12">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="60" />
                                                     </Grid.ColumnDefinitions>
                                                     <Label Grid.Column="0" FormattedText="{Binding NameFormatted}" FontAttributes="Bold" />
-                                                    <Label Grid.Column="1" Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                                    <HorizontalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                                                        <skia:SKCanvasView
+                                                            WidthRequest="14"
+                                                            HeightRequest="14"
+                                                            VerticalOptions="Center"
+                                                            IsVisible="{Binding ShowProfileTacticalAwarenessIcon}"
+                                                            PaintSurface="OnProfileTacticalIconCanvasPaintSurface" />
+                                                        <Label Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                                    </HorizontalStackLayout>
                                                 </Grid>
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions>

@@ -3232,7 +3232,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
-                    Cost = displayCost
+                    Cost = displayCost,
+                    ShowProfileTacticalAwarenessIcon = !ShowTacticalAwarenessIcon &&
+                                                       optionSkillsNames.Any(x => x.Contains("tactical awareness", StringComparison.OrdinalIgnoreCase))
                 };
 
                 if (hasExisting)
@@ -5417,7 +5419,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var hasRegular = false;
         var hasIrregular = false;
         var hasImpetuous = false;
-        var hasTacticalAwareness = false;
+        var optionsSeen = 0;
+        var tacticalOptions = 0;
 
         if (profileGroupsArray.ValueKind != JsonValueKind.Array)
         {
@@ -5433,6 +5436,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
+                optionsSeen++;
+                var optionHasTactical = false;
                 if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
                 {
                     continue;
@@ -5465,13 +5470,42 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     }
                     else if (string.Equals(type, "TACTICAL", StringComparison.OrdinalIgnoreCase))
                     {
-                        hasTacticalAwareness = true;
+                        optionHasTactical = true;
                     }
+                }
+
+                if (optionHasTactical)
+                {
+                    tacticalOptions++;
                 }
             }
         }
 
-        return (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness);
+        var hasUnitWideTacticalAwareness = optionsSeen > 0 && tacticalOptions == optionsSeen;
+        return (hasRegular, hasIrregular, hasImpetuous, hasUnitWideTacticalAwareness);
+    }
+
+    private static bool HasTacticalAwarenessOrder(JsonElement option)
+    {
+        if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var order in ordersElement.EnumerateArray())
+        {
+            if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            if (string.Equals(typeElement.GetString(), "TACTICAL", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string ReadIntAsString(JsonElement option, string propertyName)
@@ -6553,7 +6587,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-double-arrows-7302616.svg");
+            await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
             var tacticalSvg = new SKSvg();
             _tacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
         }
@@ -6714,6 +6748,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_peripheralIconPicture, e);
+    }
+
+    private void OnProfileTacticalIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawSlotPicture(_tacticalAwarenessIconPicture, e);
     }
 
     private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
