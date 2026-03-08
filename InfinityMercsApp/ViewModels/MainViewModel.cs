@@ -1,10 +1,8 @@
+using InfinityMercsApp.Services;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Data.WebAccess;
-using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
 

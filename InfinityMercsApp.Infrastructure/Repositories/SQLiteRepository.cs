@@ -6,7 +6,7 @@ using SQLite;
 using System.Linq.Expressions;
 
 /// <inheritdoc/>
-public class SQLiteRepository : ISQLiteRepository
+public sealed class SQLiteRepository : ISQLiteRepository
 {
     private SQLiteConnection _connection;
 
@@ -24,6 +24,16 @@ public class SQLiteRepository : ISQLiteRepository
         var query = _connection.Table<T>();
 
         _connection.InsertAll(recordsToInsert);
+    }
+
+    /// <inheritdoc/>
+    public void Update<T>(T item) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        var query = _connection.Table<T>();
+
+        _connection.Update(item);
     }
 
     /// <inheritdoc/>

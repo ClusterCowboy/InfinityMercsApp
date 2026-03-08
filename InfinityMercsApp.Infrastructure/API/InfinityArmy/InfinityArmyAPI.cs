@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Net.Http.Headers;
 
 /// <inheritdoc/>
-public class InfinityArmyAPI(HttpClient httpClient, Logger<InfinityArmyAPI> logger) : IInfinityArmyAPI
+public sealed class InfinityArmyAPI(HttpClient httpClient, Logger<InfinityArmyAPI> logger) : IInfinityArmyAPI
 {
     private const string ArmyUrlBase = "https://api.corvusbelli.com/army/units/en/";
     private const string MetadataUrl = "https://api.corvusbelli.com/army/infinity/en/metadata";

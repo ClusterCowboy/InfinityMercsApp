@@ -1,4 +1,6 @@
 using System.Net;
+using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Core;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
 using InfinityMercsApp.Services;
@@ -16,6 +18,8 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
+            .UseMauiCommunityToolkitCore()
 			.UseSkiaSharp()
 			.ConfigureFonts(fonts =>
 			{

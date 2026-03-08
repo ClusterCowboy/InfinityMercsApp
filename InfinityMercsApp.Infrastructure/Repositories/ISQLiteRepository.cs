@@ -3,7 +3,8 @@
 using System.Linq.Expressions;
 
 /// <summary>
-/// An interface to handle interaction with SQLite
+/// An interface to handle interaction with SQLite.
+/// This uses synchronous records because SQLite itself is synchronous.
 /// </summary>
 public interface ISQLiteRepository
 {
@@ -13,6 +14,13 @@ public interface ISQLiteRepository
     /// <typeparam name="T"></typeparam>
     /// <param name="recordsToInsert"></param>
     public void Insert<T>(IEnumerable<T> recordsToInsert) where T : new();
+
+    /// <summary>
+    /// Updates a record in a SQLite table.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="item"></param>
+    public void Update<T>(T item) where T : new();
 
     /// <summary>
     /// Gets a single record from a SQLite table.
