@@ -261,7 +261,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cubes-svgrepo-com.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
             var svg = new SKSvg();
             _attributionIconPicture = svg.Load(stream);
         }
@@ -273,7 +273,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cube-alt-2-svgrepo-com.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
             var svg = new SKSvg();
             _attributionIcon2Picture = svg.Load(stream);
         }
@@ -297,7 +297,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-arrow-963008.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
             var svg = new SKSvg();
             _attributionIcon4Picture = svg.Load(stream);
         }
@@ -309,7 +309,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circle-arrow-803872.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
             var svg = new SKSvg();
             _attributionIcon5Picture = svg.Load(stream);
         }
@@ -321,7 +321,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-fire-131591.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
             var svg = new SKSvg();
             _attributionIcon6Picture = svg.Load(stream);
         }
@@ -333,7 +333,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-upload-2450840.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/lieutenant.svg");
             var svg = new SKSvg();
             _attributionIcon7Picture = svg.Load(stream);
         }
@@ -357,7 +357,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circuit-8241852.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
             var svg = new SKSvg();
             _attributionIcon9Picture = svg.Load(stream);
         }
