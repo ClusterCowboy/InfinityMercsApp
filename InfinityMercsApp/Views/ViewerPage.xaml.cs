@@ -75,7 +75,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circle-arrow-803872.svg");
+			await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
 			var regularSvg = new SKSvg();
 			_regularOrderIconPicture = regularSvg.Load(regularStream);
 		}
@@ -86,7 +86,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-arrow-963008.svg");
+			await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
 			var irregularSvg = new SKSvg();
 			_irregularOrderIconPicture = irregularSvg.Load(irregularStream);
 		}
@@ -97,7 +97,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-fire-131591.svg");
+			await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
 			var impetuousSvg = new SKSvg();
 			_impetuousIconPicture = impetuousSvg.Load(impetuousStream);
 		}
@@ -119,7 +119,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cube-alt-2-svgrepo-com.svg");
+			await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
 			var cubeSvg = new SKSvg();
 			_cubeIconPicture = cubeSvg.Load(cubeStream);
 		}
@@ -130,7 +130,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cubes-svgrepo-com.svg");
+			await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
 			var cube2Svg = new SKSvg();
 			_cube2IconPicture = cube2Svg.Load(cube2Stream);
 		}
@@ -141,7 +141,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circuit-8241852.svg");
+			await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
 			var hackableSvg = new SKSvg();
 			_hackableIconPicture = hackableSvg.Load(hackableStream);
 		}
