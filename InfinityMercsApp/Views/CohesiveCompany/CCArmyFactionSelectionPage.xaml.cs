@@ -3106,12 +3106,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private string GetCompanyTypeLabel()
     {
-        return _mode switch
-        {
-            ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
-            ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
-            _ => "Unknown Company Type"
-        };
+        return "Cohesive Company";
     }
 
     private void UpdateSeasonValidationState()

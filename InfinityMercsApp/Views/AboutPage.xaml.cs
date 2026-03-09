@@ -384,7 +384,7 @@ public partial class AboutPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/MercsIcons/noun-team-7662436.svg");
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/Fireteam/noun-team-base.svg");
             var svg = new SKSvg();
             _attributionIcon11Picture = svg.Load(stream);
         }
