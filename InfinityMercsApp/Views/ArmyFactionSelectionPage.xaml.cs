@@ -1443,8 +1443,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                          .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
-                var allowedProfiles = BuildAllowedTeamProfiles(team.UnitLimits, mergedUnits.Values);
-                allowedProfiles = allowedProfiles.Where(x => !x.IsCharacter).ToList();
+                var nonCharacterUnitLimits = FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
+                var nonCharacterNonWildcardUnitLimits = FilterWildcardUnitLimits(nonCharacterUnitLimits);
+                var allowedProfiles = BuildAllowedTeamProfiles(nonCharacterNonWildcardUnitLimits, mergedUnits.Values);
                 if (allowedProfiles.Count == 0)
                 {
                     continue;
@@ -1462,7 +1463,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             foreach (var team in mergedTeams.Values)
             {
                 var isWildcardTeam = IsWildcardTeamName(team.Name);
-                foreach (var entry in team.UnitLimits)
+                var nonCharacterUnitLimits = FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
+                foreach (var entry in nonCharacterUnitLimits)
                 {
                     var unitName = entry.Key;
                     var value = entry.Value;
@@ -2004,6 +2006,44 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return false;
+    }
+
+    private static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterCharacterUnitLimits(
+        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits,
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
+    {
+        var filtered = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var unitLimit in unitLimits)
+        {
+            var matchedUnit = ResolveUnitForTeamEntry(unitLimit.Key, unitLimit.Value.Slug, sourceUnits);
+            if (matchedUnit?.IsCharacter == true)
+            {
+                continue;
+            }
+
+            filtered[unitLimit.Key] = unitLimit.Value;
+        }
+
+        return filtered;
+    }
+
+    private static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterWildcardUnitLimits(
+        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits)
+    {
+        var filtered = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var unitLimit in unitLimits)
+        {
+            if (IsWildcardEntry(unitLimit.Key, unitLimit.Value.Slug))
+            {
+                continue;
+            }
+
+            filtered[unitLimit.Key] = unitLimit.Value;
+        }
+
+        return filtered;
     }
 
     private static List<ArmyTeamUnitLimitItem> BuildAllowedTeamProfiles(
