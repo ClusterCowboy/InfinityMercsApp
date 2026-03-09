@@ -1,4 +1,3 @@
-using InfinityMercsApp.Infrastructure.API.InfinityArmy;
 using InfinityMercsApp.Infrastructure.Models.Database.Army;
 using InfinityMercsApp.Infrastructure.Repositories;
 using System.Text.Json;
@@ -10,7 +9,7 @@ using Unit = InfinityMercsApp.Infrastructure.Models.Database.Army.Unit;
 namespace InfinityMercsApp.Infrastructure.Providers;
 
 /// <inheritdoc/>
-public class ArmyImportProvider(ISQLiteRepository sqliteRepository, IInfinityArmyAPI infinityArmyAPI) : IArmyImportProvider
+public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImportProvider
 {
     private const int YuJingFactionId = 201;
 

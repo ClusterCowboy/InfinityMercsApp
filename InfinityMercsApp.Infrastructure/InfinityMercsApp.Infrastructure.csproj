@@ -13,4 +13,12 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
   </ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="InfinityMercsApp" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
+	</ItemGroup>
+
 </Project>

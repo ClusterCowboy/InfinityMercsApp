@@ -1,6 +1,7 @@
 ﻿namespace InfinityMercsApp.ViewModels.Base;
 
 using CommunityToolkit.Mvvm.Input;
+using InfinityMercsApp.Services;
 
 public interface IViewModelBase : IQueryAttributable
 {

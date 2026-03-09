@@ -1,13 +1,13 @@
-using System.Net;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Infrastructure;
+using InfinityMercsApp.Infrastructure.Options;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using System.Net;
 
 namespace InfinityMercsApp;
 
@@ -35,21 +35,19 @@ public static class MauiProgram
 			};
 
 			return new HttpClient(handler);
-		});
-		builder.Services.AddSingleton<IDatabaseContext, DatabaseContext>();
-		builder.Services.AddSingleton<IMetadataAccessor, MetadataAccessor>();
-		builder.Services.AddSingleton<IArmyDataAccessor, ArmyDataAccessor>();
-		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
-		builder.Services.AddSingleton<FactionLogoCacheService>();
-		builder.Services.AddSingleton<AppSettingsService>();
-		builder.Services.AddSingleton<IFeedbackService, FeedbackService>();
-		builder.Services.AddSingleton<AppInitializationService>();
-		builder.Services.AddTransient<MainViewModel>();
-		builder.Services.AddTransient<ViewerViewModel>();
-		builder.Services.AddTransient<MainPage>();
-		builder.Services.AddTransient<SplashPage>();
-		builder.Services.AddTransient<ViewerPage>();
-		builder.Services.AddTransient<FeedbackBugsPage>();
+		})
+				.AddInfrastructureServices()
+				.AddSingleton<FactionLogoCacheService>()
+				.AddSingleton<IFeedbackService, FeedbackService>()
+				.AddSingleton<AppInitializationService>()
+				.AddTransient<MainViewModel>()
+				.AddTransient<ViewerViewModel>()
+				.AddTransient<MainPage>()
+				.AddTransient<SplashPage>()
+				.AddTransient<ViewerPage>()
+				.AddTransient<FeedbackBugsPage>()
+				// Change this once AppSettings is set up. Wish MAUI did this by default.
+				.AddSingleton(new SQLIteConfiguration() { DBPath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3") });
 
 #if DEBUG
 		builder.Logging.AddDebug();

@@ -1,5 +1,4 @@
-using InfinityMercsApp.Data.Database;
-using Microsoft.Maui.Storage;
+using InfinityMercsApp.Infrastructure.Models.API.Metadata;
 
 namespace InfinityMercsApp.Services;
 
@@ -17,7 +16,7 @@ public class FactionLogoCacheService
         _localUnitCacheDirectory = Path.Combine(_localCacheDirectory, "units");
     }
 
-    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<FactionDto> factions, CancellationToken cancellationToken = default)
+    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<Faction> factions, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localCacheDirectory);
         var result = new LogoCacheResult();
@@ -52,7 +51,7 @@ public class FactionLogoCacheService
     }
 
     public async Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
-        IEnumerable<FactionRecord> factions,
+        IEnumerable<Infrastructure.Models.Database.Metadata.Faction> factions,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localCacheDirectory);
@@ -89,7 +88,7 @@ public class FactionLogoCacheService
 
     public async Task<LogoCacheResult> CacheUnitLogosAsync(
         int factionId,
-        IEnumerable<ArmyResumeDto> units,
+        IEnumerable<Infrastructure.Models.API.Army.Resume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);
@@ -126,7 +125,7 @@ public class FactionLogoCacheService
 
     public async Task<LogoCacheResult> CacheUnitLogosFromRecordsAsync(
         int factionId,
-        IEnumerable<ArmyResumeRecord> units,
+        IEnumerable<Infrastructure.Models.Database.Army.Resume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);

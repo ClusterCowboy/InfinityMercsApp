@@ -23,10 +23,10 @@ public class MetadataDocument
     public List<HackingProgram> Hack { get; set; } = [];
 
     [JsonPropertyName("martialArts")]
-    public List<global::MartialArt> MartialArts { get; set; } = [];
+    public List<MartialArt> MartialArts { get; set; } = [];
 
     [JsonPropertyName("metachemistry")]
-    public List<Metachemistry> Metachemistry { get; set; } = [];
+    public List<MetaChemistry> Metachemistry { get; set; } = [];
 
     [JsonPropertyName("booty")]
     public List<Booty> Booty { get; set; } = [];

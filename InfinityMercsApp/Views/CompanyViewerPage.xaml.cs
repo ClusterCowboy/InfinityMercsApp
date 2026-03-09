@@ -225,11 +225,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    public CompanyViewerPage()
+    public CompanyViewerPage(ViewerViewModel viewModel)
     {
         InitializeComponent();
         var services = Application.Current?.Handler?.MauiContext?.Services;
-        _viewerViewModel = services?.GetService<ViewerViewModel>() ?? new ViewerViewModel();
+        _viewerViewModel = viewModel;
         _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));

@@ -1,12 +1,11 @@
+using InfinityMercsApp.Infrastructure.Providers;
+using InfinityMercsApp.Services;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Text;
 using System.Windows.Input;
-using Microsoft.Maui.Controls;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -21,10 +20,11 @@ public class ViewerViewModel : BaseViewModel
         Sectorials
     }
 
-    private readonly IMetadataAccessor? _metadataAccessor;
-    private readonly IArmyDataAccessor? _armyDataAccessor;
+    private readonly IMetadataProvider _metadataProvider;
+    private readonly IArmyImportProvider _armyImportProvider;
+    private readonly IFactionProvider _factionProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider _appSettingsProvider;
     private bool _isLoading;
     private string _status = "Loading factions...";
     private string _unitsStatus = "Select a faction.";
@@ -87,15 +87,17 @@ public class ViewerViewModel : BaseViewModel
     };
 
     public ViewerViewModel(
-        IMetadataAccessor? metadataAccessor = null,
-        IArmyDataAccessor? armyDataAccessor = null,
-        FactionLogoCacheService? factionLogoCacheService = null,
-        AppSettingsService? appSettingsService = null)
+        IMetadataProvider metadataProvider,
+        IArmyImportProvider armyImportProvider,
+        IFactionProvider factionProvider,
+        IAppSettingsProvider appSettingsProvider,
+        FactionLogoCacheService? factionLogoCacheService = null)
     {
-        _metadataAccessor = metadataAccessor;
-        _armyDataAccessor = armyDataAccessor;
+        _metadataProvider = metadataProvider;
+        _armyImportProvider = armyImportProvider;
+        _factionProvider = factionProvider;
         _factionLogoCacheService = factionLogoCacheService;
-        _appSettingsService = appSettingsService;
+        _appSettingsProvider = appSettingsProvider;
 
         SelectFactionCommand = new Command<ViewerFactionItem>(async item =>
         {
@@ -927,7 +929,7 @@ public class ViewerViewModel : BaseViewModel
     {
         await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
 
-        if (_metadataAccessor is null)
+        if (_metadataProvider is null)
         {
             Status = "Metadata service unavailable.";
             return;
@@ -937,7 +939,7 @@ public class ViewerViewModel : BaseViewModel
         {
             IsLoading = true;
             Status = "Loading factions...";
-            var factions = await _metadataAccessor.GetFactionsAsync(true, cancellationToken);
+            var factions = _metadataProvider.GetFactions(true);
             if (_factionLogoCacheService is not null)
             {
                 await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
@@ -982,7 +984,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_armyDataAccessor is null)
+        if (_armyImportProvider is null)
         {
             UnitsStatus = "Army data service unavailable.";
             return;
@@ -992,10 +994,10 @@ public class ViewerViewModel : BaseViewModel
         {
             UnitsStatus = "Loading units...";
             var units = MercsOnlyUnits
-                ? await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(SelectedFaction.Id, cancellationToken)
-                : await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
+                ? _factionProvider.GetResumeByFactionMercsOnly(SelectedFaction.Id)
+                : _factionProvider.GetResumeByFaction(SelectedFaction.Id);
 
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
+            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
             UpdateFireteamCounts(snapshot?.FireteamChartJson);
             var allowedFireteamSlugs = units
                 .Select(x => x.Slug?.Trim())
@@ -1019,7 +1021,7 @@ public class ViewerViewModel : BaseViewModel
             var filteredUnitIds = new HashSet<int>();
             foreach (var unit in units)
             {
-                var unitRecord = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, unit.UnitId, cancellationToken);
+                var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
                 if (UnitHasVisibleOption(
                         unitRecord?.ProfileGroupsJson,
                         skillsLookup,
@@ -1376,7 +1378,7 @@ public class ViewerViewModel : BaseViewModel
     }
 
     private static string BuildUnitSubtitle(
-        ArmyResumeRecord unit,
+        Infrastructure.Models.Database.Army.Resume unit,
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
     {
@@ -2921,7 +2923,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_armyDataAccessor is null)
+        if (_armyImportProvider is null)
         {
             ProfilesStatus = "Army data service unavailable.";
             return;
@@ -2930,8 +2932,8 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             ProfilesStatus = "Loading profiles...";
-            var unit = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, SelectedUnit.Id, cancellationToken);
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
+            var unit = _factionProvider.GetUnit(SelectedFaction.Id, SelectedUnit.Id);
+            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var equipLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
@@ -3263,14 +3265,14 @@ public class ViewerViewModel : BaseViewModel
 
     private async Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
             return;
         }
 
         try
         {
-            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync(cancellationToken);
+            var showInches = _appSettingsProvider.GetShowUnitsInInches();
             if (_showUnitsInInches == showInches)
             {
                 return;
