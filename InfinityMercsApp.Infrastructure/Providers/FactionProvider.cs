@@ -33,13 +33,13 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     /// <inheritdoc/>
     public IReadOnlyList<Unit> GetUnitsByFaction(int factionId)
     {
-        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId, null);
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null);
     }
 
     /// <inheritdoc/>
     public Unit? GetUnit(int factionId, int unitId)
     {
-        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId, null).FirstOrDefault();
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
     }
 
     /// <inheritdoc/>
@@ -53,21 +53,21 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
                 return GetUnitsByFaction(factionId.Value);
             }
 
-            return sqliteRepository.GetAll<Unit>(x => true).Take(250).ToList();
+            return sqliteRepository.GetAll<Unit>(x => x.Slug == null || !x.Slug.Contains(MercSlugPrefix)).Take(250).ToList();
         }
 
         if (factionId.HasValue)
         {
-            return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term) && x.FactionId == factionId.Value);
+            return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term) && x.FactionId == factionId.Value && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
         }
 
-        return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term));
+        return sqliteRepository.GetAll<Unit>(x => x.Name.Contains(term) && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
     }
 
     /// <inheritdoc/>
     public IReadOnlyList<Resume> GetResumeByFaction(int factionId)
     {
-        return sqliteRepository.GetAll<Resume>(x => x.FactionId == factionId);
+        return sqliteRepository.GetAll<Resume>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
     }
 
     /// <inheritdoc/>

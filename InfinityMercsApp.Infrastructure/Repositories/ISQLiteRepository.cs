@@ -29,7 +29,7 @@ public interface ISQLiteRepository
     /// <param name="id"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public T GetById<T>(int id) where T: new();
+    public T? GetById<T>(int id) where T: new();
 
     /// <summary>
     /// Gets all recrds from a SQLite table, optionally applying a filter and orderBy.

@@ -37,13 +37,13 @@ public sealed class SQLiteRepository : ISQLiteRepository
     }
 
     /// <inheritdoc/>
-    public T GetById<T>(int id) where T : new()
+    public T? GetById<T>(int id) where T : new()
     {
         _connection.CreateTable<T>();
 
         var query = _connection.Table<T>();
 
-        return _connection.Get<T>(id);
+        return _connection.Find<T>(id);
     }
 
     /// <inheritdoc/>
