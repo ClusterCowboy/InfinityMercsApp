@@ -19,7 +19,7 @@ using Svg.Skia;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
-public partial class StandardCompanySelectionPage : CompanySelectionPageBase
+public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IUnitDisplayIconState, IUnitDisplayStatState
 {
     private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
@@ -58,9 +58,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         }
     }
 
-    private const int MaxHeaderIcons = 6;
-    private const float IconSize = 24f;
-    private const float IconVerticalGap = 5f;
     private const double UnitNameHeadingMaxFontSize = 24d;
     private const double UnitNameHeadingMinFontSize = 11d;
     private const double UnitNameHeadingFontStep = 0.5d;
@@ -90,25 +87,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
-    private ArmyFactionSelectionItem? _selectedFaction;
-    private ArmyFactionSelectionItem? _leftSlotFaction;
-    private ArmyFactionSelectionItem? _rightSlotFaction;
+    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private SKPicture? _leftSlotPicture;
     private SKPicture? _rightSlotPicture;
-    private SKPicture? _selectedUnitPicture;
-    private SKPicture? _regularOrderIconPicture;
-    private SKPicture? _irregularOrderIconPicture;
-    private SKPicture? _impetuousIconPicture;
-    private SKPicture? _tacticalAwarenessIconPicture;
-    private SKPicture? _cubeIconPicture;
-    private SKPicture? _cube2IconPicture;
-    private SKPicture? _hackableIconPicture;
-    private SKPicture? _peripheralIconPicture;
     private SKPicture? _filterIconPicture;
-    private SKPicture? _seasonCheckIconPicture;
-    private SKPicture? _seasonXIconPicture;
-    private bool _showSeasonCheckIcon;
-    private bool _isCompanyValid;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
@@ -119,38 +101,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     private bool _teamsView;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
-    private string _selectedStartSeasonPoints = "75";
-    private string _seasonPointsCapText = "0";
     private ArmyUnitSelectionItem? _selectedUnit;
     private string _leftSlotText = string.Empty;
     private string _rightSlotText = string.Empty;
     private Color _leftSlotBorderColor = ActiveBorder;
     private Color _rightSlotBorderColor = InactiveBorder;
     private string _unitNameHeading = "Select a unit";
-    private string _unitMov = "-";
-    private string _unitCc = "-";
-    private string _unitBs = "-";
-    private string _unitPh = "-";
-    private string _unitWip = "-";
-    private string _unitArm = "-";
-    private string _unitBts = "-";
-    private string _unitVitalityHeader = "VITA";
-    private string _unitVitality = "-";
-    private string _unitS = "-";
-    private string _unitAva = "-";
-    private bool _hasPeripheralStatBlock;
-    private string _peripheralNameHeading = string.Empty;
-    private string _peripheralMov = "-";
-    private string _peripheralCc = "-";
-    private string _peripheralBs = "-";
-    private string _peripheralPh = "-";
-    private string _peripheralWip = "-";
-    private string _peripheralArm = "-";
-    private string _peripheralBts = "-";
-    private string _peripheralVitalityHeader = "VITA";
-    private string _peripheralVitality = "-";
-    private string _peripheralS = "-";
-    private string _peripheralAva = "-";
     private string _peripheralEquipment = "-";
     private string _peripheralSkills = "-";
     private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
@@ -164,21 +120,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     private FormattedString _equipmentSummaryFormatted = new();
     private FormattedString _specialSkillsSummaryFormatted = new();
     private FormattedString _peripheralEquipmentFormatted = new();
-    private FormattedString _peripheralSkillsFormatted = new();
-    private bool _showRegularOrderIcon;
-    private bool _showIrregularOrderIcon;
-    private bool _showImpetuousIcon;
-    private bool _showTacticalAwarenessIcon;
-    private bool _showCubeIcon;
-    private bool _showCube2Icon;
-    private bool _showHackableIcon;
-    private bool _summaryHighlightLieutenant;
-    private bool _showUnitsInInches = true;
-    private int? _unitMoveFirstCm;
-    private int? _unitMoveSecondCm;
-    private int? _peripheralMoveFirstCm;
-    private int? _peripheralMoveSecondCm;
-    private string? _selectedUnitProfileGroupsJson;
+    private FormattedString _peripheralSkillsFormatted = new();    private bool _summaryHighlightLieutenant;    private string? _selectedUnitProfileGroupsJson;
     private string? _selectedUnitFiltersJson;
     private List<string> _selectedUnitCommonEquipment = [];
     private List<string> _selectedUnitCommonSkills = [];
@@ -189,13 +131,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         : base(mode)
     {
         InitializeComponent();
-        WireUnitDisplayEvents(
-            UnitDisplayConfigurationsView,
-            OnHeaderIconsCanvasPaintSurface,
-            OnSelectedUnitCanvasPaintSurface,
-            OnPeripheralIconCanvasPaintSurface,
-            OnProfileTacticalIconCanvasPaintSurface,
-            OnUnitNameHeadingLabelSizeChanged);
         _mode = Mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
             ? "Choose your faction:"
@@ -233,6 +168,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
+        SelectTeamAllowedProfileCommand = new Command<ArmyTeamUnitLimitItem>(OnTeamAllowedProfileSelected);
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
@@ -240,7 +176,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         SetActiveSlot(0);
         RefreshSummaryFormatted();
         _ = LoadHeaderIconsAsync();
-        _ = LoadSeasonValidationIconsAsync();
     }
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
@@ -254,6 +189,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
+    public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
     public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
@@ -274,15 +210,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public string SelectedStartSeasonPoints
     {
-        get => _selectedStartSeasonPoints;
+        get => SeasonStartPointsView.SelectedStartSeasonPoints;
         set
         {
-            if (_selectedStartSeasonPoints == value)
+            if (SeasonStartPointsView.SelectedStartSeasonPoints == value)
             {
                 return;
             }
 
-            _selectedStartSeasonPoints = value;
+            SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
@@ -292,15 +228,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public string SeasonPointsCapText
     {
-        get => _seasonPointsCapText;
+        get => SeasonStartPointsView.SeasonPointsCapText;
         set
         {
-            if (_seasonPointsCapText == value)
+            if (SeasonStartPointsView.SeasonPointsCapText == value)
             {
                 return;
             }
 
-            _seasonPointsCapText = value;
+            SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
@@ -329,15 +265,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool IsCompanyValid
     {
-        get => _isCompanyValid;
+        get => SeasonStartPointsView.IsCompanyValid;
         private set
         {
-            if (_isCompanyValid == value)
+            if (SeasonStartPointsView.IsCompanyValid == value)
             {
                 return;
             }
 
-            _isCompanyValid = value;
+            SeasonStartPointsView.IsCompanyValid = value;
             OnPropertyChanged();
             _startCompanyCommand.ChangeCanExecute();
         }
@@ -475,30 +411,30 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             OnPropertyChanged();
         }
     }
-    public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
-    public string UnitCc { get => _unitCc; private set { if (_unitCc != value) { _unitCc = value; OnPropertyChanged(); } } }
-    public string UnitBs { get => _unitBs; private set { if (_unitBs != value) { _unitBs = value; OnPropertyChanged(); } } }
-    public string UnitPh { get => _unitPh; private set { if (_unitPh != value) { _unitPh = value; OnPropertyChanged(); } } }
-    public string UnitWip { get => _unitWip; private set { if (_unitWip != value) { _unitWip = value; OnPropertyChanged(); } } }
-    public string UnitArm { get => _unitArm; private set { if (_unitArm != value) { _unitArm = value; OnPropertyChanged(); } } }
-    public string UnitBts { get => _unitBts; private set { if (_unitBts != value) { _unitBts = value; OnPropertyChanged(); } } }
-    public string UnitVitalityHeader { get => _unitVitalityHeader; private set { if (_unitVitalityHeader != value) { _unitVitalityHeader = value; OnPropertyChanged(); } } }
-    public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
-    public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
-    public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
-    public bool HasPeripheralStatBlock { get => _hasPeripheralStatBlock; private set { if (_hasPeripheralStatBlock != value) { _hasPeripheralStatBlock = value; OnPropertyChanged(); } } }
-    public string PeripheralNameHeading { get => _peripheralNameHeading; private set { if (_peripheralNameHeading != value) { _peripheralNameHeading = value; OnPropertyChanged(); } } }
-    public string PeripheralMov { get => _peripheralMov; private set { if (_peripheralMov != value) { _peripheralMov = value; OnPropertyChanged(); } } }
-    public string PeripheralCc { get => _peripheralCc; private set { if (_peripheralCc != value) { _peripheralCc = value; OnPropertyChanged(); } } }
-    public string PeripheralBs { get => _peripheralBs; private set { if (_peripheralBs != value) { _peripheralBs = value; OnPropertyChanged(); } } }
-    public string PeripheralPh { get => _peripheralPh; private set { if (_peripheralPh != value) { _peripheralPh = value; OnPropertyChanged(); } } }
-    public string PeripheralWip { get => _peripheralWip; private set { if (_peripheralWip != value) { _peripheralWip = value; OnPropertyChanged(); } } }
-    public string PeripheralArm { get => _peripheralArm; private set { if (_peripheralArm != value) { _peripheralArm = value; OnPropertyChanged(); } } }
-    public string PeripheralBts { get => _peripheralBts; private set { if (_peripheralBts != value) { _peripheralBts = value; OnPropertyChanged(); } } }
-    public string PeripheralVitalityHeader { get => _peripheralVitalityHeader; private set { if (_peripheralVitalityHeader != value) { _peripheralVitalityHeader = value; OnPropertyChanged(); } } }
-    public string PeripheralVitality { get => _peripheralVitality; private set { if (_peripheralVitality != value) { _peripheralVitality = value; OnPropertyChanged(); } } }
-    public string PeripheralS { get => _peripheralS; private set { if (_peripheralS != value) { _peripheralS = value; OnPropertyChanged(); } } }
-    public string PeripheralAva { get => _peripheralAva; private set { if (_peripheralAva != value) { _peripheralAva = value; OnPropertyChanged(); } } }
+    public string UnitMov { get => UnitDisplayConfigurationsView.UnitMov; private set => UnitDisplayConfigurationsView.UnitMov = value; }
+    public string UnitCc { get => UnitDisplayConfigurationsView.UnitCc; private set => UnitDisplayConfigurationsView.UnitCc = value; }
+    public string UnitBs { get => UnitDisplayConfigurationsView.UnitBs; private set => UnitDisplayConfigurationsView.UnitBs = value; }
+    public string UnitPh { get => UnitDisplayConfigurationsView.UnitPh; private set => UnitDisplayConfigurationsView.UnitPh = value; }
+    public string UnitWip { get => UnitDisplayConfigurationsView.UnitWip; private set => UnitDisplayConfigurationsView.UnitWip = value; }
+    public string UnitArm { get => UnitDisplayConfigurationsView.UnitArm; private set => UnitDisplayConfigurationsView.UnitArm = value; }
+    public string UnitBts { get => UnitDisplayConfigurationsView.UnitBts; private set => UnitDisplayConfigurationsView.UnitBts = value; }
+    public string UnitVitalityHeader { get => UnitDisplayConfigurationsView.UnitVitalityHeader; private set => UnitDisplayConfigurationsView.UnitVitalityHeader = value; }
+    public string UnitVitality { get => UnitDisplayConfigurationsView.UnitVitality; private set => UnitDisplayConfigurationsView.UnitVitality = value; }
+    public string UnitS { get => UnitDisplayConfigurationsView.UnitS; private set => UnitDisplayConfigurationsView.UnitS = value; }
+    public string UnitAva { get => UnitDisplayConfigurationsView.UnitAva; private set => UnitDisplayConfigurationsView.UnitAva = value; }
+    public bool HasPeripheralStatBlock { get => UnitDisplayConfigurationsView.HasPeripheralStatBlock; private set => UnitDisplayConfigurationsView.HasPeripheralStatBlock = value; }
+    public string PeripheralNameHeading { get => UnitDisplayConfigurationsView.PeripheralNameHeading; private set => UnitDisplayConfigurationsView.PeripheralNameHeading = value; }
+    public string PeripheralMov { get => UnitDisplayConfigurationsView.PeripheralMov; private set => UnitDisplayConfigurationsView.PeripheralMov = value; }
+    public string PeripheralCc { get => UnitDisplayConfigurationsView.PeripheralCc; private set => UnitDisplayConfigurationsView.PeripheralCc = value; }
+    public string PeripheralBs { get => UnitDisplayConfigurationsView.PeripheralBs; private set => UnitDisplayConfigurationsView.PeripheralBs = value; }
+    public string PeripheralPh { get => UnitDisplayConfigurationsView.PeripheralPh; private set => UnitDisplayConfigurationsView.PeripheralPh = value; }
+    public string PeripheralWip { get => UnitDisplayConfigurationsView.PeripheralWip; private set => UnitDisplayConfigurationsView.PeripheralWip = value; }
+    public string PeripheralArm { get => UnitDisplayConfigurationsView.PeripheralArm; private set => UnitDisplayConfigurationsView.PeripheralArm = value; }
+    public string PeripheralBts { get => UnitDisplayConfigurationsView.PeripheralBts; private set => UnitDisplayConfigurationsView.PeripheralBts = value; }
+    public string PeripheralVitalityHeader { get => UnitDisplayConfigurationsView.PeripheralVitalityHeader; private set => UnitDisplayConfigurationsView.PeripheralVitalityHeader = value; }
+    public string PeripheralVitality { get => UnitDisplayConfigurationsView.PeripheralVitality; private set => UnitDisplayConfigurationsView.PeripheralVitality = value; }
+    public string PeripheralS { get => UnitDisplayConfigurationsView.PeripheralS; private set => UnitDisplayConfigurationsView.PeripheralS = value; }
+    public string PeripheralAva { get => UnitDisplayConfigurationsView.PeripheralAva; private set => UnitDisplayConfigurationsView.PeripheralAva = value; }
     public string PeripheralEquipment
     {
         get => _peripheralEquipment;
@@ -544,15 +480,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowRegularOrderIcon
     {
-        get => _showRegularOrderIcon;
+        get => UnitDisplayConfigurationsView.ShowRegularOrderIcon;
         private set
         {
-            if (_showRegularOrderIcon == value)
+            if (UnitDisplayConfigurationsView.ShowRegularOrderIcon == value)
             {
                 return;
             }
 
-            _showRegularOrderIcon = value;
+            UnitDisplayConfigurationsView.ShowRegularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -562,15 +498,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowIrregularOrderIcon
     {
-        get => _showIrregularOrderIcon;
+        get => UnitDisplayConfigurationsView.ShowIrregularOrderIcon;
         private set
         {
-            if (_showIrregularOrderIcon == value)
+            if (UnitDisplayConfigurationsView.ShowIrregularOrderIcon == value)
             {
                 return;
             }
 
-            _showIrregularOrderIcon = value;
+            UnitDisplayConfigurationsView.ShowIrregularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -580,15 +516,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowImpetuousIcon
     {
-        get => _showImpetuousIcon;
+        get => UnitDisplayConfigurationsView.ShowImpetuousIcon;
         private set
         {
-            if (_showImpetuousIcon == value)
+            if (UnitDisplayConfigurationsView.ShowImpetuousIcon == value)
             {
                 return;
             }
 
-            _showImpetuousIcon = value;
+            UnitDisplayConfigurationsView.ShowImpetuousIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -598,15 +534,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowTacticalAwarenessIcon
     {
-        get => _showTacticalAwarenessIcon;
+        get => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon;
         private set
         {
-            if (_showTacticalAwarenessIcon == value)
+            if (UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon == value)
             {
                 return;
             }
 
-            _showTacticalAwarenessIcon = value;
+            UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -616,15 +552,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowCubeIcon
     {
-        get => _showCubeIcon;
+        get => UnitDisplayConfigurationsView.ShowCubeIcon;
         private set
         {
-            if (_showCubeIcon == value)
+            if (UnitDisplayConfigurationsView.ShowCubeIcon == value)
             {
                 return;
             }
 
-            _showCubeIcon = value;
+            UnitDisplayConfigurationsView.ShowCubeIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -634,15 +570,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowCube2Icon
     {
-        get => _showCube2Icon;
+        get => UnitDisplayConfigurationsView.ShowCube2Icon;
         private set
         {
-            if (_showCube2Icon == value)
+            if (UnitDisplayConfigurationsView.ShowCube2Icon == value)
             {
                 return;
             }
 
-            _showCube2Icon = value;
+            UnitDisplayConfigurationsView.ShowCube2Icon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -652,20 +588,50 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     public bool ShowHackableIcon
     {
-        get => _showHackableIcon;
+        get => UnitDisplayConfigurationsView.ShowHackableIcon;
         private set
         {
-            if (_showHackableIcon == value)
+            if (UnitDisplayConfigurationsView.ShowHackableIcon == value)
             {
                 return;
             }
 
-            _showHackableIcon = value;
+            UnitDisplayConfigurationsView.ShowHackableIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
             UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
+    }
+
+    private bool ShowUnitsInInches
+    {
+        get => UnitDisplayConfigurationsView.ShowUnitsInInches;
+        set => UnitDisplayConfigurationsView.ShowUnitsInInches = value;
+    }
+
+    private int? UnitMoveFirstCm
+    {
+        get => UnitDisplayConfigurationsView.UnitMoveFirstCm;
+        set => UnitDisplayConfigurationsView.UnitMoveFirstCm = value;
+    }
+
+    private int? UnitMoveSecondCm
+    {
+        get => UnitDisplayConfigurationsView.UnitMoveSecondCm;
+        set => UnitDisplayConfigurationsView.UnitMoveSecondCm = value;
+    }
+
+    private int? PeripheralMoveFirstCm
+    {
+        get => UnitDisplayConfigurationsView.PeripheralMoveFirstCm;
+        set => UnitDisplayConfigurationsView.PeripheralMoveFirstCm = value;
+    }
+
+    private int? PeripheralMoveSecondCm
+    {
+        get => UnitDisplayConfigurationsView.PeripheralMoveSecondCm;
+        set => UnitDisplayConfigurationsView.PeripheralMoveSecondCm = value;
     }
 
     public bool LieutenantOnlyUnits
@@ -908,19 +874,19 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void SetSelectedFaction(ArmyFactionSelectionItem item)
     {
-        if (_selectedFaction == item)
+        if (_factionSelectionState.SelectedFaction == item)
         {
             AssignSelectedFactionToActiveSlot(item);
             return;
         }
 
-        if (_selectedFaction is not null)
+        if (_factionSelectionState.SelectedFaction is not null)
         {
-            _selectedFaction.IsSelected = false;
+            _factionSelectionState.SelectedFaction.IsSelected = false;
         }
 
-        _selectedFaction = item;
-        _selectedFaction.IsSelected = true;
+        _factionSelectionState.SelectedFaction = item;
+        _factionSelectionState.SelectedFaction.IsSelected = true;
         AssignSelectedFactionToActiveSlot(item);
     }
 
@@ -935,15 +901,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         var factionChanged = false;
         if (_activeSlotIndex == 0 || !ShowRightSelectionBox)
         {
-            factionChanged = _leftSlotFaction?.Id != item.Id;
-            _leftSlotFaction = item;
+            factionChanged = _factionSelectionState.LeftSlotFaction?.Id != item.Id;
+            _factionSelectionState.LeftSlotFaction = item;
             LeftSlotText = item.Name;
             _ = LoadSlotIconAsync(0, item.CachedLogoPath, item.PackagedLogoPath);
         }
         else
         {
-            factionChanged = _rightSlotFaction?.Id != item.Id;
-            _rightSlotFaction = item;
+            factionChanged = _factionSelectionState.RightSlotFaction?.Id != item.Id;
+            _factionSelectionState.RightSlotFaction = item;
             RightSlotText = item.Name;
             _ = LoadSlotIconAsync(1, item.CachedLogoPath, item.PackagedLogoPath);
         }
@@ -977,14 +943,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
         if (_activeSlotIndex == 0)
         {
-            return _rightSlotFaction is not null
-                && _rightSlotFaction.Id == item.Id
-                && (_leftSlotFaction is null || _leftSlotFaction.Id != item.Id);
+            return _factionSelectionState.RightSlotFaction is not null
+                && _factionSelectionState.RightSlotFaction.Id == item.Id
+                && (_factionSelectionState.LeftSlotFaction is null || _factionSelectionState.LeftSlotFaction.Id != item.Id);
         }
 
-        return _leftSlotFaction is not null
-            && _leftSlotFaction.Id == item.Id
-            && (_rightSlotFaction is null || _rightSlotFaction.Id != item.Id);
+        return _factionSelectionState.LeftSlotFaction is not null
+            && _factionSelectionState.LeftSlotFaction.Id == item.Id
+            && (_factionSelectionState.RightSlotFaction is null || _factionSelectionState.RightSlotFaction.Id != item.Id);
     }
 
     private void AutoSelectEmptySlot()
@@ -995,8 +961,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             return;
         }
 
-        var leftEmpty = _leftSlotFaction is null;
-        var rightEmpty = _rightSlotFaction is null;
+        var leftEmpty = _factionSelectionState.LeftSlotFaction is null;
+        var rightEmpty = _factionSelectionState.RightSlotFaction is null;
 
         if (leftEmpty && !rightEmpty)
         {
@@ -1585,7 +1551,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = JoinOrDash(combinedEquipment);
         var combinedSkillsText = JoinOrDash(combinedSkills);
-        var currentUnitMove = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+        var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
@@ -1632,8 +1598,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
             PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
-            UnitMoveFirstCm = _unitMoveFirstCm,
-            UnitMoveSecondCm = _unitMoveSecondCm,
+            UnitMoveFirstCm = UnitMoveFirstCm,
+            UnitMoveSecondCm = UnitMoveSecondCm,
             UnitMoveDisplay = currentUnitMove,
             PeripheralMoveFirstCm = peripheralStats?.MoveFirstCm,
             PeripheralMoveSecondCm = peripheralStats?.MoveSecondCm
@@ -2645,17 +2611,17 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
             var skills = skillRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var equipment = equipRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var weapons = weaponRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(weaponLookup, x.WeaponId, x.Exp, "Weapon", null, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(weaponLookup, x.WeaponId, x.Exp, "Weapon", null, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -2857,14 +2823,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
         var shouldShowCheck = hasLieutenant && currentPoints <= pointsLimit;
         IsCompanyValid = shouldShowCheck;
-
-        if (_showSeasonCheckIcon == shouldShowCheck)
-        {
-            return;
-        }
-
-        _showSeasonCheckIcon = shouldShowCheck;
-        SeasonValidationCanvas.InvalidateSurface();
     }
 
     private static int ParseCostValue(string? cost)
@@ -2954,7 +2912,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                     "equip",
                     equipLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var stableEquipFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
@@ -2964,7 +2922,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                         "equip",
                         equipLookup,
                         extrasLookup,
-                        _showUnitsInInches);
+                        ShowUnitsInInches);
                 }
                 var stableEquip = stableEquipFromProfiles
                     .Concat(stableEquipFromVisibleOptions)
@@ -2978,7 +2936,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                     "skills",
                     skillsLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var stableSkillsFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
@@ -2988,7 +2946,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                         "skills",
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches);
+                        ShowUnitsInInches);
                 }
                 var stableSkills = stableSkillsFromProfiles
                     .Concat(stableSkillsFromVisibleOptions)
@@ -3028,8 +2986,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
     {
-        _selectedUnitPicture?.Dispose();
-        _selectedUnitPicture = null;
+        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
+        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
 
         try
         {
@@ -3044,14 +3002,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             await using (stream)
             {
                 var svg = new SKSvg();
-                _selectedUnitPicture = svg.Load(stream);
-                if (_selectedUnitPicture is null)
+                UnitDisplayConfigurationsView.SelectedUnitPicture = svg.Load(stream);
+                if (UnitDisplayConfigurationsView.SelectedUnitPicture is null)
                 {
                     Console.Error.WriteLine($"ArmyFactionSelectionPage selected logo parse failed: unit='{item.Name}', id={item.Id}, faction={item.SourceFactionId}.");
                 }
                 else
                 {
-                    var bounds = _selectedUnitPicture.CullRect;
+                    var bounds = UnitDisplayConfigurationsView.SelectedUnitPicture.CullRect;
                     Console.WriteLine($"ArmyFactionSelectionPage selected logo loaded: unit='{item.Name}', bounds=({bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}).");
                 }
             }
@@ -3059,7 +3017,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitLogoAsync failed: {ex.Message}");
-            _selectedUnitPicture = null;
+            UnitDisplayConfigurationsView.SelectedUnitPicture = null;
         }
 
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
@@ -3109,7 +3067,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                              GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
                              equipLookup,
                              extrasLookup,
-                             _showUnitsInInches))
+                             ShowUnitsInInches))
                 {
                     equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
                 }
@@ -3119,7 +3077,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches));
+                        ShowUnitsInInches));
                 foreach (var name in optionSkillNames)
                 {
                     skillUsageCounts[name] = skillUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
@@ -3166,7 +3124,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                     GetOptionEntriesWithIncludes(profileGroupsRoot, option, "weapons"),
                     weaponsLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var rangedWeaponNames = optionWeapons.Where(x => !IsMeleeWeaponName(x)).ToList();
                 var meleeWeaponNames = optionWeapons.Where(IsMeleeWeaponName).ToList();
 
@@ -3174,7 +3132,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
                         equipLookup,
                         extrasLookup,
-                        _showUnitsInInches)
+                        ShowUnitsInInches)
                     .ToList();
                 var uniqueEquipmentNames = optionEquipmentNames
                     .Where(x => equipUsageCounts.TryGetValue(x, out var c) && c == 1)
@@ -3192,7 +3150,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches));
+                        ShowUnitsInInches));
                 var uniqueSkillsNames = optionSkillsNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
                     .ToList();
@@ -3208,7 +3166,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                     GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
                     peripheralLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var firstPeripheralName = peripheralNames.FirstOrDefault();
                 PeripheralMercsCompanyStats? peripheralStats = null;
                 JsonElement peripheralProfile = default;
@@ -3857,14 +3815,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             yield return _factionLogoCacheService.GetCachedUnitLogoPath(item.SourceFactionId, item.Id);
 
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_leftSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_factionSelectionState.LeftSlotFaction.Id, item.Id);
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_rightSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_factionSelectionState.RightSlotFaction.Id, item.Id);
             }
 
             yield return _factionLogoCacheService.GetCachedLogoPath(item.SourceFactionId);
@@ -3879,14 +3837,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             yield return _factionLogoCacheService.GetPackagedUnitLogoPath(item.SourceFactionId, item.Id);
 
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_leftSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_factionSelectionState.LeftSlotFaction.Id, item.Id);
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_rightSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_factionSelectionState.RightSlotFaction.Id, item.Id);
             }
 
             yield return _factionLogoCacheService.GetPackagedFactionLogoPath(item.SourceFactionId);
@@ -3894,14 +3852,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         else
         {
             yield return $"SVGCache/units/{item.SourceFactionId}-{item.Id}.svg";
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return $"SVGCache/units/{_leftSlotFaction.Id}-{item.Id}.svg";
+                yield return $"SVGCache/units/{_factionSelectionState.LeftSlotFaction.Id}-{item.Id}.svg";
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return $"SVGCache/units/{_rightSlotFaction.Id}-{item.Id}.svg";
+                yield return $"SVGCache/units/{_factionSelectionState.RightSlotFaction.Id}-{item.Id}.svg";
             }
 
             yield return $"SVGCache/factions/{item.SourceFactionId}.svg";
@@ -3912,18 +3870,18 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     {
         if (!ShowRightSelectionBox)
         {
-            return _leftSlotFaction is null ? [] : [_leftSlotFaction];
+            return _factionSelectionState.LeftSlotFaction is null ? [] : [_factionSelectionState.LeftSlotFaction];
         }
 
         var list = new List<ArmyFactionSelectionItem>(2);
-        if (_leftSlotFaction is not null)
+        if (_factionSelectionState.LeftSlotFaction is not null)
         {
-            list.Add(_leftSlotFaction);
+            list.Add(_factionSelectionState.LeftSlotFaction);
         }
 
-        if (_rightSlotFaction is not null && (_leftSlotFaction is null || _rightSlotFaction.Id != _leftSlotFaction.Id))
+        if (_factionSelectionState.RightSlotFaction is not null && (_factionSelectionState.LeftSlotFaction is null || _factionSelectionState.RightSlotFaction.Id != _factionSelectionState.LeftSlotFaction.Id))
         {
-            list.Add(_rightSlotFaction);
+            list.Add(_factionSelectionState.RightSlotFaction);
         }
 
         return list;
@@ -4727,8 +4685,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
-        _selectedUnitPicture?.Dispose();
-        _selectedUnitPicture = null;
+        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
+        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
         _selectedUnitProfileGroupsJson = null;
@@ -4778,8 +4736,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void ResetUnitStatsOnly()
     {
-        _unitMoveFirstCm = null;
-        _unitMoveSecondCm = null;
+        UnitMoveFirstCm = null;
+        UnitMoveSecondCm = null;
         UnitMov = "-";
         UnitCc = "-";
         UnitBs = "-";
@@ -4796,8 +4754,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void ResetPeripheralStatsOnly()
     {
-        _peripheralMoveFirstCm = null;
-        _peripheralMoveSecondCm = null;
+        PeripheralMoveFirstCm = null;
+        PeripheralMoveSecondCm = null;
         HasPeripheralStatBlock = false;
         PeripheralNameHeading = string.Empty;
         PeripheralMov = "-";
@@ -4910,7 +4868,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void PopulateUnitStatsFromElement(JsonElement selectedElement)
     {
-        (_unitMoveFirstCm, _unitMoveSecondCm) = ParseMoveValues(selectedElement);
+        (UnitMoveFirstCm, UnitMoveSecondCm) = ParseMoveValues(selectedElement);
         UpdateUnitMoveDisplay();
         UnitCc = ReadIntAsString(selectedElement, "cc");
         UnitBs = ReadIntAsString(selectedElement, "bs");
@@ -4945,19 +4903,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private string FormatMoveValue(int? firstCm, int? secondCm)
     {
-        if (!firstCm.HasValue || !secondCm.HasValue)
-        {
-            return "-";
-        }
-
-        if (_showUnitsInInches)
-        {
-            var first = (int)Math.Round(firstCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            var second = (int)Math.Round(secondCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            return $"{first}-{second}";
-        }
-
-        return $"{firstCm.Value}-{secondCm.Value}";
+        return UnitDisplayConfigurationsView.FormatMoveValue(firstCm, secondCm, ShowUnitsInInches);
     }
 
     private static string ReplaceSubtitleMoveDisplay(string? subtitle, string moveDisplay)
@@ -4976,12 +4922,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void UpdateUnitMoveDisplay()
     {
-        UnitMov = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+        UnitDisplayConfigurationsView.RefreshMoveStatlines();
     }
 
     private void UpdatePeripheralMoveDisplay()
     {
-        PeripheralMov = FormatMoveValue(_peripheralMoveFirstCm, _peripheralMoveSecondCm);
+        UnitDisplayConfigurationsView.RefreshMoveStatlines();
     }
 
     private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
@@ -5047,13 +4993,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             GetContainerEntries(peripheralProfile, "equip"),
             equipLookup,
             extrasLookup,
-            _showUnitsInInches);
+            ShowUnitsInInches);
         var skillNames = BuildConfigurationSkillNames(
             GetOrderedIdDisplayNamesFromEntries(
                 GetContainerEntries(peripheralProfile, "skills"),
                 skillsLookup,
                 extrasLookup,
-                _showUnitsInInches));
+                ShowUnitsInInches));
         var (vitalityHeader, vitalityValue) = ReadVitality(peripheralProfile);
 
         return new PeripheralMercsCompanyStats
@@ -5079,8 +5025,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void ApplyPeripheralStatBlock(PeripheralMercsCompanyStats peripheralStats)
     {
-        _peripheralMoveFirstCm = peripheralStats.MoveFirstCm;
-        _peripheralMoveSecondCm = peripheralStats.MoveSecondCm;
+        PeripheralMoveFirstCm = peripheralStats.MoveFirstCm;
+        PeripheralMoveSecondCm = peripheralStats.MoveSecondCm;
         UpdatePeripheralMoveDisplay();
         PeripheralNameHeading = peripheralStats.NameHeading;
         PeripheralCc = peripheralStats.Cc;
@@ -5728,12 +5674,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         try
         {
             var showInches = await _appSettingsService.GetShowUnitsInInchesAsync(cancellationToken);
-            if (_showUnitsInInches == showInches)
+            if (ShowUnitsInInches == showInches)
             {
                 return;
             }
 
-            _showUnitsInInches = showInches;
+            ShowUnitsInInches = showInches;
             UpdateUnitMoveDisplay();
             UpdatePeripheralMoveDisplay();
             RefreshMercsCompanyEntryDistanceDisplays();
@@ -6480,30 +6426,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         return distanceText.Remove(match.Index, match.Length).Insert(match.Index, replacement);
     }
 
-    private void OnUnitListItemTapped(object? sender, TappedEventArgs e)
+    private void OnTeamAllowedProfileSelected(ArmyTeamUnitLimitItem? teamItem)
     {
-        if (sender is not Element element || element.BindingContext is not ArmyUnitSelectionItem item)
-        {
-            return;
-        }
-
-        SetSelectedUnit(item);
-    }
-
-    private void OnUnitItemTappedFromView(object? sender, EventArgs e)
-    {
-        if (sender is not FactionListItemView view || view.BindingContext is not ArmyUnitSelectionItem item)
-        {
-            Console.Error.WriteLine("ArmyFactionSelectionPage OnUnitItemTappedFromView: no unit binding context.");
-            return;
-        }
-
-        SetSelectedUnit(item);
-    }
-
-    private void OnTeamAllowedProfileTappedFromView(object? sender, EventArgs e)
-    {
-        if (sender is not FactionListItemView view || view.BindingContext is not ArmyTeamUnitLimitItem teamItem)
+        if (teamItem is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
             return;
@@ -6598,22 +6523,22 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private async Task LoadHeaderIconsAsync()
     {
-        _regularOrderIconPicture?.Dispose();
-        _regularOrderIconPicture = null;
-        _irregularOrderIconPicture?.Dispose();
-        _irregularOrderIconPicture = null;
-        _impetuousIconPicture?.Dispose();
-        _impetuousIconPicture = null;
-        _tacticalAwarenessIconPicture?.Dispose();
-        _tacticalAwarenessIconPicture = null;
-        _cubeIconPicture?.Dispose();
-        _cubeIconPicture = null;
-        _cube2IconPicture?.Dispose();
-        _cube2IconPicture = null;
-        _hackableIconPicture?.Dispose();
-        _hackableIconPicture = null;
-        _peripheralIconPicture?.Dispose();
-        _peripheralIconPicture = null;
+        UnitDisplayConfigurationsView.RegularOrderIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.RegularOrderIconPicture = null;
+        UnitDisplayConfigurationsView.IrregularOrderIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.IrregularOrderIconPicture = null;
+        UnitDisplayConfigurationsView.ImpetuousIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.ImpetuousIconPicture = null;
+        UnitDisplayConfigurationsView.TacticalAwarenessIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = null;
+        UnitDisplayConfigurationsView.CubeIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.CubeIconPicture = null;
+        UnitDisplayConfigurationsView.Cube2IconPicture?.Dispose();
+        UnitDisplayConfigurationsView.Cube2IconPicture = null;
+        UnitDisplayConfigurationsView.HackableIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.HackableIconPicture = null;
+        UnitDisplayConfigurationsView.PeripheralIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.PeripheralIconPicture = null;
         _filterIconPicture?.Dispose();
         _filterIconPicture = null;
 
@@ -6621,7 +6546,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
             var regularSvg = new SKSvg();
-            _regularOrderIconPicture = regularSvg.Load(regularStream);
+            UnitDisplayConfigurationsView.RegularOrderIconPicture = regularSvg.Load(regularStream);
         }
         catch (Exception ex)
         {
@@ -6632,7 +6557,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
             var irregularSvg = new SKSvg();
-            _irregularOrderIconPicture = irregularSvg.Load(irregularStream);
+            UnitDisplayConfigurationsView.IrregularOrderIconPicture = irregularSvg.Load(irregularStream);
         }
         catch (Exception ex)
         {
@@ -6643,7 +6568,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
             var impetuousSvg = new SKSvg();
-            _impetuousIconPicture = impetuousSvg.Load(impetuousStream);
+            UnitDisplayConfigurationsView.ImpetuousIconPicture = impetuousSvg.Load(impetuousStream);
         }
         catch (Exception ex)
         {
@@ -6654,7 +6579,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
             var tacticalSvg = new SKSvg();
-            _tacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
+            UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
         }
         catch (Exception ex)
         {
@@ -6665,7 +6590,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
             var cubeSvg = new SKSvg();
-            _cubeIconPicture = cubeSvg.Load(cubeStream);
+            UnitDisplayConfigurationsView.CubeIconPicture = cubeSvg.Load(cubeStream);
         }
         catch (Exception ex)
         {
@@ -6676,7 +6601,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
             var cube2Svg = new SKSvg();
-            _cube2IconPicture = cube2Svg.Load(cube2Stream);
+            UnitDisplayConfigurationsView.Cube2IconPicture = cube2Svg.Load(cube2Stream);
         }
         catch (Exception ex)
         {
@@ -6687,7 +6612,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
             var hackableSvg = new SKSvg();
-            _hackableIconPicture = hackableSvg.Load(hackableStream);
+            UnitDisplayConfigurationsView.HackableIconPicture = hackableSvg.Load(hackableStream);
         }
         catch (Exception ex)
         {
@@ -6698,7 +6623,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         {
             await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
             var peripheralSvg = new SKSvg();
-            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+            UnitDisplayConfigurationsView.PeripheralIconPicture = peripheralSvg.Load(peripheralStream);
         }
         catch (Exception ex)
         {
@@ -6722,39 +6647,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         UnitDisplayConfigurationsView.InvalidatePeripheralHeaderIconCanvas();
     }
 
-    private async Task LoadSeasonValidationIconsAsync()
-    {
-        _seasonCheckIconPicture?.Dispose();
-        _seasonCheckIconPicture = null;
-        _seasonXIconPicture?.Dispose();
-        _seasonXIconPicture = null;
-
-        try
-        {
-            await using var checkStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
-            var checkSvg = new SKSvg();
-            _seasonCheckIconPicture = checkSvg.Load(checkStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage season check icon load failed: {ex.Message}");
-        }
-
-        try
-        {
-            await using var xStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
-            var xSvg = new SKSvg();
-            _seasonXIconPicture = xSvg.Load(xStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage season x icon load failed: {ex.Message}");
-        }
-
-        UpdateSeasonValidationState();
-        SeasonValidationCanvas.InvalidateSurface();
-    }
-
     private void InvalidateSlotCanvas(int slotIndex)
     {
         if (slotIndex == 0)
@@ -6776,135 +6668,17 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         DrawSlotPicture(_rightSlotPicture, e);
     }
 
-    private void OnSelectedUnitCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        if (_selectedUnitPicture is null)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage selected canvas paint: no picture (canvas={e.Info.Width}x{e.Info.Height}).");
-        }
-        else
-        {
-            var b = _selectedUnitPicture.CullRect;
-            Console.WriteLine($"ArmyFactionSelectionPage selected canvas paint: canvas={e.Info.Width}x{e.Info.Height}, bounds=({b.Left},{b.Top},{b.Right},{b.Bottom}).");
-        }
-
-        DrawSlotPicture(_selectedUnitPicture, e);
-    }
-
-    private void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var pictures = BuildHeaderIconPictures();
-        DrawIconColumn(canvas, e.Info, pictures);
-    }
-
-    private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var icon = _showSeasonCheckIcon ? _seasonCheckIconPicture : _seasonXIconPicture;
-        DrawSlotPicture(icon, e);
-    }
-
     private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_filterIconPicture, e);
     }
 
+    /// <summary>
+    /// Renders the peripheral icon in mercs-company entry rows.
+    /// </summary>
     private void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
-        DrawSlotPicture(_peripheralIconPicture, e);
-    }
-
-    private void OnProfileTacticalIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_tacticalAwarenessIconPicture, e);
-    }
-
-    private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
-    {
-        UpdateUnitNameHeadingFontSize();
-    }
-
-    private List<SKPicture> BuildTopIconPictures()
-    {
-        var pictures = new List<SKPicture>(3);
-        var orderTypePicture = ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
-        {
-            pictures.Add(orderTypePicture);
-        }
-
-        if (ShowImpetuousIcon && _impetuousIconPicture is not null)
-        {
-            pictures.Add(_impetuousIconPicture);
-        }
-
-        if (ShowTacticalAwarenessIcon && _tacticalAwarenessIconPicture is not null)
-        {
-            pictures.Add(_tacticalAwarenessIconPicture);
-        }
-
-        return pictures;
-    }
-
-    private List<SKPicture> BuildBottomIconPictures()
-    {
-        var pictures = new List<SKPicture>(3);
-        if (ShowCubeIcon && _cubeIconPicture is not null)
-        {
-            pictures.Add(_cubeIconPicture);
-        }
-
-        if (ShowCube2Icon && _cube2IconPicture is not null)
-        {
-            pictures.Add(_cube2IconPicture);
-        }
-
-        if (ShowHackableIcon && _hackableIconPicture is not null)
-        {
-            pictures.Add(_hackableIconPicture);
-        }
-
-        return pictures;
-    }
-
-    private List<SKPicture> BuildHeaderIconPictures()
-    {
-        var pictures = BuildTopIconPictures();
-        pictures.AddRange(BuildBottomIconPictures());
-        if (pictures.Count <= MaxHeaderIcons)
-        {
-            return pictures;
-        }
-
-        return pictures.Take(MaxHeaderIcons).ToList();
-    }
-
-    private static void DrawIconColumn(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
-    {
-        if (pictures.Count == 0)
-        {
-            return;
-        }
-
-        var drawCount = pictures.Count;
-        var totalGap = (drawCount - 1) * IconVerticalGap;
-        var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
-        var iconSize = Math.Max(1f, Math.Min(IconSize, maxIconSizeFromHeight));
-        var totalHeight = (drawCount * iconSize) + totalGap;
-        var startY = (info.Height - totalHeight) / 2f;
-        if (startY < 0f)
-        {
-            startY = 0f;
-        }
-
-        for (var i = 0; i < drawCount; i++)
-        {
-            var x = (info.Width - iconSize) / 2f;
-            var y = startY + (i * (iconSize + IconVerticalGap));
-            var destination = new SKRect(x, y, x + iconSize, y + iconSize);
-            DrawPictureInRect(canvas, pictures[i], destination);
-        }
+        DrawSlotPicture(UnitDisplayConfigurationsView.PeripheralIconPicture, e);
     }
 
     private static void ApplyFilterButtonSize(Border? buttonBorder, SKCanvasView? iconCanvas, double iconButtonSize)
@@ -6922,32 +6696,27 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private void UpdateUnitNameHeadingFontSize()
     {
-        var headingLabel = UnitDisplayConfigurationsView?.UnitNameHeadingElement;
-        if (headingLabel is null)
-        {
-            return;
-        }
-
-        var availableWidth = headingLabel.Width;
-        if (availableWidth <= 0)
-        {
-            UnitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
-            return;
-        }
-
-        var measuredWidth = double.PositiveInfinity;
-        for (var size = UnitNameHeadingMaxFontSize; size >= UnitNameHeadingMinFontSize; size -= UnitNameHeadingFontStep)
-        {
-            UnitNameHeadingFontSize = size;
-            measuredWidth = headingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
-            if (measuredWidth <= availableWidth)
-            {
-                return;
-            }
-        }
-
-        UnitNameHeadingFontSize = UnitNameHeadingMinFontSize;
+        UnitDisplayConfigurationsView?.RefreshUnitHeadingFontSize();
     }
+
+    bool IUnitDisplayIconState.ShowRegularOrderIcon => ShowRegularOrderIcon;
+    bool IUnitDisplayIconState.ShowIrregularOrderIcon => ShowIrregularOrderIcon;
+    bool IUnitDisplayIconState.ShowImpetuousIcon => ShowImpetuousIcon;
+    bool IUnitDisplayIconState.ShowTacticalAwarenessIcon => ShowTacticalAwarenessIcon;
+    bool IUnitDisplayIconState.ShowCubeIcon => ShowCubeIcon;
+    bool IUnitDisplayIconState.ShowCube2Icon => ShowCube2Icon;
+    bool IUnitDisplayIconState.ShowHackableIcon => ShowHackableIcon;
+    double IUnitDisplayIconState.UnitHeadingMaxFontSize => UnitNameHeadingMaxFontSize;
+    double IUnitDisplayIconState.UnitHeadingMinFontSize => UnitNameHeadingMinFontSize;
+    double IUnitDisplayIconState.UnitHeadingFontStep => UnitNameHeadingFontStep;
+    void IUnitDisplayIconState.ApplyUnitHeadingFontSize(double size) => UnitNameHeadingFontSize = size;
+    bool IUnitDisplayStatState.ShowUnitsInInches => ShowUnitsInInches;
+    int? IUnitDisplayStatState.UnitMoveFirstCm => UnitMoveFirstCm;
+    int? IUnitDisplayStatState.UnitMoveSecondCm => UnitMoveSecondCm;
+    int? IUnitDisplayStatState.PeripheralMoveFirstCm => PeripheralMoveFirstCm;
+    int? IUnitDisplayStatState.PeripheralMoveSecondCm => PeripheralMoveSecondCm;
+    void IUnitDisplayStatState.ApplyUnitMoveDisplay(string value) => UnitMov = value;
+    void IUnitDisplayStatState.ApplyPeripheralMoveDisplay(string value) => PeripheralMov = value;
 
     private async Task ApplyUnitHeaderColorsAsync(int sourceFactionId, ArmyUnitRecord? unit, CancellationToken cancellationToken)
     {
@@ -7236,6 +7005,22 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         canvas.Scale(scale);
         canvas.DrawPicture(picture);
     }
+
+    private static void DrawSlotBorder(SKPaintSurfaceEventArgs e, SKColor borderColor)
+    {
+        var canvas = e.Surface.Canvas;
+        using var borderPaint = new SKPaint
+        {
+            Color = borderColor,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2f,
+            IsAntialias = true
+        };
+
+        const float inset = 1f;
+        canvas.DrawRect(inset, inset, e.Info.Width - (inset * 2f), e.Info.Height - (inset * 2f), borderPaint);
+    }
+
 }
 
 public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
@@ -8790,4 +8575,9 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
+
+
+
+
 

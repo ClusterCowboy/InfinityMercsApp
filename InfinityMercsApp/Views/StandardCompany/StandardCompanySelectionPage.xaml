@@ -49,31 +49,13 @@
                     </Grid>
                 </Border>
             </HorizontalStackLayout>
-            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                <Label
-                    WidthRequest="70"
-                    Text="{Binding SeasonPointsCapText}"
-                    VerticalOptions="Center" />
-                <Label Text="/" VerticalOptions="Center" />
-                <Picker
-                    WidthRequest="80"
-                    SelectedItem="{Binding SelectedStartSeasonPoints}">
-                    <Picker.ItemsSource>
-                        <x:Array Type="{x:Type x:String}">
-                            <x:String>60</x:String>
-                            <x:String>75</x:String>
-                            <x:String>90</x:String>
-                        </x:Array>
-                    </Picker.ItemsSource>
-                </Picker>
-                <Label Text="Points to start season" VerticalOptions="Center" />
-                <skia:SKCanvasView
-                    x:Name="SeasonValidationCanvas"
-                    WidthRequest="24"
-                    HeightRequest="24"
-                    VerticalOptions="Center"
-                    PaintSurface="OnSeasonValidationCanvasPaintSurface" />
-            </HorizontalStackLayout>
+            <controls:SeasonStartPointsView
+                x:Name="SeasonStartPointsView"
+                Grid.Column="1"
+                VerticalOptions="Center"
+                SeasonPointsCapText="{Binding SeasonPointsCapText}"
+                SelectedStartSeasonPoints="{Binding SelectedStartSeasonPoints}"
+                IsCompanyValid="{Binding IsCompanyValid}" />
         </Grid>
     </shell:Shell.TitleView>
 
@@ -278,7 +260,8 @@
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <controls:FactionListItemView
-                                                ItemTapped="OnUnitItemTappedFromView"
+                                                ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectUnitCommand}"
+                                                ItemTappedCommandParameter="{Binding .}"
                                                 IsVisible="{Binding IsVisible}" />
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
@@ -311,7 +294,8 @@
                                                                         <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
                                                                         <controls:FactionListItemView
                                                                             Grid.Column="2"
-                                                                            ItemTapped="OnTeamAllowedProfileTappedFromView" />
+                                                                            ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectTeamAllowedProfileCommand}"
+                                                                            ItemTappedCommandParameter="{Binding .}" />
                                                                     </Grid>
                                                                 </DataTemplate>
                                                             </BindableLayout.ItemTemplate>
