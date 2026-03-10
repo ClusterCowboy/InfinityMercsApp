@@ -8,9 +8,9 @@ namespace InfinityMercsApp.ViewModels;
 public partial class ModeSelectionViewModel(INavigationService navigationService) : ViewModelBase(navigationService)
 {
     [RelayCommand]
-    public async Task NavigateToCreateNewArmyAsync()
+    public async Task NavigateToCreateNewCompanyAsync()
     {
-        await NavigationService.NavigateToAsync(nameof(CreateNewArmyPage));
+        await NavigationService.NavigateToAsync(nameof(CreateNewCompanyPage));
     }
 
     [RelayCommand]

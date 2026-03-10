@@ -2,9 +2,9 @@ using InfinityMercsApp.ViewModels;
 
 namespace InfinityMercsApp.Views;
 
-public partial class StandardCompanySourcePopupPage
+public partial class CreateNewCompanyPage
 {
-    public StandardCompanySourcePopupPage(StandardCompanySourcePopupPageViewModel viewModel)
+    public CreateNewCompanyPage(CreateNewCompanyPageViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

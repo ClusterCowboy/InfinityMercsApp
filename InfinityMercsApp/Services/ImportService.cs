@@ -161,7 +161,7 @@ internal class ImportService(
         var factions = metadata.Factions
             .Select(f => new { f.Id, f.Name })
             .Distinct()
-            .OrderBy(x => x)
+            .OrderBy(x => x.Id)
             .ToList();
 
         var updatedCount = 0;

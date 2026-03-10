@@ -13,9 +13,14 @@
         Route="ModeSelectionPage" />
 
     <ShellContent
-        Title="Create New Army"
-        ContentTemplate="{DataTemplate views:CreateNewArmyPage}"
-        Route="CreateNewArmyPage" />
+        Title="Create New Company"
+        ContentTemplate="{DataTemplate views:CreateNewCompanyPage}"
+        Route="CreateNewCompanyPage" />
+
+    <ShellContent
+        Title="Standard Company"
+        ContentTemplate="{DataTemplate views:StandardCompanySourcePopupPage}"
+        Route="StandardCompanySourcePopupPage" />
 
     <ShellContent
         Title="Load Company"
