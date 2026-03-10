@@ -1,3 +1,4 @@
+using InfinityMercsApp.Domain.Models.DataImport;
 using InfinityMercsApp.Infrastructure.Models.Database.Metadata;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
@@ -8,18 +9,10 @@ namespace InfinityMercsApp.Infrastructure.Providers;
 public interface IMetadataProvider
 {
     /// <summary>
-    /// Imports data from JSON.
+    /// Imports data to SQLite.
     /// </summary>
-    /// <param name="json"></param>
-    void ImportFromJson(string json);
-
-    /// <summary>
-    /// Imports data from a sile.
-    /// </summary>
-    /// <param name="filePath"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task ImportFromFileAsync(string filePath, CancellationToken cancellationToken = default);
+    /// <param name="metadata"></param>
+    void Import(Models.API.Metadata.MetadataDocument metadata);
 
     /// <summary>
     /// Determines whether metadata exists.

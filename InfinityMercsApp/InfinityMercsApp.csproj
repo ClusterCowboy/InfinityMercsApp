@@ -77,4 +77,10 @@
 	  <ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Compile Update="Views\ModeSelectionPage.xaml.cs">
+	    <DependentUpon>ModeSelectionPage.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
 </Project>

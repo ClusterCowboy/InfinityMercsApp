@@ -4,7 +4,7 @@ public interface INavigationService
 {
     Task InitializeAsync();
 
-    Task PushAsync(Page page);
+    public Task NavigateToAsync(string route, IDictionary<string, object>? routeParameters = null);
 
     Task PopAsync();
 }

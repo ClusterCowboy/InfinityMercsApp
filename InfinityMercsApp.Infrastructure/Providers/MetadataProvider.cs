@@ -1,27 +1,17 @@
 namespace InfinityMercsApp.Infrastructure.Providers;
 
+using InfinityMercsApp.Domain.Models.DataImport;
 using InfinityMercsApp.Infrastructure.Models.Database.Metadata;
 using InfinityMercsApp.Infrastructure.Repositories;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 /// <inheritdoc/>
 public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMetadataProvider
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString,
-        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
-    };
-
     /// <inheritdoc/>
-    public void ImportFromJson(string json)
+    public void Import(Models.API.Metadata.MetadataDocument metadata)
     {
-        var document = JsonSerializer.Deserialize<Models.API.Metadata.MetadataDocument>(json, JsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize metadata JSON.");
-
-        var factions = document.Factions.Select(x => new Faction
+        var factions = metadata.Factions.Select(x => new Faction
         {
             Id = x.Id,
             ParentId = x.Parent,
@@ -31,14 +21,14 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             Logo = x.Logo
         }).ToList();
 
-        var ammunitions = document.Ammunitions.Select(x => new Ammunition
+        var ammunitions = metadata.Ammunitions.Select(x => new Ammunition
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var weapons = document.Weapons.Select(x => new Weapon
+        var weapons = metadata.Weapons.Select(x => new Weapon
         {
             WeaponKey = BuildWeaponKey(x),
             WeaponId = x.Id,
@@ -56,21 +46,21 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             DistanceJson = x.Distance is null ? null : JsonSerializer.Serialize(x.Distance)
         }).ToList();
 
-        var skills = document.Skills.Select(x => new Skill
+        var skills = metadata.Skills.Select(x => new Skill
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var equips = document.Equips.Select(x => new Equipments
+        var equips = metadata.Equips.Select(x => new Equipments
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var hacks = document.Hack.Select(x => new HackingProgram
+        var hacks = metadata.Hack.Select(x => new HackingProgram
         {
             Name = x.Name,
             Opponent = x.Opponent,
@@ -84,7 +74,7 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             TargetJson = x.Target is null ? null : JsonSerializer.Serialize(x.Target)
         }).ToList();
 
-        var martialArts = document.MartialArts.Select(x => new MartialArt
+        var martialArts = metadata.MartialArts.Select(x => new MartialArt
         {
             Name = x.Name,
             Opponent = x.Opponent,
@@ -93,14 +83,14 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             Burst = x.Burst
         }).ToList();
 
-        var metachemistry = document.Metachemistry.Select(x => new Metachemistry
+        var metachemistry = metadata.Metachemistry.Select(x => new Metachemistry
         {
             Id = x.Id,
             Name = x.Name,
             Value = x.Value
         }).ToList();
 
-        var booty = document.Booty.Select(x => new Booty
+        var booty = metadata.Booty.Select(x => new Booty
         {
             Id = x.Id,
             Name = x.Name,
@@ -126,13 +116,6 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
         sqliteRepository.Insert(martialArts);
         sqliteRepository.Insert(metachemistry);
         sqliteRepository.Insert(booty);
-    }
-
-    /// <inheritdoc/>
-    public async Task ImportFromFileAsync(string filePath, CancellationToken cancellationToken = default)
-    {
-        var json = await File.ReadAllTextAsync(filePath, cancellationToken);
-        ImportFromJson(json);
     }
 
     /// <inheritdoc/>

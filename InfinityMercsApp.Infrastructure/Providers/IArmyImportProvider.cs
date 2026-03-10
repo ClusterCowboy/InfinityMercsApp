@@ -1,3 +1,5 @@
+using InfinityMercsApp.Infrastructure.Models.API.Army;
+
 namespace InfinityMercsApp.Infrastructure.Providers;
 
 /// <summary>
@@ -6,20 +8,11 @@ namespace InfinityMercsApp.Infrastructure.Providers;
 public interface IArmyImportProvider
 {
     /// <summary>
-    /// Imports Army data from JSON.
+    /// Imports Army data from the Army API.
     /// </summary>
     /// <param name="factionId"></param>
-    /// <param name="json"></param>
+    /// <param name="apiFaction"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task ImportFactionArmyFromJsonAsync(int factionId, string json, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Imports Army data from a file.
-    /// </summary>
-    /// <param name="factionId"></param>
-    /// <param name="filePath"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task ImportFactionArmyFromFileAsync(int factionId, string filePath, CancellationToken cancellationToken = default);
+    Task ImportAsync(int factionId, Faction apiFaction, CancellationToken cancellationToken = default);
 }

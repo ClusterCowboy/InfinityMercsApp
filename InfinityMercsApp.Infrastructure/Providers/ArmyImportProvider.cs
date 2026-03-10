@@ -12,39 +12,29 @@ namespace InfinityMercsApp.Infrastructure.Providers;
 public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImportProvider
 {
     private const int YuJingFactionId = 201;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString,
-        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
-    };
     private readonly SemaphoreSlim _specopsBackfillGate = new(1, 1);
     private bool _specopsBackfillCompleted;
 
     /// <inheritdoc/>
-    public async Task ImportFactionArmyFromJsonAsync(int factionId, string json, CancellationToken cancellationToken = default)
+    public async Task ImportAsync(int factionId, Models.API.Army.Faction apiFaction, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        var document = JsonSerializer.Deserialize<Models.API.Army.Faction>(json, JsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize army JSON.");
 
         var faction = new Faction
         {
             FactionId = factionId,
-            Version = document.Version,
+            Version = apiFaction.Version,
             ImportedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ReinforcementsJson = ToJsonOrNull(document.Reinforcements),
-            FiltersJson = ToJsonOrNull(document.Filters),
-            FireteamsJson = ToJsonOrNull(document.Fireteams),
-            RelationsJson = ToJsonOrNull(document.Relations),
-            SpecopsJson = ToJsonOrNull(document.Specops),
-            FireteamChartJson = ToJsonOrNull(document.FireteamChart),
-            RawJson = json
+            ReinforcementsJson = ToJsonOrNull(apiFaction.Reinforcements),
+            FiltersJson = ToJsonOrNull(apiFaction.Filters),
+            FireteamsJson = ToJsonOrNull(apiFaction.Fireteams),
+            RelationsJson = ToJsonOrNull(apiFaction.Relations),
+            SpecopsJson = ToJsonOrNull(apiFaction.Specops),
+            FireteamChartJson = ToJsonOrNull(apiFaction.FireteamChart),
+            RawJson = JsonSerializer.Serialize(apiFaction)
         };
 
-        var units = document.Units.Select(x => new Unit
+        var units = apiFaction.Units.Select(x => new Unit
         {
             UnitKey = BuildUnitKey(factionId, x),
             FactionId = factionId,
@@ -61,7 +51,7 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
             FactionsJson = ToJsonOrNull(x.Factions)
         }).ToList();
 
-        var resume = document.Resume.Select(x => new Resume
+        var resume = apiFaction.Resume.Select(x => new Resume
         {
             ResumeKey = BuildResumeKey(factionId, x),
             FactionId = factionId,
@@ -79,10 +69,10 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
             ? await TryGetFactionSpecopsRootAsync(YuJingFactionId, cancellationToken)
             : default;
 
-        var specopsSkills = BuildSpecopsSkillRecords(factionId, document.Specops, yuJingSpecops);
-        var specopsEquips = BuildSpecopsEquipRecords(factionId, document.Specops, yuJingSpecops);
-        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, document.Specops, yuJingSpecops);
-        var specopsUnits = BuildSpecopsUnitRecords(factionId, document.Specops);
+        var specopsSkills = BuildSpecopsSkillRecords(factionId, apiFaction.Specops, yuJingSpecops);
+        var specopsEquips = BuildSpecopsEquipRecords(factionId, apiFaction.Specops, yuJingSpecops);
+        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, apiFaction.Specops, yuJingSpecops);
+        var specopsUnits = BuildSpecopsUnitRecords(factionId, apiFaction.Specops);
 
         sqliteRepository.Delete<Unit>(x => x.FactionId == factionId);
         sqliteRepository.Delete<Resume>(x => x.FactionId == factionId);
@@ -99,13 +89,6 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
         sqliteRepository.Insert(specopsEquips);
         sqliteRepository.Insert(specopsWeapons);
         sqliteRepository.Insert(specopsUnits);
-    }
-
-    /// <inheritdoc/>
-    public async Task ImportFactionArmyFromFileAsync(int factionId, string filePath, CancellationToken cancellationToken = default)
-    {
-        var json = await File.ReadAllTextAsync(filePath, cancellationToken);
-        await ImportFactionArmyFromJsonAsync(factionId, json, cancellationToken);
     }
 
     private static string BuildUnitKey(int factionId, Models.API.Army.Unit unit)

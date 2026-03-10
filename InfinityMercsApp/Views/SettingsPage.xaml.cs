@@ -5,7 +5,7 @@ namespace InfinityMercsApp.Views;
 
 public partial class SettingsPage : ContentPage
 {
-	public SettingsPage(MainViewModel viewModel)
+	public SettingsPage(ModeSelectionViewModel viewModel)
 	{
 		InitializeComponent();
 		BindingContext = viewModel;

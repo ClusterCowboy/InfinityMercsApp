@@ -2,24 +2,22 @@
 
 internal class MauiNavigationService : INavigationService
 {
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        throw new NotImplementedException();
+        await NavigateToAsync("SplashPage");
     }
 
-    public async Task PopAsync()
+    public Task PopAsync()
     {
-        if (Application.Current?.Windows[0].Page is NavigationPage navigationPage)
-        {
-            await navigationPage.PopAsync();
-        }
+        return Shell.Current.GoToAsync("..");
     }
 
-    public async Task PushAsync(Page page)
+    public Task NavigateToAsync(string route, IDictionary<string, object>? routeParameters = null)
     {
-        if (Application.Current?.Windows[0].Page is NavigationPage navigationPage)
-        {
-            await navigationPage.PushAsync(page);
-        }
+        var shellNavigation = new ShellNavigationState(route);
+
+        return routeParameters != null
+            ? Shell.Current.GoToAsync(shellNavigation, routeParameters)
+            : Shell.Current.GoToAsync(shellNavigation);
     }
 }

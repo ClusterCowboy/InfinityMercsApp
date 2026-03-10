@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
@@ -5647,7 +5648,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     }
 }
 
-public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyFactionSelectionItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -5680,7 +5681,7 @@ public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyUnitSelectionItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
     public int SourceFactionId { get; init; }
@@ -5732,7 +5733,7 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class ArmyTeamListItem : BaseViewModel
+public class ArmyTeamListItem : ObservableObject
 {
     public string Name { get; init; } = string.Empty;
     public string TeamCountsText { get; init; } = string.Empty;
@@ -5773,7 +5774,7 @@ public class ArmyTeamListItem : BaseViewModel
     }
 }
 
-public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
+public class ArmyTeamUnitLimitItem : ObservableObject, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public string Min { get; init; } = "0";
@@ -5819,7 +5820,7 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class MercsCompanyEntry : BaseViewModel, IViewerListItem
+public class MercsCompanyEntry : ObservableObject, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public FormattedString? NameFormatted { get; init; }

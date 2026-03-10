@@ -1,8 +1,11 @@
 ﻿namespace InfinityMercsApp.Infrastructure.API.InfinityArmy;
 
+using InfinityMercsApp.Infrastructure.Models.API.Metadata;
 using Microsoft.Extensions.Logging;
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <inheritdoc/>
 public sealed class InfinityArmyAPI(HttpClient httpClient, ILogger<InfinityArmyAPI> logger) : IInfinityArmyAPI
@@ -10,22 +13,29 @@ public sealed class InfinityArmyAPI(HttpClient httpClient, ILogger<InfinityArmyA
     private const string ArmyUrlBase = "https://api.corvusbelli.com/army/units/en/";
     private const string MetadataUrl = "https://api.corvusbelli.com/army/infinity/en/metadata";
 
+    private static readonly JsonSerializerOptions jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
+    };
+
     /// <inheritdoc/>
-    public Task<string> GetMetaDataAsync(CancellationToken cancellationToken = default)
+    public async Task<MetadataDocument?> GetMetaDataAsync(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Fetching metadata from: {Url}", MetadataUrl);
-        return DownloadUrlAsync(MetadataUrl, cancellationToken);
+        return JsonSerializer.Deserialize<MetadataDocument>(await GetAsync(MetadataUrl, cancellationToken), jsonOptions);
     }
 
     /// <inheritdoc/>
-    public Task<string> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default)
+    public async Task<Models.API.Army.Faction?> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default)
     {
         var fullUrl = $"{ArmyUrlBase}{factionId}";
         logger.LogInformation("Fetching army data from: {Url}", fullUrl);
-        return DownloadUrlAsync(fullUrl, cancellationToken);
+        return JsonSerializer.Deserialize<Models.API.Army.Faction>(await GetAsync(fullUrl, cancellationToken));
     }
 
-    private async Task<string> DownloadUrlAsync(string url, CancellationToken cancellationToken)
+    private async Task<string> GetAsync(string url, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.TryAddWithoutValidation("Origin", "https://infinitytheuniverse.com");

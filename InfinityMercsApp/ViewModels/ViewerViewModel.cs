@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using System.Collections.ObjectModel;
@@ -9,7 +10,7 @@ using System.Windows.Input;
 
 namespace InfinityMercsApp.ViewModels;
 
-public class ViewerViewModel : BaseViewModel
+public partial class ViewerViewModel : ObservableObject
 {
     private readonly record struct ExtraDefinition(string Name, string Type, string? Url);
 
@@ -25,26 +26,6 @@ public class ViewerViewModel : BaseViewModel
     private readonly IFactionProvider _factionProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider _appSettingsProvider;
-    private bool _isLoading;
-    private string _status = "Loading factions...";
-    private string _unitsStatus = "Select a faction.";
-    private string _profilesStatus = "Select a unit.";
-    private string _unitNameHeading = "Select a unit";
-    private string _unitMov = "-";
-    private string _unitCc = "-";
-    private string _unitBs = "-";
-    private string _unitPh = "-";
-    private string _unitWip = "-";
-    private string _unitArm = "-";
-    private string _unitBts = "-";
-    private string _unitVitalityHeader = "VITA";
-    private string _unitVitality = "-";
-    private string _unitS = "-";
-    private string _unitAva = "-";
-    private string _equipmentSummary = "Equipment: -";
-    private string _specialSkillsSummary = "Special Skills: -";
-    private FormattedString _equipmentSummaryFormatted = new();
-    private FormattedString _specialSkillsSummaryFormatted = new();
     private bool _showRegularOrderIcon;
     private bool _showIrregularOrderIcon;
     private bool _showImpetuousIcon;
@@ -52,25 +33,15 @@ public class ViewerViewModel : BaseViewModel
     private bool _showCubeIcon;
     private bool _showCube2Icon;
     private bool _showHackableIcon;
-    private string? _impetuousIconUrl;
-    private string? _tacticalAwarenessIconUrl;
-    private string? _cubeIconUrl;
-    private string? _cube2IconUrl;
-    private string? _hackableIconUrl;
     private bool _showUnitsInInches = true;
     private IReadOnlyDictionary<int, string> _currentEquipmentLookup = new Dictionary<int, string>();
     private IReadOnlyDictionary<int, string> _currentEquipmentLinks = new Dictionary<int, string>();
     private IReadOnlyDictionary<int, string> _currentSkillsLookup = new Dictionary<int, string>();
     private IReadOnlyDictionary<int, string> _currentSkillsLinks = new Dictionary<int, string>();
-    private string _fireteamDuoCount = "-";
-    private string _fireteamHarisCount = "-";
-    private string _fireteamCoreCount = "-";
-    private string _fireteamsStatus = "Select a faction.";
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
     private ViewerFactionItem? _selectedFaction;
     private ViewerUnitItem? _selectedUnit;
-    private bool _showUnitsTab = true;
     private bool _mercsOnlyUnits;
     private bool _lieutenantOnlyUnits;
     private FactionFilterMode _factionFilterMode = FactionFilterMode.All;
@@ -131,160 +102,72 @@ public class ViewerViewModel : BaseViewModel
     public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
     public ObservableCollection<FireteamTeamItem> Fireteams { get; } = [];
 
-    public bool ShowUnitsTab
-    {
-        get => _showUnitsTab;
-        set
-        {
-            if (_showUnitsTab == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private bool showUnitsTab = true;
 
-            _showUnitsTab = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(ShowFireteamsTab));
-        }
-    }
+    [ObservableProperty]
+    // TODO - set to opposite of ShowUnitsTab
+    private bool showFireteamsTab;
 
-    public bool ShowFireteamsTab => !_showUnitsTab;
+    [ObservableProperty]
+    private bool isLoading;
 
-    public bool IsLoading
-    {
-        get => _isLoading;
-        private set
-        {
-            if (_isLoading == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string status;
 
-            _isLoading = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitsStatus;
 
-    public string Status
-    {
-        get => _status;
-        private set
-        {
-            if (_status == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string profilesStatus;
 
-            _status = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string equipmentSummary;
 
-    public string UnitsStatus
-    {
-        get => _unitsStatus;
-        private set
-        {
-            if (_unitsStatus == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private FormattedString equipmentSummaryFormatted;
 
-            _unitsStatus = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string specialSkillsSummary;
 
-    public string ProfilesStatus
-    {
-        get => _profilesStatus;
-        private set
-        {
-            if (_profilesStatus == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private FormattedString specialSkillsSummaryFormatted;
 
-            _profilesStatus = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitNameHeading;
 
-    public string EquipmentSummary
-    {
-        get => _equipmentSummary;
-        private set
-        {
-            if (_equipmentSummary == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string unitMov;
 
-            _equipmentSummary = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitCc;
 
-    public FormattedString EquipmentSummaryFormatted
-    {
-        get => _equipmentSummaryFormatted;
-        private set
-        {
-            _equipmentSummaryFormatted = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitBs;
 
-    public string SpecialSkillsSummary
-    {
-        get => _specialSkillsSummary;
-        private set
-        {
-            if (_specialSkillsSummary == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string unitPh;
 
-            _specialSkillsSummary = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitWip;
 
-    public FormattedString SpecialSkillsSummaryFormatted
-    {
-        get => _specialSkillsSummaryFormatted;
-        private set
-        {
-            _specialSkillsSummaryFormatted = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitArm;
 
-    public string UnitNameHeading
-    {
-        get => _unitNameHeading;
-        private set
-        {
-            if (_unitNameHeading == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string unitBts;
 
-            _unitNameHeading = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string unitVitalityHeader;
 
-    public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
-    public string UnitCc { get => _unitCc; private set { if (_unitCc != value) { _unitCc = value; OnPropertyChanged(); } } }
-    public string UnitBs { get => _unitBs; private set { if (_unitBs != value) { _unitBs = value; OnPropertyChanged(); } } }
-    public string UnitPh { get => _unitPh; private set { if (_unitPh != value) { _unitPh = value; OnPropertyChanged(); } } }
-    public string UnitWip { get => _unitWip; private set { if (_unitWip != value) { _unitWip = value; OnPropertyChanged(); } } }
-    public string UnitArm { get => _unitArm; private set { if (_unitArm != value) { _unitArm = value; OnPropertyChanged(); } } }
-    public string UnitBts { get => _unitBts; private set { if (_unitBts != value) { _unitBts = value; OnPropertyChanged(); } } }
-    public string UnitVitalityHeader { get => _unitVitalityHeader; private set { if (_unitVitalityHeader != value) { _unitVitalityHeader = value; OnPropertyChanged(); } } }
-    public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
-    public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
-    public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
+    [ObservableProperty]
+    private string unitVitality;
+
+    [ObservableProperty]
+    private string unitS;
+
+    [ObservableProperty]
+    private string unitAva;
 
     public bool ShowRegularOrderIcon
     {
@@ -404,80 +287,20 @@ public class ViewerViewModel : BaseViewModel
     public bool HasAnyTopHeaderIcons => HasOrderTypeIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
 
-    public string? ImpetuousIconUrl
-    {
-        get => _impetuousIconUrl;
-        private set
-        {
-            if (_impetuousIconUrl == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string? impetuousIconUrl;
 
-            _impetuousIconUrl = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string? tacticalAwarenessIconUrl;
 
-    public string? TacticalAwarenessIconUrl
-    {
-        get => _tacticalAwarenessIconUrl;
-        private set
-        {
-            if (_tacticalAwarenessIconUrl == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string? cubeIconUrl;
 
-            _tacticalAwarenessIconUrl = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string? cube2IconUrl;
 
-    public string? CubeIconUrl
-    {
-        get => _cubeIconUrl;
-        private set
-        {
-            if (_cubeIconUrl == value)
-            {
-                return;
-            }
-
-            _cubeIconUrl = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string? Cube2IconUrl
-    {
-        get => _cube2IconUrl;
-        private set
-        {
-            if (_cube2IconUrl == value)
-            {
-                return;
-            }
-
-            _cube2IconUrl = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string? HackableIconUrl
-    {
-        get => _hackableIconUrl;
-        private set
-        {
-            if (_hackableIconUrl == value)
-            {
-                return;
-            }
-
-            _hackableIconUrl = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string? hackableIconUrl;
 
     public bool ShowUnitsInInches
     {
@@ -514,65 +337,17 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
-    public string FireteamDuoCount
-    {
-        get => _fireteamDuoCount;
-        private set
-        {
-            if (_fireteamDuoCount == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private string fireteamDuoCount;
 
-            _fireteamDuoCount = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private string fireteamHarisCount;
 
-    public string FireteamHarisCount
-    {
-        get => _fireteamHarisCount;
-        private set
-        {
-            if (_fireteamHarisCount == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    public string fireteamCoreCount;
 
-            _fireteamHarisCount = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string FireteamCoreCount
-    {
-        get => _fireteamCoreCount;
-        private set
-        {
-            if (_fireteamCoreCount == value)
-            {
-                return;
-            }
-
-            _fireteamCoreCount = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string FireteamsStatus
-    {
-        get => _fireteamsStatus;
-        private set
-        {
-            if (_fireteamsStatus == value)
-            {
-                return;
-            }
-
-            _fireteamsStatus = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    public string fireteamsStatus;
 
     public ViewerFactionItem? SelectedFaction
     {
@@ -3305,7 +3080,7 @@ public interface IViewerListItem
     bool IsSelected { get; set; }
 }
 
-public class ViewerFactionItem : BaseViewModel, IViewerListItem
+public partial class ViewerFactionItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -3323,24 +3098,11 @@ public class ViewerFactionItem : BaseViewModel, IViewerListItem
 
     public bool HasSubtitle => false;
 
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
-
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private bool isSelected;
 }
 
-public class ViewerUnitItem : BaseViewModel, IViewerListItem
+public partial class ViewerUnitItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -3357,20 +3119,9 @@ public class ViewerUnitItem : BaseViewModel, IViewerListItem
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
     private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
 
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private bool isSelected;
 }
 
 public class FireteamTeamItem
@@ -3388,7 +3139,7 @@ public class FireteamUnitLimitItem
     public string Max { get; init; } = "0";
 }
 
-public class ViewerProfileItem : BaseViewModel
+public partial class ViewerProfileItem : ObservableObject
 {
     public string GroupName { get; init; } = string.Empty;
 
@@ -3423,35 +3174,9 @@ public class ViewerProfileItem : BaseViewModel
 
     public string Cost { get; init; } = "-";
 
-    private bool _isVisible = true;
-    public bool IsVisible
-    {
-        get => _isVisible;
-        set
-        {
-            if (_isVisible == value)
-            {
-                return;
-            }
+    [ObservableProperty]
+    private bool isVisible;
 
-            _isVisible = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private bool _isLieutenantBlocked;
-    public bool IsLieutenantBlocked
-    {
-        get => _isLieutenantBlocked;
-        set
-        {
-            if (_isLieutenantBlocked == value)
-            {
-                return;
-            }
-
-            _isLieutenantBlocked = value;
-            OnPropertyChanged();
-        }
-    }
+    [ObservableProperty]
+    private bool isLieutenantBlocked;
 }

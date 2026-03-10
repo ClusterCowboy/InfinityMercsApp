@@ -1,4 +1,6 @@
-﻿namespace InfinityMercsApp.Infrastructure.API.InfinityArmy;
+﻿using InfinityMercsApp.Infrastructure.Models.API.Metadata;
+
+namespace InfinityMercsApp.Infrastructure.API.InfinityArmy;
 
 /// <summary>
 /// An interface to handle interactions with the Infinity Army API
@@ -10,7 +12,7 @@ public interface IInfinityArmyAPI
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<string> GetMetaDataAsync(CancellationToken cancellationToken = default);
+    Task<MetadataDocument?> GetMetaDataAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all army data from the API.
@@ -18,5 +20,5 @@ public interface IInfinityArmyAPI
     /// <param name="factionId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<string> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default);
+    Task<Models.API.Army.Faction?> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default);
 }
