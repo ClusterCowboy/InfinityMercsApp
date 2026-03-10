@@ -70,4 +70,11 @@
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="_tempdiag\\**\\*.cs" />
+		<Content Remove="_tempdiag\\**\\*" />
+		<EmbeddedResource Remove="_tempdiag\\**\\*" />
+		<None Remove="_tempdiag\\**\\*" />
+	</ItemGroup>
+
 </Project>

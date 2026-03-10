@@ -2086,6 +2086,158 @@ public class ViewerViewModel : BaseViewModel
         return "-";
     }
 
+    private static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
+    {
+        var baseCostText = ReadOptionCost(option);
+        if (!int.TryParse(
+                baseCostText,
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var baseCost))
+        {
+            return baseCostText;
+        }
+
+        var totalPeripheralCount = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option)
+            .Sum(ReadEntryQuantity);
+        if (totalPeripheralCount <= 1)
+        {
+            return baseCostText;
+        }
+
+        var minis = ReadOptionMinis(option);
+        if (minis <= 1 || minis <= totalPeripheralCount)
+        {
+            return baseCostText;
+        }
+
+        if (baseCost <= 0 || baseCost % minis != 0)
+        {
+            return baseCostText;
+        }
+
+        var removedPeripheralCount = totalPeripheralCount - 1;
+        var perModelCost = baseCost / minis;
+        var deduction = removedPeripheralCount * perModelCost;
+        var adjustedCost = Math.Max(0, baseCost - deduction);
+        return adjustedCost.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static IEnumerable<JsonElement> GetControllerPeripheralEntries(JsonElement group)
+    {
+        if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var collected = new List<JsonElement>();
+        foreach (var profile in profilesElement.EnumerateArray())
+        {
+            if (profile.TryGetProperty("peripheral", out var peripheralElement) &&
+                peripheralElement.ValueKind == JsonValueKind.Array &&
+                peripheralElement.GetArrayLength() > 0)
+            {
+                collected.AddRange(peripheralElement.EnumerateArray().ToList());
+            }
+        }
+
+        return collected;
+    }
+
+    private static HashSet<int> GetControllerPeripheralIds(JsonElement group)
+    {
+        var ids = new HashSet<int>();
+        foreach (var entry in GetControllerPeripheralEntries(group))
+        {
+            if (TryParseId(entry, out var id))
+            {
+                ids.Add(id);
+            }
+        }
+
+        return ids;
+    }
+
+    private static IEnumerable<JsonElement> GetFilteredOptionPeripheralEntries(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var allowedIds = GetControllerPeripheralIds(group);
+        var optionEntries = GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").ToList();
+
+        if (allowedIds.Count == 0)
+        {
+            return optionEntries;
+        }
+
+        return optionEntries
+            .Where(entry => TryParseId(entry, out var id) && allowedIds.Contains(id))
+            .ToList();
+    }
+
+    private static IEnumerable<JsonElement> GetDisplayPeripheralEntriesForOption(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var optionEntries = GetFilteredOptionPeripheralEntries(profileGroupsRoot, group, option).ToList();
+        if (optionEntries.Count > 0)
+        {
+            return optionEntries;
+        }
+
+        return GetControllerPeripheralEntries(group).ToList();
+    }
+
+    private static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
+    {
+        if (GetControllerPeripheralIds(group).Count > 0)
+        {
+            return true;
+        }
+
+        if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var option in optionsElement.EnumerateArray())
+        {
+            if (GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").Any())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int ReadOptionMinis(JsonElement option)
+    {
+        if (!option.TryGetProperty("minis", out var minisElement))
+        {
+            return 0;
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.Number && minisElement.TryGetInt32(out var minisNumber))
+        {
+            return Math.Max(0, minisNumber);
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.String &&
+            int.TryParse(
+                minisElement.GetString(),
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var minisText))
+        {
+            return Math.Max(0, minisText);
+        }
+
+        return 0;
+    }
+
     private static bool IsPositiveSwc(string swc)
     {
         if (string.IsNullOrWhiteSpace(swc) || swc == "-")
@@ -2185,6 +2337,74 @@ public class ViewerViewModel : BaseViewModel
             .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
             .Select(x => (x.Id, x.Name))
             .ToList();
+    }
+
+    private static List<(int Id, string Name)> GetCountedIdDisplayNamesFromEntries(
+        IEnumerable<JsonElement> entriesSource,
+        IReadOnlyDictionary<int, string> lookup,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        var counts = new Dictionary<string, (int Id, int Count)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in entriesSource)
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                continue;
+            }
+
+            var quantity = ReadEntryQuantity(entry);
+            if (counts.TryGetValue(displayName, out var existing))
+            {
+                counts[displayName] = (existing.Id, existing.Count + quantity);
+            }
+            else
+            {
+                counts[displayName] = (id, quantity);
+            }
+        }
+
+        return counts
+            .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(x => (x.Value.Id, $"{x.Key} ({x.Value.Count})"))
+            .ToList();
+    }
+
+    private static int ReadEntryQuantity(JsonElement entry)
+    {
+        if (entry.ValueKind != JsonValueKind.Object)
+        {
+            return 1;
+        }
+
+        if (!entry.TryGetProperty("q", out var quantityElement))
+        {
+            return 1;
+        }
+
+        if (quantityElement.ValueKind == JsonValueKind.Number && quantityElement.TryGetInt32(out var quantityNumber))
+        {
+            return Math.Max(1, quantityNumber);
+        }
+
+        if (quantityElement.ValueKind == JsonValueKind.String &&
+            int.TryParse(
+                quantityElement.GetString(),
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var quantityText))
+        {
+            return Math.Max(1, quantityText);
+        }
+
+        return 1;
     }
 
     private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
@@ -3110,9 +3330,15 @@ public class ViewerViewModel : BaseViewModel
             var profileCount = 0;
             var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var hasControllerGroups = doc.RootElement.EnumerateArray().Any(usageGroup => IsControllerGroup(doc.RootElement, usageGroup));
 
             foreach (var usageGroup in doc.RootElement.EnumerateArray())
             {
+                if (hasControllerGroups && !IsControllerGroup(doc.RootElement, usageGroup))
+                {
+                    continue;
+                }
+
                 if (!usageGroup.TryGetProperty("options", out var usageOptionsElement) || usageOptionsElement.ValueKind != JsonValueKind.Array)
                 {
                     continue;
@@ -3157,6 +3383,11 @@ public class ViewerViewModel : BaseViewModel
 
             foreach (var group in doc.RootElement.EnumerateArray())
             {
+                if (hasControllerGroups && !IsControllerGroup(doc.RootElement, group))
+                {
+                    continue;
+                }
+
                 var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
                     ? iscElement.GetString() ?? string.Empty
                     : string.Empty;
@@ -3247,15 +3478,15 @@ public class ViewerViewModel : BaseViewModel
                             .ToList();
                     var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));
 
-                    var peripheralEntries = GetOrderedIdDisplayNamesFromEntries(
-                                GetOptionEntriesWithIncludes(doc.RootElement, option, "peripheral"),
+                    var peripheralEntries = GetCountedIdDisplayNamesFromEntries(
+                                GetDisplayPeripheralEntriesForOption(doc.RootElement, group, option),
                                 peripheralLookup,
                                 extrasLookup,
                                 ShowUnitsInInches)
                             .ToList();
                     var peripherals = JoinOrDash(peripheralEntries.Select(x => x.Name));
                     var swc = ReadOptionSwc(option);
-                    var cost = ReadOptionCost(option);
+                    var cost = ReadAdjustedOptionCost(doc.RootElement, group, option);
                     var isLieutenant = IsLieutenantOption(option, skillsLookup);
                     var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
 
@@ -3274,7 +3505,7 @@ public class ViewerViewModel : BaseViewModel
                     var meleeLines = BuildLinkedLines(meleeWeaponEntries, weaponsLinks);
                     var uniqueEquipmentLines = BuildLinkedLines(uniqueEquipmentEntries, equipLinks);
                     var uniqueSkillsLines = BuildLinkedLines(uniqueSkillsEntries, skillsLinks);
-                    var peripheralLines = BuildLinkedLines(peripheralEntries, peripheralLinks);
+                    var peripheralLines = BuildLinkedLines(peripheralEntries.Select(x => (x.Id, x.Name)).ToList(), peripheralLinks);
 
                     Profiles.Add(new ViewerProfileItem
                     {
@@ -3478,6 +3709,24 @@ public class ViewerProfileItem : BaseViewModel
     public FormattedString? PeripheralsFormatted { get; init; }
 
     public bool HasPeripherals => !string.IsNullOrWhiteSpace(Peripherals) && Peripherals != "-";
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    public string PeripheralMov { get; init; } = "-";
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public string PeripheralSubtitle { get; init; } = "-";
+    public FormattedString PeripheralEquipmentLineFormatted { get; init; } = new();
+    public bool HasPeripheralEquipmentLine { get; init; }
+    public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
+    public bool HasPeripheralSkillsLine { get; init; }
 
     public string Swc { get; init; } = "-";
 

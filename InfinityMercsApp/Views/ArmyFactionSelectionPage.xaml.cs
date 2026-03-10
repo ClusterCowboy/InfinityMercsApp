@@ -58,10 +58,18 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
     }
 
-    private const int MaxIconsPerRow = 3;
+    private const int MaxHeaderIcons = 6;
     private const float IconSize = 24f;
-    private const float IconGap = 20f;
-    private const float RightPadding = 24f;
+    private const float IconVerticalGap = 5f;
+    private const double UnitNameHeadingMaxFontSize = 24d;
+    private const double UnitNameHeadingMinFontSize = 11d;
+    private const double UnitNameHeadingFontStep = 0.5d;
+    private static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
+    private static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
+    private static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
+    private static readonly Color SkillsAccentOnDarkSecondary = Color.FromArgb("#FDE68A");
+    private static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
+    private static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private readonly TagCompanyCustomTagModel _tagCompanyCustomTagModel = TagCompanyCustomTagModel.Default;
     private static readonly string[] TagSpecOpsRestrictedKeywords =
     [
@@ -104,6 +112,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private SKPicture? _cubeIconPicture;
     private SKPicture? _cube2IconPicture;
     private SKPicture? _hackableIconPicture;
+    private SKPicture? _peripheralIconPicture;
     private SKPicture? _filterIconPicture;
     private SKPicture? _seasonCheckIconPicture;
     private SKPicture? _seasonXIconPicture;
@@ -138,6 +147,26 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _unitVitality = "-";
     private string _unitS = "-";
     private string _unitAva = "-";
+    private bool _hasPeripheralStatBlock;
+    private string _peripheralNameHeading = string.Empty;
+    private string _peripheralMov = "-";
+    private string _peripheralCc = "-";
+    private string _peripheralBs = "-";
+    private string _peripheralPh = "-";
+    private string _peripheralWip = "-";
+    private string _peripheralArm = "-";
+    private string _peripheralBts = "-";
+    private string _peripheralVitalityHeader = "VITA";
+    private string _peripheralVitality = "-";
+    private string _peripheralS = "-";
+    private string _peripheralAva = "-";
+    private string _peripheralEquipment = "-";
+    private string _peripheralSkills = "-";
+    private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
+    private Color _unitHeaderPrimaryColor = DefaultHeaderPrimaryColor;
+    private Color _unitHeaderSecondaryColor = DefaultHeaderSecondaryColor;
+    private Color _unitHeaderPrimaryTextColor = Colors.White;
+    private Color _unitHeaderSecondaryTextColor = Colors.White;
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
@@ -145,6 +174,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _tagCompanyCustomTagNameInput = string.Empty;
     private FormattedString _equipmentSummaryFormatted = new();
     private FormattedString _specialSkillsSummaryFormatted = new();
+    private FormattedString _peripheralEquipmentFormatted = new();
+    private FormattedString _peripheralSkillsFormatted = new();
     private bool _showRegularOrderIcon;
     private bool _showIrregularOrderIcon;
     private bool _showImpetuousIcon;
@@ -152,9 +183,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showCubeIcon;
     private bool _showCube2Icon;
     private bool _showHackableIcon;
+    private bool _summaryHighlightLieutenant;
     private bool _showUnitsInInches = true;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
+    private int? _peripheralMoveFirstCm;
+    private int? _peripheralMoveSecondCm;
+    private string? _selectedUnitProfileGroupsJson;
+    private string? _selectedUnitFiltersJson;
     private List<string> _selectedUnitCommonEquipment = [];
     private List<string> _selectedUnitCommonSkills = [];
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
@@ -217,10 +253,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         BindingContext = this;
         SetActiveSlot(0);
-        EnsureTagCompanyCustomTagEntry();
-        UpdateMercsCompanyTotal();
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
         _ = LoadHeaderIconsAsync();
         _ = LoadSeasonValidationIconsAsync();
     }
@@ -405,7 +437,92 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
     }
 
-    public string UnitNameHeading { get => _unitNameHeading; private set { if (_unitNameHeading != value) { _unitNameHeading = value; OnPropertyChanged(); } } }
+
+    public string UnitNameHeading
+    {
+        get => _unitNameHeading;
+        private set
+        {
+            if (_unitNameHeading == value)
+            {
+                return;
+            }
+
+            _unitNameHeading = value;
+            OnPropertyChanged();
+            UpdateUnitNameHeadingFontSize();
+        }
+    }
+    public double UnitNameHeadingFontSize
+    {
+        get => _unitNameHeadingFontSize;
+        private set
+        {
+            if (Math.Abs(_unitNameHeadingFontSize - value) < 0.01d)
+            {
+                return;
+            }
+
+            _unitNameHeadingFontSize = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderPrimaryColor
+    {
+        get => _unitHeaderPrimaryColor;
+        private set
+        {
+            if (_unitHeaderPrimaryColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderPrimaryColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderSecondaryColor
+    {
+        get => _unitHeaderSecondaryColor;
+        private set
+        {
+            if (_unitHeaderSecondaryColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderSecondaryColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderPrimaryTextColor
+    {
+        get => _unitHeaderPrimaryTextColor;
+        private set
+        {
+            if (_unitHeaderPrimaryTextColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderPrimaryTextColor = value;
+            OnPropertyChanged();
+        }
+    }
+    public Color UnitHeaderSecondaryTextColor
+    {
+        get => _unitHeaderSecondaryTextColor;
+        private set
+        {
+            if (_unitHeaderSecondaryTextColor == value)
+            {
+                return;
+            }
+
+            _unitHeaderSecondaryTextColor = value;
+            OnPropertyChanged();
+        }
+    }
     public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
     public string UnitCc { get => _unitCc; private set { if (_unitCc != value) { _unitCc = value; OnPropertyChanged(); } } }
     public string UnitBs { get => _unitBs; private set { if (_unitBs != value) { _unitBs = value; OnPropertyChanged(); } } }
@@ -417,13 +534,61 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
     public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
     public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
+    public bool HasPeripheralStatBlock { get => _hasPeripheralStatBlock; private set { if (_hasPeripheralStatBlock != value) { _hasPeripheralStatBlock = value; OnPropertyChanged(); } } }
+    public string PeripheralNameHeading { get => _peripheralNameHeading; private set { if (_peripheralNameHeading != value) { _peripheralNameHeading = value; OnPropertyChanged(); } } }
+    public string PeripheralMov { get => _peripheralMov; private set { if (_peripheralMov != value) { _peripheralMov = value; OnPropertyChanged(); } } }
+    public string PeripheralCc { get => _peripheralCc; private set { if (_peripheralCc != value) { _peripheralCc = value; OnPropertyChanged(); } } }
+    public string PeripheralBs { get => _peripheralBs; private set { if (_peripheralBs != value) { _peripheralBs = value; OnPropertyChanged(); } } }
+    public string PeripheralPh { get => _peripheralPh; private set { if (_peripheralPh != value) { _peripheralPh = value; OnPropertyChanged(); } } }
+    public string PeripheralWip { get => _peripheralWip; private set { if (_peripheralWip != value) { _peripheralWip = value; OnPropertyChanged(); } } }
+    public string PeripheralArm { get => _peripheralArm; private set { if (_peripheralArm != value) { _peripheralArm = value; OnPropertyChanged(); } } }
+    public string PeripheralBts { get => _peripheralBts; private set { if (_peripheralBts != value) { _peripheralBts = value; OnPropertyChanged(); } } }
+    public string PeripheralVitalityHeader { get => _peripheralVitalityHeader; private set { if (_peripheralVitalityHeader != value) { _peripheralVitalityHeader = value; OnPropertyChanged(); } } }
+    public string PeripheralVitality { get => _peripheralVitality; private set { if (_peripheralVitality != value) { _peripheralVitality = value; OnPropertyChanged(); } } }
+    public string PeripheralS { get => _peripheralS; private set { if (_peripheralS != value) { _peripheralS = value; OnPropertyChanged(); } } }
+    public string PeripheralAva { get => _peripheralAva; private set { if (_peripheralAva != value) { _peripheralAva = value; OnPropertyChanged(); } } }
+    public string PeripheralEquipment
+    {
+        get => _peripheralEquipment;
+        private set
+        {
+            if (_peripheralEquipment == value)
+            {
+                return;
+            }
+
+            _peripheralEquipment = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPeripheralEquipment));
+        }
+    }
+    public string PeripheralSkills
+    {
+        get => _peripheralSkills;
+        private set
+        {
+            if (_peripheralSkills == value)
+            {
+                return;
+            }
+
+            _peripheralSkills = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPeripheralSkills));
+        }
+    }
     public string EquipmentSummary { get => _equipmentSummary; private set { if (_equipmentSummary != value) { _equipmentSummary = value; OnPropertyChanged(); } } }
     public string SpecialSkillsSummary { get => _specialSkillsSummary; private set { if (_specialSkillsSummary != value) { _specialSkillsSummary = value; OnPropertyChanged(); } } }
     public string ProfilesStatus { get => _profilesStatus; private set { if (_profilesStatus != value) { _profilesStatus = value; OnPropertyChanged(); } } }
     public FormattedString EquipmentSummaryFormatted { get => _equipmentSummaryFormatted; private set { _equipmentSummaryFormatted = value; OnPropertyChanged(); } }
     public FormattedString SpecialSkillsSummaryFormatted { get => _specialSkillsSummaryFormatted; private set { _specialSkillsSummaryFormatted = value; OnPropertyChanged(); } }
+    public FormattedString PeripheralEquipmentFormatted { get => _peripheralEquipmentFormatted; private set { _peripheralEquipmentFormatted = value; OnPropertyChanged(); } }
+    public FormattedString PeripheralSkillsFormatted { get => _peripheralSkillsFormatted; private set { _peripheralSkillsFormatted = value; OnPropertyChanged(); } }
+    public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
+    public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
+    public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
     public bool ShowRegularOrderIcon
     {
@@ -438,7 +603,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showRegularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -455,7 +621,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showIrregularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -472,7 +639,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showImpetuousIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -489,7 +657,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showTacticalAwarenessIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            TopIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -506,7 +675,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showCubeIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -523,7 +693,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showCube2Icon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -540,7 +711,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _showHackableIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            BottomIconRowCanvas.InvalidateSurface();
+            OnPropertyChanged(nameof(HasAnyHeaderIcons));
+            HeaderIconsCanvas.InvalidateSurface();
         }
     }
 
@@ -1002,7 +1174,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new UnitFilterPopupPage(options, _activeUnitFilter);
+            var popup = new UnitFilterPopupPage(
+                options,
+                _activeUnitFilter,
+                lieutenantOnlyUnits: LieutenantOnlyUnits,
+                teamsView: TeamsView);
             popup.FilterArmyApplied += OnFilterArmyApplied;
             popup.CloseRequested += OnUnitFilterPopupCloseRequested;
             _activeUnitFilterPopup = popup;
@@ -1018,6 +1194,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
         _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
+        if (criteria is not null)
+        {
+            LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
+            TeamsView = criteria.TeamsView;
+        }
         CloseUnitFilterPopup(sender as UnitFilterPopupPage);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1219,7 +1400,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                             continue;
                         }
 
-                        var optionCost = ParseCostValue(ReadOptionCost(option));
+                        var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
                         if (maxCost.HasValue && optionCost > maxCost.Value)
                         {
                             continue;
@@ -1558,7 +1739,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = JoinOrDash(combinedEquipment);
         var combinedSkillsText = JoinOrDash(combinedSkills);
+        var currentUnitMove = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
+        var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
@@ -1583,7 +1766,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
             SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
             RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E"))
+            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
+            HasPeripheralStatBlock = peripheralStats is not null,
+            PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
+            PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
+            PeripheralCc = peripheralStats?.Cc ?? "-",
+            PeripheralBs = peripheralStats?.Bs ?? "-",
+            PeripheralPh = peripheralStats?.Ph ?? "-",
+            PeripheralWip = peripheralStats?.Wip ?? "-",
+            PeripheralArm = peripheralStats?.Arm ?? "-",
+            PeripheralBts = peripheralStats?.Bts ?? "-",
+            PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
+            PeripheralVitality = peripheralStats?.Vitality ?? "-",
+            PeripheralS = peripheralStats?.S ?? "-",
+            PeripheralAva = peripheralStats?.Ava ?? "-",
+            SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
+            SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
+            PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+            HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
+            PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+            HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
+            UnitMoveFirstCm = _unitMoveFirstCm,
+            UnitMoveSecondCm = _unitMoveSecondCm,
+            UnitMoveDisplay = currentUnitMove,
+            PeripheralMoveFirstCm = peripheralStats?.MoveFirstCm,
+            PeripheralMoveSecondCm = peripheralStats?.MoveSecondCm
         };
 
         if (entry.IsLieutenant)
@@ -1598,6 +1805,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
         UpdateMercsCompanyTotal();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
+    }
+
+    private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
+    {
+        var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
+        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
+            {
+                return null;
+            }
+
+            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, _selectedUnitFiltersJson);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage BuildMercsCompanyPeripheralStats failed: {ex.Message}");
+            return null;
+        }
     }
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
@@ -1941,6 +2173,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
         ProfilesStatus = visibleProfiles == 0
             ? "No configurations found for this unit."
             : $"{visibleProfiles} configurations loaded.";
+
+        UpdatePeripheralStatBlockFromVisibleProfiles();
         UpdateSeasonValidationState();
     }
 
@@ -2482,6 +2716,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
+                    PeripheralNameHeading = entry.PeripheralNameHeading,
+                    PeripheralMov = entry.PeripheralMov,
+                    PeripheralCc = entry.PeripheralCc,
+                    PeripheralBs = entry.PeripheralBs,
+                    PeripheralPh = entry.PeripheralPh,
+                    PeripheralWip = entry.PeripheralWip,
+                    PeripheralArm = entry.PeripheralArm,
+                    PeripheralBts = entry.PeripheralBts,
+                    PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
+                    PeripheralVitality = entry.PeripheralVitality,
+                    PeripheralS = entry.PeripheralS,
+                    PeripheralAva = entry.PeripheralAva,
+                    SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
+                    SavedPeripheralSkills = entry.SavedPeripheralSkills,
                     SavedCachedLogoPath = entry.CachedLogoPath,
                     SavedPackagedLogoPath = entry.PackagedLogoPath,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
@@ -2830,6 +3079,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
         SeasonPointsCapText = totalCost.ToString();
     }
 
+    private void RefreshMercsCompanyEntryDistanceDisplays()
+    {
+        foreach (var entry in MercsCompanyEntries)
+        {
+            var moveDisplay = FormatMoveValue(entry.UnitMoveFirstCm, entry.UnitMoveSecondCm);
+            entry.UnitMoveDisplay = moveDisplay;
+            entry.Subtitle = ReplaceSubtitleMoveDisplay(entry.Subtitle, moveDisplay);
+
+            if (entry.HasPeripheralStatBlock)
+            {
+                entry.PeripheralMov = FormatMoveValue(entry.PeripheralMoveFirstCm, entry.PeripheralMoveSecondCm);
+            }
+        }
+    }
+
     private static string ComputeCompanyIdentifier(string fileName)
     {
         var bytes = Encoding.UTF8.GetBytes(fileName);
@@ -2926,7 +3190,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
-        ResetUnitDetails(clearLogo: false);
+        ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
         if (_selectedUnit is null || _armyDataAccessor is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
@@ -2945,6 +3209,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 specopsUnit = specopsUnits.FirstOrDefault(x => x.UnitId == _selectedUnit.Id);
             }
             var treatAsSpecOps = _selectedUnit.IsSpecOps || (unit is null && specopsUnit is not null);
+            await ApplyUnitHeaderColorsAsync(_selectedUnit.SourceFactionId, unit, cancellationToken);
 
             var profileGroupsJson = unit?.ProfileGroupsJson;
             if (treatAsSpecOps && !string.IsNullOrWhiteSpace(specopsUnit?.ProfileGroupsJson))
@@ -2967,6 +3232,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
+            _selectedUnitProfileGroupsJson = profileGroupsJson;
+            _selectedUnitFiltersJson = snapshot?.FiltersJson;
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(profileGroupsJson))
             {
@@ -3040,19 +3307,16 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
                 _selectedUnitCommonEquipment = stableEquip;
                 _selectedUnitCommonSkills = stableSkills;
+                _summaryHighlightLieutenant = treatAsSpecOps;
                 Console.WriteLine(
                     $"ArmyFactionSelectionPage summary extraction: unit='{_selectedUnit.Name}', options={visibleOptions.Count}, " +
                     $"commonEquip={stableEquip.Count}, commonSkills={stableSkills.Count}.");
 
                 EquipmentSummary = $"Equipment: {(stableEquip.Count == 0 ? "-" : string.Join(", ", stableEquip))}";
                 SpecialSkillsSummary = $"Special Skills: {(stableSkills.Count == 0 ? "-" : string.Join(", ", stableSkills))}";
-                EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", stableEquip, Color.FromArgb("#06B6D4"));
-                SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
-                    "Special Skills",
-                    stableSkills,
-                    Color.FromArgb("#F59E0B"),
-                    highlightLieutenantPurple: treatAsSpecOps);
+                RefreshSummaryFormatted();
                 PopulateProfilesFromProfileGroups(doc.RootElement, snapshot?.FiltersJson, forceLieutenant: treatAsSpecOps);
+                UpdatePeripheralStatBlockFromVisibleProfiles();
                 Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
                 return;
             }
@@ -3125,9 +3389,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
             if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
             {
                 continue;
@@ -3162,10 +3432,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
         }
 
-        var seenConfigurations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bestConfigurationByKey = new Dictionary<string, (int Index, int PeripheralCount)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
             var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
                 ? iscElement.GetString() ?? string.Empty
                 : string.Empty;
@@ -3234,23 +3509,60 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         .ToList();
                 }
 
-                var peripheralNames = GetOrderedIdDisplayNamesFromEntries(
-                    GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral"),
+                var peripheralNames = GetCountedDisplayNamesFromEntries(
+                    GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
                     peripheralLookup,
                     extrasLookup,
                     _showUnitsInInches);
+                var firstPeripheralName = peripheralNames.FirstOrDefault();
+                PeripheralMercsCompanyStats? peripheralStats = null;
+                JsonElement peripheralProfile = default;
+                var hasPeripheralProfile = false;
+                if (!string.IsNullOrWhiteSpace(firstPeripheralName) &&
+                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out peripheralProfile))
+                {
+                    hasPeripheralProfile = true;
+                    peripheralStats = BuildPeripheralStatBlock(ExtractFirstPeripheralName(firstPeripheralName), peripheralProfile, filtersJson);
+                }
 
-                var cost = ReadOptionCost(option);
+                var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
+                var displayPeripheralNames = peripheralNames;
+                var displayCost = cost;
+                if (TryBuildSinglePeripheralDisplay(peripheralNames, out var singlePeripheralName, out var singlePeripheralCount) &&
+                    singlePeripheralCount > 1)
+                {
+                    displayPeripheralNames = [$"{singlePeripheralName} (1)"];
 
-                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", peripheralNames)}|{swc}|{cost}";
-                if (!seenConfigurations.Add(dedupeKey))
+                    if (hasPeripheralProfile)
+                    {
+                        var peripheralCost = TryGetPeripheralUnitCost(profileGroupsRoot, singlePeripheralName, out var resolvedPeripheralCost)
+                            ? resolvedPeripheralCost
+                            : ParseCostValue(ReadOptionCost(peripheralProfile));
+                        var baseCost = ParseCostValue(cost);
+                        if (peripheralCost > 0 && baseCost > 0)
+                        {
+                            var removedPeripheralCount = singlePeripheralCount - 1;
+                            displayCost = Math.Max(0, baseCost - (removedPeripheralCount * peripheralCost))
+                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                    }
+                }
+
+                var normalizedPeripheralNames = peripheralNames
+                    .Select(NormalizePeripheralNameForDedupe)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+                var peripheralCount = GetPeripheralTotalCount(peripheralNames);
+                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", normalizedPeripheralNames)}|{swc}";
+                var hasExisting = bestConfigurationByKey.TryGetValue(dedupeKey, out var existingConfiguration);
+                if (hasExisting && peripheralCount >= existingConfiguration.PeripheralCount)
                 {
                     continue;
                 }
 
                 var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
-                var profileKey = $"{groupName}|{optionName}|{cost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
-                Profiles.Add(new ViewerProfileItem
+                var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
+                var profileItem = new ViewerProfileItem
                 {
                     GroupName = groupName,
                     Name = optionName,
@@ -3268,12 +3580,40 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         uniqueSkillsNames,
                         Color.FromArgb("#F59E0B"),
                         highlightLieutenantPurple: forceLieutenant),
-                    Peripherals = JoinOrDash(peripheralNames),
-                    PeripheralsFormatted = BuildListFormattedString(peripheralNames, Color.FromArgb("#FACC15")),
+                    Peripherals = JoinOrDash(displayPeripheralNames),
+                    PeripheralsFormatted = BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
+                    HasPeripheralStatBlock = peripheralStats is not null,
+                    PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
+                    PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
+                    PeripheralCc = peripheralStats?.Cc ?? "-",
+                    PeripheralBs = peripheralStats?.Bs ?? "-",
+                    PeripheralPh = peripheralStats?.Ph ?? "-",
+                    PeripheralWip = peripheralStats?.Wip ?? "-",
+                    PeripheralArm = peripheralStats?.Arm ?? "-",
+                    PeripheralBts = peripheralStats?.Bts ?? "-",
+                    PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
+                    PeripheralVitality = peripheralStats?.Vitality ?? "-",
+                    PeripheralS = peripheralStats?.S ?? "-",
+                    PeripheralAva = peripheralStats?.Ava ?? "-",
+                    PeripheralSubtitle = BuildPeripheralSubtitle(peripheralStats),
+                    PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+                    HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
+                    PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+                    HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
-                    Cost = cost
-                });
+                    Cost = displayCost
+                };
+
+                if (hasExisting)
+                {
+                    Profiles[existingConfiguration.Index] = profileItem;
+                    bestConfigurationByKey[dedupeKey] = (existingConfiguration.Index, peripheralCount);
+                    continue;
+                }
+
+                Profiles.Add(profileItem);
+                bestConfigurationByKey[dedupeKey] = (Profiles.Count - 1, peripheralCount);
             }
         }
 
@@ -3303,6 +3643,63 @@ public partial class ArmyFactionSelectionPage : ContentPage
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static List<string> GetCountedDisplayNamesFromEntries(
+        IEnumerable<JsonElement> entries,
+        IReadOnlyDictionary<int, string> lookup,
+        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
+        bool showUnitsInInches)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in entries)
+        {
+            if (!TryParseId(entry, out var id))
+            {
+                continue;
+            }
+
+            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
+            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                continue;
+            }
+
+            var quantity = ReadEntryQuantity(entry);
+            counts[displayName] = counts.TryGetValue(displayName, out var existing)
+                ? existing + quantity
+                : quantity;
+        }
+
+        return counts
+            .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(x => $"{x.Key} ({x.Value})")
+            .ToList();
+    }
+
+    private static int ReadEntryQuantity(JsonElement entry)
+    {
+        if (entry.ValueKind != JsonValueKind.Object)
+        {
+            return 1;
+        }
+
+        if (entry.TryGetProperty("q", out var quantityElement))
+        {
+            if (quantityElement.ValueKind == JsonValueKind.Number && quantityElement.TryGetInt32(out var quantityNumber))
+            {
+                return Math.Max(1, quantityNumber);
+            }
+
+            if (quantityElement.ValueKind == JsonValueKind.String &&
+                int.TryParse(quantityElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var quantityText))
+            {
+                return Math.Max(1, quantityText);
+            }
+        }
+
+        return 1;
     }
 
     private static bool IsMeleeWeaponName(string name)
@@ -3401,6 +3798,150 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return "-";
+    }
+
+    private static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
+    {
+        var baseCostText = ReadOptionCost(option);
+        if (!int.TryParse(baseCostText, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var baseCost))
+        {
+            return baseCostText;
+        }
+
+        var totalPeripheralCount = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option)
+            .Sum(ReadEntryQuantity);
+        if (totalPeripheralCount <= 1)
+        {
+            return baseCostText;
+        }
+
+        var minis = ReadOptionMinis(option);
+        if (minis <= 1 || minis <= totalPeripheralCount)
+        {
+            return baseCostText;
+        }
+
+        if (baseCost <= 0 || baseCost % minis != 0)
+        {
+            return baseCostText;
+        }
+
+        var removedPeripheralCount = totalPeripheralCount - 1;
+        var perModelCost = baseCost / minis;
+        var deduction = removedPeripheralCount * perModelCost;
+        var adjustedCost = Math.Max(0, baseCost - deduction);
+        return adjustedCost.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static IEnumerable<JsonElement> GetControllerPeripheralEntries(JsonElement group)
+    {
+        if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var collected = new List<JsonElement>();
+        foreach (var profile in profilesElement.EnumerateArray())
+        {
+            if (profile.TryGetProperty("peripheral", out var peripheralElement) &&
+                peripheralElement.ValueKind == JsonValueKind.Array &&
+                peripheralElement.GetArrayLength() > 0)
+            {
+                collected.AddRange(peripheralElement.EnumerateArray().ToList());
+            }
+        }
+
+        return collected;
+    }
+
+    private static HashSet<int> GetControllerPeripheralIds(JsonElement group)
+    {
+        var ids = new HashSet<int>();
+        foreach (var entry in GetControllerPeripheralEntries(group))
+        {
+            if (TryParseId(entry, out var id))
+            {
+                ids.Add(id);
+            }
+        }
+
+        return ids;
+    }
+
+    private static IEnumerable<JsonElement> GetFilteredOptionPeripheralEntries(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var allowedIds = GetControllerPeripheralIds(group);
+        var optionEntries = GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").ToList();
+
+        if (allowedIds.Count == 0)
+        {
+            return optionEntries;
+        }
+
+        return optionEntries
+            .Where(entry => TryParseId(entry, out var id) && allowedIds.Contains(id))
+            .ToList();
+    }
+
+    private static IEnumerable<JsonElement> GetDisplayPeripheralEntriesForOption(
+        JsonElement profileGroupsRoot,
+        JsonElement group,
+        JsonElement option)
+    {
+        var optionEntries = GetFilteredOptionPeripheralEntries(profileGroupsRoot, group, option).ToList();
+        if (optionEntries.Count > 0)
+        {
+            return optionEntries;
+        }
+
+        return GetControllerPeripheralEntries(group).ToList();
+    }
+
+    private static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
+    {
+        if (GetControllerPeripheralIds(group).Count > 0)
+        {
+            return true;
+        }
+
+        if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var option in optionsElement.EnumerateArray())
+        {
+            if (GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").Any())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int ReadOptionMinis(JsonElement option)
+    {
+        if (!option.TryGetProperty("minis", out var minisElement))
+        {
+            return 0;
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.Number && minisElement.TryGetInt32(out var minisNumber))
+        {
+            return Math.Max(0, minisNumber);
+        }
+
+        if (minisElement.ValueKind == JsonValueKind.String &&
+            int.TryParse(minisElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minisText))
+        {
+            return Math.Max(0, minisText);
+        }
+
+        return 0;
     }
 
     private static string BuildOptionDisplayName(
@@ -4073,7 +4614,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         continue;
                     }
 
-                    if (maxCost.HasValue && ParseCostValue(ReadOptionCost(option)) > maxCost.Value)
+                    if (maxCost.HasValue && ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
                     {
                         continue;
                     }
@@ -4134,7 +4675,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                         continue;
                     }
 
-                    var optionCost = ParseCostValue(ReadOptionCost(option));
+                    var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
                     if (maxCost.HasValue && optionCost > maxCost.Value)
                     {
                         continue;
@@ -4463,25 +5004,31 @@ public partial class ArmyFactionSelectionPage : ContentPage
             : int.MaxValue;
     }
 
-    private void ResetUnitDetails(bool clearLogo = true)
+    private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
         ShowTagCompanyCustomTagNameEditor = false;
         TagCompanyCustomTagNameInput = string.Empty;
+        if (resetHeaderColors)
+        {
+            ApplyUnitHeaderColorsByVanillaFactionName(null);
+        }
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
-            _selectedUnitPicture?.Dispose();
-            _selectedUnitPicture = null;
-            SelectedUnitCanvas.InvalidateSurface();
-        }
+        _selectedUnitPicture?.Dispose();
+        _selectedUnitPicture = null;
+        SelectedUnitCanvas.InvalidateSurface();
+    }
+        _selectedUnitProfileGroupsJson = null;
+        _selectedUnitFiltersJson = null;
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
         _selectedUnitCommonEquipment = [];
         _selectedUnitCommonSkills = [];
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", [], Color.FromArgb("#06B6D4"));
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted("Special Skills", [], Color.FromArgb("#F59E0B"));
+        _summaryHighlightLieutenant = false;
+        RefreshSummaryFormatted();
         Profiles.Clear();
         ProfilesStatus = "Select a unit.";
         ShowRegularOrderIcon = false;
@@ -4533,6 +5080,30 @@ public partial class ArmyFactionSelectionPage : ContentPage
         UnitVitality = "-";
         UnitS = "-";
         UnitAva = "-";
+        ResetPeripheralStatsOnly();
+    }
+
+    private void ResetPeripheralStatsOnly()
+    {
+        _peripheralMoveFirstCm = null;
+        _peripheralMoveSecondCm = null;
+        HasPeripheralStatBlock = false;
+        PeripheralNameHeading = string.Empty;
+        PeripheralMov = "-";
+        PeripheralCc = "-";
+        PeripheralBs = "-";
+        PeripheralPh = "-";
+        PeripheralWip = "-";
+        PeripheralArm = "-";
+        PeripheralBts = "-";
+        PeripheralVitalityHeader = "VITA";
+        PeripheralVitality = "-";
+        PeripheralS = "-";
+        PeripheralAva = "-";
+        PeripheralEquipment = "-";
+        PeripheralSkills = "-";
+        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
     private static IEnumerable<JsonElement> EnumerateOptions(JsonElement profileGroupsRoot)
@@ -4643,23 +5214,525 @@ public partial class ArmyFactionSelectionPage : ContentPage
         UnitVitality = vitalityValue;
     }
 
-    private void UpdateUnitMoveDisplay()
+    private static string ReadMoveFromProfile(JsonElement profile)
     {
-        if (!_unitMoveFirstCm.HasValue || !_unitMoveSecondCm.HasValue)
+        if (TryGetPropertyFlexible(profile, "move", out var moveElement) && moveElement.ValueKind == JsonValueKind.Array)
         {
-            UnitMov = "-";
-            return;
+            var moveParts = moveElement.EnumerateArray()
+                .Select(ReadNumericString)
+                .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+                .ToList();
+
+            if (moveParts.Count > 0)
+            {
+                return string.Join("-", moveParts);
+            }
+        }
+
+        return ReadMove(profile);
+    }
+
+    private string FormatMoveValue(int? firstCm, int? secondCm)
+    {
+        if (!firstCm.HasValue || !secondCm.HasValue)
+        {
+            return "-";
         }
 
         if (_showUnitsInInches)
         {
-            var first = (int)Math.Round(_unitMoveFirstCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            var second = (int)Math.Round(_unitMoveSecondCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            UnitMov = $"{first}-{second}";
+            var first = (int)Math.Round(firstCm.Value / 2.5, MidpointRounding.AwayFromZero);
+            var second = (int)Math.Round(secondCm.Value / 2.5, MidpointRounding.AwayFromZero);
+            return $"{first}-{second}";
+        }
+
+        return $"{firstCm.Value}-{secondCm.Value}";
+    }
+
+    private static string ReplaceSubtitleMoveDisplay(string? subtitle, string moveDisplay)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return $"MOV {moveDisplay}";
+        }
+
+        return Regex.Replace(
+            subtitle,
+            @"(?<=\bMOV\s)[^|]+",
+            moveDisplay,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private void UpdateUnitMoveDisplay()
+    {
+        UnitMov = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+    }
+
+    private void UpdatePeripheralMoveDisplay()
+    {
+        PeripheralMov = FormatMoveValue(_peripheralMoveFirstCm, _peripheralMoveSecondCm);
+    }
+
+    private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
+    {
+        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, _selectedUnitFiltersJson);
+        if (peripheralStats is null)
+        {
             return;
         }
 
-        UnitMov = $"{_unitMoveFirstCm.Value}-{_unitMoveSecondCm.Value}";
+        ApplyPeripheralStatBlock(peripheralStats);
+    }
+
+    private void UpdatePeripheralStatBlockFromVisibleProfiles()
+    {
+        ResetPeripheralStatsOnly();
+
+        if (string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        {
+            return;
+        }
+
+        var firstPeripheralProfile = Profiles.FirstOrDefault(x => x.IsVisible && x.HasPeripherals);
+        if (firstPeripheralProfile is null)
+        {
+            return;
+        }
+
+        var peripheralName = ExtractFirstPeripheralName(firstPeripheralProfile.Peripherals);
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
+            {
+                return;
+            }
+
+            PopulatePeripheralStatsFromElement(peripheralProfile, peripheralName);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage UpdatePeripheralStatBlockFromVisibleProfiles failed: {ex.Message}");
+        }
+    }
+
+    private PeripheralMercsCompanyStats? BuildPeripheralStatBlock(string peripheralName, JsonElement peripheralProfile, string? filtersJson)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return null;
+        }
+
+        var equipLookup = BuildIdNameLookup(filtersJson, "equip");
+        var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
+        var extrasLookup = BuildExtrasLookup(filtersJson);
+        var (moveFirstCm, moveSecondCm) = ParseMoveValues(peripheralProfile);
+        var equipmentNames = GetOrderedIdDisplayNamesFromEntries(
+            GetContainerEntries(peripheralProfile, "equip"),
+            equipLookup,
+            extrasLookup,
+            _showUnitsInInches);
+        var skillNames = BuildConfigurationSkillNames(
+            GetOrderedIdDisplayNamesFromEntries(
+                GetContainerEntries(peripheralProfile, "skills"),
+                skillsLookup,
+                extrasLookup,
+                _showUnitsInInches));
+        var (vitalityHeader, vitalityValue) = ReadVitality(peripheralProfile);
+
+        return new PeripheralMercsCompanyStats
+        {
+            NameHeading = $"Peripheral: {peripheralName}",
+            MoveFirstCm = moveFirstCm,
+            MoveSecondCm = moveSecondCm,
+            Mov = ReadMoveFromProfile(peripheralProfile),
+            Cc = ReadIntAsString(peripheralProfile, "cc"),
+            Bs = ReadIntAsString(peripheralProfile, "bs"),
+            Ph = ReadIntAsString(peripheralProfile, "ph"),
+            Wip = ReadIntAsString(peripheralProfile, "wip"),
+            Arm = ReadIntAsString(peripheralProfile, "arm"),
+            Bts = ReadIntAsString(peripheralProfile, "bts"),
+            VitalityHeader = vitalityHeader,
+            Vitality = vitalityValue,
+            S = ReadIntAsString(peripheralProfile, "s"),
+            Ava = ReadAvaAsString(peripheralProfile),
+            Equipment = JoinOrDash(equipmentNames),
+            Skills = JoinOrDash(skillNames)
+        };
+    }
+
+    private void ApplyPeripheralStatBlock(PeripheralMercsCompanyStats peripheralStats)
+    {
+        _peripheralMoveFirstCm = peripheralStats.MoveFirstCm;
+        _peripheralMoveSecondCm = peripheralStats.MoveSecondCm;
+        UpdatePeripheralMoveDisplay();
+        PeripheralNameHeading = peripheralStats.NameHeading;
+        PeripheralCc = peripheralStats.Cc;
+        PeripheralBs = peripheralStats.Bs;
+        PeripheralPh = peripheralStats.Ph;
+        PeripheralWip = peripheralStats.Wip;
+        PeripheralArm = peripheralStats.Arm;
+        PeripheralBts = peripheralStats.Bts;
+        PeripheralVitalityHeader = peripheralStats.VitalityHeader;
+        PeripheralVitality = peripheralStats.Vitality;
+        PeripheralS = peripheralStats.S;
+        PeripheralAva = peripheralStats.Ava;
+        PeripheralEquipment = peripheralStats.Equipment;
+        PeripheralSkills = peripheralStats.Skills;
+        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
+        HasPeripheralStatBlock = true;
+    }
+
+    private static string ExtractFirstPeripheralName(string? peripheralsText)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralsText) || peripheralsText == "-")
+        {
+            return string.Empty;
+        }
+
+        var firstEntry = peripheralsText
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(firstEntry))
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(firstEntry, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+    }
+
+    private static string NormalizePeripheralNameForDedupe(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value == "-")
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(value, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+    }
+
+    private static int GetPeripheralTotalCount(IEnumerable<string> peripheralNames)
+    {
+        var total = 0;
+        foreach (var name in peripheralNames)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name == "-")
+            {
+                continue;
+            }
+
+            var match = Regex.Match(name, @"\((\d+)\)\s*$");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var parsedCount))
+            {
+                total += Math.Max(0, parsedCount);
+            }
+            else
+            {
+                total += 1;
+            }
+        }
+
+        return total;
+    }
+
+    private static bool TryBuildSinglePeripheralDisplay(
+        IReadOnlyList<string> peripheralNames,
+        out string peripheralName,
+        out int peripheralCount)
+    {
+        peripheralName = string.Empty;
+        peripheralCount = 0;
+
+        if (peripheralNames.Count != 1)
+        {
+            return false;
+        }
+
+        var only = peripheralNames[0];
+        if (string.IsNullOrWhiteSpace(only) || only == "-")
+        {
+            return false;
+        }
+
+        var match = Regex.Match(only, @"^(.*)\((\d+)\)\s*$");
+        if (!match.Success || !int.TryParse(match.Groups[2].Value, out peripheralCount))
+        {
+            return false;
+        }
+
+        peripheralName = match.Groups[1].Value.Trim();
+        if (string.IsNullOrWhiteSpace(peripheralName))
+        {
+            return false;
+        }
+
+        return peripheralCount > 0;
+    }
+
+    private static bool TryGetPeripheralUnitCost(JsonElement profileGroupsRoot, string peripheralName, out int peripheralUnitCost)
+    {
+        peripheralUnitCost = 0;
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        var expected = NormalizeComparisonToken(peripheralName);
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            return false;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            var groupIsc = group.TryGetProperty("isc", out var groupIscElement) && groupIscElement.ValueKind == JsonValueKind.String
+                ? groupIscElement.GetString() ?? string.Empty
+                : string.Empty;
+            var groupMatch = NormalizeComparisonToken(groupIsc) == expected;
+
+            if (!groupMatch &&
+                group.TryGetProperty("profiles", out var profilesElement) &&
+                profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    var profileName = profile.TryGetProperty("name", out var profileNameElement) && profileNameElement.ValueKind == JsonValueKind.String
+                        ? profileNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(profileName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch &&
+                group.TryGetProperty("options", out var matchOptionsElement) &&
+                matchOptionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var option in matchOptionsElement.EnumerateArray())
+                {
+                    var optionName = option.TryGetProperty("name", out var optionNameElement) && optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(optionName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch ||
+                !group.TryGetProperty("options", out var optionsElement) ||
+                optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                var optionCost = ParseCostValue(ReadOptionCost(option));
+                if (optionCost <= 0)
+                {
+                    continue;
+                }
+
+                var minis = Math.Max(1, ReadOptionMinis(option));
+                peripheralUnitCost = Math.Max(1, optionCost / minis);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasStatFields(JsonElement element)
+    {
+        return element.ValueKind == JsonValueKind.Object &&
+               (element.TryGetProperty("cc", out _) ||
+                element.TryGetProperty("bs", out _) ||
+                element.TryGetProperty("ph", out _) ||
+                element.TryGetProperty("wip", out _) ||
+                element.TryGetProperty("arm", out _) ||
+                element.TryGetProperty("bts", out _));
+    }
+
+    private void PopulatePeripheralStatBlock(
+        JsonElement profileGroupsRoot,
+        string? filtersJson,
+        bool forceLieutenant,
+        IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        ResetPeripheralStatsOnly();
+
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            {
+                continue;
+            }
+
+            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                if (IsPositiveSwc(ReadOptionSwc(option)))
+                {
+                    continue;
+                }
+
+                if (!forceLieutenant && LieutenantOnlyUnits && !IsLieutenantOption(option, skillsLookup))
+                {
+                    continue;
+                }
+
+                var peripheralEntries = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
+                foreach (var entry in peripheralEntries)
+                {
+                    if (!TryParseId(entry, out var peripheralId))
+                    {
+                        continue;
+                    }
+
+                    var peripheralName = peripheralLookup.TryGetValue(peripheralId, out var resolvedName)
+                        ? resolvedName
+                        : peripheralId.ToString(CultureInfo.InvariantCulture);
+
+                    if (!TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile))
+                    {
+                        continue;
+                    }
+
+                    PopulatePeripheralStatsFromElement(peripheralProfile, peripheralName);
+                    return;
+                }
+            }
+        }
+    }
+
+    private static bool TryFindPeripheralStatElement(
+        JsonElement profileGroupsRoot,
+        string peripheralName,
+        out JsonElement profile)
+    {
+        profile = default;
+        var expected = NormalizeComparisonToken(peripheralName);
+        if (string.IsNullOrWhiteSpace(expected) || profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            var groupIsc = group.TryGetProperty("isc", out var groupIscElement) && groupIscElement.ValueKind == JsonValueKind.String
+                ? groupIscElement.GetString() ?? string.Empty
+                : string.Empty;
+            var normalizedGroupIsc = NormalizeComparisonToken(groupIsc);
+
+            if (group.TryGetProperty("profiles", out var profilesElement) && profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var candidate in profilesElement.EnumerateArray())
+                {
+                    var profileName = candidate.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+                        ? nameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    var normalizedProfileName = NormalizeComparisonToken(profileName);
+                    if (normalizedProfileName == expected || normalizedGroupIsc == expected)
+                    {
+                        profile = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var candidateOption in optionsElement.EnumerateArray())
+                {
+                    var optionName = candidateOption.TryGetProperty("name", out var optionNameElement) && optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    var normalizedOptionName = NormalizeComparisonToken(optionName);
+                    if (normalizedOptionName == expected)
+                    {
+                        if (group.TryGetProperty("profiles", out var optionMatchedProfiles) &&
+                            optionMatchedProfiles.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var optionMatchedProfile in optionMatchedProfiles.EnumerateArray())
+                            {
+                                if (HasStatFields(optionMatchedProfile))
+                                {
+                                    profile = optionMatchedProfile;
+                                    return true;
+                                }
+                            }
+                        }
+
+                        if (HasStatFields(candidateOption))
+                        {
+                            profile = candidateOption;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (normalizedGroupIsc == expected &&
+                group.TryGetProperty("profiles", out var groupProfilesElement) &&
+                groupProfilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var fallbackProfile in groupProfilesElement.EnumerateArray())
+                {
+                    profile = fallbackProfile;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeComparisonToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return Regex.Replace(value, @"[^a-z0-9]", string.Empty, RegexOptions.IgnoreCase).ToLowerInvariant();
+    }
+
+    private static IEnumerable<JsonElement> GetContainerEntries(JsonElement container, string propertyName)
+    {
+        if (!TryGetPropertyFlexible(container, propertyName, out var entriesElement) ||
+            entriesElement.ValueKind != JsonValueKind.Array)
+        {
+            yield break;
+        }
+
+        foreach (var entry in entriesElement.EnumerateArray())
+        {
+            yield return entry.Clone();
+        }
     }
 
     private static (int? firstCm, int? secondCm) ParseMoveValues(JsonElement element)
@@ -4843,12 +5916,22 @@ public partial class ArmyFactionSelectionPage : ContentPage
         int value;
         if (avaElement.ValueKind == JsonValueKind.Number && avaElement.TryGetInt32(out value))
         {
-            return value == 255 ? "T" : value.ToString();
+            return value switch
+            {
+                < 0 => "-",
+                255 => "T",
+                _ => value.ToString()
+            };
         }
 
         if (avaElement.ValueKind == JsonValueKind.String && int.TryParse(avaElement.GetString(), out value))
         {
-            return value == 255 ? "T" : value.ToString();
+            return value switch
+            {
+                < 0 => "-",
+                255 => "T",
+                _ => value.ToString()
+            };
         }
 
         return "-";
@@ -4909,6 +5992,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
             _showUnitsInInches = showInches;
             UpdateUnitMoveDisplay();
+            UpdatePeripheralMoveDisplay();
+            RefreshMercsCompanyEntryDistanceDisplays();
         }
         catch (Exception ex)
         {
@@ -5162,6 +6247,75 @@ public partial class ArmyFactionSelectionPage : ContentPage
             TextColor = accentColor
         });
         return formatted;
+    }
+
+    private static string BuildPeripheralSubtitle(PeripheralMercsCompanyStats? peripheralStats)
+    {
+        if (peripheralStats is null)
+        {
+            return "-";
+        }
+
+        return $"MOV {peripheralStats.Mov} | CC {peripheralStats.Cc} | BS {peripheralStats.Bs} | PH {peripheralStats.Ph} | WIP {peripheralStats.Wip} | ARM {peripheralStats.Arm} | BTS {peripheralStats.Bts} | {peripheralStats.VitalityHeader} {peripheralStats.Vitality} | S {peripheralStats.S} | AVA {peripheralStats.Ava}";
+    }
+
+    private static List<string> SplitDisplayLine(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || text == "-")
+        {
+            return [];
+        }
+
+        return text
+            .Replace("\r\n", ",", StringComparison.Ordinal)
+            .Replace('\r', ',')
+            .Replace('\n', ',')
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+            .ToList();
+    }
+
+    private static List<string> IntersectNamedIds(
+        IReadOnlyList<JsonElement> options,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup)
+    {
+        HashSet<int>? intersection = null;
+        foreach (var option in options)
+        {
+            var ids = new HashSet<int>();
+            if (option.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var entry in arr.EnumerateArray())
+                {
+                    if (TryParseId(entry, out var id))
+                    {
+                        ids.Add(id);
+                    }
+                }
+            }
+
+            if (intersection is null)
+            {
+                intersection = ids;
+            }
+            else
+            {
+                intersection.IntersectWith(ids);
+            }
+        }
+
+        if (intersection is null || intersection.Count == 0)
+        {
+            return [];
+        }
+
+        return intersection
+            .Where(lookup.ContainsKey)
+            .Select(id => lookup[id])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static List<string> ComputeCommonDisplayNamesFromProfiles(
@@ -5664,12 +6818,14 @@ public partial class ArmyFactionSelectionPage : ContentPage
         _cube2IconPicture = null;
         _hackableIconPicture?.Dispose();
         _hackableIconPicture = null;
+        _peripheralIconPicture?.Dispose();
+        _peripheralIconPicture = null;
         _filterIconPicture?.Dispose();
         _filterIconPicture = null;
 
         try
         {
-            await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circle-arrow-803872.svg");
+            await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
             var regularSvg = new SKSvg();
             _regularOrderIconPicture = regularSvg.Load(regularStream);
         }
@@ -5680,7 +6836,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-arrow-963008.svg");
+            await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
             var irregularSvg = new SKSvg();
             _irregularOrderIconPicture = irregularSvg.Load(irregularStream);
         }
@@ -5691,7 +6847,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-fire-131591.svg");
+            await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
             var impetuousSvg = new SKSvg();
             _impetuousIconPicture = impetuousSvg.Load(impetuousStream);
         }
@@ -5713,7 +6869,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cube-alt-2-svgrepo-com.svg");
+            await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
             var cubeSvg = new SKSvg();
             _cubeIconPicture = cubeSvg.Load(cubeStream);
         }
@@ -5724,7 +6880,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/cubes-svgrepo-com.svg");
+            await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
             var cube2Svg = new SKSvg();
             _cube2IconPicture = cube2Svg.Load(cube2Stream);
         }
@@ -5735,13 +6891,24 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-circuit-8241852.svg");
+            await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
             var hackableSvg = new SKSvg();
             _hackableIconPicture = hackableSvg.Load(hackableStream);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage hackable icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
+            var peripheralSvg = new SKSvg();
+            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage peripheral icon load failed: {ex.Message}");
         }
 
         try
@@ -5755,10 +6922,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
             Console.Error.WriteLine($"ArmyFactionSelectionPage filter icon load failed: {ex.Message}");
         }
 
-        TopIconRowCanvas.InvalidateSurface();
-        BottomIconRowCanvas.InvalidateSurface();
+        HeaderIconsCanvas.InvalidateSurface();
         UnitSelectionFilterCanvasInactive.InvalidateSurface();
         UnitSelectionFilterCanvasActive.InvalidateSurface();
+        PeripheralHeaderIconCanvas?.InvalidateSurface();
     }
 
     private async Task LoadSeasonValidationIconsAsync()
@@ -5830,20 +6997,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
         DrawSlotPicture(_selectedUnitPicture, e);
     }
 
-    private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    private void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
-        var pictures = BuildTopIconPictures();
-        DrawIconRow(canvas, e.Info, pictures);
-    }
-
-    private void OnBottomIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var pictures = BuildBottomIconPictures();
-        DrawIconRow(canvas, e.Info, pictures);
+        var pictures = BuildHeaderIconPictures();
+        DrawIconColumn(canvas, e.Info, pictures);
     }
 
     private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -5857,9 +7016,19 @@ public partial class ArmyFactionSelectionPage : ContentPage
         DrawSlotPicture(_filterIconPicture, e);
     }
 
+    private void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawSlotPicture(_peripheralIconPicture, e);
+    }
+
+    private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
+    {
+        UpdateUnitNameHeadingFontSize();
+    }
+
     private List<SKPicture> BuildTopIconPictures()
     {
-        var pictures = new List<SKPicture>(MaxIconsPerRow);
+        var pictures = new List<SKPicture>(3);
         var orderTypePicture = ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
         if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
         {
@@ -5881,7 +7050,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private List<SKPicture> BuildBottomIconPictures()
     {
-        var pictures = new List<SKPicture>(MaxIconsPerRow);
+        var pictures = new List<SKPicture>(3);
         if (ShowCubeIcon && _cubeIconPicture is not null)
         {
             pictures.Add(_cubeIconPicture);
@@ -5900,26 +7069,41 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return pictures;
     }
 
-    private static void DrawIconRow(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
+    private List<SKPicture> BuildHeaderIconPictures()
+    {
+        var pictures = BuildTopIconPictures();
+        pictures.AddRange(BuildBottomIconPictures());
+        if (pictures.Count <= MaxHeaderIcons)
+        {
+            return pictures;
+        }
+
+        return pictures.Take(MaxHeaderIcons).ToList();
+    }
+
+    private static void DrawIconColumn(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
     {
         if (pictures.Count == 0)
         {
             return;
         }
 
-        var drawCount = Math.Min(MaxIconsPerRow, pictures.Count);
-        var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-        var startX = info.Width - RightPadding - rowWidth;
-        if (startX < 0)
+        var drawCount = pictures.Count;
+        var totalGap = (drawCount - 1) * IconVerticalGap;
+        var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
+        var iconSize = Math.Max(1f, Math.Min(IconSize, maxIconSizeFromHeight));
+        var totalHeight = (drawCount * iconSize) + totalGap;
+        var startY = (info.Height - totalHeight) / 2f;
+        if (startY < 0f)
         {
-            startX = 0;
+            startY = 0f;
         }
 
         for (var i = 0; i < drawCount; i++)
         {
-            var x = startX + (i * (IconSize + IconGap));
-            var y = (info.Height - IconSize) / 2f;
-            var destination = new SKRect(x, y, x + IconSize, y + IconSize);
+            var x = (info.Width - iconSize) / 2f;
+            var y = startY + (i * (iconSize + IconVerticalGap));
+            var destination = new SKRect(x, y, x + iconSize, y + iconSize);
             DrawPictureInRect(canvas, pictures[i], destination);
         }
     }
@@ -5935,6 +7119,274 @@ public partial class ArmyFactionSelectionPage : ContentPage
         buttonBorder.HeightRequest = iconButtonSize;
         iconCanvas.WidthRequest = iconButtonSize;
         iconCanvas.HeightRequest = iconButtonSize;
+    }
+
+    private void UpdateUnitNameHeadingFontSize()
+    {
+        if (UnitNameHeadingLabel is null)
+        {
+            return;
+        }
+
+        var availableWidth = UnitNameHeadingLabel.Width;
+        if (availableWidth <= 0)
+        {
+            UnitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
+            return;
+        }
+
+        var measuredWidth = double.PositiveInfinity;
+        for (var size = UnitNameHeadingMaxFontSize; size >= UnitNameHeadingMinFontSize; size -= UnitNameHeadingFontStep)
+        {
+            UnitNameHeadingFontSize = size;
+            measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
+            if (measuredWidth <= availableWidth)
+            {
+                return;
+            }
+        }
+
+        UnitNameHeadingFontSize = UnitNameHeadingMinFontSize;
+    }
+
+    private async Task ApplyUnitHeaderColorsAsync(int sourceFactionId, ArmyUnitRecord? unit, CancellationToken cancellationToken)
+    {
+        if (_metadataAccessor is null)
+        {
+            ApplyUnitHeaderColorsByVanillaFactionName(null);
+            return;
+        }
+
+        string? factionName;
+        if (_mode == ArmySourceSelectionMode.Sectorials)
+        {
+            // In sectorial mode, always color by the sectorial lineage the unit was generated from.
+            factionName = await ResolveVanillaFactionNameAsync(sourceFactionId, cancellationToken);
+        }
+        else
+        {
+            factionName = await ResolveUnitVanillaFactionNameAsync(sourceFactionId, unit?.FactionsJson, cancellationToken);
+        }
+
+        ApplyUnitHeaderColorsByVanillaFactionName(factionName);
+    }
+
+    private async Task<string?> ResolveUnitVanillaFactionNameAsync(int sourceFactionId, string? unitFactionsJson, CancellationToken cancellationToken)
+    {
+        foreach (var factionId in ParseFactionIds(unitFactionsJson))
+        {
+            var candidateName = await ResolveVanillaFactionNameAsync(factionId, cancellationToken);
+            if (IsThemeFactionName(candidateName))
+            {
+                return candidateName;
+            }
+        }
+
+        return await ResolveVanillaFactionNameAsync(sourceFactionId, cancellationToken);
+    }
+
+    private async Task<string?> ResolveVanillaFactionNameAsync(int sourceFactionId, CancellationToken cancellationToken)
+    {
+        if (_metadataAccessor is null || sourceFactionId <= 0)
+        {
+            return null;
+        }
+
+        var current = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+        var safety = 0;
+        while (current is not null && safety < 8)
+        {
+            // Prefer the first recognized themed faction while walking up the lineage.
+            if (IsThemeFactionName(current.Name))
+            {
+                return current.Name;
+            }
+
+            if (current.ParentId <= 0)
+            {
+                break;
+            }
+
+            var parent = await _metadataAccessor.GetFactionByIdAsync(current.ParentId, cancellationToken);
+            if (parent is null || parent.Id == current.Id)
+            {
+                break;
+            }
+
+            current = parent;
+            safety++;
+        }
+
+        // Reinforcement families in metadata can point to intermediate parent ids that are not present.
+        // Fall back to id-family inference so reinforcement factions inherit their base faction theme.
+        var inferredThemeName = InferThemeFactionNameFromFactionId(sourceFactionId)
+            ?? (current is not null ? InferThemeFactionNameFromFactionId(current.Id) : null);
+        if (!string.IsNullOrWhiteSpace(inferredThemeName))
+        {
+            return inferredThemeName;
+        }
+
+        return current?.Name;
+    }
+
+    private void ApplyUnitHeaderColorsByVanillaFactionName(string? vanillaFactionName)
+    {
+        var (primary, secondary) = GetFactionTheme(vanillaFactionName);
+        UnitHeaderPrimaryColor = primary;
+        UnitHeaderSecondaryColor = secondary;
+        UnitHeaderPrimaryTextColor = IsLightColor(primary) ? Colors.Black : Colors.White;
+        UnitHeaderSecondaryTextColor = IsLightColor(secondary) ? Colors.Black : Colors.White;
+        RefreshSummaryFormatted();
+    }
+
+    private void RefreshSummaryFormatted()
+    {
+        var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", _selectedUnitCommonEquipment, equipmentAccent);
+        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+            "Special Skills",
+            _selectedUnitCommonSkills,
+            skillsAccent,
+            highlightLieutenantPurple: _summaryHighlightLieutenant);
+    }
+
+    private static (Color EquipmentAccent, Color SkillsAccent) GetSummaryAccentColorsForSecondaryBackground(Color secondaryBackground)
+    {
+        return IsLightColor(secondaryBackground)
+            ? (EquipmentAccentOnLightSecondary, SkillsAccentOnLightSecondary)
+            : (EquipmentAccentOnDarkSecondary, SkillsAccentOnDarkSecondary);
+    }
+
+    private static (Color Primary, Color Secondary) GetFactionTheme(string? factionName)
+    {
+        var key = NormalizeFactionName(factionName);
+        return key switch
+        {
+            "panoceania" => (Color.FromArgb("#239ac2"), Color.FromArgb("#006a91")),
+            "yujing" => (Color.FromArgb("#ff9000"), Color.FromArgb("#995601")),
+            "ariadna" => (Color.FromArgb("#007d27"), Color.FromArgb("#005825")),
+            "haqqislam" => (Color.FromArgb("#e6da9b"), Color.FromArgb("#8a835d")),
+            "nomads" => (Color.FromArgb("#ce181e"), Color.FromArgb("#7c0e13")),
+            "combinedarmy" => (Color.FromArgb("#400b5f"), Color.FromArgb("#260739")),
+            "aleph" => (Color.FromArgb("#aea6bb"), Color.FromArgb("#696471")),
+            "tohaa" => (Color.FromArgb("#3b3b3b"), Color.FromArgb("#252525")),
+            "nonalignedarmy" => (Color.FromArgb("#728868"), Color.FromArgb("#728868")),
+            "o12" => (Color.FromArgb("#005470"), Color.FromArgb("#dead33")),
+            "jsa" => (Color.FromArgb("#a6112b"), Color.FromArgb("#757575")),
+            _ => (DefaultHeaderPrimaryColor, DefaultHeaderSecondaryColor)
+        };
+    }
+
+    private static bool IsThemeFactionName(string? factionName)
+    {
+        var key = NormalizeFactionName(factionName);
+        return key is
+            "panoceania" or
+            "yujing" or
+            "ariadna" or
+            "haqqislam" or
+            "nomads" or
+            "combinedarmy" or
+            "aleph" or
+            "tohaa" or
+            "nonalignedarmy" or
+            "o12" or
+            "jsa";
+    }
+
+    private static IReadOnlyList<int> ParseFactionIds(string? factionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(factionsJson))
+        {
+            return Array.Empty<int>();
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(factionsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return Array.Empty<int>();
+            }
+
+            var ids = new List<int>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numericId))
+                {
+                    ids.Add(numericId);
+                    continue;
+                }
+
+                if (element.ValueKind == JsonValueKind.String &&
+                    int.TryParse(element.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var stringId))
+                {
+                    ids.Add(stringId);
+                }
+            }
+
+            return ids;
+        }
+        catch
+        {
+            return Array.Empty<int>();
+        }
+    }
+
+    private static string NormalizeFactionName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var cleaned = value.Trim().ToLowerInvariant();
+        cleaned = cleaned.Replace("reinforcements", string.Empty, StringComparison.Ordinal)
+                         .Replace("reinforcement", string.Empty, StringComparison.Ordinal)
+                         .Trim();
+        return cleaned switch
+        {
+            "yu jing" => "yujing",
+            "combined army" => "combinedarmy",
+            "non aligned army" => "nonalignedarmy",
+            "non-aligned armies" => "nonalignedarmy",
+            "non aligned armies" => "nonalignedarmy",
+            "non-aligned army" => "nonalignedarmy",
+            "japanese secessionist army" => "jsa",
+            "o-12" => "o12",
+            _ => new string(cleaned.Where(char.IsLetterOrDigit).ToArray())
+        };
+    }
+
+    private static bool IsLightColor(Color color)
+    {
+        var luminance = (0.299 * color.Red) + (0.587 * color.Green) + (0.114 * color.Blue);
+        return luminance >= 0.6;
+    }
+
+    private static string? InferThemeFactionNameFromFactionId(int factionId)
+    {
+        if (factionId <= 0)
+        {
+            return null;
+        }
+
+        var family = factionId / 100;
+        return family switch
+        {
+            1 => "PanOceania",
+            2 => "Yu Jing",
+            3 => "Ariadna",
+            4 => "Haqqislam",
+            5 => "Nomads",
+            6 => "Combined Army",
+            7 => "Aleph",
+            8 => "Tohaa",
+            9 => "Non-Aligned Armies",
+            10 => "O-12",
+            11 => "JSA",
+            _ => null
+        };
     }
 
     private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)
@@ -6258,7 +7710,22 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 
     public string? PackagedLogoPath { get; init; }
 
-    public string? Subtitle { get; init; }
+    private string? _subtitle;
+    public string? Subtitle
+    {
+        get => _subtitle;
+        set
+        {
+            if (_subtitle == value)
+            {
+                return;
+            }
+
+            _subtitle = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasSubtitle));
+        }
+    }
     public string UnitTypeCode { get; init; } = string.Empty;
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
@@ -6266,6 +7733,42 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public string SavedCcWeapons { get; init; } = "-";
     public bool CanRemove { get; init; } = true;
     public bool IsTagCompanyCustomTag { get; init; }
+    public int? UnitMoveFirstCm { get; init; }
+    public int? UnitMoveSecondCm { get; init; }
+    public string UnitMoveDisplay { get; set; } = "-";
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    private string _peripheralMov = "-";
+    public string PeripheralMov
+    {
+        get => _peripheralMov;
+        set
+        {
+            if (_peripheralMov == value)
+            {
+                return;
+            }
+
+            _peripheralMov = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PeripheralSubtitle));
+        }
+    }
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public int? PeripheralMoveFirstCm { get; init; }
+    public int? PeripheralMoveSecondCm { get; init; }
+    public string SavedPeripheralEquipment { get; init; } = "-";
+    public string SavedPeripheralSkills { get; init; } = "-";
+    public string PeripheralSubtitle => $"MOV {PeripheralMov} | CC {PeripheralCc} | BS {PeripheralBs} | PH {PeripheralPh} | WIP {PeripheralWip} | ARM {PeripheralArm} | BTS {PeripheralBts} | {PeripheralVitalityHeader} {PeripheralVitality} | S {PeripheralS} | AVA {PeripheralAva}";
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
@@ -6275,6 +7778,10 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
     public bool HasSkillsLine { get; init; }
     public FormattedString RangedLineFormatted { get; init; } = new();
     public FormattedString CcLineFormatted { get; init; } = new();
+    public FormattedString PeripheralEquipmentLineFormatted { get; init; } = new();
+    public bool HasPeripheralEquipmentLine { get; init; }
+    public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
+    public bool HasPeripheralSkillsLine { get; init; }
     private int _experiencePoints;
     public int ExperiencePoints
     {
@@ -6384,8 +7891,43 @@ public sealed class SavedCompanyEntry
     public string SavedCcWeapons { get; init; } = "-";
     public string? SavedCachedLogoPath { get; init; }
     public string? SavedPackagedLogoPath { get; init; }
+    public bool HasPeripheralStatBlock { get; init; }
+    public string PeripheralNameHeading { get; init; } = string.Empty;
+    public string PeripheralMov { get; init; } = "-";
+    public string PeripheralCc { get; init; } = "-";
+    public string PeripheralBs { get; init; } = "-";
+    public string PeripheralPh { get; init; } = "-";
+    public string PeripheralWip { get; init; } = "-";
+    public string PeripheralArm { get; init; } = "-";
+    public string PeripheralBts { get; init; } = "-";
+    public string PeripheralVitalityHeader { get; init; } = "VITA";
+    public string PeripheralVitality { get; init; } = "-";
+    public string PeripheralS { get; init; } = "-";
+    public string PeripheralAva { get; init; } = "-";
+    public string SavedPeripheralEquipment { get; init; } = "-";
+    public string SavedPeripheralSkills { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+}
+
+sealed class PeripheralMercsCompanyStats
+{
+    public string NameHeading { get; init; } = string.Empty;
+    public int? MoveFirstCm { get; init; }
+    public int? MoveSecondCm { get; init; }
+    public string Mov { get; init; } = "-";
+    public string Cc { get; init; } = "-";
+    public string Bs { get; init; } = "-";
+    public string Ph { get; init; } = "-";
+    public string Wip { get; init; } = "-";
+    public string Arm { get; init; } = "-";
+    public string Bts { get; init; } = "-";
+    public string VitalityHeader { get; init; } = "VITA";
+    public string Vitality { get; init; } = "-";
+    public string S { get; init; } = "-";
+    public string Ava { get; init; } = "-";
+    public string Equipment { get; init; } = "-";
+    public string Skills { get; init; } = "-";
 }
 
 public sealed class CaptainUpgradeOptionSet
@@ -7578,6 +9120,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
             .ToList();
     }
+
 }
 
 public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)
@@ -7631,8 +9174,6 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
-
-
 
 
 
