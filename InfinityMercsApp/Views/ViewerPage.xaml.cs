@@ -26,6 +26,8 @@ public partial class ViewerPage : ContentPage
 	private SKPicture? _cubeIconPicture;
 	private SKPicture? _cube2IconPicture;
 	private SKPicture? _hackableIconPicture;
+	private SKPicture? _selectedUnitPicture;
+	private int _selectedUnitLogoLoadVersion;
 
 	public ViewerPage()
 	{
@@ -152,6 +154,14 @@ public partial class ViewerPage : ContentPage
 
 		TopIconRowCanvas.InvalidateSurface();
 		BottomIconRowCanvas.InvalidateSurface();
+		UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
+		UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
+		UnitDisplayConfigurationsView.ImpetuousIconPicture = _impetuousIconPicture;
+		UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = _tacticalAwarenessIconPicture;
+		UnitDisplayConfigurationsView.CubeIconPicture = _cubeIconPicture;
+		UnitDisplayConfigurationsView.Cube2IconPicture = _cube2IconPicture;
+		UnitDisplayConfigurationsView.HackableIconPicture = _hackableIconPicture;
+		UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
 	}
 
 	private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -169,6 +179,76 @@ public partial class ViewerPage : ContentPage
 			or nameof(ViewerViewModel.ShowHackableIcon))
 		{
 			BottomIconRowCanvas.InvalidateSurface();
+		}
+
+		if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
+			or nameof(ViewerViewModel.ShowIrregularOrderIcon)
+			or nameof(ViewerViewModel.ShowImpetuousIcon)
+			or nameof(ViewerViewModel.ShowTacticalAwarenessIcon)
+			or nameof(ViewerViewModel.ShowCubeIcon)
+			or nameof(ViewerViewModel.ShowCube2Icon)
+			or nameof(ViewerViewModel.ShowHackableIcon))
+		{
+			UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
+		}
+
+		if (e.PropertyName == nameof(ViewerViewModel.SelectedUnit))
+		{
+			_ = LoadSelectedUnitLogoAsync(_viewModel.SelectedUnit);
+		}
+	}
+
+	private async Task LoadSelectedUnitLogoAsync(ViewerUnitItem? unit)
+	{
+		var loadVersion = ++_selectedUnitLogoLoadVersion;
+		SKPicture? loadedPicture = null;
+
+		try
+		{
+			if (unit is not null)
+			{
+				Stream? stream = null;
+				try
+				{
+					if (!string.IsNullOrWhiteSpace(unit.CachedLogoPath) && File.Exists(unit.CachedLogoPath))
+					{
+						stream = File.OpenRead(unit.CachedLogoPath);
+					}
+					else if (!string.IsNullOrWhiteSpace(unit.PackagedLogoPath))
+					{
+						stream = await FileSystem.Current.OpenAppPackageFileAsync(unit.PackagedLogoPath);
+					}
+
+					if (stream is not null)
+					{
+						await using (stream)
+						{
+							var svg = new SKSvg();
+							loadedPicture = svg.Load(stream);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine($"ViewerPage selected unit logo load failed: {ex.Message}");
+				}
+			}
+
+			if (loadVersion != _selectedUnitLogoLoadVersion)
+			{
+				loadedPicture?.Dispose();
+				return;
+			}
+
+			_selectedUnitPicture?.Dispose();
+			_selectedUnitPicture = loadedPicture;
+			UnitDisplayConfigurationsView.SelectedUnitPicture = _selectedUnitPicture;
+			UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
+		}
+		catch
+		{
+			loadedPicture?.Dispose();
+			throw;
 		}
 	}
 

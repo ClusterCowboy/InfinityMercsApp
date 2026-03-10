@@ -16,10 +16,11 @@ using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Templates.NewCompany;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage : ContentPage
+public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUnitDisplayIconState, IUnitDisplayStatState
 {
     private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
@@ -58,30 +59,9 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         }
     }
 
-    private const int MaxHeaderIcons = 6;
-    private const float IconSize = 24f;
-    private const float IconVerticalGap = 5f;
     private const double UnitNameHeadingMaxFontSize = 24d;
     private const double UnitNameHeadingMinFontSize = 11d;
     private const double UnitNameHeadingFontStep = 0.5d;
-    private static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
-    private static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
-    private static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
-    private static readonly Color SkillsAccentOnDarkSecondary = Color.FromArgb("#FDE68A");
-    private static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
-    private static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
-    private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
-    private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
-    private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
-    {
-        [1] = 0, // LI
-        [2] = 1, // MI
-        [3] = 2, // HI
-        [4] = 3, // TAG
-        [5] = 4, // REM
-        [6] = 5, // SK
-        [7] = 6  // WB
-    };
     private const int CharacterCategoryId = 10;
 
     private readonly ArmySourceSelectionMode _mode;
@@ -90,25 +70,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
-    private ArmyFactionSelectionItem? _selectedFaction;
-    private ArmyFactionSelectionItem? _leftSlotFaction;
-    private ArmyFactionSelectionItem? _rightSlotFaction;
-    private SKPicture? _leftSlotPicture;
-    private SKPicture? _rightSlotPicture;
-    private SKPicture? _selectedUnitPicture;
-    private SKPicture? _regularOrderIconPicture;
-    private SKPicture? _irregularOrderIconPicture;
-    private SKPicture? _impetuousIconPicture;
-    private SKPicture? _tacticalAwarenessIconPicture;
-    private SKPicture? _cubeIconPicture;
-    private SKPicture? _cube2IconPicture;
-    private SKPicture? _hackableIconPicture;
-    private SKPicture? _peripheralIconPicture;
-    private SKPicture? _filterIconPicture;
-    private SKPicture? _seasonCheckIconPicture;
-    private SKPicture? _seasonXIconPicture;
-    private bool _showSeasonCheckIcon;
-    private bool _isCompanyValid;
+    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();    private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
@@ -116,76 +78,16 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
-    private bool _teamsView = true;
+    private bool _showFireteams = true;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
-    private string _selectedStartSeasonPoints = "75";
-    private string _seasonPointsCapText = "0";
     private ArmyUnitSelectionItem? _selectedUnit;
     private bool _restrictSelectedUnitProfilesToFto;
-    private string _leftSlotText = string.Empty;
-    private string _rightSlotText = string.Empty;
-    private Color _leftSlotBorderColor = ActiveBorder;
-    private Color _rightSlotBorderColor = InactiveBorder;
-    private string _unitNameHeading = "Select a unit";
-    private string _unitMov = "-";
-    private string _unitCc = "-";
-    private string _unitBs = "-";
-    private string _unitPh = "-";
-    private string _unitWip = "-";
-    private string _unitArm = "-";
-    private string _unitBts = "-";
-    private string _unitVitalityHeader = "VITA";
-    private string _unitVitality = "-";
-    private string _unitS = "-";
-    private string _unitAva = "-";
-    private bool _hasPeripheralStatBlock;
-    private string _peripheralNameHeading = string.Empty;
-    private string _peripheralMov = "-";
-    private string _peripheralCc = "-";
-    private string _peripheralBs = "-";
-    private string _peripheralPh = "-";
-    private string _peripheralWip = "-";
-    private string _peripheralArm = "-";
-    private string _peripheralBts = "-";
-    private string _peripheralVitalityHeader = "VITA";
-    private string _peripheralVitality = "-";
-    private string _peripheralS = "-";
-    private string _peripheralAva = "-";
-    private string _peripheralEquipment = "-";
-    private string _peripheralSkills = "-";
-    private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
-    private Color _unitHeaderPrimaryColor = DefaultHeaderPrimaryColor;
-    private Color _unitHeaderSecondaryColor = DefaultHeaderSecondaryColor;
-    private Color _unitHeaderPrimaryTextColor = Colors.White;
-    private Color _unitHeaderSecondaryTextColor = Colors.White;
-    private string _equipmentSummary = "Equipment: -";
-    private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
-    private FormattedString _equipmentSummaryFormatted = new();
-    private FormattedString _specialSkillsSummaryFormatted = new();
-    private FormattedString _peripheralEquipmentFormatted = new();
-    private FormattedString _peripheralSkillsFormatted = new();
-    private bool _showRegularOrderIcon;
-    private bool _showIrregularOrderIcon;
-    private bool _showImpetuousIcon;
-    private bool _showTacticalAwarenessIcon;
-    private bool _showCubeIcon;
-    private bool _showCube2Icon;
-    private bool _showHackableIcon;
     private bool _summaryHighlightLieutenant;
-    private bool _showUnitsInInches = true;
     private bool _areTeamEntriesReady;
-    private int? _unitMoveFirstCm;
-    private int? _unitMoveSecondCm;
-    private int? _peripheralMoveFirstCm;
-    private int? _peripheralMoveSecondCm;
-    private string? _selectedUnitProfileGroupsJson;
-    private string? _selectedUnitFiltersJson;
-    private List<string> _selectedUnitCommonEquipment = [];
-    private List<string> _selectedUnitCommonSkills = [];
-    private CCUnitFilterCriteria _activeUnitFilter = CCUnitFilterCriteria.None;
-    private CCUnitFilterPopupPage? _activeUnitFilterPopup;
+    private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
+    private UnitFilterPopupView? _activeUnitFilterPopup;
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
     private string _trackedFireteamName = string.Empty;
     private int _trackedFireteamLevel;
@@ -193,29 +95,26 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private bool _isUpdatingTrackedTeamSelection;
 
     public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
+        : base(mode)
     {
         InitializeComponent();
-        // Forward shared panel events to this page's existing handlers.
-        UnitDisplayConfigurationsView.HeaderIconsCanvasPaintSurface += OnHeaderIconsCanvasPaintSurface;
-        UnitDisplayConfigurationsView.SelectedUnitCanvasPaintSurface += OnSelectedUnitCanvasPaintSurface;
-        UnitDisplayConfigurationsView.PeripheralIconCanvasPaintSurface += OnPeripheralIconCanvasPaintSurface;
-        UnitDisplayConfigurationsView.ProfileTacticalIconCanvasPaintSurface += OnProfileTacticalIconCanvasPaintSurface;
-        UnitDisplayConfigurationsView.UnitNameHeadingSizeChanged += OnUnitNameHeadingLabelSizeChanged;
-        _mode = mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
+        FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);
+        FactionSlotSelectorView.RightSlotTapped += (_, _) =>
+        {
+            if (ShowRightSelectionBox)
+            {
+                SetActiveSlot(1);
+            }
+        };
+        _mode = Mode;
+        Title = "Choose your sectorial:";
+        PageHeading = "Choose your sectorial:";
 
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        _metadataAccessor = services?.GetService<IMetadataAccessor>();
-        _armyDataAccessor = services?.GetService<IArmyDataAccessor>();
-        _specOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
-            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
-        _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
-        _appSettingsService = services?.GetService<AppSettingsService>();
+        _metadataAccessor = MetadataAccessor;
+        _armyDataAccessor = ArmyDataAccessor;
+        _specOpsDataAccessor = SpecOpsDataAccessor;
+        _factionLogoCacheService = FactionLogoCacheService;
+        _appSettingsService = AppSettingsService;
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {
@@ -240,6 +139,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
+        SelectTeamAllowedProfileCommand = new Command<ArmyTeamUnitLimitItem>(OnTeamAllowedProfileSelected);
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
@@ -247,7 +147,6 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         SetActiveSlot(0);
         RefreshSummaryFormatted();
         _ = LoadHeaderIconsAsync();
-        _ = LoadSeasonValidationIconsAsync();
     }
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
@@ -261,6 +160,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
+    public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
     public bool ShowRightSelectionBox => false;
@@ -281,15 +181,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public string SelectedStartSeasonPoints
     {
-        get => _selectedStartSeasonPoints;
+        get => SeasonStartPointsView.SelectedStartSeasonPoints;
         set
         {
-            if (_selectedStartSeasonPoints == value)
+            if (SeasonStartPointsView.SelectedStartSeasonPoints == value)
             {
                 return;
             }
 
-            _selectedStartSeasonPoints = value;
+            SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
@@ -299,15 +199,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public string SeasonPointsCapText
     {
-        get => _seasonPointsCapText;
+        get => SeasonStartPointsView.SeasonPointsCapText;
         set
         {
-            if (_seasonPointsCapText == value)
+            if (SeasonStartPointsView.SeasonPointsCapText == value)
             {
                 return;
             }
 
-            _seasonPointsCapText = value;
+            SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
             ApplyLieutenantVisualStates();
@@ -336,15 +236,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool IsCompanyValid
     {
-        get => _isCompanyValid;
+        get => SeasonStartPointsView.IsCompanyValid;
         private set
         {
-            if (_isCompanyValid == value)
+            if (SeasonStartPointsView.IsCompanyValid == value)
             {
                 return;
             }
 
-            _isCompanyValid = value;
+            SeasonStartPointsView.IsCompanyValid = value;
             OnPropertyChanged();
             _startCompanyCommand.ChangeCanExecute();
         }
@@ -404,167 +304,157 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public string UnitNameHeading
     {
-        get => _unitNameHeading;
+        get => UnitDisplayConfigurationsView.UnitNameHeading;
         private set
         {
-            if (_unitNameHeading == value)
+            if (UnitDisplayConfigurationsView.UnitNameHeading == value)
             {
                 return;
             }
 
-            _unitNameHeading = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitNameHeading = value;
             UpdateUnitNameHeadingFontSize();
         }
     }
     public double UnitNameHeadingFontSize
     {
-        get => _unitNameHeadingFontSize;
+        get => UnitDisplayConfigurationsView.UnitNameHeadingFontSize;
         private set
         {
-            if (Math.Abs(_unitNameHeadingFontSize - value) < 0.01d)
+            if (Math.Abs(UnitDisplayConfigurationsView.UnitNameHeadingFontSize - value) < 0.01d)
             {
                 return;
             }
 
-            _unitNameHeadingFontSize = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitNameHeadingFontSize = value;
         }
     }
     public Color UnitHeaderPrimaryColor
     {
-        get => _unitHeaderPrimaryColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderPrimaryColor;
         private set
         {
-            if (_unitHeaderPrimaryColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderPrimaryColor == value)
             {
                 return;
             }
 
-            _unitHeaderPrimaryColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderPrimaryColor = value;
         }
     }
     public Color UnitHeaderSecondaryColor
     {
-        get => _unitHeaderSecondaryColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderSecondaryColor;
         private set
         {
-            if (_unitHeaderSecondaryColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderSecondaryColor == value)
             {
                 return;
             }
 
-            _unitHeaderSecondaryColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderSecondaryColor = value;
         }
     }
     public Color UnitHeaderPrimaryTextColor
     {
-        get => _unitHeaderPrimaryTextColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor;
         private set
         {
-            if (_unitHeaderPrimaryTextColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor == value)
             {
                 return;
             }
 
-            _unitHeaderPrimaryTextColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor = value;
         }
     }
     public Color UnitHeaderSecondaryTextColor
     {
-        get => _unitHeaderSecondaryTextColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor;
         private set
         {
-            if (_unitHeaderSecondaryTextColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor == value)
             {
                 return;
             }
 
-            _unitHeaderSecondaryTextColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor = value;
         }
     }
-    public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
-    public string UnitCc { get => _unitCc; private set { if (_unitCc != value) { _unitCc = value; OnPropertyChanged(); } } }
-    public string UnitBs { get => _unitBs; private set { if (_unitBs != value) { _unitBs = value; OnPropertyChanged(); } } }
-    public string UnitPh { get => _unitPh; private set { if (_unitPh != value) { _unitPh = value; OnPropertyChanged(); } } }
-    public string UnitWip { get => _unitWip; private set { if (_unitWip != value) { _unitWip = value; OnPropertyChanged(); } } }
-    public string UnitArm { get => _unitArm; private set { if (_unitArm != value) { _unitArm = value; OnPropertyChanged(); } } }
-    public string UnitBts { get => _unitBts; private set { if (_unitBts != value) { _unitBts = value; OnPropertyChanged(); } } }
-    public string UnitVitalityHeader { get => _unitVitalityHeader; private set { if (_unitVitalityHeader != value) { _unitVitalityHeader = value; OnPropertyChanged(); } } }
-    public string UnitVitality { get => _unitVitality; private set { if (_unitVitality != value) { _unitVitality = value; OnPropertyChanged(); } } }
-    public string UnitS { get => _unitS; private set { if (_unitS != value) { _unitS = value; OnPropertyChanged(); } } }
-    public string UnitAva { get => _unitAva; private set { if (_unitAva != value) { _unitAva = value; OnPropertyChanged(); } } }
-    public bool HasPeripheralStatBlock { get => _hasPeripheralStatBlock; private set { if (_hasPeripheralStatBlock != value) { _hasPeripheralStatBlock = value; OnPropertyChanged(); } } }
-    public string PeripheralNameHeading { get => _peripheralNameHeading; private set { if (_peripheralNameHeading != value) { _peripheralNameHeading = value; OnPropertyChanged(); } } }
-    public string PeripheralMov { get => _peripheralMov; private set { if (_peripheralMov != value) { _peripheralMov = value; OnPropertyChanged(); } } }
-    public string PeripheralCc { get => _peripheralCc; private set { if (_peripheralCc != value) { _peripheralCc = value; OnPropertyChanged(); } } }
-    public string PeripheralBs { get => _peripheralBs; private set { if (_peripheralBs != value) { _peripheralBs = value; OnPropertyChanged(); } } }
-    public string PeripheralPh { get => _peripheralPh; private set { if (_peripheralPh != value) { _peripheralPh = value; OnPropertyChanged(); } } }
-    public string PeripheralWip { get => _peripheralWip; private set { if (_peripheralWip != value) { _peripheralWip = value; OnPropertyChanged(); } } }
-    public string PeripheralArm { get => _peripheralArm; private set { if (_peripheralArm != value) { _peripheralArm = value; OnPropertyChanged(); } } }
-    public string PeripheralBts { get => _peripheralBts; private set { if (_peripheralBts != value) { _peripheralBts = value; OnPropertyChanged(); } } }
-    public string PeripheralVitalityHeader { get => _peripheralVitalityHeader; private set { if (_peripheralVitalityHeader != value) { _peripheralVitalityHeader = value; OnPropertyChanged(); } } }
-    public string PeripheralVitality { get => _peripheralVitality; private set { if (_peripheralVitality != value) { _peripheralVitality = value; OnPropertyChanged(); } } }
-    public string PeripheralS { get => _peripheralS; private set { if (_peripheralS != value) { _peripheralS = value; OnPropertyChanged(); } } }
-    public string PeripheralAva { get => _peripheralAva; private set { if (_peripheralAva != value) { _peripheralAva = value; OnPropertyChanged(); } } }
+    public string UnitMov { get => UnitDisplayConfigurationsView.UnitMov; private set => UnitDisplayConfigurationsView.UnitMov = value; }
+    public string UnitCc { get => UnitDisplayConfigurationsView.UnitCc; private set => UnitDisplayConfigurationsView.UnitCc = value; }
+    public string UnitBs { get => UnitDisplayConfigurationsView.UnitBs; private set => UnitDisplayConfigurationsView.UnitBs = value; }
+    public string UnitPh { get => UnitDisplayConfigurationsView.UnitPh; private set => UnitDisplayConfigurationsView.UnitPh = value; }
+    public string UnitWip { get => UnitDisplayConfigurationsView.UnitWip; private set => UnitDisplayConfigurationsView.UnitWip = value; }
+    public string UnitArm { get => UnitDisplayConfigurationsView.UnitArm; private set => UnitDisplayConfigurationsView.UnitArm = value; }
+    public string UnitBts { get => UnitDisplayConfigurationsView.UnitBts; private set => UnitDisplayConfigurationsView.UnitBts = value; }
+    public string UnitVitalityHeader { get => UnitDisplayConfigurationsView.UnitVitalityHeader; private set => UnitDisplayConfigurationsView.UnitVitalityHeader = value; }
+    public string UnitVitality { get => UnitDisplayConfigurationsView.UnitVitality; private set => UnitDisplayConfigurationsView.UnitVitality = value; }
+    public string UnitS { get => UnitDisplayConfigurationsView.UnitS; private set => UnitDisplayConfigurationsView.UnitS = value; }
+    public string UnitAva { get => UnitDisplayConfigurationsView.UnitAva; private set => UnitDisplayConfigurationsView.UnitAva = value; }
+    public bool HasPeripheralStatBlock { get => UnitDisplayConfigurationsView.HasPeripheralStatBlock; private set => UnitDisplayConfigurationsView.HasPeripheralStatBlock = value; }
+    public string PeripheralNameHeading { get => UnitDisplayConfigurationsView.PeripheralNameHeading; private set => UnitDisplayConfigurationsView.PeripheralNameHeading = value; }
+    public string PeripheralMov { get => UnitDisplayConfigurationsView.PeripheralMov; private set => UnitDisplayConfigurationsView.PeripheralMov = value; }
+    public string PeripheralCc { get => UnitDisplayConfigurationsView.PeripheralCc; private set => UnitDisplayConfigurationsView.PeripheralCc = value; }
+    public string PeripheralBs { get => UnitDisplayConfigurationsView.PeripheralBs; private set => UnitDisplayConfigurationsView.PeripheralBs = value; }
+    public string PeripheralPh { get => UnitDisplayConfigurationsView.PeripheralPh; private set => UnitDisplayConfigurationsView.PeripheralPh = value; }
+    public string PeripheralWip { get => UnitDisplayConfigurationsView.PeripheralWip; private set => UnitDisplayConfigurationsView.PeripheralWip = value; }
+    public string PeripheralArm { get => UnitDisplayConfigurationsView.PeripheralArm; private set => UnitDisplayConfigurationsView.PeripheralArm = value; }
+    public string PeripheralBts { get => UnitDisplayConfigurationsView.PeripheralBts; private set => UnitDisplayConfigurationsView.PeripheralBts = value; }
+    public string PeripheralVitalityHeader { get => UnitDisplayConfigurationsView.PeripheralVitalityHeader; private set => UnitDisplayConfigurationsView.PeripheralVitalityHeader = value; }
+    public string PeripheralVitality { get => UnitDisplayConfigurationsView.PeripheralVitality; private set => UnitDisplayConfigurationsView.PeripheralVitality = value; }
+    public string PeripheralS { get => UnitDisplayConfigurationsView.PeripheralS; private set => UnitDisplayConfigurationsView.PeripheralS = value; }
+    public string PeripheralAva { get => UnitDisplayConfigurationsView.PeripheralAva; private set => UnitDisplayConfigurationsView.PeripheralAva = value; }
     public string PeripheralEquipment
     {
-        get => _peripheralEquipment;
+        get => UnitDisplayConfigurationsView.PeripheralEquipment;
         private set
         {
-            if (_peripheralEquipment == value)
+            if (UnitDisplayConfigurationsView.PeripheralEquipment == value)
             {
                 return;
             }
 
-            _peripheralEquipment = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasPeripheralEquipment));
+            UnitDisplayConfigurationsView.PeripheralEquipment = value;
         }
     }
     public string PeripheralSkills
     {
-        get => _peripheralSkills;
+        get => UnitDisplayConfigurationsView.PeripheralSkills;
         private set
         {
-            if (_peripheralSkills == value)
+            if (UnitDisplayConfigurationsView.PeripheralSkills == value)
             {
                 return;
             }
 
-            _peripheralSkills = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasPeripheralSkills));
+            UnitDisplayConfigurationsView.PeripheralSkills = value;
         }
     }
-    public string EquipmentSummary { get => _equipmentSummary; private set { if (_equipmentSummary != value) { _equipmentSummary = value; OnPropertyChanged(); } } }
-    public string SpecialSkillsSummary { get => _specialSkillsSummary; private set { if (_specialSkillsSummary != value) { _specialSkillsSummary = value; OnPropertyChanged(); } } }
+    public string EquipmentSummary { get => UnitDisplayConfigurationsView.EquipmentSummary; private set { if (UnitDisplayConfigurationsView.EquipmentSummary != value) { UnitDisplayConfigurationsView.EquipmentSummary = value; } } }
+    public string SpecialSkillsSummary { get => UnitDisplayConfigurationsView.SpecialSkillsSummary; private set { if (UnitDisplayConfigurationsView.SpecialSkillsSummary != value) { UnitDisplayConfigurationsView.SpecialSkillsSummary = value; } } }
     public string ProfilesStatus { get => _profilesStatus; private set { if (_profilesStatus != value) { _profilesStatus = value; OnPropertyChanged(); } } }
-    public FormattedString EquipmentSummaryFormatted { get => _equipmentSummaryFormatted; private set { _equipmentSummaryFormatted = value; OnPropertyChanged(); } }
-    public FormattedString SpecialSkillsSummaryFormatted { get => _specialSkillsSummaryFormatted; private set { _specialSkillsSummaryFormatted = value; OnPropertyChanged(); } }
-    public FormattedString PeripheralEquipmentFormatted { get => _peripheralEquipmentFormatted; private set { _peripheralEquipmentFormatted = value; OnPropertyChanged(); } }
-    public FormattedString PeripheralSkillsFormatted { get => _peripheralSkillsFormatted; private set { _peripheralSkillsFormatted = value; OnPropertyChanged(); } }
-    public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
-    public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
+    public FormattedString EquipmentSummaryFormatted { get => UnitDisplayConfigurationsView.EquipmentSummaryFormatted; private set => UnitDisplayConfigurationsView.EquipmentSummaryFormatted = value; }
+    public FormattedString SpecialSkillsSummaryFormatted { get => UnitDisplayConfigurationsView.SpecialSkillsSummaryFormatted; private set => UnitDisplayConfigurationsView.SpecialSkillsSummaryFormatted = value; }
+    public FormattedString PeripheralEquipmentFormatted { get => UnitDisplayConfigurationsView.PeripheralEquipmentFormatted; private set => UnitDisplayConfigurationsView.PeripheralEquipmentFormatted = value; }
+    public FormattedString PeripheralSkillsFormatted { get => UnitDisplayConfigurationsView.PeripheralSkillsFormatted; private set => UnitDisplayConfigurationsView.PeripheralSkillsFormatted = value; }
+    public bool HasPeripheralEquipment => UnitDisplayConfigurationsView.HasPeripheralEquipment;
+    public bool HasPeripheralSkills => UnitDisplayConfigurationsView.HasPeripheralSkills;
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
     public bool ShowRegularOrderIcon
     {
-        get => _showRegularOrderIcon;
+        get => UnitDisplayConfigurationsView.ShowRegularOrderIcon;
         private set
         {
-            if (_showRegularOrderIcon == value)
+            if (UnitDisplayConfigurationsView.ShowRegularOrderIcon == value)
             {
                 return;
             }
 
-            _showRegularOrderIcon = value;
+            UnitDisplayConfigurationsView.ShowRegularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -574,15 +464,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowIrregularOrderIcon
     {
-        get => _showIrregularOrderIcon;
+        get => UnitDisplayConfigurationsView.ShowIrregularOrderIcon;
         private set
         {
-            if (_showIrregularOrderIcon == value)
+            if (UnitDisplayConfigurationsView.ShowIrregularOrderIcon == value)
             {
                 return;
             }
 
-            _showIrregularOrderIcon = value;
+            UnitDisplayConfigurationsView.ShowIrregularOrderIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -592,15 +482,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowImpetuousIcon
     {
-        get => _showImpetuousIcon;
+        get => UnitDisplayConfigurationsView.ShowImpetuousIcon;
         private set
         {
-            if (_showImpetuousIcon == value)
+            if (UnitDisplayConfigurationsView.ShowImpetuousIcon == value)
             {
                 return;
             }
 
-            _showImpetuousIcon = value;
+            UnitDisplayConfigurationsView.ShowImpetuousIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -610,15 +500,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowTacticalAwarenessIcon
     {
-        get => _showTacticalAwarenessIcon;
+        get => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon;
         private set
         {
-            if (_showTacticalAwarenessIcon == value)
+            if (UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon == value)
             {
                 return;
             }
 
-            _showTacticalAwarenessIcon = value;
+            UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -628,15 +518,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowCubeIcon
     {
-        get => _showCubeIcon;
+        get => UnitDisplayConfigurationsView.ShowCubeIcon;
         private set
         {
-            if (_showCubeIcon == value)
+            if (UnitDisplayConfigurationsView.ShowCubeIcon == value)
             {
                 return;
             }
 
-            _showCubeIcon = value;
+            UnitDisplayConfigurationsView.ShowCubeIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -646,15 +536,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowCube2Icon
     {
-        get => _showCube2Icon;
+        get => UnitDisplayConfigurationsView.ShowCube2Icon;
         private set
         {
-            if (_showCube2Icon == value)
+            if (UnitDisplayConfigurationsView.ShowCube2Icon == value)
             {
                 return;
             }
 
-            _showCube2Icon = value;
+            UnitDisplayConfigurationsView.ShowCube2Icon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
@@ -664,20 +554,50 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool ShowHackableIcon
     {
-        get => _showHackableIcon;
+        get => UnitDisplayConfigurationsView.ShowHackableIcon;
         private set
         {
-            if (_showHackableIcon == value)
+            if (UnitDisplayConfigurationsView.ShowHackableIcon == value)
             {
                 return;
             }
 
-            _showHackableIcon = value;
+            UnitDisplayConfigurationsView.ShowHackableIcon = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
             UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
+    }
+
+    private bool ShowUnitsInInches
+    {
+        get => UnitDisplayConfigurationsView.ShowUnitsInInches;
+        set => UnitDisplayConfigurationsView.ShowUnitsInInches = value;
+    }
+
+    private int? UnitMoveFirstCm
+    {
+        get => UnitDisplayConfigurationsView.UnitMoveFirstCm;
+        set => UnitDisplayConfigurationsView.UnitMoveFirstCm = value;
+    }
+
+    private int? UnitMoveSecondCm
+    {
+        get => UnitDisplayConfigurationsView.UnitMoveSecondCm;
+        set => UnitDisplayConfigurationsView.UnitMoveSecondCm = value;
+    }
+
+    private int? PeripheralMoveFirstCm
+    {
+        get => UnitDisplayConfigurationsView.PeripheralMoveFirstCm;
+        set => UnitDisplayConfigurationsView.PeripheralMoveFirstCm = value;
+    }
+
+    private int? PeripheralMoveSecondCm
+    {
+        get => UnitDisplayConfigurationsView.PeripheralMoveSecondCm;
+        set => UnitDisplayConfigurationsView.PeripheralMoveSecondCm = value;
     }
 
     public bool LieutenantOnlyUnits
@@ -699,15 +619,15 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     public bool TeamsView
     {
-        get => _teamsView;
+        get => _showFireteams;
         set
         {
-            if (_teamsView == value)
+            if (_showFireteams == value)
             {
                 return;
             }
 
-            _teamsView = value;
+            _showFireteams = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowUnitsList));
             OnPropertyChanged(nameof(ShowTeamsList));
@@ -733,66 +653,6 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     public bool ShowUnitsList => !TeamsView;
     public bool ShowTeamsList => TeamsView && IsUnitSelectionActive && AreTeamEntriesReady;
 
-    public string LeftSlotText
-    {
-        get => _leftSlotText;
-        set
-        {
-            if (_leftSlotText == value)
-            {
-                return;
-            }
-
-            _leftSlotText = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string RightSlotText
-    {
-        get => _rightSlotText;
-        set
-        {
-            if (_rightSlotText == value)
-            {
-                return;
-            }
-
-            _rightSlotText = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public Color LeftSlotBorderColor
-    {
-        get => _leftSlotBorderColor;
-        set
-        {
-            if (_leftSlotBorderColor == value)
-            {
-                return;
-            }
-
-            _leftSlotBorderColor = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public Color RightSlotBorderColor
-    {
-        get => _rightSlotBorderColor;
-        set
-        {
-            if (_rightSlotBorderColor == value)
-            {
-                return;
-            }
-
-            _rightSlotBorderColor = value;
-            OnPropertyChanged();
-        }
-    }
-
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -804,6 +664,21 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         _loaded = true;
         await LoadFactionsAsync();
+    }
+
+    protected override Task LoadFactionsAsync()
+    {
+        return LoadFactionsAsync(CancellationToken.None);
+    }
+
+    protected override Task LoadUnitsForActiveSlotAsync()
+    {
+        return LoadUnitsForActiveSlotAsync(CancellationToken.None);
+    }
+
+    protected override Task LoadSelectedUnitDetailsAsync()
+    {
+        return LoadSelectedUnitDetailsAsync(CancellationToken.None);
     }
 
     private async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
@@ -988,19 +863,19 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void SetSelectedFaction(ArmyFactionSelectionItem item)
     {
-        if (_selectedFaction == item)
+        if (_factionSelectionState.SelectedFaction == item)
         {
             AssignSelectedFactionToActiveSlot(item);
             return;
         }
 
-        if (_selectedFaction is not null)
+        if (_factionSelectionState.SelectedFaction is not null)
         {
-            _selectedFaction.IsSelected = false;
+            _factionSelectionState.SelectedFaction.IsSelected = false;
         }
 
-        _selectedFaction = item;
-        _selectedFaction.IsSelected = true;
+        _factionSelectionState.SelectedFaction = item;
+        _factionSelectionState.SelectedFaction.IsSelected = true;
         AssignSelectedFactionToActiveSlot(item);
     }
 
@@ -1015,16 +890,16 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         var factionChanged = false;
         if (_activeSlotIndex == 0 || !ShowRightSelectionBox)
         {
-            factionChanged = _leftSlotFaction?.Id != item.Id;
-            _leftSlotFaction = item;
-            LeftSlotText = item.Name;
+            factionChanged = _factionSelectionState.LeftSlotFaction?.Id != item.Id;
+            _factionSelectionState.LeftSlotFaction = item;
+            FactionSlotSelectorView.LeftSlotText = item.Name;
             _ = LoadSlotIconAsync(0, item.CachedLogoPath, item.PackagedLogoPath);
         }
         else
         {
-            factionChanged = _rightSlotFaction?.Id != item.Id;
-            _rightSlotFaction = item;
-            RightSlotText = item.Name;
+            factionChanged = _factionSelectionState.RightSlotFaction?.Id != item.Id;
+            _factionSelectionState.RightSlotFaction = item;
+            FactionSlotSelectorView.RightSlotText = item.Name;
             _ = LoadSlotIconAsync(1, item.CachedLogoPath, item.PackagedLogoPath);
         }
 
@@ -1329,14 +1204,14 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         if (_activeSlotIndex == 0)
         {
-            return _rightSlotFaction is not null
-                && _rightSlotFaction.Id == item.Id
-                && (_leftSlotFaction is null || _leftSlotFaction.Id != item.Id);
+            return _factionSelectionState.RightSlotFaction is not null
+                && _factionSelectionState.RightSlotFaction.Id == item.Id
+                && (_factionSelectionState.LeftSlotFaction is null || _factionSelectionState.LeftSlotFaction.Id != item.Id);
         }
 
-        return _leftSlotFaction is not null
-            && _leftSlotFaction.Id == item.Id
-            && (_rightSlotFaction is null || _rightSlotFaction.Id != item.Id);
+        return _factionSelectionState.LeftSlotFaction is not null
+            && _factionSelectionState.LeftSlotFaction.Id == item.Id
+            && (_factionSelectionState.RightSlotFaction is null || _factionSelectionState.RightSlotFaction.Id != item.Id);
     }
 
     private void AutoSelectEmptySlot()
@@ -1347,8 +1222,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             return;
         }
 
-        var leftEmpty = _leftSlotFaction is null;
-        var rightEmpty = _rightSlotFaction is null;
+        var leftEmpty = _factionSelectionState.LeftSlotFaction is null;
+        var rightEmpty = _factionSelectionState.RightSlotFaction is null;
 
         if (leftEmpty && !rightEmpty)
         {
@@ -1365,23 +1240,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private void SetActiveSlot(int index)
     {
         _activeSlotIndex = index == 1 && ShowRightSelectionBox ? 1 : 0;
-        LeftSlotBorderColor = _activeSlotIndex == 0 ? ActiveBorder : InactiveBorder;
-        RightSlotBorderColor = _activeSlotIndex == 1 ? ActiveBorder : InactiveBorder;
-    }
-
-    private void OnLeftSlotTapped(object? sender, TappedEventArgs e)
-    {
-        SetActiveSlot(0);
-    }
-
-    private void OnRightSlotTapped(object? sender, TappedEventArgs e)
-    {
-        if (!ShowRightSelectionBox)
-        {
-            return;
-        }
-
-        SetActiveSlot(1);
+        FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -1393,7 +1252,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         IsFactionSelectionActive = false;
-        if (_selectedFaction is not null || _leftSlotFaction is not null || _rightSlotFaction is not null)
+        if (_factionSelectionState.SelectedFaction is not null || _factionSelectionState.LeftSlotFaction is not null || _factionSelectionState.RightSlotFaction is not null)
         {
             _ = LoadUnitsForActiveSlotAsync();
         }
@@ -1404,7 +1263,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new CCUnitFilterPopupPage(
+            var popup = new UnitFilterPopupView(
                 options,
                 _activeUnitFilter,
                 lieutenantOnlyUnits: LieutenantOnlyUnits,
@@ -1421,24 +1280,24 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         }
     }
 
-    private void OnFilterArmyApplied(object? sender, CCUnitFilterCriteria criteria)
+    private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
-        _activeUnitFilter = criteria ?? CCUnitFilterCriteria.None;
+        _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
         if (criteria is not null)
         {
             LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
             TeamsView = criteria.TeamsView;
         }
-        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
-        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
     }
 
-    private void CloseUnitFilterPopup(CCUnitFilterPopupPage? popup)
+    private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
         var target = popup ?? _activeUnitFilterPopup;
         if (target is not null)
@@ -1464,7 +1323,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         ApplyFilterButtonSize(UnitSelectionFilterButtonActive, UnitSelectionFilterCanvasActive, iconButtonSize);
     }
 
-    private async Task<CCUnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
+    private async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
     {
         var classification = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var characteristics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1576,7 +1435,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         var maxPoints = int.TryParse(SelectedStartSeasonPoints, out var parsedMaxPoints) ? Math.Max(parsedMaxPoints, 200) : 200;
         Console.WriteLine($"ArmyFactionSelectionPage filter options: class={classification.Count}, chars={characteristics.Count}, skills={skills.Count}, equip={equipment.Count}, weapons={weapons.Count}, ammo={ammo.Count}.");
-        return new CCUnitFilterPopupOptions
+        return new UnitFilterPopupOptions
         {
             Classification = classification.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             Characteristics = characteristics.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
@@ -1816,9 +1675,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 }
             }
 
-            foreach (var unit in mergedUnits.Values
-                .OrderBy(x => GetUnitTypeSortIndex(x.Type))
-                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var unit in ArmyUnitSort.OrderByUnitTypeAndName(mergedUnits.Values, x => x.Type, x => x.Name))
             {
                 Units.Add(unit);
             }
@@ -1967,11 +1824,11 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             return;
         }
 
-        var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
-        var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipment = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = JoinOrDash(combinedEquipment);
         var combinedSkillsText = JoinOrDash(combinedSkills);
-        var currentUnitMove = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+        var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
@@ -2018,8 +1875,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
             PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
-            UnitMoveFirstCm = _unitMoveFirstCm,
-            UnitMoveSecondCm = _unitMoveSecondCm,
+            UnitMoveFirstCm = UnitMoveFirstCm,
+            UnitMoveSecondCm = UnitMoveSecondCm,
             UnitMoveDisplay = currentUnitMove,
             PeripheralMoveFirstCm = peripheralStats?.MoveFirstCm,
             PeripheralMoveSecondCm = peripheralStats?.MoveSecondCm
@@ -2043,20 +1900,20 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
     {
         var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
-        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return null;
         }
 
         try
         {
-            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            using var doc = JsonDocument.Parse(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson);
             if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
             {
                 return null;
             }
 
-            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, _selectedUnitFiltersJson);
+            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
         }
         catch (Exception ex)
         {
@@ -2786,7 +2643,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         CompanyNameBorderColor = showError ? Color.FromArgb("#EF4444") : Color.FromArgb("#6B7280");
     }
 
-    private async Task StartCompanyAsync()
+    protected override async Task StartCompanyAsync()
     {
         if (!IsCompanyNameValid(CompanyName))
         {
@@ -3046,17 +2903,17 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
             var skills = skillRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var equipment = equipRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var weapons = weaponRecords
                 .OrderBy(x => x.EntryOrder)
-                .Select(x => ResolveSpecopsChoiceLabel(weaponLookup, x.WeaponId, x.Exp, "Weapon", null, extrasLookup, _showUnitsInInches))
+                .Select(x => ResolveSpecopsChoiceLabel(weaponLookup, x.WeaponId, x.Exp, "Weapon", null, extrasLookup, ShowUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -3253,14 +3110,6 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
         var shouldShowCheck = hasLieutenant && currentPoints <= pointsLimit;
         IsCompanyValid = shouldShowCheck;
-
-        if (_showSeasonCheckIcon == shouldShowCheck)
-        {
-            return;
-        }
-
-        _showSeasonCheckIcon = shouldShowCheck;
-        SeasonValidationCanvas.InvalidateSurface();
     }
 
     private static int ParseCostValue(string? cost)
@@ -3323,8 +3172,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
-            _selectedUnitProfileGroupsJson = profileGroupsJson;
-            _selectedUnitFiltersJson = snapshot?.FiltersJson;
+            UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = profileGroupsJson;
+            UnitDisplayConfigurationsView.SelectedUnitFiltersJson = snapshot?.FiltersJson;
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(profileGroupsJson))
             {
@@ -3350,7 +3199,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                     "equip",
                     equipLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var stableEquipFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
@@ -3360,7 +3209,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                         "equip",
                         equipLookup,
                         extrasLookup,
-                        _showUnitsInInches);
+                        ShowUnitsInInches);
                 }
                 var stableEquip = stableEquipFromProfiles
                     .Concat(stableEquipFromVisibleOptions)
@@ -3374,7 +3223,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                     "skills",
                     skillsLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var stableSkillsFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
@@ -3384,7 +3233,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                         "skills",
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches);
+                        ShowUnitsInInches);
                 }
                 var stableSkills = stableSkillsFromProfiles
                     .Concat(stableSkillsFromVisibleOptions)
@@ -3396,8 +3245,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 stableSkills = treatAsSpecOps
                     ? EnsureLieutenantSkill(stableSkills)
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
-                _selectedUnitCommonEquipment = stableEquip;
-                _selectedUnitCommonSkills = stableSkills;
+                UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = stableEquip;
+                UnitDisplayConfigurationsView.SelectedUnitCommonSkills = stableSkills;
                 _summaryHighlightLieutenant = treatAsSpecOps;
                 Console.WriteLine(
                     $"ArmyFactionSelectionPage summary extraction: unit='{_selectedUnit.Name}', options={visibleOptions.Count}, " +
@@ -3424,8 +3273,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
     {
-        _selectedUnitPicture?.Dispose();
-        _selectedUnitPicture = null;
+        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
+        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
 
         try
         {
@@ -3440,14 +3289,14 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             await using (stream)
             {
                 var svg = new SKSvg();
-                _selectedUnitPicture = svg.Load(stream);
-                if (_selectedUnitPicture is null)
+                UnitDisplayConfigurationsView.SelectedUnitPicture = svg.Load(stream);
+                if (UnitDisplayConfigurationsView.SelectedUnitPicture is null)
                 {
                     Console.Error.WriteLine($"ArmyFactionSelectionPage selected logo parse failed: unit='{item.Name}', id={item.Id}, faction={item.SourceFactionId}.");
                 }
                 else
                 {
-                    var bounds = _selectedUnitPicture.CullRect;
+                    var bounds = UnitDisplayConfigurationsView.SelectedUnitPicture.CullRect;
                     Console.WriteLine($"ArmyFactionSelectionPage selected logo loaded: unit='{item.Name}', bounds=({bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}).");
                 }
             }
@@ -3455,7 +3304,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitLogoAsync failed: {ex.Message}");
-            _selectedUnitPicture = null;
+            UnitDisplayConfigurationsView.SelectedUnitPicture = null;
         }
 
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
@@ -3521,7 +3370,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                              GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
                              equipLookup,
                              extrasLookup,
-                             _showUnitsInInches))
+                             ShowUnitsInInches))
                 {
                     equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
                 }
@@ -3531,7 +3380,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches));
+                        ShowUnitsInInches));
                 foreach (var name in optionSkillNames)
                 {
                     skillUsageCounts[name] = skillUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
@@ -3584,7 +3433,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                     GetOptionEntriesWithIncludes(profileGroupsRoot, option, "weapons"),
                     weaponsLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var rangedWeaponNames = optionWeapons.Where(x => !IsMeleeWeaponName(x)).ToList();
                 var meleeWeaponNames = optionWeapons.Where(IsMeleeWeaponName).ToList();
 
@@ -3592,7 +3441,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
                         equipLookup,
                         extrasLookup,
-                        _showUnitsInInches)
+                        ShowUnitsInInches)
                     .ToList();
                 var uniqueEquipmentNames = optionEquipmentNames
                     .Where(x => equipUsageCounts.TryGetValue(x, out var c) && c == 1)
@@ -3610,7 +3459,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                         GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
                         skillsLookup,
                         extrasLookup,
-                        _showUnitsInInches));
+                        ShowUnitsInInches));
                 var uniqueSkillsNames = optionSkillsNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
                     .ToList();
@@ -3626,7 +3475,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                     GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
                     peripheralLookup,
                     extrasLookup,
-                    _showUnitsInInches);
+                    ShowUnitsInInches);
                 var firstPeripheralName = peripheralNames.FirstOrDefault();
                 PeripheralMercsCompanyStats? peripheralStats = null;
                 JsonElement peripheralProfile = default;
@@ -4275,14 +4124,14 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             yield return _factionLogoCacheService.GetCachedUnitLogoPath(item.SourceFactionId, item.Id);
 
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_leftSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_factionSelectionState.LeftSlotFaction.Id, item.Id);
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_rightSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetCachedUnitLogoPath(_factionSelectionState.RightSlotFaction.Id, item.Id);
             }
 
             yield return _factionLogoCacheService.GetCachedLogoPath(item.SourceFactionId);
@@ -4297,14 +4146,14 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             yield return _factionLogoCacheService.GetPackagedUnitLogoPath(item.SourceFactionId, item.Id);
 
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_leftSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_factionSelectionState.LeftSlotFaction.Id, item.Id);
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_rightSlotFaction.Id, item.Id);
+                yield return _factionLogoCacheService.GetPackagedUnitLogoPath(_factionSelectionState.RightSlotFaction.Id, item.Id);
             }
 
             yield return _factionLogoCacheService.GetPackagedFactionLogoPath(item.SourceFactionId);
@@ -4312,14 +4161,14 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         else
         {
             yield return $"SVGCache/units/{item.SourceFactionId}-{item.Id}.svg";
-            if (_leftSlotFaction is not null)
+            if (_factionSelectionState.LeftSlotFaction is not null)
             {
-                yield return $"SVGCache/units/{_leftSlotFaction.Id}-{item.Id}.svg";
+                yield return $"SVGCache/units/{_factionSelectionState.LeftSlotFaction.Id}-{item.Id}.svg";
             }
 
-            if (_rightSlotFaction is not null)
+            if (_factionSelectionState.RightSlotFaction is not null)
             {
-                yield return $"SVGCache/units/{_rightSlotFaction.Id}-{item.Id}.svg";
+                yield return $"SVGCache/units/{_factionSelectionState.RightSlotFaction.Id}-{item.Id}.svg";
             }
 
             yield return $"SVGCache/factions/{item.SourceFactionId}.svg";
@@ -4330,18 +4179,18 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     {
         if (!ShowRightSelectionBox)
         {
-            return _leftSlotFaction is null ? [] : [_leftSlotFaction];
+            return _factionSelectionState.LeftSlotFaction is null ? [] : [_factionSelectionState.LeftSlotFaction];
         }
 
         var list = new List<ArmyFactionSelectionItem>(2);
-        if (_leftSlotFaction is not null)
+        if (_factionSelectionState.LeftSlotFaction is not null)
         {
-            list.Add(_leftSlotFaction);
+            list.Add(_factionSelectionState.LeftSlotFaction);
         }
 
-        if (_rightSlotFaction is not null && (_leftSlotFaction is null || _rightSlotFaction.Id != _leftSlotFaction.Id))
+        if (_factionSelectionState.RightSlotFaction is not null && (_factionSelectionState.LeftSlotFaction is null || _factionSelectionState.RightSlotFaction.Id != _factionSelectionState.LeftSlotFaction.Id))
         {
-            list.Add(_rightSlotFaction);
+            list.Add(_factionSelectionState.RightSlotFaction);
         }
 
         return list;
@@ -4753,7 +4602,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        CCUnitFilterCriteria criteria,
+        UnitFilterCriteria criteria,
         bool requireLieutenant,
         bool requireZeroSwc,
         int? maxCost = null,
@@ -4854,7 +4703,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        CCUnitFilterCriteria criteria)
+        UnitFilterCriteria criteria)
     {
         if (!string.IsNullOrWhiteSpace(criteria.Characteristics) &&
             !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "chars", charsLookup, criteria.Characteristics))
@@ -5136,18 +4985,6 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         return false;
     }
 
-    private static int GetUnitTypeSortIndex(int? unitType)
-    {
-        if (!unitType.HasValue)
-        {
-            return int.MaxValue - 1;
-        }
-
-        return UnitTypeSortOrder.TryGetValue(unitType.Value, out var sortIndex)
-            ? sortIndex
-            : int.MaxValue;
-    }
-
     private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
@@ -5158,17 +4995,17 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
-        _selectedUnitPicture?.Dispose();
-        _selectedUnitPicture = null;
+        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
+        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
-        _selectedUnitProfileGroupsJson = null;
-        _selectedUnitFiltersJson = null;
+        UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = null;
+        UnitDisplayConfigurationsView.SelectedUnitFiltersJson = null;
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
-        _selectedUnitCommonEquipment = [];
-        _selectedUnitCommonSkills = [];
+        UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = [];
+        UnitDisplayConfigurationsView.SelectedUnitCommonSkills = [];
         _summaryHighlightLieutenant = false;
         RefreshSummaryFormatted();
         Profiles.Clear();
@@ -5209,8 +5046,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void ResetUnitStatsOnly()
     {
-        _unitMoveFirstCm = null;
-        _unitMoveSecondCm = null;
+        UnitMoveFirstCm = null;
+        UnitMoveSecondCm = null;
         UnitMov = "-";
         UnitCc = "-";
         UnitBs = "-";
@@ -5227,8 +5064,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void ResetPeripheralStatsOnly()
     {
-        _peripheralMoveFirstCm = null;
-        _peripheralMoveSecondCm = null;
+        PeripheralMoveFirstCm = null;
+        PeripheralMoveSecondCm = null;
         HasPeripheralStatBlock = false;
         PeripheralNameHeading = string.Empty;
         PeripheralMov = "-";
@@ -5341,7 +5178,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void PopulateUnitStatsFromElement(JsonElement selectedElement)
     {
-        (_unitMoveFirstCm, _unitMoveSecondCm) = ParseMoveValues(selectedElement);
+        (UnitMoveFirstCm, UnitMoveSecondCm) = ParseMoveValues(selectedElement);
         UpdateUnitMoveDisplay();
         UnitCc = ReadIntAsString(selectedElement, "cc");
         UnitBs = ReadIntAsString(selectedElement, "bs");
@@ -5376,19 +5213,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private string FormatMoveValue(int? firstCm, int? secondCm)
     {
-        if (!firstCm.HasValue || !secondCm.HasValue)
-        {
-            return "-";
-        }
-
-        if (_showUnitsInInches)
-        {
-            var first = (int)Math.Round(firstCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            var second = (int)Math.Round(secondCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            return $"{first}-{second}";
-        }
-
-        return $"{firstCm.Value}-{secondCm.Value}";
+        return UnitDisplayConfigurationsView.FormatMoveValue(firstCm, secondCm, ShowUnitsInInches);
     }
 
     private static string ReplaceSubtitleMoveDisplay(string? subtitle, string moveDisplay)
@@ -5407,17 +5232,17 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void UpdateUnitMoveDisplay()
     {
-        UnitMov = FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm);
+        UnitDisplayConfigurationsView.RefreshMoveStatlines();
     }
 
     private void UpdatePeripheralMoveDisplay()
     {
-        PeripheralMov = FormatMoveValue(_peripheralMoveFirstCm, _peripheralMoveSecondCm);
+        UnitDisplayConfigurationsView.RefreshMoveStatlines();
     }
 
     private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
     {
-        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, _selectedUnitFiltersJson);
+        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
         if (peripheralStats is null)
         {
             return;
@@ -5430,7 +5255,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     {
         ResetPeripheralStatsOnly();
 
-        if (string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        if (string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return;
         }
@@ -5449,7 +5274,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         try
         {
-            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            using var doc = JsonDocument.Parse(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson);
             if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
             {
                 return;
@@ -5478,13 +5303,13 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             GetContainerEntries(peripheralProfile, "equip"),
             equipLookup,
             extrasLookup,
-            _showUnitsInInches);
+            ShowUnitsInInches);
         var skillNames = BuildConfigurationSkillNames(
             GetOrderedIdDisplayNamesFromEntries(
                 GetContainerEntries(peripheralProfile, "skills"),
                 skillsLookup,
                 extrasLookup,
-                _showUnitsInInches));
+                ShowUnitsInInches));
         var (vitalityHeader, vitalityValue) = ReadVitality(peripheralProfile);
 
         return new PeripheralMercsCompanyStats
@@ -5510,8 +5335,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void ApplyPeripheralStatBlock(PeripheralMercsCompanyStats peripheralStats)
     {
-        _peripheralMoveFirstCm = peripheralStats.MoveFirstCm;
-        _peripheralMoveSecondCm = peripheralStats.MoveSecondCm;
+        PeripheralMoveFirstCm = peripheralStats.MoveFirstCm;
+        PeripheralMoveSecondCm = peripheralStats.MoveSecondCm;
         UpdatePeripheralMoveDisplay();
         PeripheralNameHeading = peripheralStats.NameHeading;
         PeripheralCc = peripheralStats.Cc;
@@ -6159,12 +5984,12 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         try
         {
             var showInches = await _appSettingsService.GetShowUnitsInInchesAsync(cancellationToken);
-            if (_showUnitsInInches == showInches)
+            if (ShowUnitsInInches == showInches)
             {
                 return;
             }
 
-            _showUnitsInInches = showInches;
+            ShowUnitsInInches = showInches;
             UpdateUnitMoveDisplay();
             UpdatePeripheralMoveDisplay();
             RefreshMercsCompanyEntryDistanceDisplays();
@@ -6911,30 +6736,9 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         return distanceText.Remove(match.Index, match.Length).Insert(match.Index, replacement);
     }
 
-    private void OnUnitListItemTapped(object? sender, TappedEventArgs e)
+    private void OnTeamAllowedProfileSelected(ArmyTeamUnitLimitItem? teamItem)
     {
-        if (sender is not Element element || element.BindingContext is not ArmyUnitSelectionItem item)
-        {
-            return;
-        }
-
-        SetSelectedUnit(item, restrictProfilesToFto: false);
-    }
-
-    private void OnUnitItemTappedFromView(object? sender, EventArgs e)
-    {
-        if (sender is not FactionListItemView view || view.BindingContext is not ArmyUnitSelectionItem item)
-        {
-            Console.Error.WriteLine("ArmyFactionSelectionPage OnUnitItemTappedFromView: no unit binding context.");
-            return;
-        }
-
-        SetSelectedUnit(item, restrictProfilesToFto: false);
-    }
-
-    private void OnTeamAllowedProfileTappedFromView(object? sender, EventArgs e)
-    {
-        if (sender is not FactionListItemView view || view.BindingContext is not ArmyTeamUnitLimitItem teamItem)
+        if (teamItem is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
             return;
@@ -6982,18 +6786,17 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
             if (slotIndex == 0)
             {
-                _leftSlotPicture?.Dispose();
-                _leftSlotPicture = null;
+                FactionSlotSelectorView.LeftSlotPicture?.Dispose();
+                FactionSlotSelectorView.LeftSlotPicture = null;
             }
             else
             {
-                _rightSlotPicture?.Dispose();
-                _rightSlotPicture = null;
+                FactionSlotSelectorView.RightSlotPicture?.Dispose();
+                FactionSlotSelectorView.RightSlotPicture = null;
             }
 
             if (stream is null)
             {
-                InvalidateSlotCanvas(slotIndex);
                 return;
             }
 
@@ -7003,11 +6806,11 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 var picture = svg.Load(stream);
                 if (slotIndex == 0)
                 {
-                    _leftSlotPicture = picture;
+                    FactionSlotSelectorView.LeftSlotPicture = picture;
                 }
                 else
                 {
-                    _rightSlotPicture = picture;
+                    FactionSlotSelectorView.RightSlotPicture = picture;
                 }
             }
         }
@@ -7016,35 +6819,34 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             Console.Error.WriteLine($"ArmyFactionSelectionPage slot icon load failed: {ex.Message}");
             if (slotIndex == 0)
             {
-                _leftSlotPicture = null;
+                FactionSlotSelectorView.LeftSlotPicture = null;
             }
             else
             {
-                _rightSlotPicture = null;
+                FactionSlotSelectorView.RightSlotPicture = null;
             }
         }
 
-        InvalidateSlotCanvas(slotIndex);
     }
 
     private async Task LoadHeaderIconsAsync()
     {
-        _regularOrderIconPicture?.Dispose();
-        _regularOrderIconPicture = null;
-        _irregularOrderIconPicture?.Dispose();
-        _irregularOrderIconPicture = null;
-        _impetuousIconPicture?.Dispose();
-        _impetuousIconPicture = null;
-        _tacticalAwarenessIconPicture?.Dispose();
-        _tacticalAwarenessIconPicture = null;
-        _cubeIconPicture?.Dispose();
-        _cubeIconPicture = null;
-        _cube2IconPicture?.Dispose();
-        _cube2IconPicture = null;
-        _hackableIconPicture?.Dispose();
-        _hackableIconPicture = null;
-        _peripheralIconPicture?.Dispose();
-        _peripheralIconPicture = null;
+        UnitDisplayConfigurationsView.RegularOrderIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.RegularOrderIconPicture = null;
+        UnitDisplayConfigurationsView.IrregularOrderIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.IrregularOrderIconPicture = null;
+        UnitDisplayConfigurationsView.ImpetuousIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.ImpetuousIconPicture = null;
+        UnitDisplayConfigurationsView.TacticalAwarenessIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = null;
+        UnitDisplayConfigurationsView.CubeIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.CubeIconPicture = null;
+        UnitDisplayConfigurationsView.Cube2IconPicture?.Dispose();
+        UnitDisplayConfigurationsView.Cube2IconPicture = null;
+        UnitDisplayConfigurationsView.HackableIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.HackableIconPicture = null;
+        UnitDisplayConfigurationsView.PeripheralIconPicture?.Dispose();
+        UnitDisplayConfigurationsView.PeripheralIconPicture = null;
         _filterIconPicture?.Dispose();
         _filterIconPicture = null;
 
@@ -7052,7 +6854,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var regularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/regular.svg");
             var regularSvg = new SKSvg();
-            _regularOrderIconPicture = regularSvg.Load(regularStream);
+            UnitDisplayConfigurationsView.RegularOrderIconPicture = regularSvg.Load(regularStream);
         }
         catch (Exception ex)
         {
@@ -7063,7 +6865,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var irregularStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/irregular.svg");
             var irregularSvg = new SKSvg();
-            _irregularOrderIconPicture = irregularSvg.Load(irregularStream);
+            UnitDisplayConfigurationsView.IrregularOrderIconPicture = irregularSvg.Load(irregularStream);
         }
         catch (Exception ex)
         {
@@ -7074,7 +6876,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var impetuousStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/impetuous.svg");
             var impetuousSvg = new SKSvg();
-            _impetuousIconPicture = impetuousSvg.Load(impetuousStream);
+            UnitDisplayConfigurationsView.ImpetuousIconPicture = impetuousSvg.Load(impetuousStream);
         }
         catch (Exception ex)
         {
@@ -7085,7 +6887,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
             var tacticalSvg = new SKSvg();
-            _tacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
+            UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
         }
         catch (Exception ex)
         {
@@ -7096,7 +6898,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var cubeStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube.svg");
             var cubeSvg = new SKSvg();
-            _cubeIconPicture = cubeSvg.Load(cubeStream);
+            UnitDisplayConfigurationsView.CubeIconPicture = cubeSvg.Load(cubeStream);
         }
         catch (Exception ex)
         {
@@ -7107,7 +6909,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var cube2Stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/cube2.svg");
             var cube2Svg = new SKSvg();
-            _cube2IconPicture = cube2Svg.Load(cube2Stream);
+            UnitDisplayConfigurationsView.Cube2IconPicture = cube2Svg.Load(cube2Stream);
         }
         catch (Exception ex)
         {
@@ -7118,7 +6920,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var hackableStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/hackable.svg");
             var hackableSvg = new SKSvg();
-            _hackableIconPicture = hackableSvg.Load(hackableStream);
+            UnitDisplayConfigurationsView.HackableIconPicture = hackableSvg.Load(hackableStream);
         }
         catch (Exception ex)
         {
@@ -7129,7 +6931,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         {
             await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
             var peripheralSvg = new SKSvg();
-            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+            UnitDisplayConfigurationsView.PeripheralIconPicture = peripheralSvg.Load(peripheralStream);
         }
         catch (Exception ex)
         {
@@ -7153,194 +6955,22 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         UnitDisplayConfigurationsView.InvalidatePeripheralHeaderIconCanvas();
     }
 
-    private async Task LoadSeasonValidationIconsAsync()
-    {
-        _seasonCheckIconPicture?.Dispose();
-        _seasonCheckIconPicture = null;
-        _seasonXIconPicture?.Dispose();
-        _seasonXIconPicture = null;
-
-        try
-        {
-            await using var checkStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
-            var checkSvg = new SKSvg();
-            _seasonCheckIconPicture = checkSvg.Load(checkStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage season check icon load failed: {ex.Message}");
-        }
-
-        try
-        {
-            await using var xStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
-            var xSvg = new SKSvg();
-            _seasonXIconPicture = xSvg.Load(xStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage season x icon load failed: {ex.Message}");
-        }
-
-        UpdateSeasonValidationState();
-        SeasonValidationCanvas.InvalidateSurface();
-    }
-
-    private void InvalidateSlotCanvas(int slotIndex)
-    {
-        if (slotIndex == 0)
-        {
-            LeftSlotCanvas.InvalidateSurface();
-            return;
-        }
-
-        RightSlotCanvas.InvalidateSurface();
-    }
-
-    private void OnLeftSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_leftSlotPicture, e);
-    }
-
-    private void OnRightSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_rightSlotPicture, e);
-    }
-
-    private void OnSelectedUnitCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        if (_selectedUnitPicture is null)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage selected canvas paint: no picture (canvas={e.Info.Width}x{e.Info.Height}).");
-        }
-        else
-        {
-            var b = _selectedUnitPicture.CullRect;
-            Console.WriteLine($"ArmyFactionSelectionPage selected canvas paint: canvas={e.Info.Width}x{e.Info.Height}, bounds=({b.Left},{b.Top},{b.Right},{b.Bottom}).");
-        }
-
-        DrawSlotPicture(_selectedUnitPicture, e);
-    }
-
-    private void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var pictures = BuildHeaderIconPictures();
-        DrawIconColumn(canvas, e.Info, pictures);
-    }
-
-    private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var icon = _showSeasonCheckIcon ? _seasonCheckIconPicture : _seasonXIconPicture;
-        DrawSlotPicture(icon, e);
-    }
-
     private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_filterIconPicture, e);
     }
 
+    /// <summary>
+    /// Renders the peripheral icon in mercs-company entry rows.
+    /// </summary>
     private void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
-        DrawSlotPicture(_peripheralIconPicture, e);
-    }
-
-    private void OnProfileTacticalIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_tacticalAwarenessIconPicture, e);
+        DrawSlotPicture(UnitDisplayConfigurationsView.PeripheralIconPicture, e);
     }
 
     private void OnTrackedFireteamLevelCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_trackedFireteamLevelPicture, e);
-    }
-
-    private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
-    {
-        UpdateUnitNameHeadingFontSize();
-    }
-
-    private List<SKPicture> BuildTopIconPictures()
-    {
-        var pictures = new List<SKPicture>(3);
-        var orderTypePicture = ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
-        {
-            pictures.Add(orderTypePicture);
-        }
-
-        if (ShowImpetuousIcon && _impetuousIconPicture is not null)
-        {
-            pictures.Add(_impetuousIconPicture);
-        }
-
-        if (ShowTacticalAwarenessIcon && _tacticalAwarenessIconPicture is not null)
-        {
-            pictures.Add(_tacticalAwarenessIconPicture);
-        }
-
-        return pictures;
-    }
-
-    private List<SKPicture> BuildBottomIconPictures()
-    {
-        var pictures = new List<SKPicture>(3);
-        if (ShowCubeIcon && _cubeIconPicture is not null)
-        {
-            pictures.Add(_cubeIconPicture);
-        }
-
-        if (ShowCube2Icon && _cube2IconPicture is not null)
-        {
-            pictures.Add(_cube2IconPicture);
-        }
-
-        if (ShowHackableIcon && _hackableIconPicture is not null)
-        {
-            pictures.Add(_hackableIconPicture);
-        }
-
-        return pictures;
-    }
-
-    private List<SKPicture> BuildHeaderIconPictures()
-    {
-        var pictures = BuildTopIconPictures();
-        pictures.AddRange(BuildBottomIconPictures());
-        if (pictures.Count <= MaxHeaderIcons)
-        {
-            return pictures;
-        }
-
-        return pictures.Take(MaxHeaderIcons).ToList();
-    }
-
-    private static void DrawIconColumn(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
-    {
-        if (pictures.Count == 0)
-        {
-            return;
-        }
-
-        var drawCount = pictures.Count;
-        var totalGap = (drawCount - 1) * IconVerticalGap;
-        var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
-        var iconSize = Math.Max(1f, Math.Min(IconSize, maxIconSizeFromHeight));
-        var totalHeight = (drawCount * iconSize) + totalGap;
-        var startY = (info.Height - totalHeight) / 2f;
-        if (startY < 0f)
-        {
-            startY = 0f;
-        }
-
-        for (var i = 0; i < drawCount; i++)
-        {
-            var x = (info.Width - iconSize) / 2f;
-            var y = startY + (i * (iconSize + IconVerticalGap));
-            var destination = new SKRect(x, y, x + iconSize, y + iconSize);
-            DrawPictureInRect(canvas, pictures[i], destination);
-        }
     }
 
     private static void ApplyFilterButtonSize(Border? buttonBorder, SKCanvasView? iconCanvas, double iconButtonSize)
@@ -7358,32 +6988,27 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void UpdateUnitNameHeadingFontSize()
     {
-        var headingLabel = UnitDisplayConfigurationsView?.UnitNameHeadingElement;
-        if (headingLabel is null)
-        {
-            return;
-        }
-
-        var availableWidth = headingLabel.Width;
-        if (availableWidth <= 0)
-        {
-            UnitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
-            return;
-        }
-
-        var measuredWidth = double.PositiveInfinity;
-        for (var size = UnitNameHeadingMaxFontSize; size >= UnitNameHeadingMinFontSize; size -= UnitNameHeadingFontStep)
-        {
-            UnitNameHeadingFontSize = size;
-            measuredWidth = headingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
-            if (measuredWidth <= availableWidth)
-            {
-                return;
-            }
-        }
-
-        UnitNameHeadingFontSize = UnitNameHeadingMinFontSize;
+        UnitDisplayConfigurationsView?.RefreshUnitHeadingFontSize();
     }
+
+    bool IUnitDisplayIconState.ShowRegularOrderIcon => ShowRegularOrderIcon;
+    bool IUnitDisplayIconState.ShowIrregularOrderIcon => ShowIrregularOrderIcon;
+    bool IUnitDisplayIconState.ShowImpetuousIcon => ShowImpetuousIcon;
+    bool IUnitDisplayIconState.ShowTacticalAwarenessIcon => ShowTacticalAwarenessIcon;
+    bool IUnitDisplayIconState.ShowCubeIcon => ShowCubeIcon;
+    bool IUnitDisplayIconState.ShowCube2Icon => ShowCube2Icon;
+    bool IUnitDisplayIconState.ShowHackableIcon => ShowHackableIcon;
+    double IUnitDisplayIconState.UnitHeadingMaxFontSize => UnitNameHeadingMaxFontSize;
+    double IUnitDisplayIconState.UnitHeadingMinFontSize => UnitNameHeadingMinFontSize;
+    double IUnitDisplayIconState.UnitHeadingFontStep => UnitNameHeadingFontStep;
+    void IUnitDisplayIconState.ApplyUnitHeadingFontSize(double size) => UnitNameHeadingFontSize = size;
+    bool IUnitDisplayStatState.ShowUnitsInInches => ShowUnitsInInches;
+    int? IUnitDisplayStatState.UnitMoveFirstCm => UnitMoveFirstCm;
+    int? IUnitDisplayStatState.UnitMoveSecondCm => UnitMoveSecondCm;
+    int? IUnitDisplayStatState.PeripheralMoveFirstCm => PeripheralMoveFirstCm;
+    int? IUnitDisplayStatState.PeripheralMoveSecondCm => PeripheralMoveSecondCm;
+    void IUnitDisplayStatState.ApplyUnitMoveDisplay(string value) => UnitMov = value;
+    void IUnitDisplayStatState.ApplyPeripheralMoveDisplay(string value) => PeripheralMov = value;
 
     private async Task ApplyUnitHeaderColorsAsync(int sourceFactionId, ArmyUnitRecord? unit, CancellationToken cancellationToken)
     {
@@ -7478,10 +7103,10 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private void RefreshSummaryFormatted()
     {
         var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", _selectedUnitCommonEquipment, equipmentAccent);
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
         SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
             "Special Skills",
-            _selectedUnitCommonSkills,
+            UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
             skillsAccent,
             highlightLieutenantPurple: _summaryHighlightLieutenant);
     }
@@ -7489,8 +7114,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private static (Color EquipmentAccent, Color SkillsAccent) GetSummaryAccentColorsForSecondaryBackground(Color secondaryBackground)
     {
         return IsLightColor(secondaryBackground)
-            ? (EquipmentAccentOnLightSecondary, SkillsAccentOnLightSecondary)
-            : (EquipmentAccentOnDarkSecondary, SkillsAccentOnDarkSecondary);
+            ? (UnitDisplayConfigurationsView.EquipmentAccentOnLightSecondary, UnitDisplayConfigurationsView.SkillsAccentOnLightSecondary)
+            : (UnitDisplayConfigurationsView.EquipmentAccentOnDarkSecondary, UnitDisplayConfigurationsView.SkillsAccentOnDarkSecondary);
     }
 
     private static (Color Primary, Color Secondary) GetFactionTheme(string? factionName)
@@ -7509,7 +7134,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             "nonalignedarmy" => (Color.FromArgb("#728868"), Color.FromArgb("#728868")),
             "o12" => (Color.FromArgb("#005470"), Color.FromArgb("#dead33")),
             "jsa" => (Color.FromArgb("#a6112b"), Color.FromArgb("#757575")),
-            _ => (DefaultHeaderPrimaryColor, DefaultHeaderSecondaryColor)
+            _ => (UnitDisplayConfigurationsView.DefaultHeaderPrimaryColor, UnitDisplayConfigurationsView.DefaultHeaderSecondaryColor)
         };
     }
 
@@ -7672,6 +7297,22 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         canvas.Scale(scale);
         canvas.DrawPicture(picture);
     }
+
+    private static void DrawSlotBorder(SKPaintSurfaceEventArgs e, SKColor borderColor)
+    {
+        var canvas = e.Surface.Canvas;
+        using var borderPaint = new SKPaint
+        {
+            Color = borderColor,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2f,
+            IsAntialias = true
+        };
+
+        const float inset = 1f;
+        canvas.DrawRect(inset, inset, e.Info.Width - (inset * 2f), e.Info.Height - (inset * 2f), borderPaint);
+    }
+
 }
 
 public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
@@ -9243,4 +8884,11 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
+
+
+
+
+
+
 

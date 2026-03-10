@@ -28,7 +28,7 @@
         Route="CompanyViewerPage" />
 
     <ShellContent
-        Title="Viewer"
+        Title="Unit Encyclopedia"
         ContentTemplate="{DataTemplate views:ViewerPage}"
         Route="ViewerPage" />
         

@@ -56,116 +56,69 @@
                         <Setter Property="FontSize" Value="24" />
                     </Style>
                 </Border.Resources>
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="8">
-                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="8" RowSpacing="4">
-                        <VerticalStackLayout Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Spacing="2" VerticalOptions="Center">
-                            <Grid x:Name="SelectedNameDisplayRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="34" FontAttributes="Bold">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnSelectedNameLabelTapped" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-                                <skia:SKCanvasView
-                                    x:Name="SelectedNameEditCanvas"
-                                    Grid.Column="1"
-                                    WidthRequest="36"
-                                    HeightRequest="36"
-                                    VerticalOptions="Center"
-                                    PaintSurface="OnSelectedNameEditCanvasPaintSurface" />
-                            </Grid>
-                            <Grid x:Name="SelectedNameEditRow" IsVisible="False" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                <Entry x:Name="SelectedNameEntry" Grid.Column="0" FontSize="34" />
-                                <skia:SKCanvasView
-                                    x:Name="SelectedNameSaveCanvas"
-                                    Grid.Column="1"
-                                    WidthRequest="36"
-                                    HeightRequest="36"
-                                    VerticalOptions="Center"
-                                    PaintSurface="OnSelectedNameSaveCanvasPaintSurface" />
-                                <skia:SKCanvasView
-                                    x:Name="SelectedNameRejectCanvas"
-                                    Grid.Column="2"
-                                    WidthRequest="36"
-                                    HeightRequest="36"
-                                    VerticalOptions="Center"
-                                    PaintSurface="OnSelectedNameRejectCanvasPaintSurface" />
-                            </Grid>
-                            <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}" FontSize="28" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
-                            <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}" FontSize="24" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
-                        </VerticalStackLayout>
-                        <skia:SKCanvasView
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            x:Name="TopIconRowCanvas"
-                            HeightRequest="75"
-                            HorizontalOptions="Fill"
-                            VerticalOptions="Center"
-                            IsVisible="{Binding HasAnyTopHeaderIcons}"
-                            PaintSurface="OnTopIconRowCanvasPaintSurface" />
-                        <skia:SKCanvasView
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            x:Name="BottomIconRowCanvas"
-                            HeightRequest="75"
-                            HorizontalOptions="Fill"
-                            VerticalOptions="Center"
-                            IsVisible="{Binding HasAnyBottomHeaderIcons}"
-                            PaintSurface="OnBottomIconRowCanvasPaintSurface" />
-                    </Grid>
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                    <VerticalStackLayout Grid.Row="0" Spacing="2" VerticalOptions="Center">
+                        <Grid x:Name="SelectedNameDisplayRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="34" FontAttributes="Bold">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnSelectedNameLabelTapped" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                            <skia:SKCanvasView
+                                x:Name="SelectedNameEditCanvas"
+                                Grid.Column="1"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                VerticalOptions="Center"
+                                PaintSurface="OnSelectedNameEditCanvasPaintSurface" />
+                        </Grid>
+                        <Grid x:Name="SelectedNameEditRow" IsVisible="False" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <Entry x:Name="SelectedNameEntry" Grid.Column="0" FontSize="34" />
+                            <skia:SKCanvasView
+                                x:Name="SelectedNameSaveCanvas"
+                                Grid.Column="1"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                VerticalOptions="Center"
+                                PaintSurface="OnSelectedNameSaveCanvasPaintSurface" />
+                            <skia:SKCanvasView
+                                x:Name="SelectedNameRejectCanvas"
+                                Grid.Column="2"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                VerticalOptions="Center"
+                                PaintSurface="OnSelectedNameRejectCanvasPaintSurface" />
+                        </Grid>
+                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}" FontSize="28" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
+                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}" FontSize="24" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
+                    </VerticalStackLayout>
 
-                    <Grid Grid.Row="1" ColumnSpacing="6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="7" Text="{Binding UnitVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                    </Grid>
+                    <controls:UnitDisplayConfigurationsView
+                        Grid.Row="1"
+                        x:Name="UnitDisplayConfigurationsView"
+                        UnitNameHeading="{Binding UnitNameHeading}"
+                        ShowRegularOrderIcon="{Binding ShowRegularOrderIcon}"
+                        ShowIrregularOrderIcon="{Binding ShowIrregularOrderIcon}"
+                        ShowImpetuousIcon="{Binding ShowImpetuousIcon}"
+                        ShowTacticalAwarenessIcon="{Binding ShowTacticalAwarenessIcon}"
+                        ShowCubeIcon="{Binding ShowCubeIcon}"
+                        ShowCube2Icon="{Binding ShowCube2Icon}"
+                        ShowHackableIcon="{Binding ShowHackableIcon}"
+                        UnitMov="{Binding UnitMov}"
+                        UnitCc="{Binding UnitCc}"
+                        UnitBs="{Binding UnitBs}"
+                        UnitPh="{Binding UnitPh}"
+                        UnitWip="{Binding UnitWip}"
+                        UnitArm="{Binding UnitArm}"
+                        UnitBts="{Binding UnitBts}"
+                        UnitVitalityHeader="{Binding UnitVitalityHeader}"
+                        UnitVitality="{Binding UnitVitality}"
+                        UnitS="{Binding UnitS}"
+                        UnitAva="{Binding UnitAva}"
+                        EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
+                        SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 
-                    <Grid Grid.Row="2" ColumnSpacing="6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Text="{Binding UnitMov}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="1" Text="{Binding UnitCc}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="2" Text="{Binding UnitBs}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="3" Text="{Binding UnitPh}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="4" Text="{Binding UnitWip}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="5" Text="{Binding UnitArm}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="6" Text="{Binding UnitBts}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="7" Text="{Binding UnitVitality}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="8" Text="{Binding UnitS}" HorizontalTextAlignment="Center" />
-                        <Label Grid.Column="9" Text="{Binding UnitAva}" HorizontalTextAlignment="Center" />
-                    </Grid>
-
-                    <Label Grid.Row="3" FormattedText="{Binding EquipmentSummaryFormatted}" LineBreakMode="WordWrap" />
-                    <Label Grid.Row="4" FormattedText="{Binding SpecialSkillsSummaryFormatted}" LineBreakMode="WordWrap" />
-                    <ScrollView Grid.Row="5">
+                    <ScrollView Grid.Row="2">
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <VerticalStackLayout Grid.Column="0" Spacing="6">
                                 <Label Text="Weapons" FontSize="30" FontAttributes="Bold" />
@@ -176,6 +129,15 @@
                             <Grid Grid.Column="1" />
                         </Grid>
                     </ScrollView>
+
+                    <Grid Grid.Row="2" IsVisible="False" HeightRequest="0" WidthRequest="0">
+                        <skia:SKCanvasView
+                            x:Name="TopIconRowCanvas"
+                            PaintSurface="OnTopIconRowCanvasPaintSurface" />
+                        <skia:SKCanvasView
+                            x:Name="BottomIconRowCanvas"
+                            PaintSurface="OnBottomIconRowCanvasPaintSurface" />
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

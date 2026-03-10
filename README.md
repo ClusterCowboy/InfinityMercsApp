@@ -3,7 +3,7 @@
 This is an app in C# which will allow for the easy creation and managment of a company of mercs for a season. It is under active development right now
 
 ## Phase 1
-  u
+  
 ### Profiles
  
 #### Baseline
@@ -53,7 +53,7 @@ This is an app in C# which will allow for the easy creation and managment of a c
 #### Implement Standard Company
 - [X] Be able to select two sectorials or one vanilla army
 #### Implement Cohesive Company
-- [ ] Give selection of Core fireteams
+- [X] Give selection of Core fireteams
 - [ ] Allow for Level 6 fireteam
 - [ ] Grant all troopers Number 2
 - [ ] Change fireteam options to ignore Min trooper restriction
@@ -119,3 +119,4 @@ And more
 
 ## Known Defects
 - [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
+T

@@ -119,7 +119,7 @@ public partial class StandardCompanySourcePopupPage : ContentPage
                 return;
             }
 
-            await navigation.PushAsync(new ArmyFactionSelectionPage(mode));
+            await navigation.PushAsync(new StandardCompanySelectionPage(mode));
         }
         catch (Exception ex)
         {

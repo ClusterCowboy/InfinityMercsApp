@@ -281,7 +281,10 @@ public class ArmyDataAccessor : IArmyDataAccessor
             ORDER BY Name
             """;
 
-        return await _connection.QueryAsync<ArmyResumeRecord>(sql, factionId, MercSlugPrefix);
+        var rows = await _connection.QueryAsync<ArmyResumeRecord>(sql, factionId, MercSlugPrefix);
+        return ArmyUnitSort
+            .OrderByUnitTypeAndName(rows, x => x.Type, x => x.Name)
+            .ToList();
     }
 
     /// @brief Gets merc-only resume rows for a faction while excluding characters, TAGs, and vehicles.
@@ -316,13 +319,17 @@ public class ArmyDataAccessor : IArmyDataAccessor
             ORDER BY r.Name
             """;
 
-        return await _connection.QueryAsync<ArmyResumeRecord>(
+        var rows = await _connection.QueryAsync<ArmyResumeRecord>(
             sql,
             factionId,
             MercSlugPrefix,
             CharacterCategory,
             TagType,
             VehicleType);
+
+        return ArmyUnitSort
+            .OrderByUnitTypeAndName(rows, x => x.Type, x => x.Name)
+            .ToList();
     }
 
     /// @brief Builds a deterministic primary key for one unit row.

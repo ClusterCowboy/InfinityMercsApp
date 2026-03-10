@@ -1,78 +1,28 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<templates:CompanySelectionPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              xmlns:shell="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
-             x:Class="InfinityMercsApp.Views.StandardCompany.ArmyFactionSelectionPage"
+             xmlns:templates="clr-namespace:InfinityMercsApp.Views.Templates.NewCompany"
+             x:Class="InfinityMercsApp.Views.StandardCompany.StandardCompanySelectionPage"
              x:Name="ArmyFactionSelectionRoot"
              Title="">
 
     <shell:Shell.TitleView>
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
-            <HorizontalStackLayout Grid.Column="0" Spacing="10" VerticalOptions="Center">
-                <Border StrokeThickness="2" Stroke="{Binding LeftSlotBorderColor}" Padding="8,4">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnLeftSlotTapped" />
-                    </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
-                        <skia:SKCanvasView
-                            x:Name="LeftSlotCanvas"
-                            Grid.Column="0"
-                            WidthRequest="28"
-                            HeightRequest="28"
-                            VerticalOptions="Center"
-                            PaintSurface="OnLeftSlotCanvasPaintSurface" />
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding LeftSlotText}"
-                            VerticalOptions="Center" />
-                    </Grid>
-                </Border>
-                <Border StrokeThickness="2" Stroke="{Binding RightSlotBorderColor}" Padding="8,4" IsVisible="{Binding ShowRightSelectionBox}">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnRightSlotTapped" />
-                    </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
-                        <skia:SKCanvasView
-                            x:Name="RightSlotCanvas"
-                            Grid.Column="0"
-                            WidthRequest="28"
-                            HeightRequest="28"
-                            VerticalOptions="Center"
-                            PaintSurface="OnRightSlotCanvasPaintSurface" />
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding RightSlotText}"
-                            VerticalOptions="Center" />
-                    </Grid>
-                </Border>
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                <Label
-                    WidthRequest="70"
-                    Text="{Binding SeasonPointsCapText}"
-                    VerticalOptions="Center" />
-                <Label Text="/" VerticalOptions="Center" />
-                <Picker
-                    WidthRequest="80"
-                    SelectedItem="{Binding SelectedStartSeasonPoints}">
-                    <Picker.ItemsSource>
-                        <x:Array Type="{x:Type x:String}">
-                            <x:String>60</x:String>
-                            <x:String>75</x:String>
-                            <x:String>90</x:String>
-                        </x:Array>
-                    </Picker.ItemsSource>
-                </Picker>
-                <Label Text="Points to start season" VerticalOptions="Center" />
-                <skia:SKCanvasView
-                    x:Name="SeasonValidationCanvas"
-                    WidthRequest="24"
-                    HeightRequest="24"
-                    VerticalOptions="Center"
-                    PaintSurface="OnSeasonValidationCanvasPaintSurface" />
-            </HorizontalStackLayout>
+            <controls:FactionSlotSelectorView
+                x:Name="FactionSlotSelectorView"
+                Grid.Column="0"
+                VerticalOptions="Center"
+                ShowRightSelectionBox="{Binding ShowRightSelectionBox}" />
+            <controls:SeasonStartPointsView
+                x:Name="SeasonStartPointsView"
+                Grid.Column="1"
+                VerticalOptions="Center"
+                SeasonPointsCapText="{Binding SeasonPointsCapText}"
+                SelectedStartSeasonPoints="{Binding SelectedStartSeasonPoints}"
+                IsCompanyValid="{Binding IsCompanyValid}" />
         </Grid>
     </shell:Shell.TitleView>
 
@@ -277,7 +227,8 @@
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
                                             <controls:FactionListItemView
-                                                ItemTapped="OnUnitItemTappedFromView"
+                                                ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectUnitCommand}"
+                                                ItemTappedCommandParameter="{Binding .}"
                                                 IsVisible="{Binding IsVisible}" />
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
@@ -287,7 +238,7 @@
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
                                 <VerticalStackLayout Spacing="0">
                                     <Label
-                                        Text="One Duo fireteam per company"
+                                        Text="Unlimited Duo fireteams allowed per company"
                                         FontAttributes="Bold"
                                         Margin="8,6,8,8" />
                                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding TeamEntries}" Spacing="0">
@@ -310,7 +261,8 @@
                                                                         <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
                                                                         <controls:FactionListItemView
                                                                             Grid.Column="2"
-                                                                            ItemTapped="OnTeamAllowedProfileTappedFromView" />
+                                                                            ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectTeamAllowedProfileCommand}"
+                                                                            ItemTappedCommandParameter="{Binding .}" />
                                                                     </Grid>
                                                                 </DataTemplate>
                                                             </BindableLayout.ItemTemplate>
@@ -455,5 +407,5 @@
                 MaximumWidthRequest="700" />
         </Grid>
     </Grid>
-</ContentPage>
+</templates:CompanySelectionPageBase>
 
