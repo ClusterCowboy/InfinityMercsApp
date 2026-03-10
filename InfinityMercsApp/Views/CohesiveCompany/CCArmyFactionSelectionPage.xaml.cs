@@ -87,6 +87,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private readonly ArmySourceSelectionMode _mode;
     private readonly IMetadataAccessor? _metadataAccessor;
     private readonly IArmyDataAccessor? _armyDataAccessor;
+    private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
     private ArmyFactionSelectionItem? _selectedFaction;
@@ -194,6 +195,12 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
     {
         InitializeComponent();
+        // Forward shared panel events to this page's existing handlers.
+        UnitDisplayConfigurationsView.HeaderIconsCanvasPaintSurface += OnHeaderIconsCanvasPaintSurface;
+        UnitDisplayConfigurationsView.SelectedUnitCanvasPaintSurface += OnSelectedUnitCanvasPaintSurface;
+        UnitDisplayConfigurationsView.PeripheralIconCanvasPaintSurface += OnPeripheralIconCanvasPaintSurface;
+        UnitDisplayConfigurationsView.ProfileTacticalIconCanvasPaintSurface += OnProfileTacticalIconCanvasPaintSurface;
+        UnitDisplayConfigurationsView.UnitNameHeadingSizeChanged += OnUnitNameHeadingLabelSizeChanged;
         _mode = mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
             ? "Choose your faction:"
@@ -205,6 +212,8 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         var services = Application.Current?.Handler?.MauiContext?.Services;
         _metadataAccessor = services?.GetService<IMetadataAccessor>();
         _armyDataAccessor = services?.GetService<IArmyDataAccessor>();
+        _specOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
+            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
         _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
         _appSettingsService = services?.GetService<AppSettingsService>();
 
@@ -559,7 +568,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -577,7 +586,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -595,7 +604,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -613,7 +622,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -631,7 +640,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -649,7 +658,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -667,7 +676,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
             OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            HeaderIconsCanvas.InvalidateSurface();
+            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         }
     }
 
@@ -841,7 +850,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             }
 
             var factionIds = ordered.Select(x => x.Id).ToList();
-            var cachedRows = await _armyDataAccessor.GetCCFactionFireteamValidityAsync(
+            var cachedRows = await _specOpsDataAccessor.GetCCFactionFireteamValidityAsync(
                 cacheFilterKey,
                 factionIds,
                 cancellationToken);
@@ -861,7 +870,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 var validCoreFireteamNames = await EvaluateValidCoreFireteamsForFactionAsync(faction, maxCost, cancellationToken);
                 var hasValidCoreFireteams = validCoreFireteamNames.Count > 0;
                 var validCoreFireteamsJson = JsonSerializer.Serialize(validCoreFireteamNames);
-                await _armyDataAccessor.UpsertCCFactionFireteamValidityAsync(
+                await _specOpsDataAccessor.UpsertCCFactionFireteamValidityAsync(
                     faction.Id,
                     cacheFilterKey,
                     hasValidCoreFireteams,
@@ -1490,7 +1499,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 var weaponsLookup = BuildIdNameLookup(filtersJson, "weapons");
                 var ammoLookup = BuildIdNameLookup(filtersJson, "ammunition");
 
-                var specopsByUnitId = (await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken))
+                var specopsByUnitId = (await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken))
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
                 var factionUnits = Units.Where(x => x.SourceFactionId == faction.Id).ToList();
@@ -1738,7 +1747,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 var resumeByUnitId = units
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
-                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
+                var specopsUnits = await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
                 var specopsByUnitId = specopsUnits
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
@@ -2215,7 +2224,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
                 equipLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
                 weaponsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
                 ammoLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
-                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
+                var specopsUnits = await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
                 specopsByFaction[faction.Id] = specopsUnits
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
@@ -3031,9 +3040,9 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             var weaponLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
 
-            var skillRecords = await _armyDataAccessor.GetSpecopsSkillsByFactionAsync(factionId, cancellationToken);
-            var equipRecords = await _armyDataAccessor.GetSpecopsEquipsByFactionAsync(factionId, cancellationToken);
-            var weaponRecords = await _armyDataAccessor.GetSpecopsWeaponsByFactionAsync(factionId, cancellationToken);
+            var skillRecords = await _specOpsDataAccessor.GetSpecopsSkillsByFactionAsync(factionId, cancellationToken);
+            var equipRecords = await _specOpsDataAccessor.GetSpecopsEquipsByFactionAsync(factionId, cancellationToken);
+            var weaponRecords = await _specOpsDataAccessor.GetSpecopsWeaponsByFactionAsync(factionId, cancellationToken);
 
             var skills = skillRecords
                 .OrderBy(x => x.EntryOrder)
@@ -3287,7 +3296,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             ArmySpecopsUnitRecord? specopsUnit = null;
             if (_selectedUnit.IsSpecOps || unit is null)
             {
-                var specopsUnits = await _armyDataAccessor.GetSpecopsUnitsByFactionAsync(_selectedUnit.SourceFactionId, cancellationToken);
+                var specopsUnits = await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(_selectedUnit.SourceFactionId, cancellationToken);
                 specopsUnit = specopsUnits.FirstOrDefault(x => x.UnitId == _selectedUnit.Id);
             }
             var treatAsSpecOps = _selectedUnit.IsSpecOps || (unit is null && specopsUnit is not null);
@@ -3424,7 +3433,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
             if (stream is null)
             {
-                SelectedUnitCanvas.InvalidateSurface();
+                UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
                 return;
             }
 
@@ -3449,7 +3458,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             _selectedUnitPicture = null;
         }
 
-        SelectedUnitCanvas.InvalidateSurface();
+        UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
 
     private void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson, bool forceLieutenant = false)
@@ -5151,7 +5160,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
         _selectedUnitPicture?.Dispose();
         _selectedUnitPicture = null;
-        SelectedUnitCanvas.InvalidateSurface();
+        UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
         _selectedUnitProfileGroupsJson = null;
         _selectedUnitFiltersJson = null;
@@ -7138,10 +7147,10 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             Console.Error.WriteLine($"ArmyFactionSelectionPage filter icon load failed: {ex.Message}");
         }
 
-        HeaderIconsCanvas.InvalidateSurface();
+        UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
         UnitSelectionFilterCanvasInactive.InvalidateSurface();
         UnitSelectionFilterCanvasActive.InvalidateSurface();
-        PeripheralHeaderIconCanvas?.InvalidateSurface();
+        UnitDisplayConfigurationsView.InvalidatePeripheralHeaderIconCanvas();
     }
 
     private async Task LoadSeasonValidationIconsAsync()
@@ -7349,12 +7358,13 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private void UpdateUnitNameHeadingFontSize()
     {
-        if (UnitNameHeadingLabel is null)
+        var headingLabel = UnitDisplayConfigurationsView?.UnitNameHeadingElement;
+        if (headingLabel is null)
         {
             return;
         }
 
-        var availableWidth = UnitNameHeadingLabel.Width;
+        var availableWidth = headingLabel.Width;
         if (availableWidth <= 0)
         {
             UnitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
@@ -7365,7 +7375,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         for (var size = UnitNameHeadingMaxFontSize; size >= UnitNameHeadingMinFontSize; size -= UnitNameHeadingFontStep)
         {
             UnitNameHeadingFontSize = size;
-            measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
+            measuredWidth = headingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
             if (measuredWidth <= availableWidth)
             {
                 return;
@@ -9233,3 +9243,4 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+

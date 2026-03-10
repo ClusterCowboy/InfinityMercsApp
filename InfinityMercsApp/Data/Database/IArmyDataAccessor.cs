@@ -1,5 +1,9 @@
 namespace InfinityMercsApp.Data.Database;
 
+/// <summary>
+/// Accessor for faction snapshot, unit, and resume data persisted from Army payloads.
+/// Spec-Ops concerns are handled separately by <see cref="ISpecOpsDataAccessor"/>.
+/// </summary>
 public interface IArmyDataAccessor
 {
     Task ImportFactionArmyFromJsonAsync(int factionId, string json, CancellationToken cancellationToken = default);
@@ -21,24 +25,4 @@ public interface IArmyDataAccessor
     Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionAsync(int factionId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(int factionId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<ArmySpecopsSkillRecord>> GetSpecopsSkillsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<ArmySpecopsEquipRecord>> GetSpecopsEquipsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<ArmySpecopsWeaponRecord>> GetSpecopsWeaponsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<ArmySpecopsUnitRecord>> GetSpecopsUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<CCFactionFireteamValidityRecord>> GetCCFactionFireteamValidityAsync(
-        string filterKey,
-        IReadOnlyCollection<int> factionIds,
-        CancellationToken cancellationToken = default);
-
-    Task UpsertCCFactionFireteamValidityAsync(
-        int factionId,
-        string filterKey,
-        bool hasValidCoreFireteams,
-        string? validCoreFireteamsJson,
-        CancellationToken cancellationToken = default);
 }
