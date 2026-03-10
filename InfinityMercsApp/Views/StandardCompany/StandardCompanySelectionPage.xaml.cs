@@ -84,7 +84,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private string _profilesStatus = "Select a unit.";
     private bool _summaryHighlightLieutenant;
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
-    private UnitFilterPopupPage? _activeUnitFilterPopup;
+    private UnitFilterPopupView? _activeUnitFilterPopup;
 
     public StandardCompanySelectionPage(ArmySourceSelectionMode mode)
         : base(mode)
@@ -894,7 +894,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new UnitFilterPopupPage(
+            var popup = new UnitFilterPopupView(
                 options,
                 _activeUnitFilter,
                 lieutenantOnlyUnits: LieutenantOnlyUnits,
@@ -919,16 +919,16 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
             TeamsView = criteria.TeamsView;
         }
-        CloseUnitFilterPopup(sender as UnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
-        CloseUnitFilterPopup(sender as UnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
     }
 
-    private void CloseUnitFilterPopup(UnitFilterPopupPage? popup)
+    private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
         var target = popup ?? _activeUnitFilterPopup;
         if (target is not null)
@@ -8419,6 +8419,7 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
 
 
 

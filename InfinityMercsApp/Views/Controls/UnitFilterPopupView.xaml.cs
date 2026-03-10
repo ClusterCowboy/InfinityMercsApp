@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.Controls;
 
 public sealed class UnitFilterPopupOptions
 {
@@ -30,7 +30,7 @@ public sealed class UnitFilterCriteria
     public static UnitFilterCriteria None { get; } = new();
 }
 
-public partial class UnitFilterPopupPage : ContentView
+public partial class UnitFilterPopupView : ContentView
 {
     public event EventHandler<UnitFilterCriteria>? FilterArmyApplied;
     public event EventHandler? CloseRequested;
@@ -54,12 +54,12 @@ public partial class UnitFilterPopupPage : ContentView
     public bool SelectedLieutenantOnlyUnits { get; set; }
     public bool SelectedTeamsView { get; set; }
 
-    public UnitFilterPopupPage()
+    public UnitFilterPopupView()
         : this(new UnitFilterPopupOptions(), UnitFilterCriteria.None, lieutenantOnlyUnits: false, teamsView: false)
     {
     }
 
-    public UnitFilterPopupPage(
+    public UnitFilterPopupView(
         UnitFilterPopupOptions options,
         UnitFilterCriteria? existingCriteria = null,
         bool lieutenantOnlyUnits = false,

@@ -8,8 +8,8 @@ namespace {{NAMESPACE}};
 public partial class {{PAGE_CLASS}} : CompanySelectionPageBase
 {
     // Mode-specific fields:
-    // Standard: UnitFilterCriteria / UnitFilterPopupPage
-    // Cohesive: CCUnitFilterCriteria / CCUnitFilterPopupPage + tracked fireteam/FTO state
+    // Shared: UnitFilterCriteria / UnitFilterPopupView
+    // Cohesive additions: tracked fireteam/FTO state
 
     public {{PAGE_CLASS}}(ArmySourceSelectionMode mode)
         : base(mode)

@@ -86,8 +86,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private string _profilesStatus = "Select a unit.";
     private bool _summaryHighlightLieutenant;
     private bool _areTeamEntriesReady;
-    private CCUnitFilterCriteria _activeUnitFilter = CCUnitFilterCriteria.None;
-    private CCUnitFilterPopupPage? _activeUnitFilterPopup;
+    private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
+    private UnitFilterPopupView? _activeUnitFilterPopup;
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
     private string _trackedFireteamName = string.Empty;
     private int _trackedFireteamLevel;
@@ -1263,7 +1263,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new CCUnitFilterPopupPage(
+            var popup = new UnitFilterPopupView(
                 options,
                 _activeUnitFilter,
                 lieutenantOnlyUnits: LieutenantOnlyUnits,
@@ -1280,24 +1280,24 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         }
     }
 
-    private void OnFilterArmyApplied(object? sender, CCUnitFilterCriteria criteria)
+    private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
-        _activeUnitFilter = criteria ?? CCUnitFilterCriteria.None;
+        _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
         if (criteria is not null)
         {
             LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
             TeamsView = criteria.TeamsView;
         }
-        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
-        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as UnitFilterPopupView);
     }
 
-    private void CloseUnitFilterPopup(CCUnitFilterPopupPage? popup)
+    private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
         var target = popup ?? _activeUnitFilterPopup;
         if (target is not null)
@@ -1323,7 +1323,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         ApplyFilterButtonSize(UnitSelectionFilterButtonActive, UnitSelectionFilterCanvasActive, iconButtonSize);
     }
 
-    private async Task<CCUnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
+    private async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
     {
         var classification = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var characteristics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1435,7 +1435,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
         var maxPoints = int.TryParse(SelectedStartSeasonPoints, out var parsedMaxPoints) ? Math.Max(parsedMaxPoints, 200) : 200;
         Console.WriteLine($"ArmyFactionSelectionPage filter options: class={classification.Count}, chars={characteristics.Count}, skills={skills.Count}, equip={equipment.Count}, weapons={weapons.Count}, ammo={ammo.Count}.");
-        return new CCUnitFilterPopupOptions
+        return new UnitFilterPopupOptions
         {
             Classification = classification.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             Characteristics = characteristics.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
@@ -4602,7 +4602,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        CCUnitFilterCriteria criteria,
+        UnitFilterCriteria criteria,
         bool requireLieutenant,
         bool requireZeroSwc,
         int? maxCost = null,
@@ -4703,7 +4703,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        CCUnitFilterCriteria criteria)
+        UnitFilterCriteria criteria)
     {
         if (!string.IsNullOrWhiteSpace(criteria.Characteristics) &&
             !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "chars", charsLookup, criteria.Characteristics))
@@ -8884,6 +8884,7 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
 
 
 

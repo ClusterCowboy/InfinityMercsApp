@@ -22,8 +22,7 @@ This template was derived by comparing:
 
 ## What varies by mode
 - Filter popup types:
-  - Standard: `UnitFilterPopupPage`, `UnitFilterCriteria`, `UnitFilterPopupOptions`
-  - Cohesive: `CCUnitFilterPopupPage`, `CCUnitFilterCriteria`, `CCUnitFilterPopupOptions`
+  - Shared: `UnitFilterPopupView`, `UnitFilterCriteria`, `UnitFilterPopupOptions`
 - Cohesive-only behavior:
   - Tracked fireteam state/icon logic
   - FTO profile restriction path
@@ -35,5 +34,5 @@ This template was derived by comparing:
    - `{{NAMESPACE}}`
    - `{{PAGE_CLASS}}`
 3. Keep shared logic in the base class; override only deltas in the derived class.
-4. Choose your filter popup types and implement that in derived code.
+4. Use the shared filter popup types in derived code.
 5. Add cohesive-specific fireteam/FTO logic only in derived code when needed.

@@ -238,7 +238,7 @@
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
                                 <VerticalStackLayout Spacing="0">
                                     <Label
-                                        Text="One Duo fireteam per company"
+                                        Text="Unlimited Duo fireteams allowed per company"
                                         FontAttributes="Bold"
                                         Margin="8,6,8,8" />
                                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding TeamEntries}" Spacing="0">
