@@ -2,7 +2,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
 
-namespace InfinityMercsApp.Views;
+namespace InfinityMercsApp.Views.StandardCompany;
 
 public partial class StandardCompanySourcePopupPage : ContentPage
 {

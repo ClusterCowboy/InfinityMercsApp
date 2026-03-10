@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace InfinityMercsApp.Views;
+namespace InfinityMercsApp.Views.StandardCompany;
 
 public sealed class UnitFilterPopupOptions
 {

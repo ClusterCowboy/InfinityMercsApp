@@ -16,7 +16,7 @@ using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 
-namespace InfinityMercsApp.Views;
+namespace InfinityMercsApp.Views.StandardCompany;
 
 public partial class ArmyFactionSelectionPage : ContentPage
 {

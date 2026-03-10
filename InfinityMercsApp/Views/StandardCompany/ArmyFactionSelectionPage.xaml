@@ -4,7 +4,7 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              xmlns:shell="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
-             x:Class="InfinityMercsApp.Views.ArmyFactionSelectionPage"
+             x:Class="InfinityMercsApp.Views.StandardCompany.ArmyFactionSelectionPage"
              x:Name="ArmyFactionSelectionRoot"
              Title="">
 

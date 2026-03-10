@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Threading;
+using InfinityMercsApp.Views.StandardCompany;
 using SkiaSharp.Views.Maui.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;

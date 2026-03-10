@@ -2,6 +2,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
 using InfinityMercsApp.Views.CohesiveCompany;
+using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.Views;
 
