@@ -59,28 +59,35 @@ public class AppInitializationService
 
             foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
             {
-                var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
-                var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
-                var latestVersion = armyDocument?.Version;
-                if (string.IsNullOrWhiteSpace(latestVersion))
+                try
                 {
-                    continue;
-                }
+                    var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
+                    var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+                    var latestVersion = armyDocument?.Version;
+                    if (string.IsNullOrWhiteSpace(latestVersion))
+                    {
+                        continue;
+                    }
 
-                if (armyDocument?.Resume is not null)
+                    if (armyDocument?.Resume is not null)
+                    {
+                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, armyDocument.Resume, cancellationToken);
+                    }
+
+                    var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+                    var storedVersion = snapshot?.Version;
+
+                    if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                    {
+                        continue;
+                    }
+
+                    await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
+                }
+                catch (Exception ex)
                 {
-                    await _factionLogoCacheService.CacheUnitLogosAsync(factionId, armyDocument.Resume, cancellationToken);
+                    Console.Error.WriteLine($"AppInitializationService faction {factionId} failed: {ex.Message}");
                 }
-
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
-                var storedVersion = snapshot?.Version;
-
-                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                {
-                    continue;
-                }
-
-                await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
             }
         }
     }

@@ -85,38 +85,47 @@ internal class ImportService(
         foreach (var factionId in factionIds)
         {
             yield return new(true, $"Fetching faction data for {factionId}...");
-            var latestArmy = await infinityArmyAPI.GetArmyDataAsync(factionId);
 
-            if (latestArmy is null)
+            try
             {
-                skippedCount++;
-                continue;
+                var latestArmy = await infinityArmyAPI.GetArmyDataAsync(factionId);
+
+                if (latestArmy is null)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                var latestVersion = latestArmy.Version;
+
+                if (latestArmy.Resume is not null)
+                {
+                    await factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                }
+
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                var snapshot = factionProvider.GetFactionSnapshot(factionId);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                await armyImportProvider.ImportAsync(factionId, latestArmy);
+                updatedCount++;
             }
-
-            var latestVersion = latestArmy.Version;
-
-            if (latestArmy.Resume is not null)
+            catch (Exception ex)
             {
-                await factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                Console.Error.WriteLine($"ImportMetadataAsync faction {factionId} failed: {ex.Message}");
+                errorCount++;
             }
-
-            if (string.IsNullOrWhiteSpace(latestVersion))
-            {
-                skippedCount++;
-                continue;
-            }
-
-            var snapshot = factionProvider.GetFactionSnapshot(factionId);
-            var storedVersion = snapshot?.Version;
-
-            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-            {
-                skippedCount++;
-                continue;
-            }
-
-            await armyImportProvider.ImportAsync(factionId, latestArmy);
-            updatedCount++;
         }
 
         yield return new(true, $"Metadata imported. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");
@@ -156,37 +165,45 @@ internal class ImportService(
         {
             yield return new(true, $"Updating factions: checking {faction.Name}...");
 
-            var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
-
-            if (latestArmy is null)
+            try
             {
-                continue;
+                var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
+
+                if (latestArmy is null)
+                {
+                    continue;
+                }
+
+                var latestVersion = latestArmy.Version;
+
+                if (latestArmy.Resume is not null)
+                {
+                    await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
+                }
+
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                await armyImportProvider.ImportAsync(faction.Id, latestArmy);
+                updatedCount++;
             }
-
-            var latestVersion = latestArmy.Version;
-
-            if (latestArmy.Resume is not null)
+            catch (Exception ex)
             {
-                await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
+                Console.Error.WriteLine($"ImportAllDataAsync faction {faction.Id} ({faction.Name}) failed: {ex.Message}");
+                errorCount++;
             }
-
-            if (string.IsNullOrWhiteSpace(latestVersion))
-            {
-                skippedCount++;
-                continue;
-            }
-
-            var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
-            var storedVersion = snapshot?.Version;
-
-            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-            {
-                skippedCount++;
-                continue;
-            }
-
-            await armyImportProvider.ImportAsync(faction.Id, latestArmy);
-            updatedCount++;
         }
 
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");

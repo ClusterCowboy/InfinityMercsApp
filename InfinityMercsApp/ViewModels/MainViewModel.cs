@@ -20,6 +20,7 @@ public class MainViewModel : BaseViewModel
     private readonly IWebAccessObject? _webAccessObject;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IImportService? _importService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
     private int _count;
@@ -35,12 +36,14 @@ public class MainViewModel : BaseViewModel
         IWebAccessObject? webAccessObject = null,
         IArmyDataAccessor? armyDataAccessor = null,
         IMetadataAccessor? metadataAccessor = null,
+        IImportService? importService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
         AppSettingsService? appSettingsService = null)
     {
         _webAccessObject = webAccessObject;
         _armyDataAccessor = armyDataAccessor;
         _metadataAccessor = metadataAccessor;
+        _importService = importService;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsService = appSettingsService;
         IncrementCounterCommand = new Command(OnIncrementCounter);
@@ -292,6 +295,34 @@ public class MainViewModel : BaseViewModel
     {
         if (IsUpdateInProgress)
         {
+            return;
+        }
+
+        if (_importService is not null)
+        {
+            try
+            {
+                IsUpdateInProgress = true;
+                UpdateStatus = "Running online update...";
+                UpdateProgressMessage = "Starting update...";
+
+                await foreach (var result in _importService.ImportAllDataAsync())
+                {
+                    UpdateProgressMessage = result.Message;
+                    UpdateStatus = result.Message;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"UpdateAllDataAsync failed: {ex.Message}");
+                UpdateStatus = $"Update failed: {ex.Message}";
+            }
+            finally
+            {
+                IsUpdateInProgress = false;
+                UpdateProgressMessage = string.Empty;
+            }
+
             return;
         }
 
