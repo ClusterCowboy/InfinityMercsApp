@@ -107,12 +107,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             }
         };
         _mode = Mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
+        Title = "Choose your sectorial:";
+        PageHeading = "Choose your sectorial:";
 
         _metadataAccessor = MetadataAccessor;
         _armyDataAccessor = ArmyDataAccessor;
