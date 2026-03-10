@@ -32,7 +32,7 @@
                     HeightRequest="72"
                     VerticalOptions="Center"
                     HorizontalOptions="Center"
-                    IsVisible="{Binding HasAnyHeaderIcons}"
+                    IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasAnyHeaderIcons}"
                     PaintSurface="OnHeaderIconsCanvasPaintSurface" />
                 <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" BackgroundColor="Transparent" StrokeThickness="0" Padding="0" VerticalOptions="Center">
                     <skia:SKCanvasView

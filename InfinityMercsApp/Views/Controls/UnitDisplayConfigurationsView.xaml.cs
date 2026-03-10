@@ -94,19 +94,19 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public static readonly BindableProperty PeripheralIconPictureProperty =
         BindableProperty.Create(nameof(PeripheralIconPicture), typeof(SKPicture), typeof(UnitDisplayConfigurationsView), null);
     public static readonly BindableProperty ShowRegularOrderIconProperty =
-        BindableProperty.Create(nameof(ShowRegularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowRegularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowIrregularOrderIconProperty =
-        BindableProperty.Create(nameof(ShowIrregularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowIrregularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowImpetuousIconProperty =
-        BindableProperty.Create(nameof(ShowImpetuousIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowImpetuousIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowTacticalAwarenessIconProperty =
-        BindableProperty.Create(nameof(ShowTacticalAwarenessIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowTacticalAwarenessIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowCubeIconProperty =
-        BindableProperty.Create(nameof(ShowCubeIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowCubeIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowCube2IconProperty =
-        BindableProperty.Create(nameof(ShowCube2Icon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowCube2Icon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowHackableIconProperty =
-        BindableProperty.Create(nameof(ShowHackableIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false);
+        BindableProperty.Create(nameof(ShowHackableIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowUnitsInInchesProperty =
         BindableProperty.Create(nameof(ShowUnitsInInches), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
     public static readonly BindableProperty UnitMoveFirstCmProperty =
@@ -524,6 +524,9 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
+    public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
+    public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
+    public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
     /// <summary>
     /// Serialized profile-groups payload for the currently selected unit.
@@ -620,14 +623,16 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
     private void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
         if (BindingContext is IUnitDisplayIconState state)
         {
-            var canvas = e.Surface.Canvas;
-            canvas.Clear(SKColors.Transparent);
             DrawIconColumn(canvas, e.Info, BuildHeaderIconPictures(state));
             return;
         }
 
+        DrawIconColumn(canvas, e.Info, BuildHeaderIconPictures());
         HeaderIconsCanvasPaintSurface?.Invoke(sender, e);
     }
 
@@ -705,6 +710,48 @@ public partial class UnitDisplayConfigurationsView : ContentView
         }
 
         if (state.ShowHackableIcon && HackableIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(HackableIconPicture));
+        }
+
+        if (pictures.Count <= MaxHeaderIcons)
+        {
+            return pictures;
+        }
+
+        return pictures.Take(MaxHeaderIcons).ToList();
+    }
+
+    private List<HeaderIconRenderItem> BuildHeaderIconPictures()
+    {
+        var pictures = new List<HeaderIconRenderItem>(MaxHeaderIcons);
+        var orderTypePicture = ShowIrregularOrderIcon ? IrregularOrderIconPicture : RegularOrderIconPicture;
+        if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(orderTypePicture));
+        }
+
+        if (ShowImpetuousIcon && ImpetuousIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(ImpetuousIconPicture));
+        }
+
+        if (ShowTacticalAwarenessIcon && TacticalAwarenessIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(TacticalAwarenessIconPicture));
+        }
+
+        if (ShowCubeIcon && CubeIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(CubeIconPicture));
+        }
+
+        if (ShowCube2Icon && Cube2IconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(Cube2IconPicture));
+        }
+
+        if (ShowHackableIcon && HackableIconPicture is not null)
         {
             pictures.Add(new HeaderIconRenderItem(HackableIconPicture));
         }
@@ -796,5 +843,18 @@ public partial class UnitDisplayConfigurationsView : ContentView
         }
 
         state.ApplyUnitHeadingFontSize(state.UnitHeadingMinFontSize);
+    }
+
+    private static void OnHeaderIconVisibilityChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not UnitDisplayConfigurationsView view)
+        {
+            return;
+        }
+
+        view.OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
+        view.OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
+        view.OnPropertyChanged(nameof(HasAnyHeaderIcons));
+        view.InvalidateHeaderIconsCanvas();
     }
 }
