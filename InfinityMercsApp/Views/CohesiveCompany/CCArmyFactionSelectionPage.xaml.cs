@@ -88,10 +88,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
-    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
-    private SKPicture? _leftSlotPicture;
-    private SKPicture? _rightSlotPicture;
-    private SKPicture? _filterIconPicture;
+    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();    private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
@@ -104,10 +101,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
     private bool _restrictSelectedUnitProfilesToFto;
-    private string _leftSlotText = string.Empty;
-    private string _rightSlotText = string.Empty;
-    private Color _leftSlotBorderColor = ActiveBorder;
-    private Color _rightSlotBorderColor = InactiveBorder;
     private string _unitNameHeading = "Select a unit";
     private string _peripheralEquipment = "-";
     private string _peripheralSkills = "-";
@@ -138,6 +131,14 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         : base(mode)
     {
         InitializeComponent();
+        FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);
+        FactionSlotSelectorView.RightSlotTapped += (_, _) =>
+        {
+            if (ShowRightSelectionBox)
+            {
+                SetActiveSlot(1);
+            }
+        };
         _mode = Mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
             ? "Choose your faction:"
@@ -699,66 +700,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     public bool ShowUnitsList => !TeamsView;
     public bool ShowTeamsList => TeamsView && IsUnitSelectionActive && AreTeamEntriesReady;
 
-    public string LeftSlotText
-    {
-        get => _leftSlotText;
-        set
-        {
-            if (_leftSlotText == value)
-            {
-                return;
-            }
-
-            _leftSlotText = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string RightSlotText
-    {
-        get => _rightSlotText;
-        set
-        {
-            if (_rightSlotText == value)
-            {
-                return;
-            }
-
-            _rightSlotText = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public Color LeftSlotBorderColor
-    {
-        get => _leftSlotBorderColor;
-        set
-        {
-            if (_leftSlotBorderColor == value)
-            {
-                return;
-            }
-
-            _leftSlotBorderColor = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public Color RightSlotBorderColor
-    {
-        get => _rightSlotBorderColor;
-        set
-        {
-            if (_rightSlotBorderColor == value)
-            {
-                return;
-            }
-
-            _rightSlotBorderColor = value;
-            OnPropertyChanged();
-        }
-    }
-
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -998,14 +939,14 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         {
             factionChanged = _factionSelectionState.LeftSlotFaction?.Id != item.Id;
             _factionSelectionState.LeftSlotFaction = item;
-            LeftSlotText = item.Name;
+            FactionSlotSelectorView.LeftSlotText = item.Name;
             _ = LoadSlotIconAsync(0, item.CachedLogoPath, item.PackagedLogoPath);
         }
         else
         {
             factionChanged = _factionSelectionState.RightSlotFaction?.Id != item.Id;
             _factionSelectionState.RightSlotFaction = item;
-            RightSlotText = item.Name;
+            FactionSlotSelectorView.RightSlotText = item.Name;
             _ = LoadSlotIconAsync(1, item.CachedLogoPath, item.PackagedLogoPath);
         }
 
@@ -1346,23 +1287,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private void SetActiveSlot(int index)
     {
         _activeSlotIndex = index == 1 && ShowRightSelectionBox ? 1 : 0;
-        LeftSlotBorderColor = _activeSlotIndex == 0 ? ActiveBorder : InactiveBorder;
-        RightSlotBorderColor = _activeSlotIndex == 1 ? ActiveBorder : InactiveBorder;
-    }
-
-    private void OnLeftSlotTapped(object? sender, TappedEventArgs e)
-    {
-        SetActiveSlot(0);
-    }
-
-    private void OnRightSlotTapped(object? sender, TappedEventArgs e)
-    {
-        if (!ShowRightSelectionBox)
-        {
-            return;
-        }
-
-        SetActiveSlot(1);
+        FactionSlotSelectorView.LeftSlotBorderColor = _activeSlotIndex == 0 ? ActiveBorder : InactiveBorder;
+        FactionSlotSelectorView.RightSlotBorderColor = _activeSlotIndex == 1 ? ActiveBorder : InactiveBorder;
     }
 
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -6922,18 +6848,17 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
             if (slotIndex == 0)
             {
-                _leftSlotPicture?.Dispose();
-                _leftSlotPicture = null;
+                FactionSlotSelectorView.LeftSlotPicture?.Dispose();
+                FactionSlotSelectorView.LeftSlotPicture = null;
             }
             else
             {
-                _rightSlotPicture?.Dispose();
-                _rightSlotPicture = null;
+                FactionSlotSelectorView.RightSlotPicture?.Dispose();
+                FactionSlotSelectorView.RightSlotPicture = null;
             }
 
             if (stream is null)
             {
-                InvalidateSlotCanvas(slotIndex);
                 return;
             }
 
@@ -6943,11 +6868,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 var picture = svg.Load(stream);
                 if (slotIndex == 0)
                 {
-                    _leftSlotPicture = picture;
+                    FactionSlotSelectorView.LeftSlotPicture = picture;
                 }
                 else
                 {
-                    _rightSlotPicture = picture;
+                    FactionSlotSelectorView.RightSlotPicture = picture;
                 }
             }
         }
@@ -6956,15 +6881,14 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             Console.Error.WriteLine($"ArmyFactionSelectionPage slot icon load failed: {ex.Message}");
             if (slotIndex == 0)
             {
-                _leftSlotPicture = null;
+                FactionSlotSelectorView.LeftSlotPicture = null;
             }
             else
             {
-                _rightSlotPicture = null;
+                FactionSlotSelectorView.RightSlotPicture = null;
             }
         }
 
-        InvalidateSlotCanvas(slotIndex);
     }
 
     private async Task LoadHeaderIconsAsync()
@@ -7091,27 +7015,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         UnitSelectionFilterCanvasInactive.InvalidateSurface();
         UnitSelectionFilterCanvasActive.InvalidateSurface();
         UnitDisplayConfigurationsView.InvalidatePeripheralHeaderIconCanvas();
-    }
-
-    private void InvalidateSlotCanvas(int slotIndex)
-    {
-        if (slotIndex == 0)
-        {
-            LeftSlotCanvas.InvalidateSurface();
-            return;
-        }
-
-        RightSlotCanvas.InvalidateSurface();
-    }
-
-    private void OnLeftSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_leftSlotPicture, e);
-    }
-
-    private void OnRightSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawSlotPicture(_rightSlotPicture, e);
     }
 
     private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -9043,6 +8946,7 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
 
 
 
