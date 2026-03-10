@@ -13,7 +13,7 @@ public partial class AppShell : Shell
         InitializeComponent();
         Routing.RegisterRoute(nameof(Views.SplashPage), typeof(Views.SplashPage));
 		Routing.RegisterRoute(nameof(Views.CreateNewArmyPage), typeof(Views.CreateNewArmyPage));
-		Routing.RegisterRoute(nameof(Views.MainPage), typeof(Views.MainPage));
+		Routing.RegisterRoute(nameof(Views.ModeSelectionPage), typeof(Views.ModeSelectionPage));
 		Routing.RegisterRoute(nameof(Views.LoadCompanyPage), typeof(Views.LoadCompanyPage));
 		Routing.RegisterRoute(nameof(Views.CompanyViewerPage), typeof(Views.CompanyViewerPage));
 		Routing.RegisterRoute(nameof(Views.MercsGlossaryPage), typeof(Views.MercsGlossaryPage));

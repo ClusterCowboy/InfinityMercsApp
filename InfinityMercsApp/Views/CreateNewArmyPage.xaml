@@ -1,9 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
-             x:Class="InfinityMercsApp.Views.CreateNewArmyPage"
-             Title="Create New Army">
+<views:ContentPageBase
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+    xmlns:views="clr-namespace:InfinityMercsApp.Views"
+    x:Class="InfinityMercsApp.Views.CreateNewArmyPage"
+    Title="Create New Company">
 
     <Grid Padding="24" RowSpacing="20">
         <Grid.RowDefinitions>
@@ -23,10 +25,10 @@
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Row="0" Grid.Column="0">
-                <Button x:Name="StandardCompanyButton" Text="" Clicked="OnStandardCompanyClicked" />
+                <Button x:Name="StandardCompanyButton" Text="" Command="{Binding OpenStandardCompanyPopupCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnStandardCompanyTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenStandardCompanyPopupCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -34,12 +36,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="StandardCompanyIconCanvas"
+                        <Image
+                            x:Name="StandardCompanyIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnStandardCompanyIconCanvasPaintSurface" />
+                            Source="standard_company.png" />
                     </Grid>
 
                     <Label
@@ -52,10 +54,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="0" Grid.Column="1">
-                <Button x:Name="CohesiveCompanyButton" Text="" Clicked="OnCohesiveCompanyClicked" />
+                <Button x:Name="CohesiveCompanyButton" Text="" Command="{Binding OpenStandardCompanyPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnCohesiveCompanyTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenStandardCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -63,12 +65,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="CohesiveCompanyIconCanvas"
+                        <Image
+                            x:Name="CohesiveCompanyIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnCohesiveCompanyIconCanvasPaintSurface" />
+                            Source="cohesive_company.png" />
                     </Grid>
 
                     <Label
@@ -81,10 +83,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="0">
-                <Button x:Name="InspiringLeaderButton" Text="" Clicked="OnInspiringLeaderClicked" />
+                <Button x:Name="InspiringLeaderButton" Text="" Command="{Binding OpenInspiringLeadershipPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnInspiringLeaderTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenInspiringLeadershipCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -92,12 +94,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="InspiringLeaderIconCanvas"
+                        <Image
+                            x:Name="InspiringLeaderIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnInspiringLeaderIconCanvasPaintSurface" />
+                            Source="inspiring_leadership.png" />
                     </Grid>
 
                     <Label
@@ -110,10 +112,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="1">
-                <Button x:Name="AirborneCompanyButton" Text="" Clicked="OnAirborneCompanyClicked" />
+                <Button x:Name="AirborneCompanyButton" Text="" Command="{Binding OpenAirborneCompanyPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnAirborneCompanyTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenAirborneCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -121,12 +123,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="AirborneCompanyIconCanvas"
+                        <Image
+                            x:Name="AirborneCompanyIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnAirborneCompanyIconCanvasPaintSurface" />
+                            Source="airborne_company.png" />
                     </Grid>
 
                     <Label
@@ -139,10 +141,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="2" Grid.Column="0">
-                <Button x:Name="TagCompanyButton" Text="" Clicked="OnTagCompanyClicked" />
+                <Button x:Name="TagCompanyButton" Text="" Command="{Binding OpenTAGCompanyPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnTagCompanyTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenTAGCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -150,12 +152,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="TagCompanyIconCanvas"
+                        <Image
+                            x:Name="TagCompanyIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnTagCompanyIconCanvasPaintSurface" />
+                            Source="tag_company.png" />
                     </Grid>
 
                     <Label
@@ -168,10 +170,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="2" Grid.Column="1">
-                <Button x:Name="ProxyPackButton" Text="" Clicked="OnProxyPackClicked" />
+                <Button x:Name="ProxyPackButton" Text="" Command="{Binding OpenProxyPackPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnProxyPackTapped" />
+                        <TapGestureRecognizer Command="{Binding OpenProxyPackPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -179,12 +181,12 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <skia:SKCanvasView
-                            x:Name="ProxyPackIconCanvas"
+                        <Image
+                            x:Name="ProxyPackIcon"
                             Margin="0,5"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
-                            PaintSurface="OnProxyPackIconCanvasPaintSurface" />
+                            Source="proxy_pack.png" />
                     </Grid>
 
                     <Label
@@ -206,5 +208,5 @@
         </Grid>
     </Grid>
 
-</ContentPage>
+</views:ContentPageBase>
 

@@ -18,7 +18,7 @@ public partial class SplashPageViewModel(
 
         if (updated)
         {
-            await navigationService.NavigateToAsync("//MainPage");
+            await navigationService.NavigateToAsync("//ModeSelectionPage");
         }
     }
 

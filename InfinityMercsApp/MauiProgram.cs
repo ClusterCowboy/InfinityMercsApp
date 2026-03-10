@@ -37,17 +37,9 @@ public static class MauiProgram
 			return new HttpClient(handler);
 		})
 				.AddInfrastructureServices()
-				.AddSingleton<INavigationService, MauiNavigationService>()
-				.AddSingleton<FactionLogoCacheService>()
-				.AddSingleton<IFeedbackService, FeedbackService>()
-				.AddSingleton<IImportService, ImportService>()
-				.AddTransient<ModeSelectionViewModel>()
-				.AddTransient<ViewerViewModel>()
-				.AddTransient<MainPage>()
-				.AddTransient<SplashPage>()
-				.AddTransient<ViewerPage>()
-				.AddTransient<FeedbackBugsPage>()
-				.AddTransient<SplashPageViewModel>()
+				.AddAppServices()
+				.AddViewModels()
+				.AddPages()
 				// Change this once AppSettings is set up. Wish MAUI did this by default.
 				.AddSingleton(new SQLIteConfiguration() { DBPath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3") });
 

@@ -9,8 +9,8 @@
 
     <ShellContent
         Title="Home"
-        ContentTemplate="{DataTemplate views:MainPage}"
-        Route="MainPage" />
+        ContentTemplate="{DataTemplate views:ModeSelectionPage}"
+        Route="ModeSelectionPage" />
 
     <ShellContent
         Title="Create New Army"
