@@ -31,4 +31,10 @@ public interface INavigationService
     /// <param name="page"></param>
     /// <returns></returns>
     Task PushModalAsync(Page page);
+
+    /// <summary>
+    /// Pops a modal;
+    /// </summary>
+    /// <returns></returns>
+    Task PopModalAsync();
 }

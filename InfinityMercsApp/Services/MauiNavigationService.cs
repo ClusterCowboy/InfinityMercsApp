@@ -31,4 +31,11 @@ internal class MauiNavigationService : INavigationService
         var currentPage = Shell.Current.CurrentPage;
         await currentPage.Navigation.PushModalAsync(page);
     }
+
+    /// <inheritdoc/>
+    public async Task PopModalAsync()
+    {
+        var currentPage = Shell.Current.CurrentPage;
+        await currentPage.Navigation.PopModalAsync();
+    }
 }

@@ -58,6 +58,14 @@
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		<MauiAsset Include="SVGCache\**" LogicalName="SVGCache/%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiImage Include="Resources\Images\MercsIcons\single_sectorial.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\MercsIcons\multiple_sectorials.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</MauiImage>
 		<MauiAsset Update="SVGCache\**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
@@ -78,8 +86,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
-		<ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
+	  <Compile Update="Views\CreateNewCompanyPage.xaml.cs">
+	    <DependentUpon>CreateNewCompanyPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\ModeSelectionPage.xaml.cs">
+	    <DependentUpon>ModeSelectionPage.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -32,7 +32,7 @@
             <Button
                 Text="New Company"
                 WidthRequest="170"
-                Command="{Binding NavigateToCreateNewArmyCommand}"
+                Command="{Binding NavigateToCreateNewCompanyCommand}"
                 HorizontalOptions="Center" />
 
             <Button
