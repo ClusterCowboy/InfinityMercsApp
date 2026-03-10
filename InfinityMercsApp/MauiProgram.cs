@@ -1,4 +1,6 @@
 using System.Net;
+using InfinityMercsApp.Infrastructure;
+using InfinityMercsApp.Infrastructure.Options;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
 using InfinityMercsApp.Services;
@@ -32,6 +34,11 @@ public static class MauiProgram
 
 			return new HttpClient(handler);
 		});
+		builder.Services.AddInfrastructureServices();
+		builder.Services.AddSingleton(new SQLIteConfiguration
+		{
+			DBPath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3")
+		});
 		builder.Services.AddSingleton<IDatabaseContext, DatabaseContext>();
 		// Spec-Ops data access is separated from general army snapshot access.
 		builder.Services.AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessor>();
@@ -41,6 +48,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<FactionLogoCacheService>();
 		builder.Services.AddSingleton<AppSettingsService>();
 		builder.Services.AddSingleton<IFeedbackService, FeedbackService>();
+		builder.Services.AddSingleton<IImportService, ImportService>();
 		builder.Services.AddSingleton<AppInitializationService>();
 		builder.Services.AddTransient<MainViewModel>();
 		builder.Services.AddTransient<ViewerViewModel>();

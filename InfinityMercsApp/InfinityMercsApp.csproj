@@ -64,7 +64,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-		<PackageReference Include="Markdig" Version="0.37.0" />
+		<PackageReference Include="Markdig" Version="1.1.1" />
 		<PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="3.119.1" />
 		<PackageReference Include="Svg.Skia" Version="3.0.5" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
@@ -75,6 +75,11 @@
 		<Content Remove="_tempdiag\\**\\*" />
 		<EmbeddedResource Remove="_tempdiag\\**\\*" />
 		<None Remove="_tempdiag\\**\\*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
+		<ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>

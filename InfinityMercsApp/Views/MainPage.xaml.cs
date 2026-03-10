@@ -27,22 +27,22 @@ public partial class MainPage : ContentPage
 	{
 		try
 		{
-			Stream? stream = null;
-			try
-			{
-				stream = await FileSystem.Current.OpenAppPackageFileAsync("m2_no_bg_short.webp");
-			}
-			catch
-			{
-				// Fallback to packaged SVGCache asset path.
-			}
+			// Stream? stream = null;
+			// try
+			// {
+			// 	stream = await FileSystem.Current.OpenAppPackageFileAsync("m2_no_bg_short.webp");
+			// }
+			// catch
+			// {
+			// 	// Fallback to packaged SVGCache asset path.
+			// }
 
-			stream ??= await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/M2-no-bg-short.webp");
-			await using (stream)
-			{
-				_headerBitmap?.Dispose();
-				_headerBitmap = SKBitmap.Decode(stream);
-			}
+			// stream ??= await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/M2-no-bg-short.webp");
+			// await using (stream)
+			// {
+			// 	_headerBitmap?.Dispose();
+			// 	_headerBitmap = SKBitmap.Decode(stream);
+			// }
 		}
 		catch (Exception ex)
 		{

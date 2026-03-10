@@ -1,5 +1,6 @@
 using InfinityMercsApp.Views;
 using System.Text;
+using System.Runtime.ExceptionServices;
 
 namespace InfinityMercsApp;
 
@@ -17,6 +18,11 @@ public partial class App : Application
 		TaskScheduler.UnobservedTaskException += (_, args) =>
 		{
 			CrashLog.Write("TaskScheduler.UnobservedTaskException", args.Exception);
+		};
+
+		AppDomain.CurrentDomain.FirstChanceException += (_, args) =>
+		{
+			CrashLog.Write("AppDomain.CurrentDomain.FirstChanceException", args.Exception);
 		};
 
 		InitializeComponent();
