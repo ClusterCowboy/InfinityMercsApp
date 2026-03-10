@@ -16,10 +16,11 @@ using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Templates.NewCompany;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage : ContentPage
+public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase
 {
     private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
@@ -193,15 +194,17 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private bool _isUpdatingTrackedTeamSelection;
 
     public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
+        : base(mode)
     {
         InitializeComponent();
-        // Forward shared panel events to this page's existing handlers.
-        UnitDisplayConfigurationsView.HeaderIconsCanvasPaintSurface += OnHeaderIconsCanvasPaintSurface;
-        UnitDisplayConfigurationsView.SelectedUnitCanvasPaintSurface += OnSelectedUnitCanvasPaintSurface;
-        UnitDisplayConfigurationsView.PeripheralIconCanvasPaintSurface += OnPeripheralIconCanvasPaintSurface;
-        UnitDisplayConfigurationsView.ProfileTacticalIconCanvasPaintSurface += OnProfileTacticalIconCanvasPaintSurface;
-        UnitDisplayConfigurationsView.UnitNameHeadingSizeChanged += OnUnitNameHeadingLabelSizeChanged;
-        _mode = mode;
+        WireUnitDisplayEvents(
+            UnitDisplayConfigurationsView,
+            OnHeaderIconsCanvasPaintSurface,
+            OnSelectedUnitCanvasPaintSurface,
+            OnPeripheralIconCanvasPaintSurface,
+            OnProfileTacticalIconCanvasPaintSurface,
+            OnUnitNameHeadingLabelSizeChanged);
+        _mode = Mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
             ? "Choose your faction:"
             : "Choose your sectorials";
@@ -209,13 +212,11 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             ? "Choose your faction:"
             : "Choose your sectorials";
 
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        _metadataAccessor = services?.GetService<IMetadataAccessor>();
-        _armyDataAccessor = services?.GetService<IArmyDataAccessor>();
-        _specOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
-            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
-        _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
-        _appSettingsService = services?.GetService<AppSettingsService>();
+        _metadataAccessor = MetadataAccessor;
+        _armyDataAccessor = ArmyDataAccessor;
+        _specOpsDataAccessor = SpecOpsDataAccessor;
+        _factionLogoCacheService = FactionLogoCacheService;
+        _appSettingsService = AppSettingsService;
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {
@@ -804,6 +805,21 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         _loaded = true;
         await LoadFactionsAsync();
+    }
+
+    protected override Task LoadFactionsAsync()
+    {
+        return LoadFactionsAsync(CancellationToken.None);
+    }
+
+    protected override Task LoadUnitsForActiveSlotAsync()
+    {
+        return LoadUnitsForActiveSlotAsync(CancellationToken.None);
+    }
+
+    protected override Task LoadSelectedUnitDetailsAsync()
+    {
+        return LoadSelectedUnitDetailsAsync(CancellationToken.None);
     }
 
     private async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
@@ -2786,7 +2802,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         CompanyNameBorderColor = showError ? Color.FromArgb("#EF4444") : Color.FromArgb("#6B7280");
     }
 
-    private async Task StartCompanyAsync()
+    protected override async Task StartCompanyAsync()
     {
         if (!IsCompanyNameValid(CompanyName))
         {

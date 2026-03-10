@@ -1,0 +1,154 @@
+using System.Collections.ObjectModel;
+using System.Windows.Input;
+using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Services;
+using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.Views.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using SkiaSharp.Views.Maui;
+
+namespace {{NAMESPACE}};
+
+/// <summary>
+/// Shared abstract base for company selection pages.
+/// Keep common behavior here and override mode-specific behavior in derived pages.
+/// </summary>
+public abstract class CompanySelectionPageBase : ContentPage
+{
+    private readonly ArmySourceSelectionMode _mode;
+    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IArmyDataAccessor? _armyDataAccessor;
+    private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
+    private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly AppSettingsService? _appSettingsService;
+
+    private ArmyFactionSelectionItem? _selectedFaction;
+    private ArmyUnitSelectionItem? _selectedUnit;
+    private int _activeSlotIndex;
+
+    protected ArmySourceSelectionMode Mode => _mode;
+    protected IMetadataAccessor? MetadataAccessor => _metadataAccessor;
+    protected IArmyDataAccessor? ArmyDataAccessor => _armyDataAccessor;
+    protected ISpecOpsDataAccessor SpecOpsDataAccessor => _specOpsDataAccessor;
+    protected FactionLogoCacheService? FactionLogoCacheService => _factionLogoCacheService;
+    protected AppSettingsService? AppSettingsService => _appSettingsService;
+    protected ArmyFactionSelectionItem? SelectedFaction => _selectedFaction;
+    protected ArmyUnitSelectionItem? SelectedUnit => _selectedUnit;
+    protected int ActiveSlotIndex => _activeSlotIndex;
+
+    public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
+    public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
+    public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
+    public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
+    public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
+
+    public ICommand SelectFactionCommand { get; }
+    public ICommand SelectUnitCommand { get; }
+    public ICommand AddProfileToMercsCompanyCommand { get; }
+    public ICommand RemoveMercsCompanyEntryCommand { get; }
+    public ICommand SelectMercsCompanyEntryCommand { get; }
+    public ICommand StartCompanyCommand { get; }
+
+    protected CompanySelectionPageBase(ArmySourceSelectionMode mode)
+    {
+        _mode = mode;
+
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        _metadataAccessor = services?.GetService<IMetadataAccessor>();
+        _armyDataAccessor = services?.GetService<IArmyDataAccessor>();
+        _specOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
+            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
+        _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
+        _appSettingsService = services?.GetService<AppSettingsService>();
+
+        SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
+        {
+            if (item is null)
+            {
+                return;
+            }
+
+            _selectedFaction = item;
+            OnFactionSelected(item);
+            _ = LoadUnitsForActiveSlotAsync();
+        });
+
+        SelectUnitCommand = new Command<ArmyUnitSelectionItem>(item =>
+        {
+            if (item is null)
+            {
+                return;
+            }
+
+            _selectedUnit = item;
+            OnUnitSelected(item);
+            _ = LoadSelectedUnitDetailsAsync();
+        });
+
+        AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
+        RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
+        SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
+        StartCompanyCommand = new Command(async () => await StartCompanyAsync());
+    }
+
+    /// <summary>
+    /// Call once from the derived page constructor after InitializeComponent.
+    /// </summary>
+    protected void InitializeBase(UnitDisplayConfigurationsView unitDisplayView)
+    {
+        unitDisplayView.HeaderIconsCanvasPaintSurface += OnHeaderIconsCanvasPaintSurface;
+        unitDisplayView.SelectedUnitCanvasPaintSurface += OnSelectedUnitCanvasPaintSurface;
+        unitDisplayView.PeripheralIconCanvasPaintSurface += OnPeripheralIconCanvasPaintSurface;
+        unitDisplayView.ProfileTacticalIconCanvasPaintSurface += OnProfileTacticalIconCanvasPaintSurface;
+        unitDisplayView.UnitNameHeadingSizeChanged += OnUnitNameHeadingLabelSizeChanged;
+
+        BindingContext = this;
+        SetActiveSlot(0);
+
+        _ = LoadHeaderIconsAsync();
+        _ = LoadSeasonValidationIconsAsync();
+        _ = LoadFactionsAsync();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadFactionsAsync();
+    }
+
+    protected void SetActiveSlot(int slotIndex)
+    {
+        _activeSlotIndex = slotIndex;
+        OnActiveSlotChanged(slotIndex);
+    }
+
+    protected virtual void OnActiveSlotChanged(int slotIndex) { }
+    protected virtual void OnFactionSelected(ArmyFactionSelectionItem item) { }
+    protected virtual void OnUnitSelected(ArmyUnitSelectionItem item) { }
+
+    // Wrappers used by derived XAML code-behind event handlers.
+    protected virtual void HandleLeftSlotTapped() => SetActiveSlot(0);
+    protected virtual void HandleRightSlotTapped() => SetActiveSlot(1);
+    protected virtual void HandleLeftSlotCanvasPaintSurface(SKPaintSurfaceEventArgs e) { }
+    protected virtual void HandleRightSlotCanvasPaintSurface(SKPaintSurfaceEventArgs e) { }
+    protected virtual void HandleSeasonValidationCanvasPaintSurface(SKPaintSurfaceEventArgs e) { }
+
+    protected virtual void OnHeaderIconsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) { }
+    protected virtual void OnSelectedUnitCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) { }
+    protected virtual void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) { }
+    protected virtual void OnProfileTacticalIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) { }
+    protected virtual void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e) { }
+
+    // Required pipeline methods.
+    protected abstract Task LoadFactionsAsync();
+    protected abstract Task LoadUnitsForActiveSlotAsync();
+    protected abstract Task LoadSelectedUnitDetailsAsync();
+    protected abstract Task StartCompanyAsync();
+
+    // Optional shared behavior hooks.
+    protected virtual Task LoadHeaderIconsAsync() => Task.CompletedTask;
+    protected virtual Task LoadSeasonValidationIconsAsync() => Task.CompletedTask;
+    protected virtual void AddProfileToMercsCompany(ViewerProfileItem? profile) { }
+    protected virtual void RemoveMercsCompanyEntry(MercsCompanyEntry? entry) { }
+    protected virtual Task SelectMercsCompanyEntryAsync(MercsCompanyEntry? entry) => Task.CompletedTask;
+}
