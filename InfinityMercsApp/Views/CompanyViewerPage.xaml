@@ -100,7 +100,7 @@
                             HeightRequest="75"
                             HorizontalOptions="Fill"
                             VerticalOptions="Center"
-                            IsVisible="{Binding HasAnyTopHeaderIcons}"
+                            IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasTopIconRow}"
                             PaintSurface="OnTopIconRowCanvasPaintSurface" />
                         <skia:SKCanvasView
                             Grid.Row="1"
@@ -109,7 +109,7 @@
                             HeightRequest="75"
                             HorizontalOptions="Fill"
                             VerticalOptions="Center"
-                            IsVisible="{Binding HasAnyBottomHeaderIcons}"
+                            IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasBottomIconRow}"
                             PaintSurface="OnBottomIconRowCanvasPaintSurface" />
                     </Grid>
 

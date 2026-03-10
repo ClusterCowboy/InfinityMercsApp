@@ -305,7 +305,7 @@
                                         <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
                                         <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
                                     </HorizontalStackLayout>
-                                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                                         <HorizontalStackLayout.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnTeamsViewRowTapped" />
                                         </HorizontalStackLayout.GestureRecognizers>
@@ -387,7 +387,22 @@
                                 HeightRequest="50"
                                 VerticalOptions="Center"
                                 PaintSurface="OnSelectedUnitCanvasPaintSurface" />
-                            <Label Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                            <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="4" VerticalOptions="Center">
+                                <Label Grid.Row="0" Text="{Binding UnitNameHeading}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                                <Border Grid.Row="1" StrokeThickness="1" Padding="6,0" IsVisible="{Binding ShowTagCompanyCustomTagNameEditor}">
+                                    <Entry
+                                        Text="{Binding TagCompanyCustomTagNameInput}"
+                                        Placeholder="Custom TAG Name"
+                                        ClearButtonVisibility="WhileEditing"
+                                        VerticalOptions="Center" />
+                                </Border>
+                                <Button
+                                    Grid.Row="2"
+                                    Text="Configure TAG (Spec Ops)"
+                                    Clicked="OnConfigureTagSpecOpsClicked"
+                                    HorizontalOptions="Start"
+                                    IsVisible="{Binding ShowTagCompanyCustomTagNameEditor}" />
+                            </Grid>
                             <skia:SKCanvasView
                                 x:Name="TopIconRowCanvas"
                                 Grid.Row="0"
@@ -551,33 +566,14 @@
                                     <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
                                         <Setter Property="BackgroundColor" Value="Transparent" />
                                     </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsTagCompanyCustomTag}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                    </DataTrigger>
                                 </Border.Triggers>
                                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
-                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding NameFormatted}" />
+                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding DisplayNameFormatted}" />
                                     <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
                                         <Label Text="{Binding CostDisplay}" VerticalOptions="Center" />
-                                        <Button
-                                            Text="LT"
-                                            WidthRequest="36"
-                                            HeightRequest="28"
-                                            Padding="0"
-                                            FontAttributes="Bold"
-                                            VerticalOptions="Start"
-                                            HorizontalOptions="End"
-                                            IsVisible="{Binding IsTagCompanyCustomTag}"
-                                            Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.ToggleTagCompanyLieutenantCommand}"
-                                            CommandParameter="{Binding .}">
-                                            <Button.Triggers>
-                                                <DataTrigger TargetType="Button" Binding="{Binding IsLieutenant}" Value="True">
-                                                    <Setter Property="BackgroundColor" Value="#16A34A" />
-                                                    <Setter Property="TextColor" Value="#000000" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Button" Binding="{Binding IsLieutenant}" Value="False">
-                                                    <Setter Property="BackgroundColor" Value="#374151" />
-                                                    <Setter Property="TextColor" Value="#FFFFFF" />
-                                                </DataTrigger>
-                                            </Button.Triggers>
-                                        </Button>
                                         <Button
                                             Text="X"
                                             WidthRequest="28"
@@ -628,3 +624,7 @@
         </Grid>
     </Grid>
 </ContentPage>
+
+
+
+

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Models;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
@@ -61,24 +62,17 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private const float IconSize = 24f;
     private const float IconGap = 20f;
     private const float RightPadding = 24f;
-    private const string TagCompanyCustomTagName = "Custom TAG";
-    private const int TagCompanyCustomTagCost = 40;
-    private const string TagCompanyCustomTagProfileKey = "__tag-company-custom-tag__";
-    private const int TagCompanyCustomTagSourceFactionId = -2000;
-    private const int TagCompanyCustomTagSourceUnitId = -2000;
-    private const string TagCompanyCustomTagIconPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
-    private const string TagCompanyCustomTagRangedWeapons = "Combi Rifle, Pistol";
-    private const string TagCompanyCustomTagCcWeapons = "CCW(PS=6)";
-    private static readonly string[] TagCompanyCustomTagSkills =
+    private readonly TagCompanyCustomTagModel _tagCompanyCustomTagModel = TagCompanyCustomTagModel.Default;
+    private static readonly string[] TagSpecOpsRestrictedKeywords =
     [
-        "NWI",
-        "CC Weapon (Antimaterial)",
-        "Dodge(PH=11)",
-        "Gizmokit(PH=11)",
-        "Immunity(Shock)",
-        "ECM(Guided -6)"
+        "Forward Deployment",
+        "Strategic Deployment",
+        "Infiltration",
+        "Impersonation",
+        "Parachutist",
+        "Combat Jump",
+        "Engineer"
     ];
-    private static readonly string TagCompanyCustomTagSkillsText = string.Join(", ", TagCompanyCustomTagSkills);
     private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
     private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
     private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
@@ -147,6 +141,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string _equipmentSummary = "Equipment: -";
     private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
+    private bool _showTagCompanyCustomTagNameEditor;
+    private string _tagCompanyCustomTagNameInput = string.Empty;
     private FormattedString _equipmentSummaryFormatted = new();
     private FormattedString _specialSkillsSummaryFormatted = new();
     private bool _showRegularOrderIcon;
@@ -215,7 +211,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         });
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
-        ToggleTagCompanyLieutenantCommand = new Command<MercsCompanyEntry>(ToggleTagCompanyCustomTagLieutenant);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
@@ -240,10 +235,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand SelectUnitCommand { get; }
     public ICommand AddProfileToMercsCompanyCommand { get; }
     public ICommand RemoveMercsCompanyEntryCommand { get; }
-    public ICommand ToggleTagCompanyLieutenantCommand { get; }
     public ICommand SelectMercsCompanyEntryCommand { get; }
     public ICommand StartCompanyCommand { get; }
-
     public bool ShowRightSelectionBox => _mode is ArmySourceSelectionMode.Sectorials or ArmySourceSelectionMode.TagSectorials;
     public string PageHeading
     {
@@ -377,6 +370,40 @@ public partial class ArmyFactionSelectionPage : ContentPage
     }
 
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
+
+    public bool ShowTagCompanyCustomTagNameEditor
+    {
+        get => _showTagCompanyCustomTagNameEditor;
+        private set
+        {
+            if (_showTagCompanyCustomTagNameEditor == value)
+            {
+                return;
+            }
+
+            _showTagCompanyCustomTagNameEditor = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string TagCompanyCustomTagNameInput
+    {
+        get => _tagCompanyCustomTagNameInput;
+        set
+        {
+            if (_tagCompanyCustomTagNameInput == value)
+            {
+                return;
+            }
+
+            _tagCompanyCustomTagNameInput = value;
+            OnPropertyChanged();
+            if (ShowTagCompanyCustomTagNameEditor)
+            {
+                SetTagCompanyCustomTagName(value);
+            }
+        }
+    }
 
     public string UnitNameHeading { get => _unitNameHeading; private set { if (_unitNameHeading != value) { _unitNameHeading = value; OnPropertyChanged(); } } }
     public string UnitMov { get => _unitMov; private set { if (_unitMov != value) { _unitMov = value; OnPropertyChanged(); } } }
@@ -533,7 +560,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
-
     public bool TeamsView
     {
         get => _teamsView;
@@ -816,35 +842,85 @@ public partial class ArmyFactionSelectionPage : ContentPage
         MercsCompanyEntries.Add(BuildTagCompanyCustomTagEntry());
     }
 
-    private MercsCompanyEntry BuildTagCompanyCustomTagEntry()
+    private MercsCompanyEntry BuildTagCompanyCustomTagEntry(
+        string? customName = null,
+        SavedImprovedCaptainStats? specopsStats = null,
+        int? sourceFactionId = null)
     {
-        const string statline = "MOV 6-2 | CC 15 | BS 12 | PH 14 | WIP 12 | ARM 5 | BTS 3 | STR 2 | S 5";
+        var normalizedName = string.IsNullOrWhiteSpace(customName)
+            ? _tagCompanyCustomTagModel.DefaultName
+            : customName.Trim();
+
+        var weaponChoices = BuildSpecopsChoiceList(specopsStats?.WeaponChoice1, specopsStats?.WeaponChoice2, specopsStats?.WeaponChoice3);
+        var skillChoices = BuildSpecopsChoiceList(specopsStats?.SkillChoice1, specopsStats?.SkillChoice2, specopsStats?.SkillChoice3);
+        var equipmentChoices = BuildSpecopsChoiceList(specopsStats?.EquipmentChoice1, specopsStats?.EquipmentChoice2, specopsStats?.EquipmentChoice3);
+
+        var statline = _tagCompanyCustomTagModel.BuildStatline(
+            ccBonus: specopsStats?.CcBonus ?? 0,
+            bsBonus: specopsStats?.BsBonus ?? 0,
+            phBonus: specopsStats?.PhBonus ?? 0,
+            wipBonus: specopsStats?.WipBonus ?? 0,
+            armBonus: specopsStats?.ArmBonus ?? 0,
+            btsBonus: specopsStats?.BtsBonus ?? 0,
+            vitalityBonus: specopsStats?.VitalityBonus ?? 0);
+
+        var savedEquipment = _tagCompanyCustomTagModel.BuildEquipmentText(equipmentChoices);
+        var savedSkills = _tagCompanyCustomTagModel.BuildSkillsText(skillChoices);
+        var savedRangedWeapons = _tagCompanyCustomTagModel.BuildRangedWeaponsText(weaponChoices);
+        var savedCcWeapons = _tagCompanyCustomTagModel.BuildCcWeaponsText();
+
+        var resolvedSourceFactionId = sourceFactionId ?? ResolveTagCompanySpecopsSourceFactionId();
+        if (resolvedSourceFactionId <= 0)
+        {
+            resolvedSourceFactionId = TagCompanyCustomTagModel.DefaultSourceFactionId;
+        }
+
+        var hasEquipmentLine = !string.Equals(savedEquipment, "-", StringComparison.Ordinal);
+
         return new MercsCompanyEntry
         {
-            Name = TagCompanyCustomTagName,
-            NameFormatted = BuildNameFormatted(TagCompanyCustomTagName),
+            Name = normalizedName,
+            NameFormatted = BuildNameFormatted(normalizedName),
             Subtitle = statline,
-            UnitTypeCode = "TAG",
-            CostDisplay = $"C {TagCompanyCustomTagCost}",
-            CostValue = TagCompanyCustomTagCost,
-            ProfileKey = TagCompanyCustomTagProfileKey,
-            SourceUnitId = TagCompanyCustomTagSourceUnitId,
-            SourceFactionId = TagCompanyCustomTagSourceFactionId,
-            PackagedLogoPath = TagCompanyCustomTagIconPath,
-            SavedEquipment = "-",
-            SavedSkills = TagCompanyCustomTagSkillsText,
-            SavedRangedWeapons = TagCompanyCustomTagRangedWeapons,
-            SavedCcWeapons = TagCompanyCustomTagCcWeapons,
-            ExperiencePoints = 0,
-            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", "-", Color.FromArgb("#06B6D4")),
-            HasEquipmentLine = false,
-            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", TagCompanyCustomTagSkillsText, Color.FromArgb("#F59E0B")),
+            UnitTypeCode = _tagCompanyCustomTagModel.UnitTypeCode,
+            CostDisplay = $"C {_tagCompanyCustomTagModel.Cost}",
+            CostValue = _tagCompanyCustomTagModel.Cost,
+            ProfileKey = _tagCompanyCustomTagModel.ProfileKey,
+            SourceUnitId = TagCompanyCustomTagModel.DefaultSourceUnitId,
+            SourceFactionId = resolvedSourceFactionId,
+            PackagedLogoPath = _tagCompanyCustomTagModel.IconPath,
+            SavedEquipment = savedEquipment,
+            SavedSkills = savedSkills,
+            SavedRangedWeapons = savedRangedWeapons,
+            SavedCcWeapons = savedCcWeapons,
+            ExperiencePoints = Math.Max(0, specopsStats?.SpentExperience ?? 0),
+            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", savedEquipment, Color.FromArgb("#06B6D4")),
+            HasEquipmentLine = hasEquipmentLine,
+            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", savedSkills, Color.FromArgb("#F59E0B")),
             HasSkillsLine = true,
-            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", TagCompanyCustomTagRangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", TagCompanyCustomTagCcWeapons, Color.FromArgb("#22C55E")),
+            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", savedRangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", savedCcWeapons, Color.FromArgb("#22C55E")),
             CanRemove = false,
             IsTagCompanyCustomTag = true
         };
+    }
+
+    private int ResolveTagCompanySpecopsSourceFactionId()
+    {
+        return GetUnitSourceFactions().FirstOrDefault()?.Id
+            ?? _selectedFaction?.Id
+            ?? _leftSlotFaction?.Id
+            ?? _rightSlotFaction?.Id
+            ?? TagCompanyCustomTagModel.DefaultSourceFactionId;
+    }
+
+    private static List<string> BuildSpecopsChoiceList(params string?[] values)
+    {
+        return values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -1233,6 +1309,10 @@ public partial class ArmyFactionSelectionPage : ContentPage
     {
         LieutenantOnlyUnits = !LieutenantOnlyUnits;
     }
+    private async void OnConfigureTagSpecOpsClicked(object? sender, EventArgs e)
+    {
+        await ConfigureTagCompanyCustomTagAsync();
+    }
 
     private void OnTeamsViewRowTapped(object? sender, TappedEventArgs e)
     {
@@ -1533,15 +1613,126 @@ public partial class ArmyFactionSelectionPage : ContentPage
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
-    private void ToggleTagCompanyCustomTagLieutenant(MercsCompanyEntry? entry)
+    private MercsCompanyEntry? GetTagCompanyCustomTagEntry()
     {
-        if (entry is null || !entry.IsTagCompanyCustomTag)
+        return MercsCompanyEntries.FirstOrDefault(x => x.IsTagCompanyCustomTag);
+    }
+
+    private void SetTagCompanyCustomTagName(string? value)
+    {
+        var entry = GetTagCompanyCustomTagEntry();
+        if (entry is null)
         {
             return;
         }
 
-        var shouldBecomeLieutenant = !entry.IsLieutenant;
-        if (shouldBecomeLieutenant)
+        var normalized = string.IsNullOrWhiteSpace(value)
+            ? _tagCompanyCustomTagModel.DefaultName
+            : value.Trim();
+
+        if (!string.Equals(_tagCompanyCustomTagNameInput, normalized, StringComparison.Ordinal))
+        {
+            _tagCompanyCustomTagNameInput = normalized;
+            OnPropertyChanged(nameof(TagCompanyCustomTagNameInput));
+        }
+
+        if (!string.Equals(entry.Name, normalized, StringComparison.Ordinal))
+        {
+            entry.Name = normalized;
+            entry.NameFormatted = BuildNameFormatted(normalized);
+        }
+
+        if (ShowTagCompanyCustomTagNameEditor)
+        {
+            UnitNameHeading = normalized;
+        }
+    }
+    private async Task ConfigureTagCompanyCustomTagAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsTagCompanyMode)
+        {
+            return;
+        }
+
+        var entry = GetTagCompanyCustomTagEntry();
+        if (entry is null)
+        {
+            return;
+        }
+
+        var sourceFactionId = ResolveTagCompanySpecopsSourceFactionId();
+        if (sourceFactionId <= 0 || sourceFactionId == TagCompanyCustomTagModel.DefaultSourceFactionId)
+        {
+            await DisplayAlert("TAG Configuration", "Select a faction or sectorial before configuring the Custom TAG.", "OK");
+            return;
+        }
+
+        var optionFactionId = await ResolveCaptainOptionFactionIdAsync(sourceFactionId, cancellationToken);
+        var options = await LoadCaptainUpgradeOptionsAsync(optionFactionId, cancellationToken);
+        if (options.IsEmpty && optionFactionId != sourceFactionId)
+        {
+            options = await LoadCaptainUpgradeOptionsAsync(sourceFactionId, cancellationToken);
+            optionFactionId = sourceFactionId;
+        }
+
+        options = ApplyTagSpecOpsRestrictions(options);
+
+        var unitInfo = new CaptainUnitPopupInfo
+        {
+            Name = entry.Name,
+            Cost = entry.CostValue,
+            Statline = entry.Subtitle ?? _tagCompanyCustomTagModel.BuildStatline(),
+            RangedWeapons = entry.SavedRangedWeapons,
+            CcWeapons = entry.SavedCcWeapons,
+            Skills = entry.SavedSkills,
+            Equipment = entry.SavedEquipment,
+            CachedLogoPath = entry.CachedLogoPath,
+            PackagedLogoPath = entry.PackagedLogoPath
+        };
+
+        var hasCharacterLieutenant = MercsCompanyEntries.Any(x =>
+            !ReferenceEquals(x, entry) &&
+            x.IsLieutenant &&
+            !x.IsTagCompanyCustomTag);
+
+        var context = new CaptainUpgradePopupContext
+        {
+            Unit = unitInfo,
+            OptionFactionId = optionFactionId,
+            OptionFactionName = await ResolveCaptainOptionFactionNameAsync(sourceFactionId, optionFactionId, cancellationToken),
+            WeaponOptions = options.Weapons,
+            SkillOptions = options.Skills,
+            EquipmentOptions = options.Equipment,
+            PopupTitle = "Custom TAG Configuration",
+            ConfirmButtonText = "Apply TAG Upgrades",
+            CancelButtonText = "Cancel",
+            ExperienceBudget = TagCompanyCustomTagModel.SpecOpsExperienceBudget,
+            ExperienceLabel = "Spec Ops XP Remaining",
+            InitialName = entry.Name,
+            NamePlaceholder = _tagCompanyCustomTagModel.DefaultName,
+            AllowNameEdit = false,
+            AllowArmUpgrade = false,
+            AllowBtsUpgrade = false,
+            AllowVitalityUpgrade = false,
+            ShowLieutenantOption = !hasCharacterLieutenant,
+            InitialIsLieutenant = !hasCharacterLieutenant && entry.IsLieutenant,
+            LieutenantOptionLabel = "Lieutenant"
+        };
+
+        var configuredStats = await ConfigureCaptainPopupPage.ShowAsync(Navigation, context);
+        if (configuredStats is null)
+        {
+            return;
+        }
+
+        var replacementEntry = BuildTagCompanyCustomTagEntry(
+            customName: entry.Name,
+            specopsStats: configuredStats,
+            sourceFactionId: sourceFactionId);
+        replacementEntry.IsLieutenant = configuredStats.IsLieutenant;
+        replacementEntry.IsSelected = entry.IsSelected;
+
+        if (replacementEntry.IsLieutenant)
         {
             foreach (var other in MercsCompanyEntries.Where(x => !ReferenceEquals(x, entry) && x.IsLieutenant))
             {
@@ -1549,24 +1740,22 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
         }
 
-        entry.IsLieutenant = shouldBecomeLieutenant;
-
-        if (shouldBecomeLieutenant)
+        var entryIndex = MercsCompanyEntries.IndexOf(entry);
+        if (entryIndex < 0)
         {
-            var currentIndex = MercsCompanyEntries.IndexOf(entry);
-            if (currentIndex > 0)
-            {
-                MercsCompanyEntries.Move(currentIndex, 0);
-            }
+            return;
         }
 
-        if (!IsFactionSelectionActive)
+        MercsCompanyEntries[entryIndex] = replacementEntry;
+
+        if (ShowTagCompanyCustomTagNameEditor)
         {
-            ProfilesStatus = entry.IsLieutenant
-                ? "Custom TAG is currently assigned as Lieutenant."
-                : "Tap LT to assign this Custom TAG as Lieutenant.";
+            UnitNameHeading = replacementEntry.Name;
+            TagCompanyCustomTagNameInput = replacementEntry.Name;
+            await ShowTagCompanyCustomTagDetailsAsync(replacementEntry);
         }
 
+        UpdateMercsCompanyTotal();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1633,27 +1822,30 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         _selectedUnit = null;
         ResetUnitDetails(clearLogo: false);
-
+        ShowTagCompanyCustomTagNameEditor = true;
         UnitNameHeading = entry.Name;
-        UnitMov = "6-2";
-        UnitCc = "15";
-        UnitBs = "12";
-        UnitPh = "14";
-        UnitWip = "12";
-        UnitArm = "5";
-        UnitBts = "3";
-        UnitVitalityHeader = "STR";
-        UnitVitality = "2";
-        UnitS = "5";
-        UnitAva = "1";
-        EquipmentSummary = "Equipment: -";
-        SpecialSkillsSummary = $"Special Skills: {TagCompanyCustomTagSkillsText}";
-        EquipmentSummaryFormatted = BuildMercsCompanyLineFormatted("Equipment", "-", Color.FromArgb("#06B6D4"));
-        SpecialSkillsSummaryFormatted = BuildMercsCompanyLineFormatted("Special Skills", TagCompanyCustomTagSkillsText, Color.FromArgb("#F59E0B"));
+        TagCompanyCustomTagNameInput = entry.Name;
+
+        UnitMov = ReadStatlineValue(entry.Subtitle, "MOV", _tagCompanyCustomTagModel.Mov);
+        UnitCc = ReadStatlineValue(entry.Subtitle, "CC", _tagCompanyCustomTagModel.Cc.ToString(CultureInfo.InvariantCulture));
+        UnitBs = ReadStatlineValue(entry.Subtitle, "BS", _tagCompanyCustomTagModel.Bs.ToString(CultureInfo.InvariantCulture));
+        UnitPh = ReadStatlineValue(entry.Subtitle, "PH", _tagCompanyCustomTagModel.Ph.ToString(CultureInfo.InvariantCulture));
+        UnitWip = ReadStatlineValue(entry.Subtitle, "WIP", _tagCompanyCustomTagModel.Wip.ToString(CultureInfo.InvariantCulture));
+        UnitArm = ReadStatlineValue(entry.Subtitle, "ARM", _tagCompanyCustomTagModel.Arm.ToString(CultureInfo.InvariantCulture));
+        UnitBts = ReadStatlineValue(entry.Subtitle, "BTS", _tagCompanyCustomTagModel.Bts.ToString(CultureInfo.InvariantCulture));
+        UnitVitalityHeader = _tagCompanyCustomTagModel.VitalityHeader;
+        UnitVitality = ReadStatlineValue(entry.Subtitle, _tagCompanyCustomTagModel.VitalityHeader, _tagCompanyCustomTagModel.Vitality.ToString(CultureInfo.InvariantCulture));
+        UnitS = ReadStatlineValue(entry.Subtitle, "S", _tagCompanyCustomTagModel.Silhouette.ToString(CultureInfo.InvariantCulture));
+        UnitAva = _tagCompanyCustomTagModel.Availability.ToString(CultureInfo.InvariantCulture);
+
+        var equipmentText = NormalizeProfileLine(entry.SavedEquipment);
+        var skillsText = NormalizeProfileLine(entry.SavedSkills);
+        EquipmentSummary = $"Equipment: {equipmentText}";
+        SpecialSkillsSummary = $"Special Skills: {skillsText}";
+        EquipmentSummaryFormatted = BuildMercsCompanyLineFormatted("Equipment", equipmentText, Color.FromArgb("#06B6D4"));
+        SpecialSkillsSummaryFormatted = BuildMercsCompanyLineFormatted("Special Skills", skillsText, Color.FromArgb("#F59E0B"));
         Profiles.Clear();
-        ProfilesStatus = entry.IsLieutenant
-            ? "Custom TAG is currently assigned as Lieutenant."
-            : "Tap LT to assign this Custom TAG as Lieutenant.";
+        ProfilesStatus = $"Use 'Configure TAG (Spec Ops)' to spend up to {TagCompanyCustomTagModel.SpecOpsExperienceBudget} XP.";
 
         ShowRegularOrderIcon = false;
         ShowIrregularOrderIcon = false;
@@ -1668,7 +1860,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         try
         {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(TagCompanyCustomTagIconPath);
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(_tagCompanyCustomTagModel.IconPath);
             var svg = new SKSvg();
             _selectedUnitPicture = svg.Load(stream);
         }
@@ -1678,6 +1870,35 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         SelectedUnitCanvas.InvalidateSurface();
+    }
+
+    private static string ReadStatlineValue(string? statline, string key, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(statline))
+        {
+            return fallback;
+        }
+
+        foreach (var segment in statline.Split('|', StringSplitOptions.TrimEntries))
+        {
+            var parts = segment.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
+            {
+                continue;
+            }
+
+            if (string.Equals(parts[0], key, StringComparison.OrdinalIgnoreCase))
+            {
+                return parts[1].Trim();
+            }
+        }
+
+        return fallback;
+    }
+
+    private static string NormalizeProfileLine(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
 
     private void ApplyLieutenantVisualStates()
@@ -1717,11 +1938,9 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 visibleProfiles++;
             }
         }
-
         ProfilesStatus = visibleProfiles == 0
             ? "No configurations found for this unit."
             : $"{visibleProfiles} configurations loaded.";
-
         UpdateSeasonValidationState();
     }
 
@@ -2258,10 +2477,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     SourceUnitId = entry.SourceUnitId,
                     Cost = entry.CostValue,
                     IsLieutenant = entry.IsLieutenant,
+                    SavedStatline = entry.Subtitle ?? "-",
                     SavedEquipment = entry.SavedEquipment,
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    SavedCachedLogoPath = entry.CachedLogoPath,
+                    SavedPackagedLogoPath = entry.PackagedLogoPath,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
                 }).ToList()
             };
@@ -2284,7 +2506,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private async Task<SavedImprovedCaptainStats?> ShowImprovedCaptainConfigurationAsync(MercsCompanyEntry captainEntry, CancellationToken cancellationToken = default)
     {
         var sourceFactionId = ResolveCaptainSourceFactionId(captainEntry.SourceFactionId);
-        var optionFactionId = ResolveCaptainOptionFactionId(sourceFactionId);
+        var optionFactionId = await ResolveCaptainOptionFactionIdAsync(sourceFactionId, cancellationToken);
         var options = await LoadCaptainUpgradeOptionsAsync(optionFactionId, cancellationToken);
 
         if (options.IsEmpty && optionFactionId != sourceFactionId)
@@ -2343,7 +2565,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return firstSource?.Id ?? fallbackSourceFactionId;
     }
 
-    private int ResolveCaptainOptionFactionId(int sourceFactionId)
+    private async Task<int> ResolveCaptainOptionFactionIdAsync(int sourceFactionId, CancellationToken cancellationToken)
     {
         if (sourceFactionId <= 0)
         {
@@ -2351,12 +2573,57 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         var sourceFaction = Factions.FirstOrDefault(x => x.Id == sourceFactionId);
-        if (sourceFaction is null)
+        if (sourceFaction is not null)
         {
-            return sourceFactionId;
+            return sourceFaction.ParentId > 0 ? sourceFaction.ParentId : sourceFactionId;
         }
 
-        return sourceFaction.ParentId > 0 ? sourceFaction.ParentId : sourceFactionId;
+        if (_metadataAccessor is not null)
+        {
+            var sourceFactionMetadata = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+            if (sourceFactionMetadata?.ParentId > 0)
+            {
+                return sourceFactionMetadata.ParentId;
+            }
+        }
+
+        return sourceFactionId;
+    }
+
+    private CaptainUpgradeOptionSet ApplyTagSpecOpsRestrictions(CaptainUpgradeOptionSet optionSet)
+    {
+        if (optionSet.IsEmpty)
+        {
+            return optionSet;
+        }
+
+        var filteredSkills = optionSet.Skills
+            .Where(x => !IsTagRestrictedSpecOpsChoice(x))
+            .ToList();
+        var filteredEquipment = optionSet.Equipment
+            .Where(x => !IsTagRestrictedSpecOpsChoice(x))
+            .ToList();
+        var filteredWeapons = optionSet.Weapons
+            .Where(x => !IsTagRestrictedSpecOpsChoice(x))
+            .ToList();
+
+        return new CaptainUpgradeOptionSet
+        {
+            Weapons = filteredWeapons,
+            Skills = filteredSkills,
+            Equipment = filteredEquipment
+        };
+    }
+
+    private static bool IsTagRestrictedSpecOpsChoice(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return TagSpecOpsRestrictedKeywords.Any(keyword =>
+            value.Contains(keyword, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<string> ResolveCaptainOptionFactionNameAsync(
@@ -4199,6 +4466,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void ResetUnitDetails(bool clearLogo = true)
     {
         UnitNameHeading = "Select a unit";
+        ShowTagCompanyCustomTagNameEditor = false;
+        TagCompanyCustomTagNameInput = string.Empty;
         if (clearLogo)
         {
             Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
@@ -4372,24 +4641,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         var (vitalityHeader, vitalityValue) = ReadVitality(selectedElement);
         UnitVitalityHeader = vitalityHeader;
         UnitVitality = vitalityValue;
-    }
-
-    private static string ReadMoveFromProfile(JsonElement profile)
-    {
-        if (TryGetPropertyFlexible(profile, "move", out var moveElement) && moveElement.ValueKind == JsonValueKind.Array)
-        {
-            var moveParts = moveElement.EnumerateArray()
-                .Select(ReadNumericString)
-                .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
-                .ToList();
-
-            if (moveParts.Count > 0)
-            {
-                return string.Join("-", moveParts);
-            }
-        }
-
-        return ReadMove(profile);
     }
 
     private void UpdateUnitMoveDisplay()
@@ -4913,49 +5164,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         return formatted;
     }
 
-    private static List<string> IntersectNamedIds(
-        IReadOnlyList<JsonElement> options,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        HashSet<int>? intersection = null;
-        foreach (var option in options)
-        {
-            var ids = new HashSet<int>();
-            if (option.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var entry in arr.EnumerateArray())
-                {
-                    if (TryParseId(entry, out var id))
-                    {
-                        ids.Add(id);
-                    }
-                }
-            }
-
-            if (intersection is null)
-            {
-                intersection = ids;
-            }
-            else
-            {
-                intersection.IntersectWith(ids);
-            }
-        }
-
-        if (intersection is null || intersection.Count == 0)
-        {
-            return [];
-        }
-
-        return intersection
-            .Where(lookup.ContainsKey)
-            .Select(id => lookup[id])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private static List<string> ComputeCommonDisplayNamesFromProfiles(
         string? profileGroupsJson,
         string propertyName,
@@ -5024,47 +5232,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return common
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static List<string> IntersectNamedIdsWithIncludes(
-        JsonElement profileGroupsRoot,
-        IReadOnlyList<JsonElement> options,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        HashSet<int>? intersection = null;
-        foreach (var option in options)
-        {
-            var ids = new HashSet<int>();
-            foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
-            {
-                if (TryParseId(entry, out var id))
-                {
-                    ids.Add(id);
-                }
-            }
-
-            if (intersection is null)
-            {
-                intersection = ids;
-            }
-            else
-            {
-                intersection.IntersectWith(ids);
-            }
-        }
-
-        if (intersection is null || intersection.Count == 0)
-        {
-            return [];
-        }
-
-        return intersection
-            .Where(lookup.ContainsKey)
-            .Select(id => lookup[id])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -5373,16 +5540,6 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         return distanceText.Remove(match.Index, match.Length).Insert(match.Index, replacement);
-    }
-
-    private void OnUnitListItemTapped(object? sender, TappedEventArgs e)
-    {
-        if (sender is not Element element || element.BindingContext is not ArmyUnitSelectionItem item)
-        {
-            return;
-        }
-
-        SetSelectedUnit(item);
     }
 
     private void OnUnitItemTappedFromView(object? sender, EventArgs e)
@@ -6003,8 +6160,42 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
 
 public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 {
-    public string Name { get; init; } = string.Empty;
-    public FormattedString? NameFormatted { get; init; }
+    private string _name = string.Empty;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name == value)
+            {
+                return;
+            }
+
+            _name = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayNameFormatted));
+        }
+    }
+
+    private FormattedString? _nameFormatted;
+    public FormattedString? NameFormatted
+    {
+        get => _nameFormatted;
+        set
+        {
+            if (ReferenceEquals(_nameFormatted, value))
+            {
+                return;
+            }
+
+            _nameFormatted = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayNameFormatted));
+        }
+    }
+
+    public FormattedString DisplayNameFormatted => BuildDisplayNameFormatted(NameFormatted, Name, IsTagCompanyCustomTag && IsLieutenant);
+
     public string CostDisplay { get; init; } = string.Empty;
     public int CostValue { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
@@ -6021,8 +6212,45 @@ public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 
             _isLieutenant = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayNameFormatted));
         }
     }
+
+    private static FormattedString BuildDisplayNameFormatted(FormattedString? baseFormatted, string fallbackName, bool appendLieutenantTag)
+    {
+        var formatted = new FormattedString();
+        if (baseFormatted?.Spans?.Count > 0)
+        {
+            foreach (var span in baseFormatted.Spans)
+            {
+                formatted.Spans.Add(new Span
+                {
+                    Text = span.Text,
+                    FontAttributes = span.FontAttributes,
+                    FontFamily = span.FontFamily,
+                    FontSize = span.FontSize,
+                    TextColor = span.TextColor
+                });
+            }
+        }
+        else
+        {
+            formatted.Spans.Add(new Span { Text = fallbackName });
+        }
+
+        if (appendLieutenantTag)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = " (Lieutenant)",
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#86EFAC")
+            });
+        }
+
+        return formatted;
+    }
+
     public int SourceUnitId { get; init; }
     public int SourceFactionId { get; init; }
 
@@ -6101,6 +6329,7 @@ public sealed class SavedCompanyFile
 public sealed class SavedImprovedCaptainStats
 {
     public bool IsEnabled { get; init; }
+    public bool IsLieutenant { get; init; }
     public string CaptainName { get; init; } = string.Empty;
     public int CcTier { get; init; }
     public int BsTier { get; init; }
@@ -6127,6 +6356,7 @@ public sealed class SavedImprovedCaptainStats
     public string EquipmentChoice3 { get; init; } = string.Empty;
     public int OptionFactionId { get; init; }
     public string OptionFactionName { get; init; } = string.Empty;
+    public int SpentExperience { get; init; }
 }
 
 public sealed class SavedCompanyFaction
@@ -6147,10 +6377,13 @@ public sealed class SavedCompanyEntry
     public int SourceUnitId { get; init; }
     public int Cost { get; init; }
     public bool IsLieutenant { get; init; }
+    public string SavedStatline { get; init; } = "-";
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public string? SavedCachedLogoPath { get; init; }
+    public string? SavedPackagedLogoPath { get; init; }
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
 }
@@ -6185,6 +6418,20 @@ public sealed class CaptainUpgradePopupContext
     public List<string> WeaponOptions { get; init; } = [];
     public List<string> SkillOptions { get; init; } = [];
     public List<string> EquipmentOptions { get; init; } = [];
+    public int ExperienceBudget { get; init; }
+    public string ExperienceLabel { get; init; } = "Exp Remaining";
+    public string PopupTitle { get; init; } = "Captain Configuration";
+    public string ConfirmButtonText { get; init; } = "FOUND COMPANY";
+    public string CancelButtonText { get; init; } = "BACK";
+    public string InitialName { get; init; } = "Captain";
+    public string NamePlaceholder { get; init; } = "Captain";
+    public bool AllowNameEdit { get; init; } = true;
+    public bool AllowArmUpgrade { get; init; } = true;
+    public bool AllowBtsUpgrade { get; init; } = true;
+    public bool AllowVitalityUpgrade { get; init; } = true;
+    public bool ShowLieutenantOption { get; init; }
+    public bool InitialIsLieutenant { get; init; }
+    public string LieutenantOptionLabel { get; init; } = "Lieutenant";
 }
 
 public sealed class ConfigureCaptainPopupPage : ContentPage
@@ -6238,6 +6485,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Dictionary<string, Label> _statGridValueLabels = new(StringComparer.OrdinalIgnoreCase);
     private readonly Entry _captainNameEntry;
     private readonly Label _captainNameHeadingLabel;
+    private readonly CheckBox _lieutenantCheckBox;
     private readonly SKCanvasView _editCaptainNameCanvas;
     private readonly SKCanvasView _saveCaptainNameCanvas;
     private readonly SKCanvasView _rejectCaptainNameCanvas;
@@ -6251,10 +6499,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
     {
         _context = context;
+        _captainNameCommitted = NormalizePopupName(context.InitialName, context.NamePlaceholder);
         _baseStats = ParseBaseStats(context.Unit.Statline);
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
-        BackgroundColor = Color.FromRgba(0, 0, 0, 180);
-        Title = "Captain Configuration";
+        BackgroundColor = Color.FromRgba(15, 23, 42, 110);
+        Title = string.IsNullOrWhiteSpace(context.PopupTitle) ? "Captain Configuration" : context.PopupTitle.Trim();
 
         _logoCanvas = new SKCanvasView
         {
@@ -6279,6 +6528,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         HookSelectionChanged(_armPicker);
         HookSelectionChanged(_btsPicker);
         HookSelectionChanged(_vitaPicker);
+        ApplyStatUpgradeRestrictions();
 
         _weapon1Picker = BuildChoicePicker(context.WeaponOptions);
         _weapon2Picker = BuildChoicePicker(context.WeaponOptions);
@@ -6301,14 +6551,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         var cancelButton = new Button
         {
-            Text = "BACK",
-            BackgroundColor = Color.FromArgb("#374151"),
+            Text = string.IsNullOrWhiteSpace(context.CancelButtonText) ? "BACK" : context.CancelButtonText.Trim(),
+            BackgroundColor = Color.FromArgb("#475569"),
             TextColor = Colors.White,
             Command = new Command(async () => await CloseAsync(false))
         };
         _foundCompanyButton = new Button
         {
-            Text = "FOUND COMPANY",
+            Text = string.IsNullOrWhiteSpace(context.ConfirmButtonText) ? "FOUND COMPANY" : context.ConfirmButtonText.Trim(),
             BackgroundColor = Color.FromArgb("#7C3AED"),
             TextColor = Colors.Black,
             Command = new Command(async () => await CloseAsync(true))
@@ -6329,10 +6579,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         Grid.SetColumn(cancelButton, 0);
         Grid.SetColumn(_foundCompanyButton, 2);
 
-        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#EF4444"), out _rangedValueLabel);
-        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
-        var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
-        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
+        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#FCA5A5"), out _rangedValueLabel);
+        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#86EFAC"), out _ccValueLabel);
+        var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#FDE68A"), out _skillsValueLabel);
+        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#67E8F9"), out _equipmentValueLabel);
 
         _captainNameEntry = new Entry
         {
@@ -6341,11 +6591,34 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             FontSize = 22,
             HorizontalOptions = LayoutOptions.Fill
         };
+        _lieutenantCheckBox = new CheckBox
+        {
+            IsChecked = context.InitialIsLieutenant,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        var lieutenantToggleRow = new HorizontalStackLayout
+        {
+            Spacing = 8,
+            VerticalOptions = LayoutOptions.Center,
+            IsVisible = context.ShowLieutenantOption,
+            Children =
+            {
+                _lieutenantCheckBox,
+                new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(context.LieutenantOptionLabel) ? "Lieutenant" : context.LieutenantOptionLabel.Trim(),
+                    TextColor = Colors.White,
+                    VerticalOptions = LayoutOptions.Center
+                }
+            }
+        };
         _captainNameHeadingLabel = new Label
         {
             Text = _captainNameCommitted,
             FontAttributes = FontAttributes.Bold,
             FontSize = 22,
+            TextColor = Colors.White,
             LineBreakMode = LineBreakMode.WordWrap
         };
         _editCaptainNameCanvas = BuildCaptainNameIconCanvas(OnEditCaptainNameTapped);
@@ -6387,6 +6660,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             Children =
             {
                 captainNameRow,
+                lieutenantToggleRow,
                 _logoCanvas,
                 _captainNameHeadingLabel,
                 _statsGrid,
@@ -6485,8 +6759,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         var card = new Border
         {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#1E293B"),
+            Stroke = Color.FromArgb("#94A3B8"),
             StrokeThickness = 1,
             Padding = new Thickness(16),
             HorizontalOptions = LayoutOptions.Center,
@@ -6502,7 +6776,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         UpdateProfilePreviewFromSelections();
         _ = LoadLogoAsync();
-        _ = LoadCaptainNameActionIconsAsync();
+        if (_context.AllowNameEdit)
+        {
+            _ = LoadCaptainNameActionIconsAsync();
+        }
     }
 
     public static async Task<SavedImprovedCaptainStats?> ShowAsync(INavigation navigation, CaptainUpgradePopupContext context)
@@ -6598,10 +6875,12 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         }
 
         CommitCaptainNameFromEntry();
+        var selectedExperience = ComputeSelectedExperience();
 
         var stats = new SavedImprovedCaptainStats
         {
             IsEnabled = true,
+            IsLieutenant = _context.ShowLieutenantOption ? _lieutenantCheckBox.IsChecked : _context.InitialIsLieutenant,
             CaptainName = _captainNameCommitted,
             CcTier = ReadStatTier(_ccPicker),
             BsTier = ReadStatTier(_bsPicker),
@@ -6627,7 +6906,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             EquipmentChoice2 = ReadChoice(_equipment2Picker),
             EquipmentChoice3 = ReadChoice(_equipment3Picker),
             OptionFactionId = _context.OptionFactionId,
-            OptionFactionName = _context.OptionFactionName
+            OptionFactionName = _context.OptionFactionName,
+            SpentExperience = selectedExperience
         };
 
         _resultSource.TrySetResult(stats);
@@ -6697,6 +6977,25 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private static View BuildStatRow(string label, Picker picker)
     {
         return picker;
+    }
+
+    private void ApplyStatUpgradeRestrictions()
+    {
+        ApplyStatPickerRestriction(_armPicker, _context.AllowArmUpgrade);
+        ApplyStatPickerRestriction(_btsPicker, _context.AllowBtsUpgrade);
+        ApplyStatPickerRestriction(_vitaPicker, _context.AllowVitalityUpgrade);
+    }
+
+    private static void ApplyStatPickerRestriction(Picker picker, bool isAllowed)
+    {
+        if (isAllowed)
+        {
+            return;
+        }
+
+        picker.SelectedIndex = 0;
+        picker.IsEnabled = false;
+        picker.Opacity = 0.75;
     }
 
     private static View BuildStatRowPair((string Label, Picker Picker) first, (string Label, Picker Picker)? second)
@@ -6821,31 +7120,40 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private void UpdateUpgradeOptionsHeader()
     {
-        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
-        var selectedCost =
-            ReadStatPoints(_ccPicker) +
-            ReadStatPoints(_bsPicker) +
-            ReadStatPoints(_phPicker) +
-            ReadStatPoints(_wipPicker) +
-            ReadStatPoints(_armPicker) +
-            ReadStatPoints(_btsPicker) +
-            ReadStatPoints(_vitaPicker) +
-            ReadChoicePoints(_weapon1Picker) +
-            ReadChoicePoints(_weapon2Picker) +
-            ReadChoicePoints(_weapon3Picker) +
-            ReadChoicePoints(_skill1Picker) +
-            ReadChoicePoints(_skill2Picker) +
-            ReadChoicePoints(_skill3Picker) +
-            ReadChoicePoints(_equipment1Picker) +
-            ReadChoicePoints(_equipment2Picker) +
-            ReadChoicePoints(_equipment3Picker);
+        var baseExperience = _context.ExperienceBudget > 0
+            ? _context.ExperienceBudget
+            : Math.Max(0, 28 - _context.Unit.Cost);
+        var selectedCost = ComputeSelectedExperience();
         var experienceRemaining = baseExperience - selectedCost;
 
         _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName})";
-        _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
+        var experienceLabel = string.IsNullOrWhiteSpace(_context.ExperienceLabel)
+            ? "Exp Remaining"
+            : _context.ExperienceLabel.Trim();
+        _experienceRemainingLabel.Text = $"{experienceLabel}: {experienceRemaining}";
         _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
-        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
+        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#64748B") : Color.FromArgb("#6D28D9");
+    }
+
+    private int ComputeSelectedExperience()
+    {
+        return ReadStatPoints(_ccPicker) +
+               ReadStatPoints(_bsPicker) +
+               ReadStatPoints(_phPicker) +
+               ReadStatPoints(_wipPicker) +
+               ReadStatPoints(_armPicker) +
+               ReadStatPoints(_btsPicker) +
+               ReadStatPoints(_vitaPicker) +
+               ReadChoicePoints(_weapon1Picker) +
+               ReadChoicePoints(_weapon2Picker) +
+               ReadChoicePoints(_weapon3Picker) +
+               ReadChoicePoints(_skill1Picker) +
+               ReadChoicePoints(_skill2Picker) +
+               ReadChoicePoints(_skill3Picker) +
+               ReadChoicePoints(_equipment1Picker) +
+               ReadChoicePoints(_equipment2Picker) +
+               ReadChoicePoints(_equipment3Picker);
     }
 
     private void UpdateStatlinePreview()
@@ -7082,6 +7390,16 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private void SetCaptainNameEditMode(bool isEditing)
     {
+        if (!_context.AllowNameEdit)
+        {
+            _captainNameEntry.IsEnabled = false;
+            _captainNameEntry.IsReadOnly = true;
+            _editCaptainNameCanvas.IsVisible = false;
+            _saveCaptainNameCanvas.IsVisible = false;
+            _rejectCaptainNameCanvas.IsVisible = false;
+            return;
+        }
+
         _captainNameEntry.IsEnabled = isEditing;
         _captainNameEntry.IsReadOnly = !isEditing;
         _editCaptainNameCanvas.IsVisible = !isEditing;
@@ -7108,11 +7426,20 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
     private void CommitCaptainNameFromEntry()
     {
-        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? "Captain" : _captainNameEntry.Text.Trim();
+        var fallbackName = NormalizePopupName(null, _context.NamePlaceholder);
+        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text)
+            ? fallbackName
+            : _captainNameEntry.Text.Trim();
         _captainNameCommitted = normalized;
         _captainNameEntry.Text = _captainNameCommitted;
         _captainNameHeadingLabel.Text = _captainNameCommitted;
         SetCaptainNameEditMode(isEditing: false);
+    }
+
+    private static string NormalizePopupName(string? value, string? fallback)
+    {
+        var normalizedFallback = string.IsNullOrWhiteSpace(fallback) ? "Captain" : fallback.Trim();
+        return string.IsNullOrWhiteSpace(value) ? normalizedFallback : value.Trim();
     }
 
     private async Task LoadCaptainNameActionIconsAsync()
@@ -7304,3 +7631,19 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

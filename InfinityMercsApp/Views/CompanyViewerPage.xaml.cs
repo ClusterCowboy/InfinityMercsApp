@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using InfinityMercsApp.Models;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +57,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private bool _hasSelectedProfileBaseNameHeading;
     private string _selectedUnitTypeHeading = string.Empty;
     private bool _hasSelectedUnitTypeHeading;
+    private bool _hasTopIconRow;
+    private bool _hasBottomIconRow;
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
@@ -225,6 +228,37 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
+
+    public bool HasTopIconRow
+    {
+        get => _hasTopIconRow;
+        private set
+        {
+            if (_hasTopIconRow == value)
+            {
+                return;
+            }
+
+            _hasTopIconRow = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasBottomIconRow
+    {
+        get => _hasBottomIconRow;
+        private set
+        {
+            if (_hasBottomIconRow == value)
+            {
+                return;
+            }
+
+            _hasBottomIconRow = value;
+            OnPropertyChanged();
+        }
+    }
+
     public CompanyViewerPage()
     {
         InitializeComponent();
@@ -281,6 +315,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _loadAttempted = true;
         CompanyUnits.Clear();
         _loadedCaptainStats = new SavedImprovedCaptainStats();
+        _selectedCompanyUnit = null;
+        RefreshHeaderIconRows();
 
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
         {
@@ -347,6 +383,16 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var savedRangedWeapons = entry.SavedRangedWeapons;
                 var savedSkills = entry.SavedSkills;
                 var savedEquipment = entry.SavedEquipment;
+                var isTagCompanyCustomTag = string.Equals(entry.ProfileKey, TagCompanyCustomTagModel.Default.ProfileKey, StringComparison.OrdinalIgnoreCase);
+                var savedStatline = !IsDashOrEmpty(entry.SavedStatline)
+                    ? entry.SavedStatline
+                    : (isTagCompanyCustomTag ? TagCompanyCustomTagModel.Default.BuildStatline() : "-");
+                var packagedLogoPath = string.IsNullOrWhiteSpace(entry.SavedPackagedLogoPath)
+                    ? (isTagCompanyCustomTag
+                        ? TagCompanyCustomTagModel.Default.IconPath
+                        : (_factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
+                            ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"))
+                    : entry.SavedPackagedLogoPath;
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
                     savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
@@ -370,12 +416,14 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     SavedSkills = savedSkills,
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    SavedStatline = savedStatline,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId),
-                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
-                        ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"
+                    CachedLogoPath = string.IsNullOrWhiteSpace(entry.SavedCachedLogoPath)
+                        ? _factionLogoCacheService?.TryGetCachedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
+                        : entry.SavedCachedLogoPath,
+                    PackagedLogoPath = packagedLogoPath
                 });
             }
 
@@ -423,6 +471,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.CachedLogoPath,
             item.PackagedLogoPath);
 
+        if (ShouldApplySavedStatlineFallback(item))
+        {
+            _viewerViewModel.ApplySavedStatline(item.SavedStatline);
+        }
+
         if (item.IsLieutenant && _loadedCaptainStats.IsEnabled)
         {
             _viewerViewModel.ApplyCaptainStatBonuses(
@@ -460,43 +513,25 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         SelectedNameEntry.Text = item.Name;
 
         UpdateCurrentWeaponsDisplay();
-        TopIconRowCanvas.InvalidateSurface();
+        RefreshHeaderIconRows();
     }
 
-    private bool HasSufficientLoadedProfileDetails(CompanyViewerUnitListItem item)
+    private bool ShouldApplySavedStatlineFallback(CompanyViewerUnitListItem item)
     {
-        var profile = _viewerViewModel.Profiles.FirstOrDefault();
-        if (profile is null)
+        if (IsDashOrEmpty(item.SavedStatline))
         {
             return false;
         }
 
-        var hasSavedRanged = !IsDashOrEmpty(item.SavedRangedWeapons);
-        var hasSavedCc = !IsDashOrEmpty(item.SavedCcWeapons);
-        var hasSavedSkills = !IsDashOrEmpty(item.SavedSkills);
-        var hasSavedEquipment = !IsDashOrEmpty(item.SavedEquipment);
-
-        if (hasSavedRanged && IsDashOrEmpty(profile.RangedWeapons))
-        {
-            return false;
-        }
-
-        if (hasSavedCc && IsDashOrEmpty(profile.MeleeWeapons))
-        {
-            return false;
-        }
-
-        if (hasSavedSkills && IsDashOrEmpty(profile.UniqueSkills))
-        {
-            return false;
-        }
-
-        if (hasSavedEquipment && IsDashOrEmpty(profile.UniqueEquipment))
-        {
-            return false;
-        }
-
-        return true;
+        return _viewerViewModel.UnitMov == "-" ||
+               _viewerViewModel.UnitCc == "-" ||
+               _viewerViewModel.UnitBs == "-" ||
+               _viewerViewModel.UnitPh == "-" ||
+               _viewerViewModel.UnitWip == "-" ||
+               _viewerViewModel.UnitArm == "-" ||
+               _viewerViewModel.UnitBts == "-" ||
+               _viewerViewModel.UnitVitality == "-" ||
+               _viewerViewModel.UnitS == "-";
     }
 
     private static bool IsDashOrEmpty(string? text)
@@ -520,7 +555,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
         var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
         var uniqueEquipment = MergeProfileSectionText(loadedProfile?.UniqueEquipment, item.SavedEquipment);
-        var isLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant;
+        var isLieutenant = item.IsLieutenant || loadedProfile?.IsLieutenant == true;
         var uniqueSkills = MergeProfileSectionText(loadedProfile?.UniqueSkills, item.SavedSkills);
         if (isLieutenant)
         {
@@ -702,8 +737,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             Console.Error.WriteLine($"CompanyViewerPage hackable icon load failed: {ex.Message}");
         }
 
-        TopIconRowCanvas.InvalidateSurface();
-        BottomIconRowCanvas.InvalidateSurface();
+        RefreshHeaderIconRows();
     }
 
     private async Task LoadNameEditIconsAsync()
@@ -758,17 +792,29 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
             or nameof(ViewerViewModel.ShowIrregularOrderIcon)
             or nameof(ViewerViewModel.ShowImpetuousIcon)
-            or nameof(ViewerViewModel.ShowTacticalAwarenessIcon))
-        {
-            TopIconRowCanvas.InvalidateSurface();
-        }
-
-        if (e.PropertyName is nameof(ViewerViewModel.ShowCubeIcon)
+            or nameof(ViewerViewModel.ShowTacticalAwarenessIcon)
+            or nameof(ViewerViewModel.ShowCubeIcon)
             or nameof(ViewerViewModel.ShowCube2Icon)
             or nameof(ViewerViewModel.ShowHackableIcon))
         {
-            BottomIconRowCanvas.InvalidateSurface();
+            RefreshHeaderIconRows();
         }
+    }
+
+    private bool IsSelectedTagCompanyCustomTag()
+    {
+        return string.Equals(
+            _selectedCompanyUnit?.ProfileKey,
+            TagCompanyCustomTagModel.Default.ProfileKey,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshHeaderIconRows()
+    {
+        HasTopIconRow = BuildTopIconEntries().Count > 0;
+        HasBottomIconRow = BuildBottomIconEntries().Count > 0;
+        TopIconRowCanvas.InvalidateSurface();
+        BottomIconRowCanvas.InvalidateSurface();
     }
 
     private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -922,14 +968,23 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
     {
         var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-        var orderTypePicture = _viewerViewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if (_viewerViewModel.HasOrderTypeIcon && orderTypePicture is not null)
+        if (_selectedCompanyUnit is null)
+        {
+            return entries;
+        }
+
+        var isTagCompanyCustomTag = IsSelectedTagCompanyCustomTag();
+        var hasBaseOrder = isTagCompanyCustomTag || _viewerViewModel.HasOrderTypeIcon;
+        var orderTypePicture = _viewerViewModel.ShowIrregularOrderIcon && !isTagCompanyCustomTag
+            ? _irregularOrderIconPicture
+            : _regularOrderIconPicture;
+        if (hasBaseOrder && orderTypePicture is not null)
         {
             entries.Add((orderTypePicture, null));
         }
 
         var profile = _viewerViewModel.Profiles.FirstOrDefault();
-        var isLieutenantProfile = profile?.IsLieutenant == true;
+        var isLieutenantProfile = profile?.IsLieutenant == true || _selectedCompanyUnit?.IsLieutenant == true;
         if (isLieutenantProfile && _lieutenantOrderIconPicture is not null)
         {
             entries.Add((_lieutenantOrderIconPicture, null));
@@ -987,6 +1042,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private List<(SKPicture Picture, string? Url)> BuildBottomIconEntries()
     {
         var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
+        if (_selectedCompanyUnit is null)
+        {
+            return entries;
+        }
+
         if (_viewerViewModel.ShowCubeIcon && _cubeIconPicture is not null)
         {
             entries.Add((_cubeIconPicture, _viewerViewModel.CubeIconUrl));
@@ -997,7 +1057,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             entries.Add((_cube2IconPicture, _viewerViewModel.Cube2IconUrl));
         }
 
-        if (_viewerViewModel.ShowHackableIcon && _hackableIconPicture is not null)
+        var shouldShowHackable = _viewerViewModel.ShowHackableIcon || IsSelectedTagCompanyCustomTag();
+        if (shouldShowHackable && _hackableIconPicture is not null)
         {
             entries.Add((_hackableIconPicture, _viewerViewModel.HackableIconUrl));
         }
@@ -1334,6 +1395,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public string SavedStatline { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public int ExperienceLevel => UnitExperienceRanks.GetRankLevel(ExperiencePoints);
     public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
