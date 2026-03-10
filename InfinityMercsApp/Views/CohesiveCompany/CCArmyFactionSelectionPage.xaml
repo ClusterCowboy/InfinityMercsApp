@@ -295,7 +295,19 @@
                                         <DataTemplate>
                                             <Border StrokeThickness="1" Padding="8,6" MinimumHeightRequest="50" IsVisible="{Binding IsVisible}">
                                                 <VerticalStackLayout Spacing="4">
-                                                    <Label Text="{Binding Name}" />
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                        <Label
+                                                            Grid.Column="0"
+                                                            Text="{Binding Name}"
+                                                            VerticalOptions="Center" />
+                                                        <RadioButton
+                                                            Grid.Column="1"
+                                                            VerticalOptions="Center"
+                                                            GroupName="CohesiveCoreFireteamSelection"
+                                                            IsVisible="{Binding ShowTrackingRadioButton}"
+                                                            IsChecked="{Binding IsTrackedTeam, Mode=TwoWay}"
+                                                            CheckedChanged="OnTeamTrackingRadioButtonCheckedChanged" />
+                                                    </Grid>
                                                     <VerticalStackLayout Spacing="3">
                                                         <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8">
                                                             <Label Grid.Column="0" Text="MIN" FontAttributes="Bold" HorizontalTextAlignment="Center" />
@@ -595,14 +607,15 @@
 
         <Border Grid.Row="1" StrokeThickness="1" Padding="10">
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                <HorizontalStackLayout Grid.Row="0" Spacing="8" VerticalOptions="Center">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
                     <Label
+                        Grid.Column="0"
                         Text="Mercs Company"
                         FontSize="20"
                         FontAttributes="Bold"
                         VerticalOptions="Center" />
-                    <Label Text="-" VerticalOptions="Center" />
-                    <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                    <Label Grid.Column="1" Text="-" VerticalOptions="Center" />
+                    <Border Grid.Column="2" Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
                         <Entry
                             WidthRequest="220"
                             Text="{Binding CompanyName}"
@@ -611,11 +624,33 @@
                             VerticalOptions="Center" />
                     </Border>
                     <Label
+                        Grid.Column="3"
                         Text="Enter Company Name"
                         TextColor="#EF4444"
                         VerticalOptions="Center"
                         IsVisible="{Binding ShowCompanyNameValidationError}" />
-                </HorizontalStackLayout>
+                    <Label
+                        Grid.Column="4"
+                        Text="{Binding TrackedFireteamNameDisplay}"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Fill"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="1" />
+                    <Grid
+                        Grid.Column="5"
+                        WidthRequest="50"
+                        HeightRequest="50"
+                        Margin="0,0,4,0"
+                        VerticalOptions="Center"
+                        HorizontalOptions="End">
+                        <skia:SKCanvasView
+                            x:Name="TrackedFireteamLevelCanvas"
+                            WidthRequest="50"
+                            HeightRequest="50"
+                            PaintSurface="OnTrackedFireteamLevelCanvasPaintSurface" />
+                    </Grid>
+                </Grid>
                 <CollectionView
                     Grid.Row="1"
                     ItemsSource="{Binding MercsCompanyEntries}"

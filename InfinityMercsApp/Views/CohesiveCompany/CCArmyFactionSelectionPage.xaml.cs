@@ -186,6 +186,10 @@ public partial class CCArmyFactionSelectionPage : ContentPage
     private CCUnitFilterCriteria _activeUnitFilter = CCUnitFilterCriteria.None;
     private CCUnitFilterPopupPage? _activeUnitFilterPopup;
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
+    private string _trackedFireteamName = string.Empty;
+    private int _trackedFireteamLevel;
+    private SKPicture? _trackedFireteamLevelPicture;
+    private bool _isUpdatingTrackedTeamSelection;
 
     public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
     {
@@ -383,6 +387,9 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
+
+    public string TrackedFireteamNameDisplay =>
+        string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
 
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
@@ -1181,11 +1188,127 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         if (MercsCompanyEntries.Count == 0)
         {
             UpdateMercsCompanyTotal();
+            ReevaluateTrackedFireteamLevel();
             return;
         }
 
         MercsCompanyEntries.Clear();
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
+    }
+
+    private void OnTeamTrackingRadioButtonCheckedChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        if (_isUpdatingTrackedTeamSelection || !e.Value)
+        {
+            return;
+        }
+
+        if (sender is not RadioButton radioButton || radioButton.BindingContext is not ArmyTeamListItem team)
+        {
+            return;
+        }
+
+        if (!team.ShowTrackingRadioButton)
+        {
+            return;
+        }
+
+        SetTrackedFireteamSelection(team.Name);
+    }
+
+    private void RestoreTrackedFireteamSelection(string? trackedFireteamName)
+    {
+        if (string.IsNullOrWhiteSpace(trackedFireteamName))
+        {
+            SetTrackedFireteamSelection(string.Empty);
+            return;
+        }
+
+        var matchingTeam = TeamEntries.FirstOrDefault(x =>
+            x.ShowTrackingRadioButton &&
+            string.Equals(x.Name, trackedFireteamName, StringComparison.OrdinalIgnoreCase));
+        SetTrackedFireteamSelection(matchingTeam?.Name ?? string.Empty);
+    }
+
+    private void SetTrackedFireteamSelection(string? teamName)
+    {
+        var normalizedTeamName = teamName?.Trim() ?? string.Empty;
+        var hasSelection = !string.IsNullOrWhiteSpace(normalizedTeamName);
+
+        _isUpdatingTrackedTeamSelection = true;
+        try
+        {
+            foreach (var team in TeamEntries)
+            {
+                team.IsTrackedTeam = team.ShowTrackingRadioButton &&
+                                     hasSelection &&
+                                     string.Equals(team.Name, normalizedTeamName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        finally
+        {
+            _isUpdatingTrackedTeamSelection = false;
+        }
+
+        if (string.Equals(_trackedFireteamName, normalizedTeamName, StringComparison.Ordinal))
+        {
+            ReevaluateTrackedFireteamLevel();
+            return;
+        }
+
+        _trackedFireteamName = normalizedTeamName;
+        OnPropertyChanged(nameof(TrackedFireteamNameDisplay));
+        ReevaluateTrackedFireteamLevel();
+    }
+
+    private void ReevaluateTrackedFireteamLevel()
+    {
+        var evaluatedLevel = string.IsNullOrWhiteSpace(_trackedFireteamName)
+            ? 0
+            : Math.Clamp(MercsCompanyEntries.Count, 1, 6);
+        OnTrackedFireteamLevelEvaluated(evaluatedLevel);
+    }
+
+    // Hook point for full fireteam-level evaluation logic. Provide an evaluated value in [1..6].
+    private void OnTrackedFireteamLevelEvaluated(int fireteamLevel)
+    {
+        SetTrackedFireteamLevel(fireteamLevel);
+    }
+
+    private void SetTrackedFireteamLevel(int fireteamLevel)
+    {
+        var normalizedLevel = Math.Clamp(fireteamLevel, 0, 6);
+        if (_trackedFireteamLevel == normalizedLevel)
+        {
+            return;
+        }
+
+        _trackedFireteamLevel = normalizedLevel;
+        _ = LoadTrackedFireteamLevelIconAsync(_trackedFireteamLevel);
+    }
+
+    private async Task LoadTrackedFireteamLevelIconAsync(int fireteamLevel)
+    {
+        _trackedFireteamLevelPicture?.Dispose();
+        _trackedFireteamLevelPicture = null;
+
+        if (fireteamLevel >= 1 && fireteamLevel <= 6)
+        {
+            try
+            {
+                var iconPath = $"SVGCache/NonCBIcons/Fireteam/noun-team-{fireteamLevel}.svg";
+                await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(iconPath);
+                var svg = new SKSvg();
+                _trackedFireteamLevelPicture = svg.Load(stream);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"ArmyFactionSelectionPage tracked fireteam icon load failed: {ex.Message}");
+            }
+        }
+
+        TrackedFireteamLevelCanvas?.InvalidateSurface();
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -1586,6 +1709,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
+        var trackedFireteamNameToRestore = _trackedFireteamName;
         AreTeamEntriesReady = false;
         Units.Clear();
         TeamEntries.Clear();
@@ -1779,11 +1903,13 @@ public partial class CCArmyFactionSelectionPage : ContentPage
             }
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            RestoreTrackedFireteamSelection(trackedFireteamNameToRestore);
             AreTeamEntriesReady = true;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            RestoreTrackedFireteamSelection(string.Empty);
             AreTeamEntriesReady = false;
         }
     }
@@ -1900,6 +2026,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         }
 
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1938,6 +2065,7 @@ public partial class CCArmyFactionSelectionPage : ContentPage
 
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -7114,6 +7242,11 @@ public partial class CCArmyFactionSelectionPage : ContentPage
         DrawSlotPicture(_tacticalAwarenessIconPicture, e);
     }
 
+    private void OnTrackedFireteamLevelCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawSlotPicture(_trackedFireteamLevelPicture, e);
+    }
+
     private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
     {
         UpdateUnitNameHeadingFontSize();
@@ -7623,6 +7756,7 @@ public class ArmyTeamListItem : BaseViewModel
     public string TeamCountsText { get; init; } = string.Empty;
     public bool HasTeamCounts => !string.IsNullOrWhiteSpace(TeamCountsText);
     public bool IsWildcardBucket { get; init; }
+    public bool ShowTrackingRadioButton => !IsWildcardBucket;
     public ObservableCollection<ArmyTeamUnitLimitItem> AllowedProfiles { get; init; } = [];
 
     private bool _isVisible = true;
@@ -7653,6 +7787,22 @@ public class ArmyTeamListItem : BaseViewModel
             }
 
             _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isTrackedTeam;
+    public bool IsTrackedTeam
+    {
+        get => _isTrackedTeam;
+        set
+        {
+            if (_isTrackedTeam == value)
+            {
+                return;
+            }
+
+            _isTrackedTeam = value;
             OnPropertyChanged();
         }
     }
