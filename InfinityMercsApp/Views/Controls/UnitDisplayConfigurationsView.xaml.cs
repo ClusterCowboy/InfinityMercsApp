@@ -16,6 +16,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private const float IconVerticalGap = 5f;
     private const string DefaultStatValue = "-";
     private const string DefaultVitalityHeader = "VITA";
+    public static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
+    public static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
+    public static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
+    public static readonly Color SkillsAccentOnDarkSecondary = Color.FromArgb("#FDE68A");
+    public static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
+    public static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private sealed record HeaderIconRenderItem(SKPicture Picture);
 
     /// <summary>
@@ -111,6 +117,56 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(PeripheralMoveFirstCm), typeof(int?), typeof(UnitDisplayConfigurationsView), null);
     public static readonly BindableProperty PeripheralMoveSecondCmProperty =
         BindableProperty.Create(nameof(PeripheralMoveSecondCm), typeof(int?), typeof(UnitDisplayConfigurationsView), null);
+    public static readonly BindableProperty UnitNameHeadingProperty =
+        BindableProperty.Create(nameof(UnitNameHeading), typeof(string), typeof(UnitDisplayConfigurationsView), "Select a unit");
+    public static readonly BindableProperty UnitNameHeadingFontSizeProperty =
+        BindableProperty.Create(nameof(UnitNameHeadingFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 24d);
+    public static readonly BindableProperty UnitHeaderPrimaryColorProperty =
+        BindableProperty.Create(nameof(UnitHeaderPrimaryColor), typeof(Color), typeof(UnitDisplayConfigurationsView), DefaultHeaderPrimaryColor);
+    public static readonly BindableProperty UnitHeaderSecondaryColorProperty =
+        BindableProperty.Create(nameof(UnitHeaderSecondaryColor), typeof(Color), typeof(UnitDisplayConfigurationsView), DefaultHeaderSecondaryColor);
+    public static readonly BindableProperty UnitHeaderPrimaryTextColorProperty =
+        BindableProperty.Create(nameof(UnitHeaderPrimaryTextColor), typeof(Color), typeof(UnitDisplayConfigurationsView), Colors.White);
+    public static readonly BindableProperty UnitHeaderSecondaryTextColorProperty =
+        BindableProperty.Create(nameof(UnitHeaderSecondaryTextColor), typeof(Color), typeof(UnitDisplayConfigurationsView), Colors.White);
+    public static readonly BindableProperty PeripheralEquipmentProperty =
+        BindableProperty.Create(
+            nameof(PeripheralEquipment),
+            typeof(string),
+            typeof(UnitDisplayConfigurationsView),
+            "-",
+            propertyChanged: (bindable, _, _) =>
+            {
+                if (bindable is UnitDisplayConfigurationsView view)
+                {
+                    view.OnPropertyChanged(nameof(HasPeripheralEquipment));
+                }
+            });
+    public static readonly BindableProperty PeripheralSkillsProperty =
+        BindableProperty.Create(
+            nameof(PeripheralSkills),
+            typeof(string),
+            typeof(UnitDisplayConfigurationsView),
+            "-",
+            propertyChanged: (bindable, _, _) =>
+            {
+                if (bindable is UnitDisplayConfigurationsView view)
+                {
+                    view.OnPropertyChanged(nameof(HasPeripheralSkills));
+                }
+            });
+    public static readonly BindableProperty EquipmentSummaryProperty =
+        BindableProperty.Create(nameof(EquipmentSummary), typeof(string), typeof(UnitDisplayConfigurationsView), "Equipment: -");
+    public static readonly BindableProperty SpecialSkillsSummaryProperty =
+        BindableProperty.Create(nameof(SpecialSkillsSummary), typeof(string), typeof(UnitDisplayConfigurationsView), "Special Skills: -");
+    public static readonly BindableProperty EquipmentSummaryFormattedProperty =
+        BindableProperty.Create(nameof(EquipmentSummaryFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
+    public static readonly BindableProperty SpecialSkillsSummaryFormattedProperty =
+        BindableProperty.Create(nameof(SpecialSkillsSummaryFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
+    public static readonly BindableProperty PeripheralEquipmentFormattedProperty =
+        BindableProperty.Create(nameof(PeripheralEquipmentFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
+    public static readonly BindableProperty PeripheralSkillsFormattedProperty =
+        BindableProperty.Create(nameof(PeripheralSkillsFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
 
     public string UnitMov
     {
@@ -381,6 +437,113 @@ public partial class UnitDisplayConfigurationsView : ContentView
         get => (int?)GetValue(PeripheralMoveSecondCmProperty);
         set => SetValue(PeripheralMoveSecondCmProperty, value);
     }
+
+    public string UnitNameHeading
+    {
+        get => (string)GetValue(UnitNameHeadingProperty);
+        set => SetValue(UnitNameHeadingProperty, value);
+    }
+
+    public double UnitNameHeadingFontSize
+    {
+        get => (double)GetValue(UnitNameHeadingFontSizeProperty);
+        set => SetValue(UnitNameHeadingFontSizeProperty, value);
+    }
+
+    public Color UnitHeaderPrimaryColor
+    {
+        get => (Color)GetValue(UnitHeaderPrimaryColorProperty);
+        set => SetValue(UnitHeaderPrimaryColorProperty, value);
+    }
+
+    public Color UnitHeaderSecondaryColor
+    {
+        get => (Color)GetValue(UnitHeaderSecondaryColorProperty);
+        set => SetValue(UnitHeaderSecondaryColorProperty, value);
+    }
+
+    public Color UnitHeaderPrimaryTextColor
+    {
+        get => (Color)GetValue(UnitHeaderPrimaryTextColorProperty);
+        set => SetValue(UnitHeaderPrimaryTextColorProperty, value);
+    }
+
+    public Color UnitHeaderSecondaryTextColor
+    {
+        get => (Color)GetValue(UnitHeaderSecondaryTextColorProperty);
+        set => SetValue(UnitHeaderSecondaryTextColorProperty, value);
+    }
+
+    public string PeripheralEquipment
+    {
+        get => (string)GetValue(PeripheralEquipmentProperty);
+        set => SetValue(PeripheralEquipmentProperty, value);
+    }
+
+    public string PeripheralSkills
+    {
+        get => (string)GetValue(PeripheralSkillsProperty);
+        set => SetValue(PeripheralSkillsProperty, value);
+    }
+
+    public string EquipmentSummary
+    {
+        get => (string)GetValue(EquipmentSummaryProperty);
+        set => SetValue(EquipmentSummaryProperty, value);
+    }
+
+    public string SpecialSkillsSummary
+    {
+        get => (string)GetValue(SpecialSkillsSummaryProperty);
+        set => SetValue(SpecialSkillsSummaryProperty, value);
+    }
+
+    public FormattedString EquipmentSummaryFormatted
+    {
+        get => (FormattedString)GetValue(EquipmentSummaryFormattedProperty);
+        set => SetValue(EquipmentSummaryFormattedProperty, value);
+    }
+
+    public FormattedString SpecialSkillsSummaryFormatted
+    {
+        get => (FormattedString)GetValue(SpecialSkillsSummaryFormattedProperty);
+        set => SetValue(SpecialSkillsSummaryFormattedProperty, value);
+    }
+
+    public FormattedString PeripheralEquipmentFormatted
+    {
+        get => (FormattedString)GetValue(PeripheralEquipmentFormattedProperty);
+        set => SetValue(PeripheralEquipmentFormattedProperty, value);
+    }
+
+    public FormattedString PeripheralSkillsFormatted
+    {
+        get => (FormattedString)GetValue(PeripheralSkillsFormattedProperty);
+        set => SetValue(PeripheralSkillsFormattedProperty, value);
+    }
+
+    public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
+    public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
+
+    /// <summary>
+    /// Serialized profile-groups payload for the currently selected unit.
+    /// </summary>
+    public string? SelectedUnitProfileGroupsJson { get; set; }
+
+    /// <summary>
+    /// Serialized filter payload associated with the currently selected unit.
+    /// </summary>
+    public string? SelectedUnitFiltersJson { get; set; }
+
+    /// <summary>
+    /// Canonical common equipment entries for the currently selected unit.
+    /// </summary>
+    public List<string> SelectedUnitCommonEquipment { get; set; } = [];
+
+    /// <summary>
+    /// Canonical common skills entries for the currently selected unit.
+    /// </summary>
+    public List<string> SelectedUnitCommonSkills { get; set; } = [];
 
     public event EventHandler<SKPaintSurfaceEventArgs>? HeaderIconsCanvasPaintSurface;
     public event EventHandler<SKPaintSurfaceEventArgs>? SelectedUnitCanvasPaintSurface;

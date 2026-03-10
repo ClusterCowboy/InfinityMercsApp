@@ -75,17 +75,6 @@ public class ViewerViewModel : BaseViewModel
     private bool _lieutenantOnlyUnits;
     private FactionFilterMode _factionFilterMode = FactionFilterMode.All;
     private List<ViewerFactionItem> _allFactions = [];
-    private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
-    {
-        [1] = 0, // LI
-        [2] = 1, // MI
-        [3] = 2, // HI
-        [4] = 3, // TAG
-        [5] = 4, // REM
-        [6] = 5, // SK
-        [7] = 6  // WB
-    };
-
     public ViewerViewModel(
         IMetadataAccessor? metadataAccessor = null,
         IArmyDataAccessor? armyDataAccessor = null,
@@ -1040,7 +1029,7 @@ public class ViewerViewModel : BaseViewModel
             }
 
             var orderedUnits = units
-                .OrderBy(unit => GetUnitTypeSortIndex(unit.Type))
+                .OrderBy(unit => ArmyUnitSort.GetUnitTypeSortIndex(unit.Type))
                 .ThenBy(unit => unit.Name, StringComparer.OrdinalIgnoreCase);
 
             foreach (var unit in orderedUnits)
@@ -1389,18 +1378,6 @@ public class ViewerViewModel : BaseViewModel
             : (unit.Category?.ToString() ?? "?");
 
         return $"{typeName} - {categoryName}";
-    }
-
-    private static int GetUnitTypeSortIndex(int? unitType)
-    {
-        if (!unitType.HasValue)
-        {
-            return int.MaxValue - 1;
-        }
-
-        return UnitTypeSortOrder.TryGetValue(unitType.Value, out var sortIndex)
-            ? sortIndex
-            : int.MaxValue;
     }
 
     private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)

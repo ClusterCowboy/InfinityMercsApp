@@ -61,24 +61,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private const double UnitNameHeadingMaxFontSize = 24d;
     private const double UnitNameHeadingMinFontSize = 11d;
     private const double UnitNameHeadingFontStep = 0.5d;
-    private static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
-    private static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
-    private static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
-    private static readonly Color SkillsAccentOnDarkSecondary = Color.FromArgb("#FDE68A");
-    private static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
-    private static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
-    private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
-    private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
-    private static readonly Dictionary<int, int> UnitTypeSortOrder = new()
-    {
-        [1] = 0, // LI
-        [2] = 1, // MI
-        [3] = 2, // HI
-        [4] = 3, // TAG
-        [5] = 4, // REM
-        [6] = 5, // SK
-        [7] = 6  // WB
-    };
     private const int CharacterCategoryId = 10;
 
     private readonly ArmySourceSelectionMode _mode;
@@ -95,28 +77,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
-    private bool _teamsView;
+    private bool _showFireteams;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
-    private string _unitNameHeading = "Select a unit";
-    private string _peripheralEquipment = "-";
-    private string _peripheralSkills = "-";
-    private double _unitNameHeadingFontSize = UnitNameHeadingMaxFontSize;
-    private Color _unitHeaderPrimaryColor = DefaultHeaderPrimaryColor;
-    private Color _unitHeaderSecondaryColor = DefaultHeaderSecondaryColor;
-    private Color _unitHeaderPrimaryTextColor = Colors.White;
-    private Color _unitHeaderSecondaryTextColor = Colors.White;
-    private string _equipmentSummary = "Equipment: -";
-    private string _specialSkillsSummary = "Special Skills: -";
     private string _profilesStatus = "Select a unit.";
-    private FormattedString _equipmentSummaryFormatted = new();
-    private FormattedString _specialSkillsSummaryFormatted = new();
-    private FormattedString _peripheralEquipmentFormatted = new();
-    private FormattedString _peripheralSkillsFormatted = new();    private bool _summaryHighlightLieutenant;    private string? _selectedUnitProfileGroupsJson;
-    private string? _selectedUnitFiltersJson;
-    private List<string> _selectedUnitCommonEquipment = [];
-    private List<string> _selectedUnitCommonSkills = [];
+    private bool _summaryHighlightLieutenant;
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
     private UnitFilterPopupPage? _activeUnitFilterPopup;
 
@@ -329,87 +295,81 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     public string UnitNameHeading
     {
-        get => _unitNameHeading;
+        get => UnitDisplayConfigurationsView.UnitNameHeading;
         private set
         {
-            if (_unitNameHeading == value)
+            if (UnitDisplayConfigurationsView.UnitNameHeading == value)
             {
                 return;
             }
 
-            _unitNameHeading = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitNameHeading = value;
             UpdateUnitNameHeadingFontSize();
         }
     }
     public double UnitNameHeadingFontSize
     {
-        get => _unitNameHeadingFontSize;
+        get => UnitDisplayConfigurationsView.UnitNameHeadingFontSize;
         private set
         {
-            if (Math.Abs(_unitNameHeadingFontSize - value) < 0.01d)
+            if (Math.Abs(UnitDisplayConfigurationsView.UnitNameHeadingFontSize - value) < 0.01d)
             {
                 return;
             }
 
-            _unitNameHeadingFontSize = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitNameHeadingFontSize = value;
         }
     }
     public Color UnitHeaderPrimaryColor
     {
-        get => _unitHeaderPrimaryColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderPrimaryColor;
         private set
         {
-            if (_unitHeaderPrimaryColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderPrimaryColor == value)
             {
                 return;
             }
 
-            _unitHeaderPrimaryColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderPrimaryColor = value;
         }
     }
     public Color UnitHeaderSecondaryColor
     {
-        get => _unitHeaderSecondaryColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderSecondaryColor;
         private set
         {
-            if (_unitHeaderSecondaryColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderSecondaryColor == value)
             {
                 return;
             }
 
-            _unitHeaderSecondaryColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderSecondaryColor = value;
         }
     }
     public Color UnitHeaderPrimaryTextColor
     {
-        get => _unitHeaderPrimaryTextColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor;
         private set
         {
-            if (_unitHeaderPrimaryTextColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor == value)
             {
                 return;
             }
 
-            _unitHeaderPrimaryTextColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor = value;
         }
     }
     public Color UnitHeaderSecondaryTextColor
     {
-        get => _unitHeaderSecondaryTextColor;
+        get => UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor;
         private set
         {
-            if (_unitHeaderSecondaryTextColor == value)
+            if (UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor == value)
             {
                 return;
             }
 
-            _unitHeaderSecondaryTextColor = value;
-            OnPropertyChanged();
+            UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor = value;
         }
     }
     public string UnitMov { get => UnitDisplayConfigurationsView.UnitMov; private set => UnitDisplayConfigurationsView.UnitMov = value; }
@@ -438,43 +398,39 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     public string PeripheralAva { get => UnitDisplayConfigurationsView.PeripheralAva; private set => UnitDisplayConfigurationsView.PeripheralAva = value; }
     public string PeripheralEquipment
     {
-        get => _peripheralEquipment;
+        get => UnitDisplayConfigurationsView.PeripheralEquipment;
         private set
         {
-            if (_peripheralEquipment == value)
+            if (UnitDisplayConfigurationsView.PeripheralEquipment == value)
             {
                 return;
             }
 
-            _peripheralEquipment = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasPeripheralEquipment));
+            UnitDisplayConfigurationsView.PeripheralEquipment = value;
         }
     }
     public string PeripheralSkills
     {
-        get => _peripheralSkills;
+        get => UnitDisplayConfigurationsView.PeripheralSkills;
         private set
         {
-            if (_peripheralSkills == value)
+            if (UnitDisplayConfigurationsView.PeripheralSkills == value)
             {
                 return;
             }
 
-            _peripheralSkills = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasPeripheralSkills));
+            UnitDisplayConfigurationsView.PeripheralSkills = value;
         }
     }
-    public string EquipmentSummary { get => _equipmentSummary; private set { if (_equipmentSummary != value) { _equipmentSummary = value; OnPropertyChanged(); } } }
-    public string SpecialSkillsSummary { get => _specialSkillsSummary; private set { if (_specialSkillsSummary != value) { _specialSkillsSummary = value; OnPropertyChanged(); } } }
+    public string EquipmentSummary { get => UnitDisplayConfigurationsView.EquipmentSummary; private set { if (UnitDisplayConfigurationsView.EquipmentSummary != value) { UnitDisplayConfigurationsView.EquipmentSummary = value; } } }
+    public string SpecialSkillsSummary { get => UnitDisplayConfigurationsView.SpecialSkillsSummary; private set { if (UnitDisplayConfigurationsView.SpecialSkillsSummary != value) { UnitDisplayConfigurationsView.SpecialSkillsSummary = value; } } }
     public string ProfilesStatus { get => _profilesStatus; private set { if (_profilesStatus != value) { _profilesStatus = value; OnPropertyChanged(); } } }
-    public FormattedString EquipmentSummaryFormatted { get => _equipmentSummaryFormatted; private set { _equipmentSummaryFormatted = value; OnPropertyChanged(); } }
-    public FormattedString SpecialSkillsSummaryFormatted { get => _specialSkillsSummaryFormatted; private set { _specialSkillsSummaryFormatted = value; OnPropertyChanged(); } }
-    public FormattedString PeripheralEquipmentFormatted { get => _peripheralEquipmentFormatted; private set { _peripheralEquipmentFormatted = value; OnPropertyChanged(); } }
-    public FormattedString PeripheralSkillsFormatted { get => _peripheralSkillsFormatted; private set { _peripheralSkillsFormatted = value; OnPropertyChanged(); } }
-    public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
-    public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
+    public FormattedString EquipmentSummaryFormatted { get => UnitDisplayConfigurationsView.EquipmentSummaryFormatted; private set => UnitDisplayConfigurationsView.EquipmentSummaryFormatted = value; }
+    public FormattedString SpecialSkillsSummaryFormatted { get => UnitDisplayConfigurationsView.SpecialSkillsSummaryFormatted; private set => UnitDisplayConfigurationsView.SpecialSkillsSummaryFormatted = value; }
+    public FormattedString PeripheralEquipmentFormatted { get => UnitDisplayConfigurationsView.PeripheralEquipmentFormatted; private set => UnitDisplayConfigurationsView.PeripheralEquipmentFormatted = value; }
+    public FormattedString PeripheralSkillsFormatted { get => UnitDisplayConfigurationsView.PeripheralSkillsFormatted; private set => UnitDisplayConfigurationsView.PeripheralSkillsFormatted = value; }
+    public bool HasPeripheralEquipment => UnitDisplayConfigurationsView.HasPeripheralEquipment;
+    public bool HasPeripheralSkills => UnitDisplayConfigurationsView.HasPeripheralSkills;
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
@@ -654,15 +610,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     public bool TeamsView
     {
-        get => _teamsView;
+        get => _showFireteams;
         set
         {
-            if (_teamsView == value)
+            if (_showFireteams == value)
             {
                 return;
             }
 
-            _teamsView = value;
+            _showFireteams = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowUnitsList));
             OnPropertyChanged(nameof(ShowTeamsList));
@@ -920,8 +876,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private void SetActiveSlot(int index)
     {
         _activeSlotIndex = index == 1 && ShowRightSelectionBox ? 1 : 0;
-        FactionSlotSelectorView.LeftSlotBorderColor = _activeSlotIndex == 0 ? ActiveBorder : InactiveBorder;
-        FactionSlotSelectorView.RightSlotBorderColor = _activeSlotIndex == 1 ? ActiveBorder : InactiveBorder;
+        FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -1349,9 +1304,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 }
             }
 
-            foreach (var unit in mergedUnits.Values
-                .OrderBy(x => GetUnitTypeSortIndex(x.Type))
-                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var unit in ArmyUnitSort.OrderByUnitTypeAndName(mergedUnits.Values, x => x.Type, x => x.Name))
             {
                 Units.Add(unit);
             }
@@ -1473,8 +1426,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             return;
         }
 
-        var combinedEquipment = MergeCommonAndUnique(_selectedUnitCommonEquipment, profile.UniqueEquipment);
-        var combinedSkills = MergeCommonAndUnique(_selectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipment = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = JoinOrDash(combinedEquipment);
         var combinedSkillsText = JoinOrDash(combinedSkills);
         var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
@@ -1548,20 +1501,20 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
     {
         var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
-        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return null;
         }
 
         try
         {
-            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            using var doc = JsonDocument.Parse(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson);
             if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
             {
                 return null;
             }
 
-            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, _selectedUnitFiltersJson);
+            return BuildPeripheralStatBlock(peripheralName, peripheralProfile, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
         }
         catch (Exception ex)
         {
@@ -2811,8 +2764,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
-            _selectedUnitProfileGroupsJson = profileGroupsJson;
-            _selectedUnitFiltersJson = snapshot?.FiltersJson;
+            UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = profileGroupsJson;
+            UnitDisplayConfigurationsView.SelectedUnitFiltersJson = snapshot?.FiltersJson;
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(profileGroupsJson))
             {
@@ -2884,8 +2837,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 stableSkills = treatAsSpecOps
                     ? EnsureLieutenantSkill(stableSkills)
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
-                _selectedUnitCommonEquipment = stableEquip;
-                _selectedUnitCommonSkills = stableSkills;
+                UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = stableEquip;
+                UnitDisplayConfigurationsView.SelectedUnitCommonSkills = stableSkills;
                 _summaryHighlightLieutenant = treatAsSpecOps;
                 Console.WriteLine(
                     $"ArmyFactionSelectionPage summary extraction: unit='{_selectedUnit.Name}', options={visibleOptions.Count}, " +
@@ -4589,18 +4542,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         return false;
     }
 
-    private static int GetUnitTypeSortIndex(int? unitType)
-    {
-        if (!unitType.HasValue)
-        {
-            return int.MaxValue - 1;
-        }
-
-        return UnitTypeSortOrder.TryGetValue(unitType.Value, out var sortIndex)
-            ? sortIndex
-            : int.MaxValue;
-    }
-
     private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
@@ -4615,13 +4556,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         UnitDisplayConfigurationsView.SelectedUnitPicture = null;
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
-        _selectedUnitProfileGroupsJson = null;
-        _selectedUnitFiltersJson = null;
+        UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = null;
+        UnitDisplayConfigurationsView.SelectedUnitFiltersJson = null;
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
-        _selectedUnitCommonEquipment = [];
-        _selectedUnitCommonSkills = [];
+        UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = [];
+        UnitDisplayConfigurationsView.SelectedUnitCommonSkills = [];
         _summaryHighlightLieutenant = false;
         RefreshSummaryFormatted();
         Profiles.Clear();
@@ -4858,7 +4799,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
     {
-        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, _selectedUnitFiltersJson);
+        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
         if (peripheralStats is null)
         {
             return;
@@ -4871,7 +4812,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     {
         ResetPeripheralStatsOnly();
 
-        if (string.IsNullOrWhiteSpace(_selectedUnitProfileGroupsJson))
+        if (string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return;
         }
@@ -4890,7 +4831,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         try
         {
-            using var doc = JsonDocument.Parse(_selectedUnitProfileGroupsJson);
+            using var doc = JsonDocument.Parse(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson);
             if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
             {
                 return;
@@ -6714,10 +6655,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private void RefreshSummaryFormatted()
     {
         var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", _selectedUnitCommonEquipment, equipmentAccent);
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
         SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
             "Special Skills",
-            _selectedUnitCommonSkills,
+            UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
             skillsAccent,
             highlightLieutenantPurple: _summaryHighlightLieutenant);
     }
@@ -6725,8 +6666,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private static (Color EquipmentAccent, Color SkillsAccent) GetSummaryAccentColorsForSecondaryBackground(Color secondaryBackground)
     {
         return IsLightColor(secondaryBackground)
-            ? (EquipmentAccentOnLightSecondary, SkillsAccentOnLightSecondary)
-            : (EquipmentAccentOnDarkSecondary, SkillsAccentOnDarkSecondary);
+            ? (UnitDisplayConfigurationsView.EquipmentAccentOnLightSecondary, UnitDisplayConfigurationsView.SkillsAccentOnLightSecondary)
+            : (UnitDisplayConfigurationsView.EquipmentAccentOnDarkSecondary, UnitDisplayConfigurationsView.SkillsAccentOnDarkSecondary);
     }
 
     private static (Color Primary, Color Secondary) GetFactionTheme(string? factionName)
@@ -6745,7 +6686,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             "nonalignedarmy" => (Color.FromArgb("#728868"), Color.FromArgb("#728868")),
             "o12" => (Color.FromArgb("#005470"), Color.FromArgb("#dead33")),
             "jsa" => (Color.FromArgb("#a6112b"), Color.FromArgb("#757575")),
-            _ => (DefaultHeaderPrimaryColor, DefaultHeaderSecondaryColor)
+            _ => (UnitDisplayConfigurationsView.DefaultHeaderPrimaryColor, UnitDisplayConfigurationsView.DefaultHeaderSecondaryColor)
         };
     }
 

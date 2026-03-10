@@ -9,6 +9,8 @@ namespace InfinityMercsApp.Views.Controls;
 /// </summary>
 public partial class FactionSlotSelectorView : ContentView
 {
+    private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
+    private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
     private SKPicture? _leftSlotPicture;
     private SKPicture? _rightSlotPicture;
 
@@ -95,6 +97,16 @@ public partial class FactionSlotSelectorView : ContentView
             _rightSlotPicture = value;
             RightSlotCanvas.InvalidateSurface();
         }
+    }
+
+    /// <summary>
+    /// Applies active/inactive border colors to slot selectors.
+    /// </summary>
+    public void ApplyActiveSlotBorders(int activeSlotIndex)
+    {
+        var activeIndex = activeSlotIndex == 1 && ShowRightSelectionBox ? 1 : 0;
+        LeftSlotBorderColor = activeIndex == 0 ? ActiveBorder : InactiveBorder;
+        RightSlotBorderColor = activeIndex == 1 ? ActiveBorder : InactiveBorder;
     }
 
     private void OnLeftSlotTapped(object? sender, TappedEventArgs e)
