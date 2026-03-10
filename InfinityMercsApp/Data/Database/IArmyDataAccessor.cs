@@ -29,4 +29,16 @@ public interface IArmyDataAccessor
     Task<IReadOnlyList<ArmySpecopsWeaponRecord>> GetSpecopsWeaponsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ArmySpecopsUnitRecord>> GetSpecopsUnitsByFactionAsync(int factionId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CCFactionFireteamValidityRecord>> GetCCFactionFireteamValidityAsync(
+        string filterKey,
+        IReadOnlyCollection<int> factionIds,
+        CancellationToken cancellationToken = default);
+
+    Task UpsertCCFactionFireteamValidityAsync(
+        int factionId,
+        string filterKey,
+        bool hasValidCoreFireteams,
+        string? validCoreFireteamsJson,
+        CancellationToken cancellationToken = default);
 }

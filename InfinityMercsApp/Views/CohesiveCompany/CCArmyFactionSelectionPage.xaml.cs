@@ -15,10 +15,11 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
+using InfinityMercsApp.Views;
 
-namespace InfinityMercsApp.Views;
+namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class ArmyFactionSelectionPage : ContentPage
+public partial class CCArmyFactionSelectionPage : ContentPage
 {
     private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
@@ -114,12 +115,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
-    private bool _teamsView;
+    private bool _teamsView = true;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
     private string _selectedStartSeasonPoints = "75";
     private string _seasonPointsCapText = "0";
     private ArmyUnitSelectionItem? _selectedUnit;
+    private bool _restrictSelectedUnitProfilesToFto;
     private string _leftSlotText = string.Empty;
     private string _rightSlotText = string.Empty;
     private Color _leftSlotBorderColor = ActiveBorder;
@@ -172,6 +174,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private bool _showHackableIcon;
     private bool _summaryHighlightLieutenant;
     private bool _showUnitsInInches = true;
+    private bool _areTeamEntriesReady;
     private int? _unitMoveFirstCm;
     private int? _unitMoveSecondCm;
     private int? _peripheralMoveFirstCm;
@@ -180,10 +183,15 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private string? _selectedUnitFiltersJson;
     private List<string> _selectedUnitCommonEquipment = [];
     private List<string> _selectedUnitCommonSkills = [];
-    private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
-    private UnitFilterPopupPage? _activeUnitFilterPopup;
+    private CCUnitFilterCriteria _activeUnitFilter = CCUnitFilterCriteria.None;
+    private CCUnitFilterPopupPage? _activeUnitFilterPopup;
+    private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
+    private string _trackedFireteamName = string.Empty;
+    private int _trackedFireteamLevel;
+    private SKPicture? _trackedFireteamLevelPicture;
+    private bool _isUpdatingTrackedTeamSelection;
 
-    public ArmyFactionSelectionPage(ArmySourceSelectionMode mode)
+    public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
     {
         InitializeComponent();
         _mode = mode;
@@ -246,7 +254,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
     public ICommand SelectMercsCompanyEntryCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
-    public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
+    public bool ShowRightSelectionBox => false;
     public string PageHeading
     {
         get => _pageHeading;
@@ -375,8 +383,13 @@ public partial class ArmyFactionSelectionPage : ContentPage
             _isFactionSelectionActive = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsUnitSelectionActive));
+            OnPropertyChanged(nameof(ShowUnitsList));
+            OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
+
+    public string TrackedFireteamNameDisplay =>
+        string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
 
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
@@ -692,8 +705,24 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
     }
 
+    public bool AreTeamEntriesReady
+    {
+        get => _areTeamEntriesReady;
+        private set
+        {
+            if (_areTeamEntriesReady == value)
+            {
+                return;
+            }
+
+            _areTeamEntriesReady = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowTeamsList));
+        }
+    }
+
     public bool ShowUnitsList => !TeamsView;
-    public bool ShowTeamsList => TeamsView;
+    public bool ShowTeamsList => TeamsView && IsUnitSelectionActive && AreTeamEntriesReady;
 
     public string LeftSlotText
     {
@@ -801,8 +830,75 @@ public partial class ArmyFactionSelectionPage : ContentPage
             // If both variants exist, keep only the non-all-caps "Contracted Back-Up".
             filtered = CollapseContractedBackUpVariants(filtered);
 
-            var items = filtered
-                .OrderBy(x => x.Name)
+            var maxCost = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+            var ordered = filtered.OrderBy(x => x.Name).ToList();
+            var cacheFilterKey = BuildCCFactionValidityFilterKey(maxCost);
+            var visibleFactions = new List<FactionRecord>();
+            if (_armyDataAccessor is null)
+            {
+                Console.Error.WriteLine("ArmyFactionSelectionPage army data service unavailable.");
+                return;
+            }
+
+            var factionIds = ordered.Select(x => x.Id).ToList();
+            var cachedRows = await _armyDataAccessor.GetCCFactionFireteamValidityAsync(
+                cacheFilterKey,
+                factionIds,
+                cancellationToken);
+            var cachedByFaction = cachedRows
+                .GroupBy(x => x.FactionId)
+                .ToDictionary(x => x.Key, x => x.OrderByDescending(r => r.EvaluatedAtUnixSeconds).First());
+
+            var factionsToEvaluate = ordered
+                .Where(faction =>
+                    !cachedByFaction.TryGetValue(faction.Id, out var row) ||
+                    string.IsNullOrWhiteSpace(row.ValidCoreFireteamsJson))
+                .ToList();
+
+            foreach (var faction in factionsToEvaluate)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var validCoreFireteamNames = await EvaluateValidCoreFireteamsForFactionAsync(faction, maxCost, cancellationToken);
+                var hasValidCoreFireteams = validCoreFireteamNames.Count > 0;
+                var validCoreFireteamsJson = JsonSerializer.Serialize(validCoreFireteamNames);
+                await _armyDataAccessor.UpsertCCFactionFireteamValidityAsync(
+                    faction.Id,
+                    cacheFilterKey,
+                    hasValidCoreFireteams,
+                    validCoreFireteamsJson,
+                    cancellationToken);
+
+                cachedByFaction[faction.Id] = new CCFactionFireteamValidityRecord
+                {
+                    FactionId = faction.Id,
+                    FilterKey = cacheFilterKey,
+                    HasValidCoreFireteams = hasValidCoreFireteams,
+                    ValidCoreFireteamsJson = validCoreFireteamsJson,
+                    EvaluatedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                };
+            }
+
+            _validCoreFireteamsByFaction.Clear();
+            foreach (var row in cachedByFaction.Values)
+            {
+                var validTeams = ParseValidCoreFireteams(row.ValidCoreFireteamsJson);
+                _validCoreFireteamsByFaction[row.FactionId] = validTeams;
+            }
+
+            var validFactionIds = cachedByFaction.Values
+                .Where(x => x.HasValidCoreFireteams)
+                .Select(x => x.FactionId)
+                .ToHashSet();
+
+            foreach (var faction in ordered)
+            {
+                if (validFactionIds.Contains(faction.Id))
+                {
+                    visibleFactions.Add(faction);
+                }
+            }
+
+            var items = visibleFactions
                 .Select(faction => new ArmyFactionSelectionItem
                 {
                     Id = faction.Id,
@@ -929,6 +1025,162 @@ public partial class ArmyFactionSelectionPage : ContentPage
             ResetMercsCompany();
             _ = LoadUnitsForActiveSlotAsync();
         }
+
+        // In CC flow, selecting a faction should immediately advance to unit selection.
+        IsFactionSelectionActive = false;
+    }
+
+    private string BuildCCFactionValidityFilterKey(int maxCost)
+    {
+        return string.Join("|",
+            "cc-core-v2",
+            $"pts:{maxCost}",
+            $"lt:{(LieutenantOnlyUnits ? 1 : 0)}",
+            $"class:{_activeUnitFilter.Classification ?? string.Empty}",
+            $"chars:{_activeUnitFilter.Characteristics ?? string.Empty}",
+            $"skills:{_activeUnitFilter.Skills ?? string.Empty}",
+            $"equip:{_activeUnitFilter.Equipment ?? string.Empty}",
+            $"weapons:{_activeUnitFilter.Weapons ?? string.Empty}",
+            $"ammo:{_activeUnitFilter.Ammo ?? string.Empty}",
+            $"min:{_activeUnitFilter.MinPoints?.ToString() ?? string.Empty}",
+            $"max:{_activeUnitFilter.MaxPoints?.ToString() ?? string.Empty}",
+            $"filterlt:{(_activeUnitFilter.LieutenantOnlyUnits ? 1 : 0)}");
+    }
+
+    private async Task<List<string>> EvaluateValidCoreFireteamsForFactionAsync(
+        FactionRecord faction,
+        int maxCost,
+        CancellationToken cancellationToken)
+    {
+        var validCoreFireteams = new List<string>();
+        if (_armyDataAccessor is null)
+        {
+            return validCoreFireteams;
+        }
+
+        var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.FireteamChartJson))
+        {
+            return validCoreFireteams;
+        }
+
+        var skillsLookup = BuildIdNameLookup(snapshot.FiltersJson, "skills");
+        var charsLookup = BuildIdNameLookup(snapshot.FiltersJson, "chars");
+        var equipLookup = BuildIdNameLookup(snapshot.FiltersJson, "equip");
+        var weaponsLookup = BuildIdNameLookup(snapshot.FiltersJson, "weapons");
+        var ammoLookup = BuildIdNameLookup(snapshot.FiltersJson, "ammunition");
+        var typeLookup = BuildIdNameLookup(snapshot.FiltersJson, "type");
+        var categoryLookup = BuildIdNameLookup(snapshot.FiltersJson, "category");
+
+        var units = await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(faction.Id, cancellationToken);
+        var sourceUnits = units.Select(unit => new ArmyUnitSelectionItem
+            {
+                Id = unit.UnitId,
+                SourceFactionId = faction.Id,
+                Slug = unit.Slug,
+                Name = unit.Name,
+                Type = unit.Type,
+                IsCharacter = IsCharacterCategory(unit, categoryLookup)
+            })
+            .ToList();
+
+        var teams = new Dictionary<string, TeamAggregate>(StringComparer.OrdinalIgnoreCase);
+        MergeFireteamEntries(snapshot.FireteamChartJson, teams);
+        foreach (var team in teams.Values
+                     .Where(x => x.Core > 0)
+                     .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var hasLieutenantProfileAfterFilters = false;
+            foreach (var unitLimit in team.UnitLimits)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var matchedUnit = ResolveUnitForTeamEntry(unitLimit.Key, unitLimit.Value.Slug, sourceUnits);
+                if (matchedUnit is null || matchedUnit.IsCharacter)
+                {
+                    continue;
+                }
+
+                if (!MatchesClassificationFilter(matchedUnit, typeLookup))
+                {
+                    continue;
+                }
+
+                var unitRecord = await _armyDataAccessor.GetUnitAsync(faction.Id, matchedUnit.Id, cancellationToken);
+                if (string.IsNullOrWhiteSpace(unitRecord?.ProfileGroupsJson))
+                {
+                    continue;
+                }
+
+                var requiresFtoProfile = IsFtoLabel(unitLimit.Key);
+                var hasAnyVisibleProfile = UnitHasVisibleOptionWithFilter(
+                    unitRecord.ProfileGroupsJson,
+                    skillsLookup,
+                    charsLookup,
+                    equipLookup,
+                    weaponsLookup,
+                    ammoLookup,
+                    _activeUnitFilter,
+                    requireLieutenant: false,
+                    requireZeroSwc: true,
+                    maxCost: maxCost,
+                    requireFto: requiresFtoProfile);
+                if (!hasAnyVisibleProfile)
+                {
+                    continue;
+                }
+
+                var hasVisibleLieutenantProfile = UnitHasVisibleOptionWithFilter(
+                    unitRecord.ProfileGroupsJson,
+                    skillsLookup,
+                    charsLookup,
+                    equipLookup,
+                    weaponsLookup,
+                    ammoLookup,
+                    _activeUnitFilter,
+                    requireLieutenant: true,
+                    requireZeroSwc: true,
+                    maxCost: maxCost,
+                    requireFto: requiresFtoProfile);
+
+                if (!hasVisibleLieutenantProfile)
+                {
+                    continue;
+                }
+
+                hasLieutenantProfileAfterFilters = true;
+                break;
+            }
+
+            if (hasLieutenantProfileAfterFilters)
+            {
+                validCoreFireteams.Add(team.Name);
+            }
+        }
+
+        return validCoreFireteams
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static HashSet<string> ParseValidCoreFireteams(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            var names = JsonSerializer.Deserialize<List<string>>(json) ?? [];
+            return new HashSet<string>(
+                names.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
     }
 
     private void ResetMercsCompany()
@@ -936,11 +1188,127 @@ public partial class ArmyFactionSelectionPage : ContentPage
         if (MercsCompanyEntries.Count == 0)
         {
             UpdateMercsCompanyTotal();
+            ReevaluateTrackedFireteamLevel();
             return;
         }
 
         MercsCompanyEntries.Clear();
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
+    }
+
+    private void OnTeamTrackingRadioButtonCheckedChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        if (_isUpdatingTrackedTeamSelection || !e.Value)
+        {
+            return;
+        }
+
+        if (sender is not RadioButton radioButton || radioButton.BindingContext is not ArmyTeamListItem team)
+        {
+            return;
+        }
+
+        if (!team.ShowTrackingRadioButton)
+        {
+            return;
+        }
+
+        SetTrackedFireteamSelection(team.Name);
+    }
+
+    private void RestoreTrackedFireteamSelection(string? trackedFireteamName)
+    {
+        if (string.IsNullOrWhiteSpace(trackedFireteamName))
+        {
+            SetTrackedFireteamSelection(string.Empty);
+            return;
+        }
+
+        var matchingTeam = TeamEntries.FirstOrDefault(x =>
+            x.ShowTrackingRadioButton &&
+            string.Equals(x.Name, trackedFireteamName, StringComparison.OrdinalIgnoreCase));
+        SetTrackedFireteamSelection(matchingTeam?.Name ?? string.Empty);
+    }
+
+    private void SetTrackedFireteamSelection(string? teamName)
+    {
+        var normalizedTeamName = teamName?.Trim() ?? string.Empty;
+        var hasSelection = !string.IsNullOrWhiteSpace(normalizedTeamName);
+
+        _isUpdatingTrackedTeamSelection = true;
+        try
+        {
+            foreach (var team in TeamEntries)
+            {
+                team.IsTrackedTeam = team.ShowTrackingRadioButton &&
+                                     hasSelection &&
+                                     string.Equals(team.Name, normalizedTeamName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        finally
+        {
+            _isUpdatingTrackedTeamSelection = false;
+        }
+
+        if (string.Equals(_trackedFireteamName, normalizedTeamName, StringComparison.Ordinal))
+        {
+            ReevaluateTrackedFireteamLevel();
+            return;
+        }
+
+        _trackedFireteamName = normalizedTeamName;
+        OnPropertyChanged(nameof(TrackedFireteamNameDisplay));
+        ReevaluateTrackedFireteamLevel();
+    }
+
+    private void ReevaluateTrackedFireteamLevel()
+    {
+        var evaluatedLevel = string.IsNullOrWhiteSpace(_trackedFireteamName)
+            ? 0
+            : Math.Clamp(MercsCompanyEntries.Count, 1, 6);
+        OnTrackedFireteamLevelEvaluated(evaluatedLevel);
+    }
+
+    // Hook point for full fireteam-level evaluation logic. Provide an evaluated value in [1..6].
+    private void OnTrackedFireteamLevelEvaluated(int fireteamLevel)
+    {
+        SetTrackedFireteamLevel(fireteamLevel);
+    }
+
+    private void SetTrackedFireteamLevel(int fireteamLevel)
+    {
+        var normalizedLevel = Math.Clamp(fireteamLevel, 0, 6);
+        if (_trackedFireteamLevel == normalizedLevel)
+        {
+            return;
+        }
+
+        _trackedFireteamLevel = normalizedLevel;
+        _ = LoadTrackedFireteamLevelIconAsync(_trackedFireteamLevel);
+    }
+
+    private async Task LoadTrackedFireteamLevelIconAsync(int fireteamLevel)
+    {
+        _trackedFireteamLevelPicture?.Dispose();
+        _trackedFireteamLevelPicture = null;
+
+        if (fireteamLevel >= 1 && fireteamLevel <= 6)
+        {
+            try
+            {
+                var iconPath = $"SVGCache/NonCBIcons/Fireteam/noun-team-{fireteamLevel}.svg";
+                await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(iconPath);
+                var svg = new SKSvg();
+                _trackedFireteamLevelPicture = svg.Load(stream);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"ArmyFactionSelectionPage tracked fireteam icon load failed: {ex.Message}");
+            }
+        }
+
+        TrackedFireteamLevelCanvas?.InvalidateSurface();
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -1009,12 +1377,17 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
+        AreTeamEntriesReady = false;
         IsFactionSelectionActive = true;
     }
 
     private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         IsFactionSelectionActive = false;
+        if (_selectedFaction is not null || _leftSlotFaction is not null || _rightSlotFaction is not null)
+        {
+            _ = LoadUnitsForActiveSlotAsync();
+        }
     }
 
     private async void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
@@ -1022,7 +1395,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         try
         {
             var options = await BuildUnitFilterPopupOptionsAsync();
-            var popup = new UnitFilterPopupPage(
+            var popup = new CCUnitFilterPopupPage(
                 options,
                 _activeUnitFilter,
                 lieutenantOnlyUnits: LieutenantOnlyUnits,
@@ -1039,24 +1412,24 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
     }
 
-    private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
+    private void OnFilterArmyApplied(object? sender, CCUnitFilterCriteria criteria)
     {
-        _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
+        _activeUnitFilter = criteria ?? CCUnitFilterCriteria.None;
         if (criteria is not null)
         {
             LieutenantOnlyUnits = criteria.LieutenantOnlyUnits;
             TeamsView = criteria.TeamsView;
         }
-        CloseUnitFilterPopup(sender as UnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
     private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
-        CloseUnitFilterPopup(sender as UnitFilterPopupPage);
+        CloseUnitFilterPopup(sender as CCUnitFilterPopupPage);
     }
 
-    private void CloseUnitFilterPopup(UnitFilterPopupPage? popup)
+    private void CloseUnitFilterPopup(CCUnitFilterPopupPage? popup)
     {
         var target = popup ?? _activeUnitFilterPopup;
         if (target is not null)
@@ -1082,7 +1455,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         ApplyFilterButtonSize(UnitSelectionFilterButtonActive, UnitSelectionFilterCanvasActive, iconButtonSize);
     }
 
-    private async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
+    private async Task<CCUnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
     {
         var classification = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var characteristics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1194,7 +1567,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         var maxPoints = int.TryParse(SelectedStartSeasonPoints, out var parsedMaxPoints) ? Math.Max(parsedMaxPoints, 200) : 200;
         Console.WriteLine($"ArmyFactionSelectionPage filter options: class={classification.Count}, chars={characteristics.Count}, skills={skills.Count}, equip={equipment.Count}, weapons={weapons.Count}, ammo={ammo.Count}.");
-        return new UnitFilterPopupOptions
+        return new CCUnitFilterPopupOptions
         {
             Classification = classification.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             Characteristics = characteristics.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
@@ -1336,6 +1709,8 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
+        var trackedFireteamNameToRestore = _trackedFireteamName;
+        AreTeamEntriesReady = false;
         Units.Clear();
         TeamEntries.Clear();
         _selectedUnit = null;
@@ -1439,8 +1814,21 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 Units.Add(unit);
             }
 
+            var validCoreTeamNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var faction in factions)
+            {
+                if (_validCoreFireteamsByFaction.TryGetValue(faction.Id, out var cachedValidTeamNames))
+                {
+                    foreach (var teamName in cachedValidTeamNames)
+                    {
+                        validCoreTeamNames.Add(teamName);
+                    }
+                }
+            }
+
             foreach (var team in mergedTeams.Values
-                         .Where(x => x.Duo > 0)
+                         .Where(x => x.Core > 0 &&
+                                     (validCoreTeamNames.Count == 0 || validCoreTeamNames.Contains(x.Name)))
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
                 var nonCharacterUnitLimits = FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
@@ -1454,7 +1842,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 TeamEntries.Add(new ArmyTeamListItem
                 {
                     Name = team.Name,
-                    TeamCountsText = $"D: {team.Duo}",
+                    TeamCountsText = $"C: {team.Core}",
                     IsExpanded = true,
                     AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
                 });
@@ -1515,19 +1903,33 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            RestoreTrackedFireteamSelection(trackedFireteamNameToRestore);
+            AreTeamEntriesReady = true;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            RestoreTrackedFireteamSelection(string.Empty);
+            AreTeamEntriesReady = false;
         }
     }
 
-    private void SetSelectedUnit(ArmyUnitSelectionItem item)
+    private void SetSelectedUnit(ArmyUnitSelectionItem item, bool restrictProfilesToFto = false)
     {
         Console.WriteLine($"ArmyFactionSelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
+        var selectionContextChanged = _restrictSelectedUnitProfilesToFto != restrictProfilesToFto;
+        _restrictSelectedUnitProfilesToFto = restrictProfilesToFto;
         if (_selectedUnit == item)
         {
-            Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit skipped (same item instance).");
+            if (selectionContextChanged)
+            {
+                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit context changed; reloading selected unit details.");
+                _ = LoadSelectedUnitDetailsAsync();
+            }
+            else
+            {
+                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit skipped (same item instance).");
+            }
             return;
         }
 
@@ -1624,6 +2026,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         }
 
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1662,6 +2065,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1782,6 +2186,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
     {
+        AreTeamEntriesReady = false;
         if (_armyDataAccessor is null || Units.Count == 0)
         {
             return;
@@ -1873,10 +2278,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
             }
 
             RefreshTeamEntryVisibility();
+            AreTeamEntriesReady = true;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+            AreTeamEntriesReady = false;
         }
     }
 
@@ -2334,6 +2741,16 @@ public partial class ArmyFactionSelectionPage : ContentPage
     {
         return !string.IsNullOrWhiteSpace(allowedProfileName) &&
                allowedProfileName.IndexOf("REINF", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static bool IsFtoLabel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return Regex.IsMatch(value, @"\bFTO\b", RegexOptions.IgnoreCase);
     }
 
     private static bool IsReinforcementUnit(ArmyUnitSelectionItem unit)
@@ -2817,12 +3234,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
     private string GetCompanyTypeLabel()
     {
-        return _mode switch
-        {
-            ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
-            ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
-            _ => "Unknown Company Type"
-        };
+        return "Cohesive Company";
     }
 
     private void UpdateSeasonValidationState()
@@ -3080,6 +3492,22 @@ public partial class ArmyFactionSelectionPage : ContentPage
                     continue;
                 }
 
+                var optionNameForFilter = option.TryGetProperty("name", out var optionNameElementForFilter) &&
+                                          optionNameElementForFilter.ValueKind == JsonValueKind.String
+                    ? optionNameElementForFilter.GetString() ?? string.Empty
+                    : string.Empty;
+                if (string.IsNullOrWhiteSpace(optionNameForFilter))
+                {
+                    optionNameForFilter = group.TryGetProperty("isc", out var groupIscForFilter) && groupIscForFilter.ValueKind == JsonValueKind.String
+                        ? groupIscForFilter.GetString() ?? string.Empty
+                        : string.Empty;
+                }
+
+                if (_restrictSelectedUnitProfilesToFto && !IsFtoLabel(optionNameForFilter))
+                {
+                    continue;
+                }
+
                 foreach (var name in GetOrderedIdDisplayNamesFromEntries(
                              GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
                              equipLookup,
@@ -3135,6 +3563,12 @@ public partial class ArmyFactionSelectionPage : ContentPage
                 {
                     optionName = groupName;
                 }
+
+                if (_restrictSelectedUnitProfilesToFto && !IsFtoLabel(optionName))
+                {
+                    continue;
+                }
+
                 optionName = BuildOptionDisplayName(option, optionName, equipLookup, skillsLookup);
 
                 var optionWeapons = GetOrderedIdDisplayNamesFromEntries(
@@ -4310,10 +4744,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterCriteria criteria,
+        CCUnitFilterCriteria criteria,
         bool requireLieutenant,
         bool requireZeroSwc,
-        int? maxCost = null)
+        int? maxCost = null,
+        bool requireFto = false)
     {
         if (string.IsNullOrWhiteSpace(profileGroupsJson))
         {
@@ -4337,6 +4772,18 @@ public partial class ArmyFactionSelectionPage : ContentPage
 
                 foreach (var option in optionsElement.EnumerateArray())
                 {
+                    if (requireFto)
+                    {
+                        var optionName = option.TryGetProperty("name", out var optionNameElement) &&
+                                         optionNameElement.ValueKind == JsonValueKind.String
+                            ? optionNameElement.GetString()
+                            : null;
+                        if (!IsFtoLabel(optionName))
+                        {
+                            continue;
+                        }
+                    }
+
                     if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
                     {
                         continue;
@@ -4398,7 +4845,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterCriteria criteria)
+        CCUnitFilterCriteria criteria)
     {
         if (!string.IsNullOrWhiteSpace(criteria.Characteristics) &&
             !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "chars", charsLookup, criteria.Characteristics))
@@ -6462,7 +6909,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             return;
         }
 
-        SetSelectedUnit(item);
+        SetSelectedUnit(item, restrictProfilesToFto: false);
     }
 
     private void OnUnitItemTappedFromView(object? sender, EventArgs e)
@@ -6473,7 +6920,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             return;
         }
 
-        SetSelectedUnit(item);
+        SetSelectedUnit(item, restrictProfilesToFto: false);
     }
 
     private void OnTeamAllowedProfileTappedFromView(object? sender, EventArgs e)
@@ -6507,7 +6954,7 @@ public partial class ArmyFactionSelectionPage : ContentPage
             return;
         }
 
-        SetSelectedUnit(resolved);
+        SetSelectedUnit(resolved, restrictProfilesToFto: IsFtoLabel(teamItem.Name));
     }
 
     private async Task LoadSlotIconAsync(int slotIndex, string? cachedPath, string? packagedPath)
@@ -6793,6 +7240,11 @@ public partial class ArmyFactionSelectionPage : ContentPage
     private void OnProfileTacticalIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         DrawSlotPicture(_tacticalAwarenessIconPicture, e);
+    }
+
+    private void OnTrackedFireteamLevelCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawSlotPicture(_trackedFireteamLevelPicture, e);
     }
 
     private void OnUnitNameHeadingLabelSizeChanged(object? sender, EventArgs e)
@@ -7304,6 +7756,7 @@ public class ArmyTeamListItem : BaseViewModel
     public string TeamCountsText { get; init; } = string.Empty;
     public bool HasTeamCounts => !string.IsNullOrWhiteSpace(TeamCountsText);
     public bool IsWildcardBucket { get; init; }
+    public bool ShowTrackingRadioButton => !IsWildcardBucket;
     public ObservableCollection<ArmyTeamUnitLimitItem> AllowedProfiles { get; init; } = [];
 
     private bool _isVisible = true;
@@ -7334,6 +7787,22 @@ public class ArmyTeamListItem : BaseViewModel
             }
 
             _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isTrackedTeam;
+    public bool IsTrackedTeam
+    {
+        get => _isTrackedTeam;
+        set
+        {
+            if (_isTrackedTeam == value)
+            {
+                return;
+            }
+
+            _isTrackedTeam = value;
             OnPropertyChanged();
         }
     }

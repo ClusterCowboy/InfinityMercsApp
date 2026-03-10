@@ -281,7 +281,7 @@
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">
-                    <Label Text="noun-double-arrows-7302616.svg double arrows by Shocho from " />
+                    <Label Text="tactical.svg double arrows by Shocho from " />
                     <Label
                         Text="Noun Project"
                         TextColor="#2563EB"
@@ -386,7 +386,7 @@
                     Direction="Row"
                     Wrap="Wrap"
                     AlignItems="Start">
-                    <Label Text="noun-team-7662436.svg team by Hanbai from " />
+                    <Label Text="noun-team-base.svg team by Eko Purnomo from " />
                     <Label
                         Text="Noun Project"
                         TextColor="#2563EB"

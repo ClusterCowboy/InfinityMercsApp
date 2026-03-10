@@ -108,7 +108,7 @@ public partial class ViewerPage : ContentPage
 
 		try
 		{
-			await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-double-arrows-7302616.svg");
+			await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
 			var tacticalSvg = new SKSvg();
 			_tacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
 		}

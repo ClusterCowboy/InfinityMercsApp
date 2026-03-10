@@ -42,6 +42,20 @@ public class DatabaseContext : IDatabaseContext
         await Connection.CreateTableAsync<ArmySpecopsEquipRecord>();
         await Connection.CreateTableAsync<ArmySpecopsWeaponRecord>();
         await Connection.CreateTableAsync<ArmySpecopsUnitRecord>();
+        await Connection.CreateTableAsync<CCFactionFireteamValidityRecord>();
+        await EnsureColumnAsync("cc_faction_fireteam_validity", "ValidCoreFireteamsJson", "TEXT");
         _isInitialized = true;
+    }
+
+    private async Task EnsureColumnAsync(string tableName, string columnName, string columnSqlType)
+    {
+        var tableInfo = await Connection.GetTableInfoAsync(tableName);
+        var hasColumn = tableInfo.Any(x => string.Equals(x.Name, columnName, StringComparison.OrdinalIgnoreCase));
+        if (hasColumn)
+        {
+            return;
+        }
+
+        await Connection.ExecuteAsync($"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnSqlType}");
     }
 }

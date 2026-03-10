@@ -3404,14 +3404,16 @@ public class ViewerViewModel : BaseViewModel
                             .ToList();
                     var uniqueEquipment = JoinOrDash(uniqueEquipmentEntries.Select(x => x.Name));
 
-                    var uniqueSkillsEntries = BuildConfigurationSkillEntries(
+                    var optionSkillsEntries = BuildConfigurationSkillEntries(
                             GetOrderedIdDisplayNamesFromEntries(
                                 GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"),
                                 skillsLookup,
                                 extrasLookup,
                                 ShowUnitsInInches))
-                            .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
-                            .ToList();
+                        .ToList();
+                    var uniqueSkillsEntries = optionSkillsEntries
+                        .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
+                        .ToList();
                     var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));
 
                     var peripheralEntries = GetCountedIdDisplayNamesFromEntries(
@@ -3462,7 +3464,9 @@ public class ViewerViewModel : BaseViewModel
                         PeripheralsFormatted = BuildLinkedFormattedString(peripheralLines, Color.FromArgb("#FACC15")),
                         Swc = swc,
                         SwcDisplay = MercsOnlyUnits ? string.Empty : $"SWC {swc}",
-                        Cost = cost
+                        Cost = cost,
+                        ShowProfileTacticalAwarenessIcon = !ShowTacticalAwarenessIcon &&
+                                                           optionSkillsEntries.Any(x => x.Name.Contains("tactical awareness", StringComparison.OrdinalIgnoreCase))
                     });
                 }
             }
@@ -3669,6 +3673,7 @@ public class ViewerProfileItem : BaseViewModel
     public string SwcDisplay { get; init; } = string.Empty;
 
     public string Cost { get; init; } = "-";
+    public bool ShowProfileTacticalAwarenessIcon { get; init; }
 
     private bool _isVisible = true;
     public bool IsVisible

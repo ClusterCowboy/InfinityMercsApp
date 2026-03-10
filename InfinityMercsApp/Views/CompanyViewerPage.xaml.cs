@@ -660,7 +660,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         try
         {
-            await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-double-arrows-7302616.svg");
+            await using var tacticalStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/tactical.svg");
             var tacticalSvg = new SKSvg();
             _tacticalAwarenessIconPicture = tacticalSvg.Load(tacticalStream);
         }
@@ -1122,7 +1122,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private static string GetExperienceIconPackagedPath(int experiencePoints)
     {
         var level = UnitExperienceRanks.GetRankLevel(experiencePoints);
-        return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/noun-{level}-stars.svg";
+        return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/Experience/noun-{level}-stars.svg";
     }
 
     private static string NormalizeUnitTypeCode(string? unitTypeCode)

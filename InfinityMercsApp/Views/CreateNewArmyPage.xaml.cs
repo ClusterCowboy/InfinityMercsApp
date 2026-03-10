@@ -1,6 +1,7 @@
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
+using InfinityMercsApp.Views.CohesiveCompany;
 
 namespace InfinityMercsApp.Views;
 
@@ -39,9 +40,9 @@ public partial class CreateNewArmyPage : ContentPage
         OnStandardCompanyClicked(sender, EventArgs.Empty);
     }
 
-    private void OnCohesiveCompanyClicked(object? sender, EventArgs e)
+    private async void OnCohesiveCompanyClicked(object? sender, EventArgs e)
     {
-        Console.WriteLine("[CreateNewArmyPage] Cohesive Company selected.");
+        await Shell.Current.Navigation.PushAsync(new CCArmyFactionSelectionPage(ArmySourceSelectionMode.Sectorials));
     }
 
     private void OnCohesiveCompanyTapped(object? sender, TappedEventArgs e)
