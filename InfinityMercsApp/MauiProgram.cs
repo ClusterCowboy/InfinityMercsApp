@@ -6,6 +6,7 @@ using InfinityMercsApp.Data.WebAccess;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.UnitEncyclopedia;
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 
@@ -53,7 +54,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<ViewerViewModel>();
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<SplashPage>();
-		builder.Services.AddTransient<ViewerPage>();
+		builder.Services.AddTransient<UnitEncyclopediaPage>();
 		builder.Services.AddTransient<FeedbackBugsPage>();
 
 #if DEBUG
