@@ -911,9 +911,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 _activeUnitFilter,
                 lieutenantOnlyUnits: LieutenantOnlyUnits,
                 teamsView: TeamsView);
+            var popupHeight = ResolveUnitFilterPopupHeight();
+            popup.HeightRequest = popupHeight;
             popup.FilterArmyApplied += OnFilterArmyApplied;
             popup.CloseRequested += OnUnitFilterPopupCloseRequested;
             _activeUnitFilterPopup = popup;
+            UnitFilterPopupHost.HeightRequest = popupHeight;
             UnitFilterPopupHost.Content = popup;
             UnitFilterOverlay.IsVisible = true;
         }
@@ -951,7 +954,19 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         _activeUnitFilterPopup = null;
         UnitFilterPopupHost.Content = null;
+        UnitFilterPopupHost.HeightRequest = -1;
         UnitFilterOverlay.IsVisible = false;
+    }
+
+    private double ResolveUnitFilterPopupHeight()
+    {
+        var pageHeight = Height > 0 ? Height : Window?.Height ?? Application.Current?.Windows.FirstOrDefault()?.Page?.Height ?? 0;
+        if (pageHeight <= 0)
+        {
+            return 800;
+        }
+
+        return pageHeight * 0.9;
     }
 
     private void OnUnitSelectionHeaderBorderSizeChanged(object? sender, EventArgs e)
@@ -4195,6 +4210,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             return false;
         }
 
+        var filterQuery = criteria.ToQuery();
+
         try
         {
             using var doc = JsonDocument.Parse(profileGroupsJson);
@@ -4228,12 +4245,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                         continue;
                     }
 
-                    if (criteria.MinPoints.HasValue && optionCost < criteria.MinPoints.Value)
+                    if (filterQuery.MinPoints.HasValue && optionCost < filterQuery.MinPoints.Value)
                     {
                         continue;
                     }
 
-                    if (criteria.MaxPoints.HasValue && optionCost > criteria.MaxPoints.Value)
+                    if (filterQuery.MaxPoints.HasValue && optionCost > filterQuery.MaxPoints.Value)
                     {
                         continue;
                     }
@@ -4247,7 +4264,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                             equipLookup,
                             weaponsLookup,
                             ammoLookup,
-                            criteria))
+                            filterQuery))
                     {
                         continue;
                     }
@@ -4273,39 +4290,86 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         IReadOnlyDictionary<int, string> equipLookup,
         IReadOnlyDictionary<int, string> weaponsLookup,
         IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterCriteria criteria)
+        UnitFilterQuery filterQuery)
     {
-        if (!string.IsNullOrWhiteSpace(criteria.Characteristics) &&
-            !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "chars", charsLookup, criteria.Characteristics))
+        foreach (var term in filterQuery.Terms)
         {
-            return false;
-        }
+            if (term.Field == UnitFilterField.Classification || term.Values.Count == 0)
+            {
+                continue;
+            }
 
-        if (!string.IsNullOrWhiteSpace(criteria.Skills) &&
-            !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "skills", skillsLookup, criteria.Skills))
-        {
-            return false;
-        }
+            var matches = term.Field switch
+            {
+                UnitFilterField.Characteristics => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "chars",
+                    charsLookup),
+                UnitFilterField.Skills => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "skills",
+                    skillsLookup),
+                UnitFilterField.Equipment => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "equip",
+                    equipLookup),
+                UnitFilterField.Weapons => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "weapons",
+                    weaponsLookup),
+                UnitFilterField.Ammo => TermMatchesOptionOnly(
+                    term,
+                    profileGroupsRoot,
+                    option,
+                    ammoLookup,
+                    ["ammunition", "ammo"]),
+                _ => true
+            };
 
-        if (!string.IsNullOrWhiteSpace(criteria.Equipment) &&
-            !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "equip", equipLookup, criteria.Equipment))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(criteria.Weapons) &&
-            !OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, "weapons", weaponsLookup, criteria.Weapons))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(criteria.Ammo) &&
-            !OptionContainsAnyLookupName(profileGroupsRoot, option, ["ammunition", "ammo"], ammoLookup, criteria.Ammo))
-        {
-            return false;
+            if (!matches)
+            {
+                return false;
+            }
         }
 
         return true;
+    }
+
+    private static bool TermMatchesOptionOrGroup(
+        UnitFilterTerm term,
+        JsonElement profileGroupsRoot,
+        JsonElement profileGroup,
+        JsonElement option,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup)
+    {
+        return term.MatchMode == UnitFilterMatchMode.All
+            ? term.Values.All(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value))
+            : term.Values.Any(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value));
+    }
+
+    private static bool TermMatchesOptionOnly(
+        UnitFilterTerm term,
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        IReadOnlyDictionary<int, string> lookup,
+        IEnumerable<string> propertyNames)
+    {
+        return term.MatchMode == UnitFilterMatchMode.All
+            ? term.Values.All(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value))
+            : term.Values.Any(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value));
     }
 
     private static bool OptionOrGroupContainsLookupName(
@@ -4410,7 +4474,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         ArmyUnitSelectionItem unit,
         IReadOnlyDictionary<int, string> typeLookup)
     {
-        if (string.IsNullOrWhiteSpace(_activeUnitFilter.Classification))
+        var classificationTerm = _activeUnitFilter.ToQuery().GetTerm(UnitFilterField.Classification);
+        if (classificationTerm is null || classificationTerm.Values.Count == 0)
         {
             return true;
         }
@@ -4420,8 +4485,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             return false;
         }
 
-        return typeLookup.TryGetValue(unit.Type.Value, out var typeName) &&
-               string.Equals(typeName, _activeUnitFilter.Classification, StringComparison.OrdinalIgnoreCase);
+        if (!typeLookup.TryGetValue(unit.Type.Value, out var typeName))
+        {
+            return false;
+        }
+
+        return classificationTerm.MatchMode == UnitFilterMatchMode.All
+            ? classificationTerm.Values.All(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase))
+            : classificationTerm.Values.Any(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsLieutenantOption(JsonElement option, IReadOnlyDictionary<int, string> skillsLookup)
