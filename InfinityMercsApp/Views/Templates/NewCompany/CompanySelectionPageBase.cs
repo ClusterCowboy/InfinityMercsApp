@@ -1,7 +1,6 @@
-using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp.Views.Maui;
 
 namespace InfinityMercsApp.Views.Templates.NewCompany;
@@ -18,20 +17,19 @@ public abstract class CompanySelectionPageBase : ContentPage
         Mode = mode;
 
         var services = Application.Current?.Handler?.MauiContext?.Services;
-        MetadataAccessor = services?.GetService<IMetadataAccessor>();
-        ArmyDataAccessor = services?.GetService<IArmyDataAccessor>();
-        SpecOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
-            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
+        MetadataProvider = services?.GetService<IMetadataProvider>();
+        FactionProvider = services?.GetService<IFactionProvider>();
+        SpecOpsProvider = services?.GetService<ISpecOpsProvider>();
         FactionLogoCacheService = services?.GetService<FactionLogoCacheService>();
-        AppSettingsService = services?.GetService<AppSettingsService>();
+        AppSettingsProvider = services?.GetService<IAppSettingsProvider>();
     }
 
     protected ArmySourceSelectionMode Mode { get; }
-    protected IMetadataAccessor? MetadataAccessor { get; }
-    protected IArmyDataAccessor? ArmyDataAccessor { get; }
-    protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
+    protected IMetadataProvider? MetadataProvider { get; }
+    protected IFactionProvider? FactionProvider { get; }
+    protected ISpecOpsProvider? SpecOpsProvider { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
-    protected AppSettingsService? AppSettingsService { get; }
+    protected IAppSettingsProvider? AppSettingsProvider { get; }
 
     /// <summary>
     /// Wires shared UnitDisplayConfigurationsView events to page handlers.

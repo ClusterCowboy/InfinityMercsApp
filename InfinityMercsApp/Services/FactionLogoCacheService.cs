@@ -50,40 +50,6 @@ public class FactionLogoCacheService
         return result;
     }
 
-    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<ApiFaction> factions, CancellationToken cancellationToken = default)
-    {
-        Directory.CreateDirectory(_localCacheDirectory);
-        var result = new LogoCacheResult();
-
-        foreach (var faction in factions)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            result.TotalFactions++;
-
-            if (faction.Id <= 0)
-            {
-                result.MissingLogoUrl++;
-                continue;
-            }
-
-            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
-            if (ok == EnsureResult.Reused)
-            {
-                result.CachedReuse++;
-            }
-            else if (ok == EnsureResult.CopiedFromPackage)
-            {
-                result.Downloaded++;
-            }
-            else
-            {
-                result.Failed++;
-            }
-        }
-
-        return result;
-    }
-
     public async Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
         IEnumerable<Infrastructure.Models.Database.Metadata.Faction> factions,
         CancellationToken cancellationToken = default)
@@ -123,43 +89,6 @@ public class FactionLogoCacheService
     public async Task<LogoCacheResult> CacheUnitLogosAsync(
         int factionId,
         IEnumerable<Infrastructure.Models.API.Army.Resume> units,
-        CancellationToken cancellationToken = default)
-    {
-        Directory.CreateDirectory(_localUnitCacheDirectory);
-        var result = new LogoCacheResult();
-
-        foreach (var unit in units)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            result.TotalFactions++;
-
-            if (unit.Id <= 0)
-            {
-                result.MissingLogoUrl++;
-                continue;
-            }
-
-            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.Id, cancellationToken);
-            if (ok == EnsureResult.Reused)
-            {
-                result.CachedReuse++;
-            }
-            else if (ok == EnsureResult.CopiedFromPackage)
-            {
-                result.Downloaded++;
-            }
-            else
-            {
-                result.Failed++;
-            }
-        }
-
-        return result;
-    }
-
-    public async Task<LogoCacheResult> CacheUnitLogosAsync(
-        int factionId,
-        IEnumerable<ApiResume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);

@@ -27,6 +27,16 @@ public sealed class SQLiteRepository : ISQLiteRepository
     }
 
     /// <inheritdoc/>
+    public void Upsert<T>(T item) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        var query = _connection.Table<T>();
+
+        _connection.InsertOrReplace(item);
+    }
+
+    /// <inheritdoc/>
     public void Update<T>(T item) where T : new()
     {
         _connection.CreateTable<T>();

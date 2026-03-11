@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using InfinityMercsApp.Domain.Sorting;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using System.Collections.ObjectModel;

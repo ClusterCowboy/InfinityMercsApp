@@ -39,7 +39,7 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     /// <inheritdoc/>
     public Unit? GetUnit(int factionId, int unitId)
     {
-        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && x.UnitId == unitId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
     }
 
     /// <inheritdoc/>

@@ -74,13 +74,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="_tempdiag\\**\\*.cs" />
-		<Content Remove="_tempdiag\\**\\*" />
-		<EmbeddedResource Remove="_tempdiag\\**\\*" />
-		<None Remove="_tempdiag\\**\\*" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
 		<ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
 	</ItemGroup>
