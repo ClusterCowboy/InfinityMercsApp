@@ -67,7 +67,11 @@
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="0,2">
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" />
-                                            <Label Grid.Column="1" Text="{Binding Value}" TextColor="White" VerticalTextAlignment="Center" />
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding Value}"
+                                                   TextColor="White"
+                                                   VerticalTextAlignment="Center"
+                                                   LineBreakMode="WordWrap" />
                                         </Grid>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
@@ -133,7 +137,7 @@
                 <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" Margin="0,8,0,0">
                     <Button Grid.Column="0" Text="Back" Clicked="OnBackClicked" />
                     <Button Grid.Column="1" Text="Reset" Clicked="OnResetClicked" />
-                    <Button Grid.Column="2" Text="Filter Army" HorizontalOptions="End" Clicked="OnFilterArmyClicked" />
+                    <Button Grid.Column="2" Text="Update Filter" HorizontalOptions="End" Clicked="OnFilterArmyClicked" />
                 </Grid>
             </Grid>
         </Border>

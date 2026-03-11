@@ -195,6 +195,12 @@ public partial class UnitFilterPopupView : ContentView
                 return;
             }
 
+            // Persist current editor state when switching criteria.
+            if (_selectedCriterion is not null)
+            {
+                CommitCriterionFromEditor(_selectedCriterion);
+            }
+
             _selectedCriterion = value;
             OnPropertyChanged(nameof(SelectedCriterion));
             OnPropertyChanged(nameof(SelectedCriterionTitle));
@@ -491,7 +497,30 @@ public partial class UnitFilterPopupView : ContentView
             return;
         }
 
-        var field = SelectedCriterion.Field;
+        CommitCriterionFromEditor(SelectedCriterion);
+    }
+
+    private void OnClearSelectionsClicked(object? sender, EventArgs e)
+    {
+        _committedTerms.Clear();
+        UpdateAllCriterionSummaries();
+        LoadSelectedCriterionEditor();
+    }
+
+    private void OnClearCriterionClicked(object? sender, EventArgs e)
+    {
+        if (SelectedCriterion is null)
+        {
+            return;
+        }
+
+        // Discard in-editor changes and restore previously committed values.
+        LoadSelectedCriterionEditor();
+    }
+
+    private void CommitCriterionFromEditor(FilterCriterionItem criterion)
+    {
+        var field = criterion.Field;
         var values = ActiveCriterionOptions
             .Where(option => option.IsSelected)
             .Select(option => option.Value)
@@ -509,27 +538,7 @@ public partial class UnitFilterPopupView : ContentView
                 ParseMatchMode(SelectedActiveMatchMode));
         }
 
-        SelectedCriterion.Summary = BuildSummary(field);
-    }
-
-    private void OnClearSelectionsClicked(object? sender, EventArgs e)
-    {
-        foreach (var option in ActiveCriterionOptions)
-        {
-            option.IsSelected = false;
-        }
-    }
-
-    private void OnClearCriterionClicked(object? sender, EventArgs e)
-    {
-        if (SelectedCriterion is null)
-        {
-            return;
-        }
-
-        _committedTerms.Remove(SelectedCriterion.Field);
-        SelectedCriterion.Summary = "Any";
-        LoadSelectedCriterionEditor();
+        criterion.Summary = BuildSummary(field);
     }
 
     private void OnBackClicked(object? sender, EventArgs e)
@@ -546,6 +555,11 @@ public partial class UnitFilterPopupView : ContentView
 
     private void OnFilterArmyClicked(object? sender, EventArgs e)
     {
+        if (SelectedCriterion is not null)
+        {
+            CommitCriterionFromEditor(SelectedCriterion);
+        }
+
         var minPoints = int.TryParse(SelectedMinPoints, out var parsedMin) ? parsedMin : 0;
         var maxPoints = int.TryParse(SelectedMaxPoints, out var parsedMax) ? parsedMax : minPoints;
         if (minPoints > maxPoints)
