@@ -29,12 +29,11 @@ public partial class ViewerPage : ContentPage
 	private SKPicture? _selectedUnitPicture;
 	private int _selectedUnitLogoLoadVersion;
 
-	public ViewerPage()
+	public ViewerPage(ViewerViewModel viewModel)
 	{
 		InitializeComponent();
 		var services = Application.Current?.Handler?.MauiContext?.Services;
-		_viewModel = services?.GetService<ViewerViewModel>()
-			?? new ViewerViewModel();
+		_viewModel = viewModel;
 		BindingContext = _viewModel;
 		_viewModel.PropertyChanged += OnViewModelPropertyChanged;
 		var topTap = new TapGestureRecognizer();

@@ -1,11 +1,5 @@
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Windows.Input;
-using InfinityMercsApp.Data.Database;
+using CommunityToolkit.Mvvm.ComponentModel;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
@@ -16,6 +10,13 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Windows.Input;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -658,7 +659,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
-        if (_metadataAccessor is null)
+        if (_metadataProvider is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage metadata service unavailable.");
             return;
@@ -666,14 +667,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         try
         {
-            var factions = await _metadataAccessor.GetFactionsAsync(includeDiscontinued: true, cancellationToken);
+            var factions = _metadataProvider.GetFactions(includeDiscontinued: true);
 
             if (_factionLogoCacheService is not null)
             {
                 await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
             }
 
-            IEnumerable<FactionRecord> filtered = factions;
+            IEnumerable<Infrastructure.Models.Database.Metadata.Faction> filtered = factions;
             if (_mode == ArmySourceSelectionMode.VanillaFactions)
             {
                 filtered = filtered.Where(x => x.Id == x.ParentId);
@@ -714,7 +715,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
     }
 
-    private static IEnumerable<FactionRecord> CollapseContractedBackUpVariants(IEnumerable<FactionRecord> factions)
+    private static IEnumerable<Infrastructure.Models.Database.Metadata.Faction> CollapseContractedBackUpVariants(IEnumerable<Infrastructure.Models.Database.Metadata.Faction> factions)
     {
         var list = factions.ToList();
         var contracted = list
@@ -963,7 +964,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         var weapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (_armyDataAccessor is not null)
+        if (_factionProvider is not null)
         {
             var sourceFactions = GetUnitSourceFactions();
             var processedFactionIds = new HashSet<int>();
@@ -975,7 +976,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = _factionProvider.GetFactionSnapshot(faction.Id);
                 var filtersJson = snapshot?.FiltersJson;
                 if (string.IsNullOrWhiteSpace(filtersJson))
                 {
@@ -1005,7 +1006,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                         classification.Add(typeName.Trim());
                     }
 
-                    var unitRecord = await _armyDataAccessor.GetUnitAsync(faction.Id, unit.Id, cancellationToken);
+                    var unitRecord = _factionProvider.GetUnit(faction.Id, unit.Id);
                     var profileGroupsJson = unitRecord?.ProfileGroupsJson;
                     if (string.IsNullOrWhiteSpace(profileGroupsJson) &&
                         specopsByUnitId.TryGetValue(unit.Id, out var specopsUnit))
@@ -1212,7 +1213,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         TeamEntries.Clear();
         _selectedUnit = null;
         ResetUnitDetails();
-        if (_armyDataAccessor is null)
+        if (_factionProvider is null)
         {
             return;
         }
@@ -1231,7 +1232,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var faction in factions)
             {
-                var units = await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(faction.Id, cancellationToken);
+                var units = _factionProvider.GetResumeByFactionMercsOnly(faction.Id);
                 var resumeByUnitId = units
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
@@ -1239,7 +1240,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 var specopsByUnitId = specopsUnits
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = _factionProvider.GetFactionSnapshot(faction.Id);
                 var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
@@ -1553,7 +1554,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             if (unitItem is null)
             {
-                var unitRecord = await _armyDataAccessor!.GetUnitAsync(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
+                var unitRecord = _factionProvider.GetUnit(entry.SourceFactionId, entry.SourceUnitId);
                 var unitName = !string.IsNullOrWhiteSpace(unitRecord?.Name)
                     ? unitRecord.Name
                     : entry.Name;
@@ -1652,7 +1653,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
     {
-        if (_armyDataAccessor is null || Units.Count == 0)
+        if (_factionProvider is null || Units.Count == 0)
         {
             return;
         }
@@ -1670,10 +1671,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var equipLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var weaponsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var ammoLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
-            var specopsByFaction = new Dictionary<int, Dictionary<int, ArmySpecopsUnitRecord>>();
+            var specopsByFaction = new Dictionary<int, Dictionary<int, Infrastructure.Models.Database.Army.SpecopsUnit>>();
             foreach (var faction in factions)
             {
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = _factionProvider.GetFactionSnapshot(faction.Id);
                 skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
                 typeLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 charsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
@@ -1706,7 +1707,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                var unitRecord = await _armyDataAccessor.GetUnitAsync(unit.SourceFactionId, unit.Id, cancellationToken);
+                var unitRecord = _factionProvider.GetUnit(unit.SourceFactionId, unit.Id);
                 var profileGroupsJson = unitRecord?.ProfileGroupsJson;
                 if (specopsByFaction.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
                     specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit))
@@ -2245,7 +2246,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var captainEntry = MercsCompanyEntries.FirstOrDefault(x => x.IsLieutenant) ?? MercsCompanyEntries.FirstOrDefault();
             if (captainEntry is null)
             {
-                await DisplayAlert("Save Failed", "Add at least one unit before starting a company.", "OK");
+                await DisplayAlertAsync("Save Failed", "Add at least one unit before starting a company.", "OK");
                 return;
             }
 
@@ -2336,7 +2337,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
-            await DisplayAlert("Save Failed", ex.Message, "OK");
+            await DisplayAlertAsync("Save Failed", ex.Message, "OK");
         }
     }
 
@@ -2441,11 +2442,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             }
         }
 
-        if (_metadataAccessor is not null)
+        if (_metadataProvider is not null)
         {
             if (sourceFactionId > 0)
             {
-                var sourceFaction = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+                var sourceFaction = _metadataProvider.GetFactionById(sourceFactionId);
                 if (!string.IsNullOrWhiteSpace(sourceFaction?.Name))
                 {
                     return sourceFaction.Name;
@@ -2454,7 +2455,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             if (optionFactionId > 0)
             {
-                var optionFaction = await _metadataAccessor.GetFactionByIdAsync(optionFactionId, cancellationToken);
+                var optionFaction = _metadataProvider.GetFactionById(optionFactionId);
                 if (!string.IsNullOrWhiteSpace(optionFaction?.Name))
                 {
                     return optionFaction.Name;
@@ -2471,14 +2472,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
     {
-        if (_armyDataAccessor is null || factionId <= 0)
+        if (_factionProvider is null || factionId <= 0)
         {
             return CaptainUpgradeOptionSet.Empty;
         }
 
         try
         {
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+            var snapshot = _factionProvider.GetFactionSnapshot(factionId);
             var skillLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var weaponLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
@@ -2733,8 +2734,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         {
             Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync started: id={_selectedUnit.Id}, faction={_selectedUnit.SourceFactionId}, name='{_selectedUnit.Name}'.");
             UnitNameHeading = _selectedUnit.Name;
-            var unit = await _armyDataAccessor.GetUnitAsync(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
-            ArmySpecopsUnitRecord? specopsUnit = null;
+            var unit = _factionProvider.GetUnit(_selectedUnit.SourceFactionId, _selectedUnit.Id);
+            Infrastructure.Models.Database.Army.SpecopsUnit? specopsUnit = null;
             if (_selectedUnit.IsSpecOps || unit is null)
             {
                 var specopsUnits = await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(_selectedUnit.SourceFactionId, cancellationToken);
@@ -2753,7 +2754,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 profileGroupsJson = specopsUnit?.ProfileGroupsJson;
             }
 
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(_selectedUnit.SourceFactionId, cancellationToken);
+            var snapshot = _factionProvider.GetFactionSnapshot(_selectedUnit.SourceFactionId);
             if (string.IsNullOrWhiteSpace(profileGroupsJson))
             {
                 Console.Error.WriteLine($"ArmyFactionSelectionPage: profile groups not found for faction={_selectedUnit.SourceFactionId}, unit={_selectedUnit.Id}.");
@@ -4511,7 +4512,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     }
 
     private static string BuildUnitSubtitle(
-        ArmyResumeRecord unit,
+        Infrastructure.Models.Database.Army.Resume unit,
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
     {
@@ -5533,7 +5534,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
             return;
         }
@@ -6867,7 +6868,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
 }
 
-public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyFactionSelectionItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
 
@@ -6900,7 +6901,7 @@ public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyUnitSelectionItem : ObservableObject, IViewerListItem
 {
     public int Id { get; init; }
     public int SourceFactionId { get; init; }
@@ -6953,7 +6954,7 @@ public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class ArmyTeamListItem : BaseViewModel
+public class ArmyTeamListItem : ObservableObject
 {
     public string Name { get; init; } = string.Empty;
     public string TeamCountsText { get; init; } = string.Empty;
@@ -6994,7 +6995,7 @@ public class ArmyTeamListItem : BaseViewModel
     }
 }
 
-public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
+public class ArmyTeamUnitLimitItem : ObservableObject, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public string Min { get; init; } = "0";
@@ -7041,7 +7042,7 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class MercsCompanyEntry : BaseViewModel, IViewerListItem
+public class MercsCompanyEntry : ObservableObject, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public FormattedString? NameFormatted { get; init; }
