@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
@@ -16,7 +17,7 @@ namespace {{NAMESPACE}};
 public abstract class CompanySelectionPageBase : ContentPage
 {
     private readonly ArmySourceSelectionMode _mode;
-    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IMetadataProvider? _metadataProvider;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
@@ -27,7 +28,7 @@ public abstract class CompanySelectionPageBase : ContentPage
     private int _activeSlotIndex;
 
     protected ArmySourceSelectionMode Mode => _mode;
-    protected IMetadataAccessor? MetadataAccessor => _metadataAccessor;
+    protected IMetadataProvider? MetadataProvider => _metadataProvider;
     protected IArmyDataAccessor? ArmyDataAccessor => _armyDataAccessor;
     protected ISpecOpsDataAccessor SpecOpsDataAccessor => _specOpsDataAccessor;
     protected FactionLogoCacheService? FactionLogoCacheService => _factionLogoCacheService;
@@ -54,7 +55,7 @@ public abstract class CompanySelectionPageBase : ContentPage
         _mode = mode;
 
         var services = Application.Current?.Handler?.MauiContext?.Services;
-        _metadataAccessor = services?.GetService<IMetadataAccessor>();
+        _metadataProvider = services?.GetService<IMetadataProvider>();
         _armyDataAccessor = services?.GetService<IArmyDataAccessor>();
         _specOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
             ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");

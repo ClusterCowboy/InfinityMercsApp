@@ -1,4 +1,5 @@
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,7 @@ public abstract class CompanySelectionPageBase : ContentPage
         Mode = mode;
 
         var services = Application.Current?.Handler?.MauiContext?.Services;
-        MetadataAccessor = services?.GetService<IMetadataAccessor>();
+        MetadataProvider = services?.GetService<IMetadataProvider>();
         ArmyDataAccessor = services?.GetService<IArmyDataAccessor>();
         SpecOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
             ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
@@ -27,7 +28,7 @@ public abstract class CompanySelectionPageBase : ContentPage
     }
 
     protected ArmySourceSelectionMode Mode { get; }
-    protected IMetadataAccessor? MetadataAccessor { get; }
+    protected IMetadataProvider? MetadataProvider { get; }
     protected IArmyDataAccessor? ArmyDataAccessor { get; }
     protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }

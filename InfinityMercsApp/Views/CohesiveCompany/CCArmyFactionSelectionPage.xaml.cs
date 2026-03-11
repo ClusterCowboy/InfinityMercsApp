@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
@@ -65,7 +66,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private const int CharacterCategoryId = 10;
 
     private readonly ArmySourceSelectionMode _mode;
-    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IMetadataProvider? _metadataProvider;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
@@ -110,7 +111,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         Title = "Choose your sectorial:";
         PageHeading = "Choose your sectorial:";
 
-        _metadataAccessor = MetadataAccessor;
+        _metadataProvider = MetadataProvider;
         _armyDataAccessor = ArmyDataAccessor;
         _specOpsDataAccessor = SpecOpsDataAccessor;
         _factionLogoCacheService = FactionLogoCacheService;
@@ -683,7 +684,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
-        if (_metadataAccessor is null)
+        if (_metadataProvider is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage metadata service unavailable.");
             return;
@@ -691,7 +692,18 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
         try
         {
-            var factions = await _metadataAccessor.GetFactionsAsync(includeDiscontinued: true, cancellationToken);
+            var factions = _metadataProvider
+                .GetFactions(includeDiscontinued: true)
+                .Select(x => new FactionRecord
+                {
+                    Id = x.Id,
+                    ParentId = x.ParentId,
+                    Name = x.Name,
+                    Slug = x.Slug,
+                    Discontinued = x.Discontinued,
+                    Logo = x.Logo
+                })
+                .ToList();
 
             if (_factionLogoCacheService is not null)
             {
@@ -2831,7 +2843,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         return sourceFaction.ParentId > 0 ? sourceFaction.ParentId : sourceFactionId;
     }
 
-    private async Task<string> ResolveCaptainOptionFactionNameAsync(
+    private Task<string> ResolveCaptainOptionFactionNameAsync(
         int sourceFactionId,
         int optionFactionId,
         CancellationToken cancellationToken)
@@ -2841,7 +2853,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             var sourceName = Factions.FirstOrDefault(x => x.Id == sourceFactionId)?.Name;
             if (!string.IsNullOrWhiteSpace(sourceName))
             {
-                return sourceName;
+                return Task.FromResult(sourceName);
             }
         }
 
@@ -2850,36 +2862,37 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             var optionName = Factions.FirstOrDefault(x => x.Id == optionFactionId)?.Name;
             if (!string.IsNullOrWhiteSpace(optionName))
             {
-                return optionName;
+                return Task.FromResult(optionName);
             }
         }
 
-        if (_metadataAccessor is not null)
+        if (_metadataProvider is not null)
         {
             if (sourceFactionId > 0)
             {
-                var sourceFaction = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+                var sourceFaction = _metadataProvider.GetFactionById(sourceFactionId);
                 if (!string.IsNullOrWhiteSpace(sourceFaction?.Name))
                 {
-                    return sourceFaction.Name;
+                    return Task.FromResult(sourceFaction.Name);
                 }
             }
 
             if (optionFactionId > 0)
             {
-                var optionFaction = await _metadataAccessor.GetFactionByIdAsync(optionFactionId, cancellationToken);
+                var optionFaction = _metadataProvider.GetFactionById(optionFactionId);
                 if (!string.IsNullOrWhiteSpace(optionFaction?.Name))
                 {
-                    return optionFaction.Name;
+                    return Task.FromResult(optionFaction.Name);
                 }
             }
         }
 
-        return optionFactionId > 0
+        var resolved = optionFactionId > 0
             ? $"Faction {optionFactionId}"
             : sourceFactionId > 0
                 ? $"Faction {sourceFactionId}"
                 : "Faction";
+        return Task.FromResult(resolved);
     }
 
     private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
@@ -7012,7 +7025,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private async Task ApplyUnitHeaderColorsAsync(int sourceFactionId, ArmyUnitRecord? unit, CancellationToken cancellationToken)
     {
-        if (_metadataAccessor is null)
+        if (_metadataProvider is null)
         {
             ApplyUnitHeaderColorsByVanillaFactionName(null);
             return;
@@ -7046,21 +7059,32 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         return await ResolveVanillaFactionNameAsync(sourceFactionId, cancellationToken);
     }
 
-    private async Task<string?> ResolveVanillaFactionNameAsync(int sourceFactionId, CancellationToken cancellationToken)
+    private Task<string?> ResolveVanillaFactionNameAsync(int sourceFactionId, CancellationToken cancellationToken)
     {
-        if (_metadataAccessor is null || sourceFactionId <= 0)
+        if (_metadataProvider is null || sourceFactionId <= 0)
         {
-            return null;
+            return Task.FromResult<string?>(null);
         }
 
-        var current = await _metadataAccessor.GetFactionByIdAsync(sourceFactionId, cancellationToken);
+        var source = _metadataProvider.GetFactionById(sourceFactionId);
+        FactionRecord? current = source is null
+            ? null
+            : new FactionRecord
+            {
+                Id = source.Id,
+                ParentId = source.ParentId,
+                Name = source.Name,
+                Slug = source.Slug,
+                Discontinued = source.Discontinued,
+                Logo = source.Logo
+            };
         var safety = 0;
         while (current is not null && safety < 8)
         {
             // Prefer the first recognized themed faction while walking up the lineage.
             if (IsThemeFactionName(current.Name))
             {
-                return current.Name;
+                return Task.FromResult<string?>(current.Name);
             }
 
             if (current.ParentId <= 0)
@@ -7068,7 +7092,18 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 break;
             }
 
-            var parent = await _metadataAccessor.GetFactionByIdAsync(current.ParentId, cancellationToken);
+            var parentRecord = _metadataProvider.GetFactionById(current.ParentId);
+            FactionRecord? parent = parentRecord is null
+                ? null
+                : new FactionRecord
+                {
+                    Id = parentRecord.Id,
+                    ParentId = parentRecord.ParentId,
+                    Name = parentRecord.Name,
+                    Slug = parentRecord.Slug,
+                    Discontinued = parentRecord.Discontinued,
+                    Logo = parentRecord.Logo
+                };
             if (parent is null || parent.Id == current.Id)
             {
                 break;
@@ -7084,10 +7119,10 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             ?? (current is not null ? InferThemeFactionNameFromFactionId(current.Id) : null);
         if (!string.IsNullOrWhiteSpace(inferredThemeName))
         {
-            return inferredThemeName;
+            return Task.FromResult<string?>(inferredThemeName);
         }
 
-        return current?.Name;
+        return Task.FromResult(current?.Name);
     }
 
     private void ApplyUnitHeaderColorsByVanillaFactionName(string? vanillaFactionName)

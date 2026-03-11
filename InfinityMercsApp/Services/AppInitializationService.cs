@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 using System.Globalization;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Models;
+using ApiMetadataDocument = InfinityMercsApp.Infrastructure.Models.API.Metadata.MetadataDocument;
 
 namespace InfinityMercsApp.Services;
 
@@ -20,20 +22,20 @@ public class AppInitializationService
     };
 
     private readonly IDatabaseContext _databaseContext;
-    private readonly IMetadataAccessor _metadataAccessor;
+    private readonly IMetadataProvider _metadataProvider;
     private readonly IArmyDataAccessor _armyDataAccessor;
     private readonly IWebAccessObject _webAccessObject;
     private readonly FactionLogoCacheService _factionLogoCacheService;
 
     public AppInitializationService(
         IDatabaseContext databaseContext,
-        IMetadataAccessor metadataAccessor,
+        IMetadataProvider metadataProvider,
         IArmyDataAccessor armyDataAccessor,
         IWebAccessObject webAccessObject,
         FactionLogoCacheService factionLogoCacheService)
     {
         _databaseContext = databaseContext;
-        _metadataAccessor = metadataAccessor;
+        _metadataProvider = metadataProvider;
         _armyDataAccessor = armyDataAccessor;
         _webAccessObject = webAccessObject;
         _factionLogoCacheService = factionLogoCacheService;
@@ -50,44 +52,46 @@ public class AppInitializationService
         await RecordStartupUpdateAttemptAsync(cancellationToken);
 
         var metadataJson = await _webAccessObject.GetMetaDataAsync(cancellationToken);
-        await _metadataAccessor.ImportFromJsonAsync(metadataJson, cancellationToken);
-
-        var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
-        if (metadataDocument is not null)
+        var metadataDocument = JsonSerializer.Deserialize<ApiMetadataDocument>(metadataJson, JsonOptions);
+        if (metadataDocument is null)
         {
-            await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions, cancellationToken);
+            return;
+        }
 
-            foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
+        _metadataProvider.Import(metadataDocument);
+
+        await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions, cancellationToken);
+
+        foreach (var factionId in metadataDocument.Factions.Select(x => x.Id).Distinct())
+        {
+            try
             {
-                try
+                var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
+                var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+                var latestVersion = armyDocument?.Version;
+                if (string.IsNullOrWhiteSpace(latestVersion))
                 {
-                    var armyJson = await _webAccessObject.GetArmyDataAsync(factionId, cancellationToken);
-                    var armyDocument = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
-                    var latestVersion = armyDocument?.Version;
-                    if (string.IsNullOrWhiteSpace(latestVersion))
-                    {
-                        continue;
-                    }
-
-                    if (armyDocument?.Resume is not null)
-                    {
-                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, armyDocument.Resume, cancellationToken);
-                    }
-
-                    var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
-                    var storedVersion = snapshot?.Version;
-
-                    if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                    {
-                        continue;
-                    }
-
-                    await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
+                    continue;
                 }
-                catch (Exception ex)
+
+                if (armyDocument?.Resume is not null)
                 {
-                    Console.Error.WriteLine($"AppInitializationService faction {factionId} failed: {ex.Message}");
+                    await _factionLogoCacheService.CacheUnitLogosAsync(factionId, armyDocument.Resume, cancellationToken);
                 }
+
+                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    continue;
+                }
+
+                await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"AppInitializationService faction {factionId} failed: {ex.Message}");
             }
         }
     }

@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
@@ -21,7 +22,7 @@ public class ViewerViewModel : BaseViewModel
         Sectorials
     }
 
-    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IMetadataProvider? _metadataProvider;
     private readonly IArmyDataAccessor? _armyDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
@@ -76,12 +77,12 @@ public class ViewerViewModel : BaseViewModel
     private FactionFilterMode _factionFilterMode = FactionFilterMode.All;
     private List<ViewerFactionItem> _allFactions = [];
     public ViewerViewModel(
-        IMetadataAccessor? metadataAccessor = null,
+        IMetadataProvider? metadataProvider = null,
         IArmyDataAccessor? armyDataAccessor = null,
         FactionLogoCacheService? factionLogoCacheService = null,
         AppSettingsService? appSettingsService = null)
     {
-        _metadataAccessor = metadataAccessor;
+        _metadataProvider = metadataProvider;
         _armyDataAccessor = armyDataAccessor;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsService = appSettingsService;
@@ -916,7 +917,7 @@ public class ViewerViewModel : BaseViewModel
     {
         await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
 
-        if (_metadataAccessor is null)
+        if (_metadataProvider is null)
         {
             Status = "Metadata service unavailable.";
             return;
@@ -926,10 +927,19 @@ public class ViewerViewModel : BaseViewModel
         {
             IsLoading = true;
             Status = "Loading factions...";
-            var factions = await _metadataAccessor.GetFactionsAsync(true, cancellationToken);
+            var factions = _metadataProvider.GetFactions(includeDiscontinued: true);
             if (_factionLogoCacheService is not null)
             {
-                await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
+                var factionRecords = factions.Select(x => new FactionRecord
+                {
+                    Id = x.Id,
+                    ParentId = x.ParentId,
+                    Name = x.Name,
+                    Slug = x.Slug,
+                    Discontinued = x.Discontinued,
+                    Logo = x.Logo
+                });
+                await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factionRecords, cancellationToken);
             }
 
             _allFactions = factions.Select(faction => new ViewerFactionItem

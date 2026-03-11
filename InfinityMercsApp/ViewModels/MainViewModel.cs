@@ -4,7 +4,9 @@ using System.Text.Json.Serialization;
 using System.Windows.Input;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using ApiMetadataDocument = InfinityMercsApp.Infrastructure.Models.API.Metadata.MetadataDocument;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -19,7 +21,7 @@ public class MainViewModel : BaseViewModel
 
     private readonly IWebAccessObject? _webAccessObject;
     private readonly IArmyDataAccessor? _armyDataAccessor;
-    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IMetadataProvider? _metadataProvider;
     private readonly IImportService? _importService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
@@ -35,14 +37,14 @@ public class MainViewModel : BaseViewModel
     public MainViewModel(
         IWebAccessObject? webAccessObject = null,
         IArmyDataAccessor? armyDataAccessor = null,
-        IMetadataAccessor? metadataAccessor = null,
+        IMetadataProvider? metadataProvider = null,
         IImportService? importService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
         AppSettingsService? appSettingsService = null)
     {
         _webAccessObject = webAccessObject;
         _armyDataAccessor = armyDataAccessor;
-        _metadataAccessor = metadataAccessor;
+        _metadataProvider = metadataProvider;
         _importService = importService;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsService = appSettingsService;
@@ -214,12 +216,12 @@ public class MainViewModel : BaseViewModel
             MetadataStatus = "Downloading metadata...";
 
             var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            if (_metadataAccessor is not null)
+            var metadataDocument = JsonSerializer.Deserialize<ApiMetadataDocument>(metadataJson, JsonOptions);
+            if (metadataDocument is not null && _metadataProvider is not null)
             {
-                await _metadataAccessor.ImportFromJsonAsync(metadataJson);
+                _metadataProvider.Import(metadataDocument);
             }
 
-            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
             if (metadataDocument is null || metadataDocument.Factions.Count == 0)
             {
                 MetadataStatus = "Metadata imported to DB. No factions found.";
@@ -326,7 +328,7 @@ public class MainViewModel : BaseViewModel
             return;
         }
 
-        if (_webAccessObject is null || _metadataAccessor is null || _armyDataAccessor is null)
+        if (_webAccessObject is null || _metadataProvider is null || _armyDataAccessor is null)
         {
             UpdateStatus = "Required services are not available.";
             return;
@@ -339,11 +341,17 @@ public class MainViewModel : BaseViewModel
             UpdateStatus = "Downloading metadata...";
 
             var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            UpdateProgressMessage = "Updating database: importing metadata...";
-            await _metadataAccessor.ImportFromJsonAsync(metadataJson);
+            var metadataDocument = JsonSerializer.Deserialize<ApiMetadataDocument>(metadataJson, JsonOptions);
+            if (metadataDocument is null)
+            {
+                UpdateStatus = "Metadata download succeeded but parsing failed.";
+                return;
+            }
 
-            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
-            if (metadataDocument is null || metadataDocument.Factions.Count == 0)
+            UpdateProgressMessage = "Updating database: importing metadata...";
+            _metadataProvider.Import(metadataDocument);
+
+            if (metadataDocument.Factions.Count == 0)
             {
                 UpdateStatus = "Metadata download succeeded but no factions were found.";
                 return;
