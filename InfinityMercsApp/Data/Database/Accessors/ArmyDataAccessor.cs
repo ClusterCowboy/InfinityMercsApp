@@ -200,6 +200,58 @@ public class ArmyDataAccessor : IArmyDataAccessor
         return rows.FirstOrDefault();
     }
 
+    /// @brief Gets non-merc unit rows for one faction constrained to a unit id set.
+    /// @param factionId Faction identifier.
+    /// @param unitIds Unit identifiers to fetch.
+    /// @param cancellationToken Cancellation signal.
+    /// @return Lookup keyed by unit id.
+    public async Task<IReadOnlyDictionary<int, ArmyUnitRecord>> GetUnitsByFactionAndIdsAsync(
+        int factionId,
+        IReadOnlyCollection<int> unitIds,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await _databaseContext.InitializeAsync(cancellationToken);
+        await _specOpsDataAccessor.EnsureSpecopsIndexedAsync(cancellationToken);
+
+        if (unitIds.Count == 0)
+        {
+            return new Dictionary<int, ArmyUnitRecord>();
+        }
+
+        var normalizedUnitIds = unitIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+        if (normalizedUnitIds.Length == 0)
+        {
+            return new Dictionary<int, ArmyUnitRecord>();
+        }
+
+        var placeholders = string.Join(",", Enumerable.Repeat("?", normalizedUnitIds.Length));
+        var sql = $"""
+            SELECT *
+            FROM army_units
+            WHERE FactionId = ?
+              AND UnitId IN ({placeholders})
+              AND (Slug IS NULL OR Slug NOT LIKE ?)
+            """;
+
+        var parameters = new object[normalizedUnitIds.Length + 2];
+        parameters[0] = factionId;
+        for (var i = 0; i < normalizedUnitIds.Length; i++)
+        {
+            parameters[i + 1] = normalizedUnitIds[i];
+        }
+
+        parameters[^1] = MercSlugPrefix;
+
+        var rows = await _connection.QueryAsync<ArmyUnitRecord>(sql, parameters);
+        return rows
+            .GroupBy(x => x.UnitId)
+            .ToDictionary(x => x.Key, x => x.First());
+    }
+
     /// @brief Searches non-merc units by name, optionally scoped to one faction.
     /// @param searchTerm Name fragment; blank values return a capped default list.
     /// @param factionId Optional faction filter.

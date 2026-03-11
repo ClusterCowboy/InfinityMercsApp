@@ -1121,14 +1121,26 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     {
         if (string.IsNullOrWhiteSpace(trackedFireteamName))
         {
-            SetTrackedFireteamSelection(string.Empty);
+            SetTrackedFireteamSelection(GetDefaultTrackedFireteamName());
             return;
         }
 
         var matchingTeam = TeamEntries.FirstOrDefault(x =>
             x.ShowTrackingRadioButton &&
             string.Equals(x.Name, trackedFireteamName, StringComparison.OrdinalIgnoreCase));
-        SetTrackedFireteamSelection(matchingTeam?.Name ?? string.Empty);
+        SetTrackedFireteamSelection(matchingTeam?.Name ?? GetDefaultTrackedFireteamName());
+    }
+
+    private string GetDefaultTrackedFireteamName()
+    {
+        var firstVisibleTeam = TeamEntries.FirstOrDefault(x => x.ShowTrackingRadioButton && x.IsVisible);
+        if (firstVisibleTeam is not null)
+        {
+            return firstVisibleTeam.Name;
+        }
+
+        var firstTrackableTeam = TeamEntries.FirstOrDefault(x => x.ShowTrackingRadioButton);
+        return firstTrackableTeam?.Name ?? string.Empty;
     }
 
     private void SetTrackedFireteamSelection(string? teamName)

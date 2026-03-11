@@ -20,6 +20,11 @@ public interface IArmyDataAccessor
 
     Task<ArmyUnitRecord?> GetUnitAsync(int factionId, int unitId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyDictionary<int, ArmyUnitRecord>> GetUnitsByFactionAndIdsAsync(
+        int factionId,
+        IReadOnlyCollection<int> unitIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ArmyUnitRecord>> SearchUnitsAsync(string searchTerm, int? factionId = null, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionAsync(int factionId, CancellationToken cancellationToken = default);

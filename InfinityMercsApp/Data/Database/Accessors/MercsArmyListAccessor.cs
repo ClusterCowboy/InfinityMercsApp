@@ -54,12 +54,28 @@ public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
             .Select(id => _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(id, cancellationToken))
             .ToArray();
         var resultSets = await Task.WhenAll(queryTasks);
+        var unitLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, ArmyUnitRecord>>();
+
+        for (var setIndex = 0; setIndex < resultSets.Length; setIndex++)
+        {
+            var factionId = normalizedFactionIds[setIndex];
+            var unitIds = resultSets[setIndex]
+                .Select(x => x.UnitId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray();
+            unitLookupByFaction[factionId] = await _armyDataAccessor.GetUnitsByFactionAndIdsAsync(
+                factionId,
+                unitIds,
+                cancellationToken);
+        }
 
         var mergedByUnitName = new Dictionary<string, MutableMercsArmyListEntry>(StringComparer.OrdinalIgnoreCase);
         for (var setIndex = 0; setIndex < resultSets.Length; setIndex++)
         {
             var factionId = normalizedFactionIds[setIndex];
             var rows = resultSets[setIndex];
+            unitLookupByFaction.TryGetValue(factionId, out var unitLookup);
             foreach (var row in rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -71,7 +87,7 @@ public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
                 var key = row.Name.Trim();
                 if (!mergedByUnitName.TryGetValue(key, out var merged))
                 {
-                    var unitRecord = await _armyDataAccessor.GetUnitAsync(factionId, row.UnitId, cancellationToken);
+                    var unitRecord = TryGetUnit(unitLookup, row.UnitId);
                     mergedByUnitName[key] = new MutableMercsArmyListEntry
                     {
                         Resume = CloneResume(row),
@@ -83,7 +99,7 @@ public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
 
                 merged.SourceFactionIds.Add(factionId);
 
-                var incomingUnitRecord = await _armyDataAccessor.GetUnitAsync(factionId, row.UnitId, cancellationToken);
+                var incomingUnitRecord = TryGetUnit(unitLookup, row.UnitId);
                 merged.ProfileGroupsJson = MergeProfileGroupsJson(merged.ProfileGroupsJson, incomingUnitRecord?.ProfileGroupsJson);
             }
         }
@@ -397,6 +413,16 @@ public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
     private static JsonObject CloneJsonObject(JsonObject source)
     {
         return JsonNode.Parse(source.ToJsonString())!.AsObject();
+    }
+
+    private static ArmyUnitRecord? TryGetUnit(IReadOnlyDictionary<int, ArmyUnitRecord>? unitLookup, int unitId)
+    {
+        if (unitLookup is null || unitId <= 0)
+        {
+            return null;
+        }
+
+        return unitLookup.TryGetValue(unitId, out var row) ? row : null;
     }
 
     private sealed class MutableMercsArmyListEntry

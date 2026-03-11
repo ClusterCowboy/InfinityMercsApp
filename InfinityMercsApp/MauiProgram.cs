@@ -45,6 +45,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessor>();
 		builder.Services.AddSingleton<IArmyDataAccessor, ArmyDataAccessor>();
 		builder.Services.AddSingleton<IMercsArmyListAccessor, MercsArmyListAccessor>();
+		builder.Services.AddSingleton<ICohesiveCompanyFactionQueryAccessor, CohesiveCompanyFactionQueryAccessor>();
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<FactionLogoCacheService>();
 		builder.Services.AddSingleton<AppSettingsService>();
