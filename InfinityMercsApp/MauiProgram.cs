@@ -44,6 +44,7 @@ public static class MauiProgram
 		// Spec-Ops data access is separated from general army snapshot access.
 		builder.Services.AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessor>();
 		builder.Services.AddSingleton<IArmyDataAccessor, ArmyDataAccessor>();
+		builder.Services.AddSingleton<IMercsArmyListAccessor, MercsArmyListAccessor>();
 		builder.Services.AddSingleton<IWebAccessObject, CBWebApi>();
 		builder.Services.AddSingleton<FactionLogoCacheService>();
 		builder.Services.AddSingleton<AppSettingsService>();

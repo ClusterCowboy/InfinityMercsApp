@@ -68,6 +68,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private readonly ArmySourceSelectionMode _mode;
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IArmyDataAccessor? _armyDataAccessor;
+    private readonly IMercsArmyListAccessor? _mercsArmyListAccessor;
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
@@ -89,6 +90,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private bool _areTeamEntriesReady;
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
     private UnitFilterPopupView? _activeUnitFilterPopup;
+    private UnitFilterPopupOptions? _preparedUnitFilterPopupOptions;
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
     private string _trackedFireteamName = string.Empty;
     private int _trackedFireteamLevel;
@@ -113,6 +115,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
         _metadataProvider = MetadataProvider;
         _armyDataAccessor = ArmyDataAccessor;
+        _mercsArmyListAccessor = MercsArmyListAccessor;
         _specOpsDataAccessor = SpecOpsDataAccessor;
         _factionLogoCacheService = FactionLogoCacheService;
         _appSettingsService = AppSettingsService;
@@ -1271,11 +1274,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         }
     }
 
-    private async void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
+    private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
         try
         {
-            var options = await BuildUnitFilterPopupOptionsAsync();
+            var options = GetPreparedPopupOptionsForCurrentPoints();
             var popup = new UnitFilterPopupView(
                 options,
                 _activeUnitFilter,
@@ -1360,110 +1363,74 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         var weapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (_armyDataAccessor is not null)
+        if (_armyDataAccessor is not null && _mercsArmyListAccessor is not null)
         {
             var sourceFactions = GetUnitSourceFactions();
-            var processedFactionIds = new HashSet<int>();
-            foreach (var faction in sourceFactions)
+            var sourceFactionIds = sourceFactions
+                .Select(x => x.Id)
+                .Distinct()
+                .ToArray();
+            var typeLookup = new Dictionary<int, string>();
+            var charsLookup = new Dictionary<int, string>();
+            var skillsLookup = new Dictionary<int, string>();
+            var equipLookup = new Dictionary<int, string>();
+            var weaponsLookup = new Dictionary<int, string>();
+            var ammoLookup = new Dictionary<int, string>();
+
+            foreach (var factionId in sourceFactionIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!processedFactionIds.Add(faction.Id))
-                {
-                    continue;
-                }
-
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
                 var filtersJson = snapshot?.FiltersJson;
                 if (string.IsNullOrWhiteSpace(filtersJson))
                 {
                     continue;
                 }
 
-                var typeLookup = BuildIdNameLookup(filtersJson, "type");
-                var charsLookup = BuildIdNameLookup(filtersJson, "chars");
-                var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
-                var equipLookup = BuildIdNameLookup(filtersJson, "equip");
-                var weaponsLookup = BuildIdNameLookup(filtersJson, "weapons");
-                var ammoLookup = BuildIdNameLookup(filtersJson, "ammunition");
+                MergeLookup(typeLookup, BuildIdNameLookup(filtersJson, "type"));
+                MergeLookup(charsLookup, BuildIdNameLookup(filtersJson, "chars"));
+                MergeLookup(skillsLookup, BuildIdNameLookup(filtersJson, "skills"));
+                MergeLookup(equipLookup, BuildIdNameLookup(filtersJson, "equip"));
+                MergeLookup(weaponsLookup, BuildIdNameLookup(filtersJson, "weapons"));
+                MergeLookup(ammoLookup, BuildIdNameLookup(filtersJson, "ammunition"));
+            }
 
-                var specopsByUnitId = (await _specOpsDataAccessor.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken))
-                    .GroupBy(x => x.UnitId)
-                    .ToDictionary(x => x.Key, x => x.First());
-                var factionUnits = Units.Where(x => x.SourceFactionId == faction.Id).ToList();
-                var candidateUnits = factionUnits;
-
-                foreach (var unit in candidateUnits)
+            var mergedMercsList = await _mercsArmyListAccessor.GetMergedMercsArmyListAsync(sourceFactionIds, cancellationToken);
+            foreach (var entry in mergedMercsList)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (entry.Resume.Type.HasValue &&
+                    typeLookup.TryGetValue(entry.Resume.Type.Value, out var typeName) &&
+                    !string.IsNullOrWhiteSpace(typeName))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (unit.Type.HasValue &&
-                        typeLookup.TryGetValue(unit.Type.Value, out var typeName) &&
-                        !string.IsNullOrWhiteSpace(typeName))
-                    {
-                        classification.Add(typeName.Trim());
-                    }
-
-                    var unitRecord = await _armyDataAccessor.GetUnitAsync(faction.Id, unit.Id, cancellationToken);
-                    var profileGroupsJson = unitRecord?.ProfileGroupsJson;
-                    if (string.IsNullOrWhiteSpace(profileGroupsJson) &&
-                        specopsByUnitId.TryGetValue(unit.Id, out var specopsUnit))
-                    {
-                        profileGroupsJson = specopsUnit.ProfileGroupsJson;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(profileGroupsJson))
-                    {
-                        continue;
-                    }
-
-                    AddFilterOptionsFromVisibleProfilesAndOptions(
-                        profileGroupsJson,
-                        charsLookup,
-                        skillsLookup,
-                        equipLookup,
-                        weaponsLookup,
-                        ammoLookup,
-                        requireLieutenant: false,
-                        requireZeroSwc: false,
-                        maxCost: null,
-                        characteristics,
-                        skills,
-                        equipment,
-                        weapons,
-                        ammo);
+                    classification.Add(typeName.Trim());
                 }
 
-                // Fallback: if model profile parsing yielded no values for a category,
-                // populate from faction lookup so pickers never appear empty.
-                if (characteristics.Count == 0)
+                if (string.IsNullOrWhiteSpace(entry.ProfileGroupsJson))
                 {
-                    AddLookupNames(charsLookup, characteristics);
+                    continue;
                 }
 
-                if (skills.Count == 0)
-                {
-                    AddLookupNames(skillsLookup, skills);
-                }
-
-                if (equipment.Count == 0)
-                {
-                    AddLookupNames(equipLookup, equipment);
-                }
-
-                if (weapons.Count == 0)
-                {
-                    AddLookupNames(weaponsLookup, weapons);
-                }
-
-                if (ammo.Count == 0)
-                {
-                    AddLookupNames(ammoLookup, ammo);
-                }
+                AddFilterOptionsFromVisibleProfilesAndOptions(
+                    entry.ProfileGroupsJson,
+                    charsLookup,
+                    skillsLookup,
+                    equipLookup,
+                    weaponsLookup,
+                    ammoLookup,
+                    requireLieutenant: false,
+                    requireZeroSwc: true,
+                    maxCost: null,
+                    includeProfileValues: false,
+                    characteristics,
+                    skills,
+                    equipment,
+                    weapons,
+                    ammo);
             }
         }
 
-        var maxPoints = int.TryParse(SelectedStartSeasonPoints, out var parsedMaxPoints) ? Math.Max(parsedMaxPoints, 200) : 200;
-        Console.WriteLine($"ArmyFactionSelectionPage filter options: class={classification.Count}, chars={characteristics.Count}, skills={skills.Count}, equip={equipment.Count}, weapons={weapons.Count}, ammo={ammo.Count}.");
-        return new UnitFilterPopupOptions
+        var options = new UnitFilterPopupOptions
         {
             Classification = classification.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             Characteristics = characteristics.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
@@ -1472,8 +1439,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             Weapons = weapons.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             Ammo = ammo.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
             MinPoints = 0,
-            MaxPoints = maxPoints
+            MaxPoints = ResolveFilterPopupMaxPoints()
         };
+        _preparedUnitFilterPopupOptions = options;
+        Console.WriteLine($"ArmyFactionSelectionPage filter options: class={options.Classification.Count}, chars={options.Characteristics.Count}, skills={options.Skills.Count}, equip={options.Equipment.Count}, weapons={options.Weapons.Count}, ammo={options.Ammo.Count}.");
+        return ClonePopupOptionsForCurrentPoints(options);
     }
 
     private static void AddFilterOptionsFromVisibleProfilesAndOptions(
@@ -1486,6 +1456,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         bool requireLieutenant,
         bool requireZeroSwc,
         int? maxCost,
+        bool includeProfileValues,
         HashSet<string> characteristics,
         HashSet<string> skills,
         HashSet<string> equipment,
@@ -1534,6 +1505,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 }
 
                 if (!groupHasVisibleOption)
+                {
+                    continue;
+                }
+
+                if (!includeProfileValues)
                 {
                     continue;
                 }
@@ -1590,22 +1566,10 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         }
     }
 
-    private static void AddLookupNames(IReadOnlyDictionary<int, string> lookup, HashSet<string> target)
-    {
-        foreach (var value in lookup.Values)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            target.Add(value.Trim());
-        }
-    }
-
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         var trackedFireteamNameToRestore = _trackedFireteamName;
+        _preparedUnitFilterPopupOptions = null;
         AreTeamEntriesReady = false;
         Units.Clear();
         TeamEntries.Clear();
@@ -1797,6 +1761,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             }
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            await BuildUnitFilterPopupOptionsAsync(cancellationToken);
             RestoreTrackedFireteamSelection(trackedFireteamNameToRestore);
             AreTeamEntriesReady = true;
         }
@@ -1806,6 +1771,55 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             RestoreTrackedFireteamSelection(string.Empty);
             AreTeamEntriesReady = false;
         }
+    }
+
+    private static void MergeLookup(Dictionary<int, string> target, IReadOnlyDictionary<int, string> source)
+    {
+        foreach (var pair in source)
+        {
+            if (target.ContainsKey(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            {
+                continue;
+            }
+
+            target[pair.Key] = pair.Value.Trim();
+        }
+    }
+
+    private int ResolveFilterPopupMaxPoints()
+    {
+        return int.TryParse(SelectedStartSeasonPoints, out var parsedMaxPoints)
+            ? Math.Max(parsedMaxPoints, 200)
+            : 200;
+    }
+
+    private UnitFilterPopupOptions ClonePopupOptionsForCurrentPoints(UnitFilterPopupOptions source)
+    {
+        return new UnitFilterPopupOptions
+        {
+            Classification = [.. source.Classification],
+            Characteristics = [.. source.Characteristics],
+            Skills = [.. source.Skills],
+            Equipment = [.. source.Equipment],
+            Weapons = [.. source.Weapons],
+            Ammo = [.. source.Ammo],
+            MinPoints = source.MinPoints,
+            MaxPoints = ResolveFilterPopupMaxPoints()
+        };
+    }
+
+    private UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
+    {
+        if (_preparedUnitFilterPopupOptions is null)
+        {
+            return new UnitFilterPopupOptions
+            {
+                MinPoints = 0,
+                MaxPoints = ResolveFilterPopupMaxPoints()
+            };
+        }
+
+        return ClonePopupOptionsForCurrentPoints(_preparedUnitFilterPopupOptions);
     }
 
     private void SetSelectedUnit(ArmyUnitSelectionItem item, bool restrictProfilesToFto = false)

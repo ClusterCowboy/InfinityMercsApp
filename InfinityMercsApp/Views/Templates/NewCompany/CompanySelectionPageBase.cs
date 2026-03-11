@@ -21,6 +21,7 @@ public abstract class CompanySelectionPageBase : ContentPage
         var services = Application.Current?.Handler?.MauiContext?.Services;
         MetadataProvider = services?.GetService<IMetadataProvider>();
         ArmyDataAccessor = services?.GetService<IArmyDataAccessor>();
+        MercsArmyListAccessor = services?.GetService<IMercsArmyListAccessor>();
         SpecOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
             ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
         FactionLogoCacheService = services?.GetService<FactionLogoCacheService>();
@@ -30,6 +31,7 @@ public abstract class CompanySelectionPageBase : ContentPage
     protected ArmySourceSelectionMode Mode { get; }
     protected IMetadataProvider? MetadataProvider { get; }
     protected IArmyDataAccessor? ArmyDataAccessor { get; }
+    protected IMercsArmyListAccessor? MercsArmyListAccessor { get; }
     protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
     protected AppSettingsService? AppSettingsService { get; }
