@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Data.Database;
+namespace InfinityMercsApp.Domain.Sorting;
 
 /// <summary>
 /// Shared army unit ordering rules used by list query paths.

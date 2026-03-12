@@ -16,6 +16,13 @@ public interface ISQLiteRepository
     public void Insert<T>(IEnumerable<T> recordsToInsert) where T : new();
 
     /// <summary>
+    /// Upserts a record iunto a SQLite table.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="item"></param>
+    public void Upsert<T>(T item) where T : new();
+
+    /// <summary>
     /// Updates a record in a SQLite table.
     /// </summary>
     /// <typeparam name="T"></typeparam>

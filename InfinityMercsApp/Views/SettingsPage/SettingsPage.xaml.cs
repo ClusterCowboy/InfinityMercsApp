@@ -5,10 +5,9 @@ namespace InfinityMercsApp.Views;
 
 public partial class SettingsPage : ContentPage
 {
-	public SettingsPage()
+	public SettingsPage(ModeSelectionViewModel viewModel)
 	{
 		InitializeComponent();
-		BindingContext = Application.Current?.Handler?.MauiContext?.Services.GetService<MainViewModel>()
-			?? new MainViewModel();
+		BindingContext = viewModel;
 	}
 }

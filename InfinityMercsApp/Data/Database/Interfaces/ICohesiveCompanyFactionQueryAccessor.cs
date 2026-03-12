@@ -1,3 +1,5 @@
+using InfinityMercsApp.Infrastructure.Providers;
+
 namespace InfinityMercsApp.Data.Database;
 
 public interface ICohesiveCompanyFactionQueryAccessor
@@ -7,6 +9,7 @@ public interface ICohesiveCompanyFactionQueryAccessor
         CancellationToken cancellationToken = default);
 }
 
+// TODO: Move this somewhere.
 public sealed class CohesiveCompanyFactionQueryResult
 {
     public IReadOnlyDictionary<int, string> TypeLookup { get; init; } = new Dictionary<int, string>();

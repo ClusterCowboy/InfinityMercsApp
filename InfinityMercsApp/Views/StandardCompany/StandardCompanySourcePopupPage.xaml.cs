@@ -1,3 +1,5 @@
+using InfinityMercsApp.Domain.CompanyCreation;
+using InfinityMercsApp.Infrastructure.Services;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
@@ -8,11 +10,14 @@ public partial class StandardCompanySourcePopupPage : ContentPage
 {
     private SKPicture? _oneVanillaFactionIconPicture;
     private SKPicture? _twoSectorialsIconPicture;
+    private readonly IArmySourceSelectionModeService _armySourceSelectionModeService;
 
-    public StandardCompanySourcePopupPage()
+    public StandardCompanySourcePopupPage(IArmySourceSelectionModeService armySourceSelectionModeService)
     {
         InitializeComponent();
         _ = LoadIconsAsync();
+
+        _armySourceSelectionModeService = armySourceSelectionModeService;
     }
 
     private async Task LoadIconsAsync()
@@ -111,6 +116,8 @@ public partial class StandardCompanySourcePopupPage : ContentPage
     {
         try
         {
+            _armySourceSelectionModeService.Set(mode);
+
             await Navigation.PopModalAsync(false);
             var navigation = Shell.Current?.Navigation;
             if (navigation is null)
@@ -119,7 +126,12 @@ public partial class StandardCompanySourcePopupPage : ContentPage
                 return;
             }
 
-            await navigation.PushAsync(new StandardCompanySelectionPage(mode));
+            // TODO: Change this navigation. This is a good reason not to mix stack based navigation
+            // With shell based. We should present a popup on the CreateNewArmyPage, capture the result
+            // And navigate with shell navigation after it returns
+            var services = Application.Current?.Handler?.MauiContext?.Services;
+            var page = services?.GetService<StandardCompanySelectionPage>();
+            await navigation.PushAsync(page);
         }
         catch (Exception ex)
         {

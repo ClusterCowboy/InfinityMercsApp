@@ -63,4 +63,12 @@ public interface IFactionProvider
     /// <param name="factionId"></param>
     /// <returns></returns>
     IReadOnlyList<Resume> GetResumeByFactionMercsOnly(int factionId);
+
+    /// <summary>
+    /// Gets a collection of units by faction and unit identifiers.
+    /// </summary>
+    /// <param name="factionId"></param>
+    /// <param name="unitIds"></param>
+    /// <returns></returns>
+    IReadOnlyDictionary<int, Unit> GetUnitsByFactionAndIds(int factionId, IReadOnlyCollection<int> unitIds);
 }

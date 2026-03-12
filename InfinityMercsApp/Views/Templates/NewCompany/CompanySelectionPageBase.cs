@@ -1,8 +1,8 @@
-using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Domain.CompanyCreation;
 using InfinityMercsApp.Infrastructure.Providers;
+using InfinityMercsApp.Infrastructure.Services;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp.Views.Maui;
 
 namespace InfinityMercsApp.Views.Templates.NewCompany;
@@ -14,27 +14,29 @@ namespace InfinityMercsApp.Views.Templates.NewCompany;
 /// </summary>
 public abstract class CompanySelectionPageBase : ContentPage
 {
-    protected CompanySelectionPageBase(ArmySourceSelectionMode mode)
+    protected CompanySelectionPageBase(
+        IArmySourceSelectionModeService armySourceSelectionModeService,
+        IMetadataProvider metadataProvider,
+        IFactionProvider factionProvider,
+        ISpecOpsProvider specOpsProvider,
+        FactionLogoCacheService factionLogoCacheService,
+        IAppSettingsProvider appSettingsProvider)
     {
-        Mode = mode;
-
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        MetadataProvider = services?.GetService<IMetadataProvider>();
-        ArmyDataAccessor = services?.GetService<IArmyDataAccessor>();
-        MercsArmyListAccessor = services?.GetService<IMercsArmyListAccessor>();
-        SpecOpsDataAccessor = services?.GetService<ISpecOpsDataAccessor>()
-            ?? throw new InvalidOperationException("SpecOpsDataAccessor service is not registered.");
-        FactionLogoCacheService = services?.GetService<FactionLogoCacheService>();
-        AppSettingsService = services?.GetService<AppSettingsService>();
+        MetadataProvider = metadataProvider;
+        FactionProvider = factionProvider;
+        SpecOpsProvider = specOpsProvider;
+        FactionLogoCacheService = factionLogoCacheService;
+        AppSettingsProvider = appSettingsProvider;
+        Mode = armySourceSelectionModeService.Get();
     }
 
-    protected ArmySourceSelectionMode Mode { get; }
-    protected IMetadataProvider? MetadataProvider { get; }
-    protected IArmyDataAccessor? ArmyDataAccessor { get; }
-    protected IMercsArmyListAccessor? MercsArmyListAccessor { get; }
-    protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
-    protected FactionLogoCacheService? FactionLogoCacheService { get; }
-    protected AppSettingsService? AppSettingsService { get; }
+    // Make this settable for now to support cohesive companies before this is redone using proper navigation
+    protected ArmySourceSelectionMode Mode { get; set; }
+    protected IMetadataProvider MetadataProvider { get; }
+    protected IFactionProvider FactionProvider { get; }
+    protected ISpecOpsProvider SpecOpsProvider { get; }
+    protected FactionLogoCacheService FactionLogoCacheService { get; }
+    protected IAppSettingsProvider AppSettingsProvider { get; }
 
     /// <summary>
     /// Wires shared UnitDisplayConfigurationsView events to page handlers.

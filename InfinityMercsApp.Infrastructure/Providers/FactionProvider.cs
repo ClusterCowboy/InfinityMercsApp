@@ -39,7 +39,7 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     /// <inheritdoc/>
     public Unit? GetUnit(int factionId, int unitId)
     {
-        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
+        return sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId && x.UnitId == unitId && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)), null).FirstOrDefault();
     }
 
     /// <inheritdoc/>
@@ -79,5 +79,34 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
                                                     && (x.Type == null || x.Type != TagType)
                                                     && (x.Type == null || x.Type != VehicleType),
                                                     orderBy: x => x.Name);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyDictionary<int, Unit> GetUnitsByFactionAndIds(
+        int factionId,
+        IReadOnlyCollection<int> unitIds)
+    {
+        if (unitIds.Count == 0)
+        {
+            return new Dictionary<int, Unit>();
+        }
+
+        var normalizedUnitIds = unitIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+
+        if (normalizedUnitIds.Length == 0)
+        {
+            return new Dictionary<int, Unit>();
+        }
+
+        var units = sqliteRepository.GetAll<Unit>(x => x.FactionId == factionId 
+            && unitIds.Contains(x.UnitId) 
+            && (x.Slug == null || !x.Slug.Contains(MercSlugPrefix)));
+
+        return units
+            .GroupBy(x => x.UnitId)
+            .ToDictionary(x => x.Key, x => x.First());
     }
 }
