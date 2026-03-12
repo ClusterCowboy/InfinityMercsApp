@@ -1176,10 +1176,97 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private void ReevaluateTrackedFireteamLevel()
     {
-        var evaluatedLevel = string.IsNullOrWhiteSpace(_trackedFireteamName)
-            ? 0
-            : Math.Clamp(MercsCompanyEntries.Count, 1, 6);
+        var evaluatedLevel = EvaluateTrackedFireteamLevel();
         OnTrackedFireteamLevelEvaluated(evaluatedLevel);
+    }
+
+    private int EvaluateTrackedFireteamLevel()
+    {
+        if (string.IsNullOrWhiteSpace(_trackedFireteamName))
+        {
+            return 0;
+        }
+
+        var trackedTeam = TeamEntries.FirstOrDefault(x =>
+            x.ShowTrackingRadioButton &&
+            string.Equals(x.Name, _trackedFireteamName, StringComparison.OrdinalIgnoreCase));
+        if (trackedTeam is null)
+        {
+            return 0;
+        }
+
+        var allowedNames = BuildTrackedTeamAllowedNameSet(trackedTeam);
+        if (allowedNames.Count == 0)
+        {
+            return 0;
+        }
+
+        var matchingTrooperCount = 0;
+        foreach (var entry in MercsCompanyEntries)
+        {
+            if (IsTrackedTeamMatch(entry, trackedTeam, allowedNames))
+            {
+                matchingTrooperCount++;
+            }
+        }
+
+        return Math.Clamp(matchingTrooperCount, 0, 6);
+    }
+
+    private static bool IsTrackedTeamMatch(
+        MercsCompanyEntry entry,
+        ArmyTeamListItem trackedTeam,
+        HashSet<string> allowedNames)
+    {
+        if (trackedTeam.AllowedProfiles.Any(x =>
+                x.ResolvedUnitId.HasValue &&
+                x.ResolvedSourceFactionId.HasValue &&
+                x.ResolvedUnitId.Value == entry.SourceUnitId &&
+                x.ResolvedSourceFactionId.Value == entry.SourceFactionId))
+        {
+            return true;
+        }
+
+        var candidateNames = new HashSet<string>(StringComparer.Ordinal);
+        AddAllowedNameCandidate(candidateNames, entry.BaseUnitName);
+        AddAllowedNameCandidate(candidateNames, entry.Name);
+
+        return candidateNames.Any(allowedNames.Contains);
+    }
+
+    private static HashSet<string> BuildTrackedTeamAllowedNameSet(ArmyTeamListItem trackedTeam)
+    {
+        var allowedNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var allowedProfile in trackedTeam.AllowedProfiles)
+        {
+            AddAllowedNameCandidate(allowedNames, allowedProfile.Name);
+
+            foreach (Match match in Regex.Matches(allowedProfile.Name ?? string.Empty, @"\(([^)]*)\)"))
+            {
+                var groupValue = match.Groups[1].Value;
+                foreach (var alias in groupValue.Split([',', '/', ';', '|'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                {
+                    AddAllowedNameCandidate(allowedNames, alias);
+                }
+            }
+        }
+
+        return allowedNames;
+    }
+
+    private static void AddAllowedNameCandidate(HashSet<string> target, string? rawCandidate)
+    {
+        if (string.IsNullOrWhiteSpace(rawCandidate))
+        {
+            return;
+        }
+
+        var withoutParens = Regex.Replace(rawCandidate, @"\([^)]*\)", " ");
+        var normalized = NormalizeTeamUnitName(withoutParens);
+        if (!string.IsNullOrWhiteSpace(normalized))
+        {
+            target.Add(normalized);
+        }
     }
 
     // Hook point for full fireteam-level evaluation logic. Provide an evaluated value in [1..6].
@@ -1888,6 +1975,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
+            BaseUnitName = _selectedUnit.Name,
             NameFormatted = profile.NameFormatted ?? BuildNameFormatted(profile.Name),
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
@@ -7642,6 +7730,7 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
 public class MercsCompanyEntry : BaseViewModel, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
+    public string BaseUnitName { get; init; } = string.Empty;
     public FormattedString? NameFormatted { get; init; }
     public string CostDisplay { get; init; } = string.Empty;
     public int CostValue { get; init; }
