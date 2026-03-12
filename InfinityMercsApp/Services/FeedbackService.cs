@@ -3,6 +3,11 @@ using System.Text.Json;
 
 namespace InfinityMercsApp.Services;
 
+public interface IFeedbackService
+{
+    Task<FeedbackSubmitResult> SubmitAsync(FeedbackSubmission submission, CancellationToken cancellationToken = default);
+}
+
 public sealed class FeedbackService : IFeedbackService
 {
     private const string FeedbackRecipientEmail = "jeremiahpatrick@protonmail.com";

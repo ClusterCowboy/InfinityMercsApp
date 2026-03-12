@@ -1,4 +1,3 @@
-using InfinityMercsApp.Services;
 using InfinityMercsApp.Views;
 using System.Text;
 using System.Runtime.ExceptionServices;
@@ -7,12 +6,9 @@ namespace InfinityMercsApp;
 
 public partial class App : Application
 {
-	private readonly INavigationService _navigationService;
-
-	public App(INavigationService navigationService)
+	public App()
 	{
-		_navigationService = navigationService;
-        CrashLog.Initialize();
+		CrashLog.Initialize();
 
 		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
 		{
@@ -34,7 +30,7 @@ public partial class App : Application
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		return new Window(new AppShell(_navigationService));
+		return new Window(new SplashPage());
 	}
 
 	internal static class CrashLog

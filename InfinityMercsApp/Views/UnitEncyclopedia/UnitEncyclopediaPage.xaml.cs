@@ -33,7 +33,8 @@ public partial class UnitEncyclopediaPage : ContentPage
 	{
 		InitializeComponent();
 		var services = Application.Current?.Handler?.MauiContext?.Services;
-		_viewModel = services?.GetService<ViewerViewModel>();
+		_viewModel = services?.GetService<ViewerViewModel>()
+			?? new ViewerViewModel();
 		BindingContext = _viewModel;
 		_viewModel.PropertyChanged += OnViewModelPropertyChanged;
 		var topTap = new TapGestureRecognizer();

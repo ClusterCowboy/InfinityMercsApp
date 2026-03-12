@@ -1,9 +1,18 @@
-using InfinityMercsApp.Infrastructure.Providers;
-
 namespace InfinityMercsApp.Data.Database;
 
-public sealed class CohesiveCompanyFactionQueryAccessor(IFactionProvider factionProvider, IMercsArmyListProvider mercsArmyListProvider) : ICohesiveCompanyFactionQueryAccessor
+public sealed class CohesiveCompanyFactionQueryAccessor : ICohesiveCompanyFactionQueryAccessor
 {
+    private readonly IArmyDataAccessor _armyDataAccessor;
+    private readonly IMercsArmyListAccessor _mercsArmyListAccessor;
+
+    public CohesiveCompanyFactionQueryAccessor(
+        IArmyDataAccessor armyDataAccessor,
+        IMercsArmyListAccessor mercsArmyListAccessor)
+    {
+        _armyDataAccessor = armyDataAccessor;
+        _mercsArmyListAccessor = mercsArmyListAccessor;
+    }
+
     public async Task<CohesiveCompanyFactionQueryResult> GetFilterQuerySourceAsync(
         IReadOnlyCollection<int> factionIds,
         CancellationToken cancellationToken = default)
@@ -29,7 +38,7 @@ public sealed class CohesiveCompanyFactionQueryAccessor(IFactionProvider faction
         foreach (var factionId in normalizedFactionIds)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var snapshot = factionProvider.GetFactionSnapshot(factionId);
+            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
             var filtersJson = snapshot?.FiltersJson;
             if (string.IsNullOrWhiteSpace(filtersJson))
             {
@@ -44,7 +53,7 @@ public sealed class CohesiveCompanyFactionQueryAccessor(IFactionProvider faction
             MergeLookup(ammoLookup, ArmyJsonLookup.BuildIdNameLookup(filtersJson, "ammunition"));
         }
 
-        var mergedEntries = mercsArmyListProvider.GetMergedMercsArmyList(normalizedFactionIds);
+        var mergedEntries = await _mercsArmyListAccessor.GetMergedMercsArmyListAsync(normalizedFactionIds, cancellationToken);
         return new CohesiveCompanyFactionQueryResult
         {
             TypeLookup = typeLookup,
