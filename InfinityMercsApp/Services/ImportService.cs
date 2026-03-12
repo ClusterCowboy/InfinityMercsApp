@@ -3,14 +3,13 @@ using InfinityMercsApp.Infrastructure.API.InfinityArmy;
 using InfinityMercsApp.Infrastructure.Models.App;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Infrastructure.Repositories;
-using System.Data;
 using System.Globalization;
 
 namespace InfinityMercsApp.Services;
 
 /// <inheritdoc/>
 internal class ImportService(
-    IInfinityArmyAPI infinityArmyAPI, 
+    IInfinityArmyAPI infinityArmyAPI,
     IFactionProvider factionProvider,
     IMetadataProvider metadataProvider,
     IArmyImportProvider armyImportProvider,
@@ -72,10 +71,7 @@ internal class ImportService(
             yield break;
         }
 
-        if (factionLogoCacheService is not null)
-        {
-            await factionLogoCacheService.CacheAllAsync(metadata.Factions);
-        }
+        await factionLogoCacheService.CacheAllAsync(metadata.Factions);
 
         var factionIds = metadata.Factions
             .Select(f => f.Id)
@@ -92,39 +88,39 @@ internal class ImportService(
 
             try
             {
-            var latestArmy = await infinityArmyAPI.GetArmyDataAsync(factionId);
+                var latestArmy = await infinityArmyAPI.GetArmyDataAsync(factionId);
 
-            if (latestArmy is null)
-            {
-                skippedCount++;
-                continue;
-            }
+                if (latestArmy is null)
+                {
+                    skippedCount++;
+                    continue;
+                }
 
-            var latestVersion = latestArmy.Version;
+                var latestVersion = latestArmy.Version;
 
                 if (latestArmy.Resume is not null)
-            {
-                await factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                {
+                    await factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
+                }
+
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                var snapshot = factionProvider.GetFactionSnapshot(factionId);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                await armyImportProvider.ImportAsync(factionId, latestArmy);
+                updatedCount++;
             }
-
-            if (string.IsNullOrWhiteSpace(latestVersion))
-            {
-                skippedCount++;
-                continue;
-            }
-
-            var snapshot = factionProvider.GetFactionSnapshot(factionId);
-            var storedVersion = snapshot?.Version;
-
-            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-            {
-                skippedCount++;
-                continue;
-            }
-
-            await armyImportProvider.ImportAsync(factionId, latestArmy);
-            updatedCount++;
-        }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"ImportMetadataAsync faction {factionId} failed: {ex.Message}");
@@ -137,11 +133,6 @@ internal class ImportService(
 
     public async IAsyncEnumerable<SuccessWithStringResult> ImportAllDataAsync()
     {
-        //if (!ShouldAttemptStartupUpdate())
-        //{
-        //    yield return new(true, "Data recently updated. Skipping...");
-        //}
-
         RecordStartupUpdateAttempt();
 
         yield return new(true, "Updating database: downloading metadata...");
@@ -157,7 +148,7 @@ internal class ImportService(
 
         metadataProvider.Import(metadata);
 
-            yield return new(true, "Updating SVGs: caching faction logos...");
+        yield return new(true, "Updating SVGs: caching faction logos...");
         await factionLogoCacheService.CacheAllAsync(metadata.Factions);
 
         var factions = metadata.Factions
@@ -176,38 +167,38 @@ internal class ImportService(
 
             try
             {
-            var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
+                var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
 
-            if (latestArmy is null)
-            {
-                continue;
-            }
+                if (latestArmy is null)
+                {
+                    continue;
+                }
 
-            var latestVersion = latestArmy.Version;
+                var latestVersion = latestArmy.Version;
 
                 if (latestArmy.Resume is not null)
-            {
-                await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
+                {
+                    await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
+                }
+
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
+                var storedVersion = snapshot?.Version;
+
+                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                await armyImportProvider.ImportAsync(faction.Id, latestArmy);
+                updatedCount++;
             }
-
-            if (string.IsNullOrWhiteSpace(latestVersion))
-            {
-                skippedCount++;
-                continue;
-            }
-
-            var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
-            var storedVersion = snapshot?.Version;
-
-            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-            {
-                skippedCount++;
-                continue;
-            }
-
-            await armyImportProvider.ImportAsync(faction.Id, latestArmy);
-            updatedCount++;
-        }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"ImportAllDataAsync faction {faction.Id} ({faction.Name}) failed: {ex.Message}");

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
@@ -229,11 +228,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    public CompanyViewerPage(ViewerViewModel viewModel)
+    public CompanyViewerPage()
     {
         InitializeComponent();
         var services = Application.Current?.Handler?.MauiContext?.Services;
-        _viewerViewModel = viewModel;
+        _viewerViewModel = services?.GetService<ViewerViewModel>() ?? new ViewerViewModel();
         _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
@@ -1404,7 +1403,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     }
 }
 
-public sealed class CompanyViewerUnitListItem : ObservableObject, IViewerListItem
+public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 {
     public int EntryIndex { get; init; }
     public int SourceFactionId { get; init; }

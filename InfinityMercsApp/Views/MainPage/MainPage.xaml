@@ -6,13 +6,13 @@
              Title="Home">
 
     <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*">
-        <Image
-            x:Name="HeaderImage"
+        <skia:SKCanvasView
+            x:Name="HeaderImageCanvas"
             Grid.Row="0"
             HeightRequest="220"
             HorizontalOptions="Center"
             WidthRequest="420"
-            Source="m2_no_bg_short.webp" />
+            PaintSurface="OnHeaderImageCanvasPaintSurface" />
 
         <Label
             Grid.Row="1"

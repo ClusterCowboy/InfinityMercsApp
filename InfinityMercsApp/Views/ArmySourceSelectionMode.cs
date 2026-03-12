@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Domain.CompanyCreation;
+namespace InfinityMercsApp.Views;
 
 public enum ArmySourceSelectionMode
 {

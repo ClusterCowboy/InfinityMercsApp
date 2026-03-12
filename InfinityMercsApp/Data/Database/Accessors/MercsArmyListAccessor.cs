@@ -1,30 +1,41 @@
-﻿using InfinityMercsApp.Domain.Sorting;
-using InfinityMercsApp.Infrastructure.Models.Database.Army;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace InfinityMercsApp.Infrastructure.Providers;
+namespace InfinityMercsApp.Data.Database;
 
-/// <inheritdoc/>
-public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IMercsArmyListProvider
+/// <summary>
+/// Wrapper around <see cref="IArmyDataAccessor"/> that merges Mercs-only resume queries
+/// across one or two source factions.
+/// </summary>
+public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
 {
-    /// <inheritdoc/>
-    public IReadOnlyList<MercsArmyListEntry> GetMergedMercsArmyList(
-        int factionId)
+    private readonly IArmyDataAccessor _armyDataAccessor;
+
+    public MercsArmyListAccessor(IArmyDataAccessor armyDataAccessor)
     {
-        return GetMergedMercsArmyList([factionId]);
+        _armyDataAccessor = armyDataAccessor;
     }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<MercsArmyListEntry> GetMergedMercsArmyList(
+    public async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListAsync(
+        int factionId,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetMergedMercsArmyListAsync([factionId], cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListAsync(
         int firstFactionId,
-        int secondFactionId)
+        int secondFactionId,
+        CancellationToken cancellationToken = default)
     {
-        return GetMergedMercsArmyList([firstFactionId, secondFactionId]);
+        return await GetMergedMercsArmyListAsync([firstFactionId, secondFactionId], cancellationToken);
     }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<MercsArmyListEntry> GetMergedMercsArmyList(IReadOnlyCollection<int> factionIds)
+    public async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListAsync(
+        IReadOnlyCollection<int> factionIds,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (factionIds.Count == 0)
         {
             return [];
@@ -34,17 +45,16 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
             .Where(id => id > 0)
             .Distinct()
             .ToArray();
-
         if (normalizedFactionIds.Length == 0)
         {
             return [];
         }
 
-        var resultSets = normalizedFactionIds
-            .Select(id => factionProvider.GetResumeByFactionMercsOnly(id))
+        var queryTasks = normalizedFactionIds
+            .Select(id => _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(id, cancellationToken))
             .ToArray();
-
-        var unitLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, Unit>>();
+        var resultSets = await Task.WhenAll(queryTasks);
+        var unitLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, ArmyUnitRecord>>();
 
         for (var setIndex = 0; setIndex < resultSets.Length; setIndex++)
         {
@@ -54,9 +64,10 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
                 .Where(id => id > 0)
                 .Distinct()
                 .ToArray();
-            unitLookupByFaction[factionId] = factionProvider.GetUnitsByFactionAndIds(
+            unitLookupByFaction[factionId] = await _armyDataAccessor.GetUnitsByFactionAndIdsAsync(
                 factionId,
-                unitIds);
+                unitIds,
+                cancellationToken);
         }
 
         var mergedByUnitName = new Dictionary<string, MutableMercsArmyListEntry>(StringComparer.OrdinalIgnoreCase);
@@ -67,6 +78,7 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
             unitLookupByFaction.TryGetValue(factionId, out var unitLookup);
             foreach (var row in rows)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (string.IsNullOrWhiteSpace(row.Name))
                 {
                     continue;
@@ -106,35 +118,37 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
             .ToList();
     }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<Resume> GetResumeByFactionMercsOnly(int factionId)
+    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(
+        int factionId,
+        CancellationToken cancellationToken = default)
     {
-        return GetMergedMercsArmyList(factionId)
+        return (await GetMergedMercsArmyListAsync(factionId, cancellationToken))
             .Select(x => x.Resume)
             .ToList();
     }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<Resume> GetResumeByFactionMercsOnly(
+    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(
         int firstFactionId,
-        int secondFactionId)
+        int secondFactionId,
+        CancellationToken cancellationToken = default)
     {
-        return GetMergedMercsArmyList(firstFactionId, secondFactionId)
+        return (await GetMergedMercsArmyListAsync(firstFactionId, secondFactionId, cancellationToken))
             .Select(x => x.Resume)
             .ToList();
     }
 
-    public IReadOnlyList<Resume> GetResumeByFactionMercsOnly(IReadOnlyCollection<int> factionIds)
+    public async Task<IReadOnlyList<ArmyResumeRecord>> GetResumeByFactionMercsOnlyAsync(
+        IReadOnlyCollection<int> factionIds,
+        CancellationToken cancellationToken = default)
     {
-        return GetMergedMercsArmyList(factionIds)
+        return (await GetMergedMercsArmyListAsync(factionIds, cancellationToken))
             .Select(x => x.Resume)
             .ToList();
     }
 
-    // TODO: Probably best done using IClonable or similar
-    private static Resume CloneResume(Resume source)
+    private static ArmyResumeRecord CloneResume(ArmyResumeRecord source)
     {
-        return new Resume
+        return new ArmyResumeRecord
         {
             ResumeKey = source.ResumeKey,
             FactionId = source.FactionId,
@@ -401,7 +415,7 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
         return JsonNode.Parse(source.ToJsonString())!.AsObject();
     }
 
-    private static Unit? TryGetUnit(IReadOnlyDictionary<int, Unit>? unitLookup, int unitId)
+    private static ArmyUnitRecord? TryGetUnit(IReadOnlyDictionary<int, ArmyUnitRecord>? unitLookup, int unitId)
     {
         if (unitLookup is null || unitId <= 0)
         {
@@ -411,10 +425,9 @@ public sealed class MercsArmyListProvider(IFactionProvider factionProvider) : IM
         return unitLookup.TryGetValue(unitId, out var row) ? row : null;
     }
 
-    // TODO: Punt this to another file for clarity's sake.
     private sealed class MutableMercsArmyListEntry
     {
-        public required Resume Resume { get; init; }
+        public required ArmyResumeRecord Resume { get; init; }
 
         public string? ProfileGroupsJson { get; set; }
 

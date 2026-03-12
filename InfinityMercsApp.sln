@@ -1,12 +1,16 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.3.11527.330 d18.3
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfinityMercsApp", "InfinityMercsApp\InfinityMercsApp.csproj", "{0118198D-A227-7FEC-2DFB-3634F8BF2AED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfinityMercsApp.Domain", "InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj", "{5C83596A-02BE-B35D-D167-B3B896B17AFB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfinityMercsApp.Infrastructure", "InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj", "{60D41726-AF84-7C4E-FCBB-1376D6451415}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InfinityMercsApp (1)", "InfinityMercsApp (1)", "{E669AB15-5A67-5A76-F660-E7362579C9F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_tempdiag", "InfinityMercsApp\_tempdiag\_tempdiag.csproj", "{B3469841-8880-9ABD-DEF1-B851C3752383}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +30,16 @@ Global
 		{60D41726-AF84-7C4E-FCBB-1376D6451415}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{60D41726-AF84-7C4E-FCBB-1376D6451415}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{60D41726-AF84-7C4E-FCBB-1376D6451415}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3469841-8880-9ABD-DEF1-B851C3752383}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3469841-8880-9ABD-DEF1-B851C3752383}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3469841-8880-9ABD-DEF1-B851C3752383}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3469841-8880-9ABD-DEF1-B851C3752383}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B3469841-8880-9ABD-DEF1-B851C3752383} = {E669AB15-5A67-5A76-F660-E7362579C9F3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E8394E38-A959-4FC8-87F0-5BBE4D6E57BE}
