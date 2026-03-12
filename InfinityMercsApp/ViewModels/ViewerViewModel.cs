@@ -707,7 +707,7 @@ public partial class ViewerViewModel : ObservableObject
             var factions = _metadataProvider.GetFactions(true);
             if (_factionLogoCacheService is not null)
             {
-                var factionRecords = factions.Select(x => new FactionRecord
+                var factionRecords = factions.Select(x => new Infrastructure.Models.Database.Metadata.Faction
                 {
                     Id = x.Id,
                     ParentId = x.ParentId,

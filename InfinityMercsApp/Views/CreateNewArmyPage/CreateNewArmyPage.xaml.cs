@@ -1,8 +1,8 @@
+using InfinityMercsApp.Infrastructure.Services;
+using InfinityMercsApp.Views.StandardCompany;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using Svg.Skia;
-using InfinityMercsApp.Views.CohesiveCompany;
-using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.Views;
 
@@ -14,10 +14,12 @@ public partial class CreateNewArmyPage : ContentPage
     private SKPicture? _airborneCompanyIconPicture;
     private SKPicture? _tagCompanyIconPicture;
     private SKPicture? _proxyPackIconPicture;
+    private readonly IArmySourceSelectionModeService _armySourceSelectionModeService;
 
-    public CreateNewArmyPage()
+    public CreateNewArmyPage(IArmySourceSelectionModeService armySourceSelectionModeService)
     {
         InitializeComponent();
+        _armySourceSelectionModeService = armySourceSelectionModeService;
         _ = LoadStandardCompanyIconAsync();
         _ = LoadCohesiveCompanyIconAsync();
         _ = LoadInspiringLeaderIconAsync();
@@ -33,7 +35,7 @@ public partial class CreateNewArmyPage : ContentPage
 
     private async void OnStandardCompanyClicked(object? sender, EventArgs e)
     {
-        await Navigation.PushModalAsync(new StandardCompanySourcePopupPage());
+        await Navigation.PushModalAsync(new StandardCompanySourcePopupPage(_armySourceSelectionModeService));
     }
 
     private void OnStandardCompanyTapped(object? sender, TappedEventArgs e)
@@ -43,7 +45,7 @@ public partial class CreateNewArmyPage : ContentPage
 
     private async void OnCohesiveCompanyClicked(object? sender, EventArgs e)
     {
-        await Shell.Current.Navigation.PushAsync(new CCArmyFactionSelectionPage(ArmySourceSelectionMode.Sectorials));
+        await Shell.Current.GoToAsync("CCArmyFactionSelectionPage");
     }
 
     private void OnCohesiveCompanyTapped(object? sender, TappedEventArgs e)

@@ -5,6 +5,8 @@ using InfinityMercsApp.Infrastructure.Options;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.CohesiveCompany;
+using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Views.UnitEncyclopedia;
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
@@ -43,10 +45,12 @@ public static class MauiProgram
 				.AddSingleton<IFeedbackService, FeedbackService>()
 				.AddSingleton<IImportService, ImportService>()
 				.AddTransient<ModeSelectionViewModel>()
+				.AddTransient<StandardCompanySelectionPage>()
+				.AddTransient<CCArmyFactionSelectionPage>()
 				.AddTransient<ViewerViewModel>()
 				.AddTransient<MainPage>()
 				.AddTransient<SplashPage>()
-				.AddTransient<ViewerPage>()
+				.AddTransient<UnitEncyclopediaPage>()
 				.AddTransient<FeedbackBugsPage>()
 				.AddTransient<SplashPageViewModel>()
 				// Change this once AppSettings is set up. Wish MAUI did this by default.

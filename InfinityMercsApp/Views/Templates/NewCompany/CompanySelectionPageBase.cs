@@ -1,4 +1,6 @@
+using InfinityMercsApp.Domain.CompanyCreation;
 using InfinityMercsApp.Infrastructure.Providers;
+using InfinityMercsApp.Infrastructure.Services;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using SkiaSharp.Views.Maui;
@@ -12,24 +14,29 @@ namespace InfinityMercsApp.Views.Templates.NewCompany;
 /// </summary>
 public abstract class CompanySelectionPageBase : ContentPage
 {
-    protected CompanySelectionPageBase(ArmySourceSelectionMode mode)
+    protected CompanySelectionPageBase(
+        IArmySourceSelectionModeService armySourceSelectionModeService,
+        IMetadataProvider metadataProvider,
+        IFactionProvider factionProvider,
+        ISpecOpsProvider specOpsProvider,
+        FactionLogoCacheService factionLogoCacheService,
+        IAppSettingsProvider appSettingsProvider)
     {
-        Mode = mode;
-
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        MetadataProvider = services?.GetService<IMetadataProvider>();
-        FactionProvider = services?.GetService<IFactionProvider>();
-        SpecOpsProvider = services?.GetService<ISpecOpsProvider>();
-        FactionLogoCacheService = services?.GetService<FactionLogoCacheService>();
-        AppSettingsProvider = services?.GetService<IAppSettingsProvider>();
+        MetadataProvider = metadataProvider;
+        FactionProvider = factionProvider;
+        SpecOpsProvider = specOpsProvider;
+        FactionLogoCacheService = factionLogoCacheService;
+        AppSettingsProvider = appSettingsProvider;
+        Mode = armySourceSelectionModeService.Get();
     }
 
-    protected ArmySourceSelectionMode Mode { get; }
-    protected IMetadataProvider? MetadataProvider { get; }
-    protected IFactionProvider? FactionProvider { get; }
-    protected ISpecOpsProvider? SpecOpsProvider { get; }
-    protected FactionLogoCacheService? FactionLogoCacheService { get; }
-    protected IAppSettingsProvider? AppSettingsProvider { get; }
+    // Make this settable for now to support cohesive companies before this is redone using proper navigation
+    protected ArmySourceSelectionMode Mode { get; set; }
+    protected IMetadataProvider MetadataProvider { get; }
+    protected IFactionProvider FactionProvider { get; }
+    protected ISpecOpsProvider SpecOpsProvider { get; }
+    protected FactionLogoCacheService FactionLogoCacheService { get; }
+    protected IAppSettingsProvider AppSettingsProvider { get; }
 
     /// <summary>
     /// Wires shared UnitDisplayConfigurationsView events to page handlers.

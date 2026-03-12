@@ -17,6 +17,8 @@ public partial class AppShell : Shell
 		Routing.RegisterRoute(nameof(Views.LoadCompanyPage), typeof(Views.LoadCompanyPage));
 		Routing.RegisterRoute(nameof(Views.CompanyViewerPage), typeof(Views.CompanyViewerPage));
 		Routing.RegisterRoute(nameof(Views.MercsGlossaryPage), typeof(Views.MercsGlossaryPage));
+        Routing.RegisterRoute(nameof(Views.StandardCompany.StandardCompanySelectionPage), typeof(Views.StandardCompany.StandardCompanySelectionPage));
+        Routing.RegisterRoute(nameof(Views.CohesiveCompany.CCArmyFactionSelectionPage), typeof(Views.CohesiveCompany.CCArmyFactionSelectionPage));
 		Routing.RegisterRoute(nameof(Views.UnitEncyclopedia.UnitEncyclopediaPage), typeof(Views.UnitEncyclopedia.UnitEncyclopediaPage));
 		Routing.RegisterRoute(nameof(Views.FeedbackBugsPage), typeof(Views.FeedbackBugsPage));
 	}
