@@ -5,6 +5,7 @@ using InfinityMercsApp.Infrastructure.Options;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.UnitEncyclopedia;
 using Microsoft.Extensions.Logging;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Net;

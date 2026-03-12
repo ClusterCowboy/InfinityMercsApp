@@ -707,7 +707,16 @@ public partial class ViewerViewModel : ObservableObject
             var factions = _metadataProvider.GetFactions(true);
             if (_factionLogoCacheService is not null)
             {
-                await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factions, cancellationToken);
+                var factionRecords = factions.Select(x => new FactionRecord
+                {
+                    Id = x.Id,
+                    ParentId = x.ParentId,
+                    Name = x.Name,
+                    Slug = x.Slug,
+                    Discontinued = x.Discontinued,
+                    Logo = x.Logo
+                });
+                await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(factionRecords, cancellationToken);
             }
 
             _allFactions = factions.Select(faction => new ViewerFactionItem

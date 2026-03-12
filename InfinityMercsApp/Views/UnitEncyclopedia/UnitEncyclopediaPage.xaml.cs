@@ -7,9 +7,9 @@ using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 using System.ComponentModel;
 
-namespace InfinityMercsApp.Views;
+namespace InfinityMercsApp.Views.UnitEncyclopedia;
 
-public partial class ViewerPage : ContentPage
+public partial class UnitEncyclopediaPage : ContentPage
 {
 	private const int MaxIconsPerRow = 3;
 	private const float IconSize = 24f;
@@ -29,7 +29,7 @@ public partial class ViewerPage : ContentPage
 	private SKPicture? _selectedUnitPicture;
 	private int _selectedUnitLogoLoadVersion;
 
-	public ViewerPage(ViewerViewModel viewModel)
+	public UnitEncyclopediaPage()
 	{
 		InitializeComponent();
 		var services = Application.Current?.Handler?.MauiContext?.Services;
@@ -82,7 +82,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage regular order icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage regular order icon load failed: {ex.Message}");
 		}
 
 		try
@@ -93,7 +93,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage irregular order icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage irregular order icon load failed: {ex.Message}");
 		}
 
 		try
@@ -104,7 +104,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage impetuous icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage impetuous icon load failed: {ex.Message}");
 		}
 
 		try
@@ -115,7 +115,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage tactical awareness icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage tactical awareness icon load failed: {ex.Message}");
 		}
 
 		try
@@ -126,7 +126,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage cube icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage cube icon load failed: {ex.Message}");
 		}
 
 		try
@@ -137,7 +137,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage cube 2.0 icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage cube 2.0 icon load failed: {ex.Message}");
 		}
 
 		try
@@ -148,7 +148,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage hackable icon load failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage hackable icon load failed: {ex.Message}");
 		}
 
 		TopIconRowCanvas.InvalidateSurface();
@@ -229,7 +229,7 @@ public partial class ViewerPage : ContentPage
 				}
 				catch (Exception ex)
 				{
-					Console.Error.WriteLine($"ViewerPage selected unit logo load failed: {ex.Message}");
+					Console.Error.WriteLine($"UnitEncyclopediaPage selected unit logo load failed: {ex.Message}");
 				}
 			}
 
@@ -384,7 +384,7 @@ public partial class ViewerPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"ViewerPage icon link open failed: {ex.Message}");
+			Console.Error.WriteLine($"UnitEncyclopediaPage icon link open failed: {ex.Message}");
 		}
 	}
 
@@ -454,3 +454,4 @@ public partial class ViewerPage : ContentPage
 		canvas.DrawPicture(picture);
 	}
 }
+
