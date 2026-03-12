@@ -4,6 +4,7 @@ using InfinityMercsApp.Infrastructure.Repositories;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.UnitEncyclopedia;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -29,7 +30,7 @@ public static class ServiceRegistryExtensions
                 .AddTransient<CreateNewCompanyPage>()
                 .AddTransient<StandardCompanySourcePopupPage>()
                 .AddTransient<SplashPage>()
-                .AddTransient<ViewerPage>()
+                .AddTransient<UnitEncyclopediaPage>()
                 .AddTransient<FeedbackBugsPage>();
 
         return services;

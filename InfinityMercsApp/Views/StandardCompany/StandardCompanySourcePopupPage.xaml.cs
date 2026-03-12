@@ -1,6 +1,6 @@
 using InfinityMercsApp.ViewModels;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views;
 
 public partial class StandardCompanySourcePopupPage
 {
@@ -8,5 +8,10 @@ public partial class StandardCompanySourcePopupPage
     {
         InitializeComponent();
         BindingContext = viewModel;
+    }
+
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PopModalAsync();
     }
 }

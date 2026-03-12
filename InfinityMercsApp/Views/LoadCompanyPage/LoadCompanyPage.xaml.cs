@@ -153,7 +153,7 @@ public partial class LoadCompanyPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("Delete Failed", ex.Message, "OK");
+            await DisplayAlert("Delete Failed", ex.Message, "OK");
         }
     }
 

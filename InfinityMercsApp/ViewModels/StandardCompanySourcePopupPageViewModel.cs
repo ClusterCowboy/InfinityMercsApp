@@ -2,6 +2,7 @@
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -31,7 +32,7 @@ public partial class StandardCompanySourcePopupPageViewModel(INavigationService 
     {
         try
         {
-            await NavigationService.NavigateToAsync(nameof(ArmyFactionSelectionPage), new Dictionary<string, object>() { { "mode", mode } });
+            await Shell.Current.Navigation.PushAsync(new StandardCompanySelectionPage(mode));
         }
         catch (Exception ex)
         {
