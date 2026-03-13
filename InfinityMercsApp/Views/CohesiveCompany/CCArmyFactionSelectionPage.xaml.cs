@@ -97,8 +97,15 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private SKPicture? _trackedFireteamLevelPicture;
     private bool _isUpdatingTrackedTeamSelection;
 
-    public CCArmyFactionSelectionPage(ArmySourceSelectionMode mode)
-        : base(mode)
+    public CCArmyFactionSelectionPage(
+        ArmySourceSelectionMode mode,
+        IMetadataProvider? metadataProvider,
+        IArmyDataAccessor? armyDataAccessor,
+        IMercsArmyListAccessor? mercsArmyListAccessor,
+        ISpecOpsDataAccessor specOpsDataAccessor,
+        FactionLogoCacheService? factionLogoCacheService,
+        AppSettingsService? appSettingsService)
+        : base(mode, metadataProvider, armyDataAccessor, mercsArmyListAccessor, specOpsDataAccessor, factionLogoCacheService, appSettingsService)
     {
         InitializeComponent();
         FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);

@@ -54,10 +54,10 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="0" Grid.Column="1">
-                <Button x:Name="CohesiveCompanyButton" Text="" Command="{Binding OpenStandardCompanyPageCommand}" />
+                <Button x:Name="CohesiveCompanyButton" Text="" Command="{Binding OpenCohesiveCompanyPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding OpenStandardCompanyPageCommand}" />
+                        <TapGestureRecognizer Command="{Binding OpenCohesiveCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -86,7 +86,7 @@
                 <Button x:Name="InspiringLeaderButton" Text="" Command="{Binding OpenInspiringLeadershipPageCommand}" />
                 <Grid ColumnSpacing="0">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding OpenInspiringLeadershipCommand}" />
+                        <TapGestureRecognizer Command="{Binding OpenInspiringLeadershipPageCommand}" />
                     </Grid.GestureRecognizers>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

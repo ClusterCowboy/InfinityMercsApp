@@ -5,7 +5,9 @@ using InfinityMercsApp.Views;
 
 namespace InfinityMercsApp.ViewModels;
 
-public partial class CreateNewCompanyPageViewModel(INavigationService navigationService, IServiceProvider provider) : ViewModelBase(navigationService)
+public partial class CreateNewCompanyPageViewModel(
+    INavigationService navigationService,
+    ICompanySelectionPageFactory companySelectionPageFactory) : ViewModelBase(navigationService)
 {
     [RelayCommand]
     public async Task NavigateToModeSelectionPageAsync()
@@ -16,18 +18,13 @@ public partial class CreateNewCompanyPageViewModel(INavigationService navigation
     [RelayCommand]
     public async Task OpenStandardCompanyPopupAsync()
     {
-        // TODO: Encapsulate popups in a service.
-        // Probably best done using the community toolkit.
-        // Modals can't navigate to non-modals and navigating twice from a page is inconsistent
-        // So this is a regular page for now
-        var page = provider.GetService(typeof(StandardCompanySourcePopupPage)) as Page;
         await NavigationService.NavigateToAsync("//StandardCompanySourcePopupPage");
     }
 
     [RelayCommand]
     private async Task OpenCohesiveCompanyPageAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] Cohesive Company selected.");
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateCohesive(ArmySourceSelectionMode.Sectorials));
     }
 
     [RelayCommand]

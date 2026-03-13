@@ -89,8 +89,15 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private UnitFilterPopupView? _activeUnitFilterPopup;
     private UnitFilterPopupOptions? _preparedUnitFilterPopupOptions;
 
-    public StandardCompanySelectionPage(ArmySourceSelectionMode mode)
-        : base(mode)
+    public StandardCompanySelectionPage(
+        ArmySourceSelectionMode mode,
+        IMetadataProvider? metadataProvider,
+        IArmyDataAccessor? armyDataAccessor,
+        IMercsArmyListAccessor? mercsArmyListAccessor,
+        ISpecOpsDataAccessor specOpsDataAccessor,
+        FactionLogoCacheService? factionLogoCacheService,
+        AppSettingsService? appSettingsService)
+        : base(mode, metadataProvider, armyDataAccessor, mercsArmyListAccessor, specOpsDataAccessor, factionLogoCacheService, appSettingsService)
     {
         InitializeComponent();
         FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);

@@ -2,11 +2,12 @@
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
 using InfinityMercsApp.Views;
-using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.ViewModels;
 
-public partial class StandardCompanySourcePopupPageViewModel(INavigationService navigationService) : ViewModelBase(navigationService)
+public partial class StandardCompanySourcePopupPageViewModel(
+    INavigationService navigationService,
+    ICompanySelectionPageFactory companySelectionPageFactory) : ViewModelBase(navigationService)
 {
     [RelayCommand]
     private async Task ClosePopupAsync()
@@ -32,7 +33,7 @@ public partial class StandardCompanySourcePopupPageViewModel(INavigationService 
     {
         try
         {
-            await Shell.Current.Navigation.PushAsync(new StandardCompanySelectionPage(mode));
+            await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateStandard(mode));
         }
         catch (Exception ex)
         {
