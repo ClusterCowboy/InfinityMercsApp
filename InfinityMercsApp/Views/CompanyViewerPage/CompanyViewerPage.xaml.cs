@@ -6,7 +6,6 @@ using System.Windows.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -228,12 +227,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    public CompanyViewerPage()
+    public CompanyViewerPage(ViewerViewModel viewModel, FactionLogoCacheService? factionLogoCacheService = null)
     {
         InitializeComponent();
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        _viewerViewModel = services?.GetService<ViewerViewModel>() ?? new ViewerViewModel();
-        _factionLogoCacheService = services?.GetService<FactionLogoCacheService>();
+        _viewerViewModel = viewModel;
+        _factionLogoCacheService = factionLogoCacheService;
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;

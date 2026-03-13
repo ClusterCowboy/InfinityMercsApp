@@ -1,6 +1,4 @@
 using InfinityMercsApp.ViewModels;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -29,12 +27,10 @@ public partial class UnitEncyclopediaPage : ContentPage
 	private SKPicture? _selectedUnitPicture;
 	private int _selectedUnitLogoLoadVersion;
 
-	public UnitEncyclopediaPage()
+	public UnitEncyclopediaPage(ViewerViewModel viewModel)
 	{
 		InitializeComponent();
-		var services = Application.Current?.Handler?.MauiContext?.Services;
-		_viewModel = services?.GetService<ViewerViewModel>()
-			?? new ViewerViewModel();
+		_viewModel = viewModel;
 		BindingContext = _viewModel;
 		_viewModel.PropertyChanged += OnViewModelPropertyChanged;
 		var topTap = new TapGestureRecognizer();

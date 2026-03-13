@@ -17,6 +17,7 @@ public static class ServiceRegistryExtensions
     {
         services.AddTransient<ModeSelectionViewModel>()
                 .AddTransient<SplashPageViewModel>()
+                .AddTransient<MainViewModel>()
                 .AddTransient<ViewerViewModel>()
                 .AddTransient<CreateNewCompanyPageViewModel>()
                 .AddTransient<StandardCompanySourcePopupPageViewModel>();
@@ -30,6 +31,8 @@ public static class ServiceRegistryExtensions
                 .AddTransient<CreateNewCompanyPage>()
                 .AddTransient<StandardCompanySourcePopupPage>()
                 .AddTransient<SplashPage>()
+                .AddTransient<SettingsPage>()
+                .AddTransient<CompanyViewerPage>()
                 .AddTransient<UnitEncyclopediaPage>()
                 .AddTransient<FeedbackBugsPage>();
 

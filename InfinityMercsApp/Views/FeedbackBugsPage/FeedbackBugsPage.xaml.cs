@@ -1,5 +1,4 @@
 using InfinityMercsApp.Services;
-using Microsoft.Extensions.DependencyInjection;
 using System.Text.RegularExpressions;
 
 namespace InfinityMercsApp.Views;
@@ -8,12 +7,10 @@ public partial class FeedbackBugsPage : ContentPage
 {
     private readonly IFeedbackService? _feedbackService;
 
-    public FeedbackBugsPage()
+    public FeedbackBugsPage(IFeedbackService? feedbackService)
     {
         InitializeComponent();
-
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        _feedbackService = services?.GetService<IFeedbackService>();
+        _feedbackService = feedbackService;
     }
 
     protected override void OnAppearing()
