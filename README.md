@@ -119,4 +119,4 @@ And more
 
 ## Known Defects
 - [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
-T
+- [] Loading Data from Reinforcements from online isn't working properly

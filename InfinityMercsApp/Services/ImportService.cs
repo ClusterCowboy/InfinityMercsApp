@@ -152,7 +152,7 @@ internal class ImportService(
         await factionLogoCacheService.CacheAllAsync(metadata.Factions);
 
         var factions = metadata.Factions
-            .Select(f => new { f.Id, f.Name })
+            .Select(f => new FactionTarget(f.Id, f.Name))
             .Distinct()
             .OrderBy(x => x.Id)
             .ToList();
@@ -164,47 +164,19 @@ internal class ImportService(
         foreach (var faction in factions)
         {
             yield return new(true, $"Updating factions: checking {faction.Name}...");
-
-            try
-            {
-                var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
-
-                if (latestArmy is null)
-                {
-                    continue;
-                }
-
-                var latestVersion = latestArmy.Version;
-
-                if (latestArmy.Resume is not null)
-                {
-                    await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
-                }
-
-                if (string.IsNullOrWhiteSpace(latestVersion))
-                {
-                    skippedCount++;
-                    continue;
-                }
-
-                var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
-                var storedVersion = snapshot?.Version;
-
-                if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                {
-                    skippedCount++;
-                    continue;
-                }
-
-                await armyImportProvider.ImportAsync(faction.Id, latestArmy);
-                updatedCount++;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"ImportAllDataAsync faction {faction.Id} ({faction.Name}) failed: {ex.Message}");
-                errorCount++;
-            }
         }
+
+        var parallelDegree = Math.Max(2, Environment.ProcessorCount);
+        var importTasks = factions
+            .AsParallel()
+            .WithDegreeOfParallelism(parallelDegree)
+            .Select(ImportFactionAsync)
+            .ToArray();
+
+        var importResults = await Task.WhenAll(importTasks);
+        updatedCount += importResults.Count(x => x.Status == ImportStatus.Updated);
+        skippedCount += importResults.Count(x => x.Status == ImportStatus.Skipped);
+        errorCount += importResults.Count(x => x.Status == ImportStatus.Error);
 
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");
     }
@@ -273,5 +245,58 @@ internal class ImportService(
 
         existingSetting.Value = value;
         sqliteRepository.Update(existingSetting);
+    }
+
+    private async Task<FactionImportResult> ImportFactionAsync(FactionTarget faction)
+    {
+        try
+        {
+            var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
+
+            if (latestArmy is null)
+            {
+                return new FactionImportResult(ImportStatus.NoData);
+            }
+
+            var latestVersion = latestArmy.Version;
+
+            if (latestArmy.Resume is not null)
+            {
+                await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
+            }
+
+            if (string.IsNullOrWhiteSpace(latestVersion))
+            {
+                return new FactionImportResult(ImportStatus.Skipped);
+            }
+
+            var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
+            var storedVersion = snapshot?.Version;
+
+            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
+            {
+                return new FactionImportResult(ImportStatus.Skipped);
+            }
+
+            await armyImportProvider.ImportAsync(faction.Id, latestArmy);
+            return new FactionImportResult(ImportStatus.Updated);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync faction {faction.Id} ({faction.Name}) failed: {ex.Message}");
+            return new FactionImportResult(ImportStatus.Error);
+        }
+    }
+
+    private readonly record struct FactionImportResult(ImportStatus Status);
+
+    private readonly record struct FactionTarget(int Id, string Name);
+
+    private enum ImportStatus
+    {
+        NoData,
+        Skipped,
+        Updated,
+        Error
     }
 }
