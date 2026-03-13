@@ -16,28 +16,28 @@ public abstract class CompanySelectionPageBase : ContentPage
     protected CompanySelectionPageBase(
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
-        IArmyDataAccessor? armyDataAccessor,
-        IMercsArmyListAccessor? mercsArmyListAccessor,
+        IFactionProvider? factionProvider,
         ISpecOpsDataAccessor specOpsDataAccessor,
+        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
-        AppSettingsService? appSettingsService)
+        IAppSettingsProvider? appSettingsProvider)
     {
         Mode = mode;
         MetadataProvider = metadataProvider;
-        ArmyDataAccessor = armyDataAccessor;
-        MercsArmyListAccessor = mercsArmyListAccessor;
+        FactionProvider = factionProvider;
         SpecOpsDataAccessor = specOpsDataAccessor;
+        CohesiveCompanyFactionQueryAccessor = cohesiveCompanyFactionQueryAccessor;
         FactionLogoCacheService = factionLogoCacheService;
-        AppSettingsService = appSettingsService;
+        AppSettingsProvider = appSettingsProvider;
     }
 
     protected ArmySourceSelectionMode Mode { get; }
     protected IMetadataProvider? MetadataProvider { get; }
-    protected IArmyDataAccessor? ArmyDataAccessor { get; }
-    protected IMercsArmyListAccessor? MercsArmyListAccessor { get; }
+    protected IFactionProvider? FactionProvider { get; }
     protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
+    protected ICohesiveCompanyFactionQueryAccessor? CohesiveCompanyFactionQueryAccessor { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
-    protected AppSettingsService? AppSettingsService { get; }
+    protected IAppSettingsProvider? AppSettingsProvider { get; }
 
     /// <summary>
     /// Wires shared UnitDisplayConfigurationsView events to page handlers.

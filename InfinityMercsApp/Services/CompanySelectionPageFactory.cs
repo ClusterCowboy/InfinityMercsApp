@@ -9,26 +9,26 @@ namespace InfinityMercsApp.Services;
 public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
 {
     private readonly IMetadataProvider? _metadataProvider;
-    private readonly IArmyDataAccessor? _armyDataAccessor;
-    private readonly IMercsArmyListAccessor? _mercsArmyListAccessor;
+    private readonly IFactionProvider? _factionProvider;
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
+    private readonly ICohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
 
     public CompanySelectionPageFactory(
         IMetadataProvider? metadataProvider,
-        IArmyDataAccessor? armyDataAccessor,
-        IMercsArmyListAccessor? mercsArmyListAccessor,
+        IFactionProvider? factionProvider,
         ISpecOpsDataAccessor specOpsDataAccessor,
+        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
-        AppSettingsService? appSettingsService)
+        IAppSettingsProvider? appSettingsProvider)
     {
         _metadataProvider = metadataProvider;
-        _armyDataAccessor = armyDataAccessor;
-        _mercsArmyListAccessor = mercsArmyListAccessor;
+        _factionProvider = factionProvider;
         _specOpsDataAccessor = specOpsDataAccessor;
+        _cohesiveCompanyFactionQueryAccessor = cohesiveCompanyFactionQueryAccessor;
         _factionLogoCacheService = factionLogoCacheService;
-        _appSettingsService = appSettingsService;
+        _appSettingsProvider = appSettingsProvider;
     }
 
     public StandardCompanySelectionPage CreateStandard(ArmySourceSelectionMode mode)
@@ -36,11 +36,11 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
         return new StandardCompanySelectionPage(
             mode,
             _metadataProvider,
-            _armyDataAccessor,
-            _mercsArmyListAccessor,
+            _factionProvider,
             _specOpsDataAccessor,
+            _cohesiveCompanyFactionQueryAccessor,
             _factionLogoCacheService,
-            _appSettingsService);
+            _appSettingsProvider);
     }
 
     public CCArmyFactionSelectionPage CreateCohesive(ArmySourceSelectionMode mode)
@@ -48,10 +48,10 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
         return new CCArmyFactionSelectionPage(
             mode,
             _metadataProvider,
-            _armyDataAccessor,
-            _mercsArmyListAccessor,
+            _factionProvider,
             _specOpsDataAccessor,
+            _cohesiveCompanyFactionQueryAccessor,
             _factionLogoCacheService,
-            _appSettingsService);
+            _appSettingsProvider);
     }
 }

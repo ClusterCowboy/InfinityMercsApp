@@ -120,3 +120,6 @@ And more
 ## Known Defects
 - [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
 - [] Loading Data from Reinforcements from online isn't working properly
+- [] Filter criteria are no longer populating correctly
+- [] Create an indicator (yellow circle?) to indicate filter is on
+- [] Background Colors not populating correctly based on faction

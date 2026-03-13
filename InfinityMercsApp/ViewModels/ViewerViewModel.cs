@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Infrastructure.Models.Database.Army;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 
@@ -23,7 +24,7 @@ public class ViewerViewModel : BaseViewModel
     }
 
     private readonly IMetadataProvider? _metadataProvider;
-    private readonly IArmyDataAccessor? _armyDataAccessor;
+    private readonly IFactionProvider? _factionProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly AppSettingsService? _appSettingsService;
     private bool _isLoading;
@@ -78,12 +79,12 @@ public class ViewerViewModel : BaseViewModel
     private List<ViewerFactionItem> _allFactions = [];
     public ViewerViewModel(
         IMetadataProvider? metadataProvider = null,
-        IArmyDataAccessor? armyDataAccessor = null,
+        IFactionProvider? factionProvider = null,
         FactionLogoCacheService? factionLogoCacheService = null,
         AppSettingsService? appSettingsService = null)
     {
         _metadataProvider = metadataProvider;
-        _armyDataAccessor = armyDataAccessor;
+        _factionProvider = factionProvider;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsService = appSettingsService;
 
@@ -981,7 +982,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_armyDataAccessor is null)
+        if (_factionProvider is null)
         {
             UnitsStatus = "Army data service unavailable.";
             return;
@@ -991,10 +992,10 @@ public class ViewerViewModel : BaseViewModel
         {
             UnitsStatus = "Loading units...";
             var units = MercsOnlyUnits
-                ? await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(SelectedFaction.Id, cancellationToken)
-                : await _armyDataAccessor.GetResumeByFactionAsync(SelectedFaction.Id, cancellationToken);
+                ? _factionProvider.GetResumeByFactionMercsOnly(SelectedFaction.Id)
+                : _factionProvider.GetResumeByFaction(SelectedFaction.Id);
 
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
+            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
             UpdateFireteamCounts(snapshot?.FireteamChartJson);
             var allowedFireteamSlugs = units
                 .Select(x => x.Slug?.Trim())
@@ -1018,7 +1019,7 @@ public class ViewerViewModel : BaseViewModel
             var filteredUnitIds = new HashSet<int>();
             foreach (var unit in units)
             {
-                var unitRecord = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, unit.UnitId, cancellationToken);
+                var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
                 if (UnitHasVisibleOption(
                         unitRecord?.ProfileGroupsJson,
                         skillsLookup,
@@ -1034,7 +1035,20 @@ public class ViewerViewModel : BaseViewModel
             if (_factionLogoCacheService is not null)
             {
                 UnitsStatus = "Preparing unit SVG cache...";
-                var cacheResult = await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(SelectedFaction.Id, units, cancellationToken);
+                var cacheResult = await _factionLogoCacheService.CacheUnitLogosAsync(
+                    SelectedFaction.Id,
+                    units.Select(x => new Infrastructure.Models.API.Army.Resume
+                    {
+                        Id = x.UnitId,
+                        IdArmy = x.IdArmy,
+                        Isc = x.Isc,
+                        Name = x.Name,
+                        Slug = x.Slug,
+                        Logo = x.Logo,
+                        Type = x.Type,
+                        Category = x.Category
+                    }),
+                    cancellationToken);
                 Console.Error.WriteLine($"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
             }
 
@@ -1375,7 +1389,7 @@ public class ViewerViewModel : BaseViewModel
     }
 
     private static string BuildUnitSubtitle(
-        ArmyResumeRecord unit,
+        Resume unit,
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
     {
@@ -3128,7 +3142,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_armyDataAccessor is null)
+        if (_factionProvider is null)
         {
             ProfilesStatus = "Army data service unavailable.";
             return;
@@ -3137,8 +3151,8 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             ProfilesStatus = "Loading profiles...";
-            var unit = await _armyDataAccessor.GetUnitAsync(SelectedFaction.Id, SelectedUnit.Id, cancellationToken);
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(SelectedFaction.Id, cancellationToken);
+            var unit = _factionProvider.GetUnit(SelectedFaction.Id, SelectedUnit.Id);
+            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var equipLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");

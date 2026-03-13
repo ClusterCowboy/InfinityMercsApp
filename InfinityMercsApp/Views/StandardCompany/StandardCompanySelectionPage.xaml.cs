@@ -66,11 +66,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private readonly ArmySourceSelectionMode _mode;
     private readonly IMetadataProvider? _metadataProvider;
-    private readonly IArmyDataAccessor? _armyDataAccessor;
-    private readonly IMercsArmyListAccessor? _mercsArmyListAccessor;
+    private readonly IFactionProvider? _factionProvider;
+    private readonly ICohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
     private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();    private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
@@ -92,12 +92,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     public StandardCompanySelectionPage(
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
-        IArmyDataAccessor? armyDataAccessor,
-        IMercsArmyListAccessor? mercsArmyListAccessor,
+        IFactionProvider? factionProvider,
         ISpecOpsDataAccessor specOpsDataAccessor,
+        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
-        AppSettingsService? appSettingsService)
-        : base(mode, metadataProvider, armyDataAccessor, mercsArmyListAccessor, specOpsDataAccessor, factionLogoCacheService, appSettingsService)
+        IAppSettingsProvider? appSettingsProvider)
+        : base(mode, metadataProvider, factionProvider, specOpsDataAccessor, cohesiveCompanyFactionQueryAccessor, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
         FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);
@@ -117,11 +117,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             : "Choose your sectorials";
 
         _metadataProvider = MetadataProvider;
-        _armyDataAccessor = ArmyDataAccessor;
-        _mercsArmyListAccessor = MercsArmyListAccessor;
+        _factionProvider = FactionProvider;
+        _cohesiveCompanyFactionQueryAccessor = CohesiveCompanyFactionQueryAccessor;
         _specOpsDataAccessor = SpecOpsDataAccessor;
         _factionLogoCacheService = FactionLogoCacheService;
-        _appSettingsService = AppSettingsService;
+        _appSettingsProvider = AppSettingsProvider;
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {
@@ -1000,7 +1000,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         var weapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (_armyDataAccessor is not null && _mercsArmyListAccessor is not null)
+        if (_factionProvider is not null && _cohesiveCompanyFactionQueryAccessor is not null)
         {
             var sourceFactions = GetUnitSourceFactions();
             var sourceFactionIds = sourceFactions
@@ -1017,7 +1017,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             foreach (var factionId in sourceFactionIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+                var snapshot = GetFactionSnapshotFromProvider(factionId, cancellationToken);
                 var filtersJson = snapshot?.FiltersJson;
                 if (string.IsNullOrWhiteSpace(filtersJson))
                 {
@@ -1032,12 +1032,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 MergeLookup(ammoLookup, BuildIdNameLookup(filtersJson, "ammunition"));
             }
 
-            var mergedMercsList = await _mercsArmyListAccessor.GetMergedMercsArmyListAsync(sourceFactionIds, cancellationToken);
+            var mergedMercsList = await GetMergedMercsArmyListFromQueryAccessorAsync(sourceFactionIds, cancellationToken);
             foreach (var entry in mergedMercsList)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (entry.Resume.Type.HasValue &&
-                    typeLookup.TryGetValue(entry.Resume.Type.Value, out var typeName) &&
+                if (entry.Resume.Type is int typeId &&
+                    typeLookup.TryGetValue(typeId, out var typeName) &&
                     !string.IsNullOrWhiteSpace(typeName))
                 {
                     classification.Add(typeName.Trim());
@@ -1210,7 +1210,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         TeamEntries.Clear();
         _selectedUnit = null;
         ResetUnitDetails();
-        if (_armyDataAccessor is null)
+        if (_factionProvider is null)
         {
             return;
         }
@@ -1229,7 +1229,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var faction in factions)
             {
-                var units = await _armyDataAccessor.GetResumeByFactionMercsOnlyAsync(faction.Id, cancellationToken);
+                var units = GetResumeByFactionMercsOnlyFromProvider(faction.Id, cancellationToken);
                 var resumeByUnitId = units
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
@@ -1237,7 +1237,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 var specopsByUnitId = specopsUnits
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
                 var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
@@ -1601,7 +1601,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             if (unitItem is null)
             {
-                var unitRecord = await _armyDataAccessor!.GetUnitAsync(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
+                var unitRecord = GetUnitFromProvider(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
                 var unitName = !string.IsNullOrWhiteSpace(unitRecord?.Name)
                     ? unitRecord.Name
                     : entry.Name;
@@ -1700,7 +1700,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
     {
-        if (_armyDataAccessor is null || Units.Count == 0)
+        if (_factionProvider is null || Units.Count == 0)
         {
             return;
         }
@@ -1721,7 +1721,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var specopsByFaction = new Dictionary<int, Dictionary<int, ArmySpecopsUnitRecord>>();
             foreach (var faction in factions)
             {
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(faction.Id, cancellationToken);
+                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
                 skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
                 typeLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 charsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
@@ -1754,7 +1754,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                var unitRecord = await _armyDataAccessor.GetUnitAsync(unit.SourceFactionId, unit.Id, cancellationToken);
+                var unitRecord = GetUnitFromProvider(unit.SourceFactionId, unit.Id, cancellationToken);
                 var profileGroupsJson = unitRecord?.ProfileGroupsJson;
                 if (specopsByFaction.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
                     specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit))
@@ -2520,14 +2520,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
     {
-        if (_armyDataAccessor is null || factionId <= 0)
+        if (_factionProvider is null || factionId <= 0)
         {
             return CaptainUpgradeOptionSet.Empty;
         }
 
         try
         {
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId, cancellationToken);
+            var snapshot = GetFactionSnapshotFromProvider(factionId, cancellationToken);
             var skillLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var weaponLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
@@ -2772,7 +2772,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
         ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
-        if (_selectedUnit is null || _armyDataAccessor is null)
+        if (_selectedUnit is null || _factionProvider is null)
         {
             Console.Error.WriteLine("ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
             return;
@@ -2782,7 +2782,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         {
             Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync started: id={_selectedUnit.Id}, faction={_selectedUnit.SourceFactionId}, name='{_selectedUnit.Name}'.");
             UnitNameHeading = _selectedUnit.Name;
-            var unit = await _armyDataAccessor.GetUnitAsync(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
+            var unit = GetUnitFromProvider(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
             ArmySpecopsUnitRecord? specopsUnit = null;
             if (_selectedUnit.IsSpecOps || unit is null)
             {
@@ -2802,7 +2802,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 profileGroupsJson = specopsUnit?.ProfileGroupsJson;
             }
 
-            var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(_selectedUnit.SourceFactionId, cancellationToken);
+            var snapshot = GetFactionSnapshotFromProvider(_selectedUnit.SourceFactionId, cancellationToken);
             if (string.IsNullOrWhiteSpace(profileGroupsJson))
             {
                 Console.Error.WriteLine($"ArmyFactionSelectionPage: profile groups not found for faction={_selectedUnit.SourceFactionId}, unit={_selectedUnit.Id}.");
@@ -5636,19 +5636,19 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         return false;
     }
 
-    private async Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
+    private Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync(cancellationToken);
+            var showInches = GetShowUnitsInInchesFromProvider(cancellationToken);
             if (ShowUnitsInInches == showInches)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             ShowUnitsInInches = showInches;
@@ -5660,6 +5660,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyGlobalDisplayUnitsPreferenceAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
     private static List<string> ComputeCommonNamesFromProfiles(
@@ -6992,6 +6994,125 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         const float inset = 1f;
         canvas.DrawRect(inset, inset, e.Info.Width - (inset * 2f), e.Info.Height - (inset * 2f), borderPaint);
+    }
+
+    private ArmyFactionRecord? GetFactionSnapshotFromProvider(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_factionProvider is null || factionId <= 0)
+        {
+            return null;
+        }
+
+        return ToArmyFactionRecord(_factionProvider.GetFactionSnapshot(factionId));
+    }
+
+    private IReadOnlyList<ArmyResumeRecord> GetResumeByFactionMercsOnlyFromProvider(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_factionProvider is null || factionId <= 0)
+        {
+            return [];
+        }
+
+        var resumes = _factionProvider.GetResumeByFactionMercsOnly(factionId)
+            .Select(ToArmyResumeRecord)
+            .ToList();
+        return resumes;
+    }
+
+    private ArmyUnitRecord? GetUnitFromProvider(int factionId, int unitId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_factionProvider is null || factionId <= 0 || unitId <= 0)
+        {
+            return null;
+        }
+
+        return ToArmyUnitRecord(_factionProvider.GetUnit(factionId, unitId));
+    }
+
+    private async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListFromQueryAccessorAsync(
+        IReadOnlyCollection<int> factionIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (_cohesiveCompanyFactionQueryAccessor is null || factionIds.Count == 0)
+        {
+            return [];
+        }
+
+        var queryResult = await _cohesiveCompanyFactionQueryAccessor.GetFilterQuerySourceAsync(factionIds, cancellationToken);
+        return queryResult.MergedMercsListEntries;
+    }
+
+    private bool GetShowUnitsInInchesFromProvider(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return _appSettingsProvider?.GetShowUnitsInInches() ?? false;
+    }
+
+    private static ArmyFactionRecord? ToArmyFactionRecord(InfinityMercsApp.Infrastructure.Models.Database.Army.Faction? faction)
+    {
+        if (faction is null)
+        {
+            return null;
+        }
+
+        return new ArmyFactionRecord
+        {
+            FactionId = faction.FactionId,
+            Version = faction.Version,
+            ImportedAtUnixSeconds = faction.ImportedAtUnixSeconds,
+            ReinforcementsJson = faction.ReinforcementsJson,
+            FiltersJson = faction.FiltersJson,
+            FireteamsJson = faction.FireteamsJson,
+            RelationsJson = faction.RelationsJson,
+            SpecopsJson = faction.SpecopsJson,
+            FireteamChartJson = faction.FireteamChartJson,
+            RawJson = faction.RawJson
+        };
+    }
+
+    private static ArmyResumeRecord ToArmyResumeRecord(InfinityMercsApp.Infrastructure.Models.Database.Army.Resume resume)
+    {
+        return new ArmyResumeRecord
+        {
+            ResumeKey = resume.ResumeKey,
+            FactionId = resume.FactionId,
+            UnitId = resume.UnitId,
+            IdArmy = resume.IdArmy,
+            Isc = resume.Isc,
+            Name = resume.Name,
+            Slug = resume.Slug,
+            Logo = resume.Logo,
+            Type = resume.Type,
+            Category = resume.Category
+        };
+    }
+
+    private static ArmyUnitRecord? ToArmyUnitRecord(InfinityMercsApp.Infrastructure.Models.Database.Army.Unit? unit)
+    {
+        if (unit is null)
+        {
+            return null;
+        }
+
+        return new ArmyUnitRecord
+        {
+            UnitKey = unit.UnitKey,
+            FactionId = unit.FactionId,
+            UnitId = unit.UnitId,
+            IdArmy = unit.IdArmy,
+            Canonical = unit.Canonical,
+            Isc = unit.Isc,
+            IscAbbr = unit.IscAbbr,
+            Name = unit.Name,
+            Slug = unit.Slug,
+            ProfileGroupsJson = unit.ProfileGroupsJson,
+            OptionsJson = unit.OptionsJson,
+            FiltersJson = unit.FiltersJson,
+            FactionsJson = unit.FactionsJson
+        };
     }
 
 }
@@ -8548,6 +8669,11 @@ public static class UnitExperienceRanks
         return 0;
     }
 }
+
+
+
+
+
 
 
 

@@ -3,7 +3,6 @@ using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Infrastructure.Repositories;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Services;
-using InfinityMercsApp.Services.Compatibility;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.UnitEncyclopedia;
@@ -44,9 +43,11 @@ public static class ServiceRegistryExtensions
 
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
-        services.AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessorAdapter>()
-                .AddSingleton<IArmyDataAccessor, ArmyDataAccessorAdapter>()
-                .AddSingleton<IMercsArmyListAccessor, MercsArmyListAccessorAdapter>()
+        services.AddSingleton<IDatabaseContext, DatabaseContext>()
+                .AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessor>()
+                .AddSingleton<IArmyDataAccessor, ArmyDataAccessor>()
+                .AddSingleton<IMercsArmyListAccessor, MercsArmyListAccessor>()
+                .AddSingleton<ICohesiveCompanyFactionQueryAccessor, CohesiveCompanyFactionQueryAccessor>()
                 .AddSingleton<AppSettingsService>()
                 .AddSingleton<INavigationService, MauiNavigationService>()
                 .AddSingleton<ICompanySelectionPageFactory, CompanySelectionPageFactory>()
