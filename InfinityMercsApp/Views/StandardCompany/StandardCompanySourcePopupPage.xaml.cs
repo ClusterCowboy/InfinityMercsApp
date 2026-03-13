@@ -12,6 +12,6 @@ public partial class StandardCompanySourcePopupPage
 
     private async void OnBackClicked(object? sender, EventArgs e)
     {
-        await Navigation.PopModalAsync();
+        await Shell.Current.GoToAsync("//CreateNewCompanyPage");
     }
 }

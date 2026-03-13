@@ -12,7 +12,7 @@ public partial class StandardCompanySourcePopupPageViewModel(
     [RelayCommand]
     private async Task ClosePopupAsync()
     {
-        await NavigationService.PopModalAsync();
+        await NavigationService.NavigateToAsync("//CreateNewCompanyPage");
     }
 
     [RelayCommand]
