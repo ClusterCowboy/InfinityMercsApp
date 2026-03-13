@@ -26,7 +26,7 @@ public class ViewerViewModel : BaseViewModel
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IFactionProvider? _factionProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private bool _isLoading;
     private string _status = "Loading factions...";
     private string _unitsStatus = "Select a faction.";
@@ -81,12 +81,12 @@ public class ViewerViewModel : BaseViewModel
         IMetadataProvider? metadataProvider = null,
         IFactionProvider? factionProvider = null,
         FactionLogoCacheService? factionLogoCacheService = null,
-        AppSettingsService? appSettingsService = null)
+        IAppSettingsProvider? appSettingsProvider = null)
     {
         _metadataProvider = metadataProvider;
         _factionProvider = factionProvider;
         _factionLogoCacheService = factionLogoCacheService;
-        _appSettingsService = appSettingsService;
+        _appSettingsProvider = appSettingsProvider;
 
         SelectFactionCommand = new Command<ViewerFactionItem>(async item =>
         {
@@ -3497,19 +3497,20 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
-    private async Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
+    private Task ApplyGlobalDisplayUnitsPreferenceAsync(CancellationToken cancellationToken = default)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var showInches = _appSettingsProvider.GetShowUnitsInInches();
             if (_showUnitsInInches == showInches)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             _showUnitsInInches = showInches;
@@ -3521,6 +3522,8 @@ public class ViewerViewModel : BaseViewModel
         {
             Console.Error.WriteLine($"ApplyGlobalDisplayUnitsPreferenceAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 }
 
@@ -3708,3 +3711,4 @@ public class ViewerProfileItem : BaseViewModel
         }
     }
 }
+

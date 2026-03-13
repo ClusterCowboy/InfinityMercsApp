@@ -10,16 +10,16 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
 {
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IFactionProvider? _factionProvider;
-    private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
-    private readonly ICohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
+    private readonly SpecOpsDataAccessor _specOpsDataAccessor;
+    private readonly CohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
 
     public CompanySelectionPageFactory(
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
-        ISpecOpsDataAccessor specOpsDataAccessor,
-        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
+        SpecOpsDataAccessor specOpsDataAccessor,
+        CohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider)
     {

@@ -17,8 +17,8 @@ public abstract class CompanySelectionPageBase : ContentPage
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
-        ISpecOpsDataAccessor specOpsDataAccessor,
-        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
+        SpecOpsDataAccessor specOpsDataAccessor,
+        CohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider)
     {
@@ -34,8 +34,8 @@ public abstract class CompanySelectionPageBase : ContentPage
     protected ArmySourceSelectionMode Mode { get; }
     protected IMetadataProvider? MetadataProvider { get; }
     protected IFactionProvider? FactionProvider { get; }
-    protected ISpecOpsDataAccessor SpecOpsDataAccessor { get; }
-    protected ICohesiveCompanyFactionQueryAccessor? CohesiveCompanyFactionQueryAccessor { get; }
+    protected SpecOpsDataAccessor SpecOpsDataAccessor { get; }
+    protected CohesiveCompanyFactionQueryAccessor? CohesiveCompanyFactionQueryAccessor { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
     protected IAppSettingsProvider? AppSettingsProvider { get; }
 

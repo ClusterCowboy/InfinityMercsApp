@@ -4,14 +4,14 @@ using SQLite;
 namespace InfinityMercsApp.Data.Database;
 
 /// @brief SQLite-backed accessor for Spec-Ops indexing, querying, and CC fireteam validity cache rows.
-public class SpecOpsDataAccessor : ISpecOpsDataAccessor
+public class SpecOpsDataAccessor
 {
     private const int YuJingFactionId = 201;
     private const int JsaFactionId = 1101;
     private const int JsaShindenbutaiFactionId = 1102;
     private const int JsaObanFactionId = 1103;
 
-    private readonly IDatabaseContext _databaseContext;
+    private readonly DatabaseContext _databaseContext;
     private readonly SQLiteAsyncConnection _connection;
     // Backfill may be triggered from multiple call paths; this gate makes the operation one-time and thread-safe.
     private readonly SemaphoreSlim _specopsBackfillGate = new(1, 1);
@@ -19,7 +19,7 @@ public class SpecOpsDataAccessor : ISpecOpsDataAccessor
 
     /// @brief Creates a new Spec-Ops data accessor.
     /// @param databaseContext Database context providing connection and initialization.
-    public SpecOpsDataAccessor(IDatabaseContext databaseContext)
+    public SpecOpsDataAccessor(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;
         _connection = databaseContext.Connection;

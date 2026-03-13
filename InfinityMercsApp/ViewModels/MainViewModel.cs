@@ -14,7 +14,7 @@ public class MainViewModel : BaseViewModel
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IImportService? _importService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private int _count;
     private string _metadataStatus = "Metadata file not downloaded yet.";
     private string _armyStatus = "Army file not downloaded yet.";
@@ -31,7 +31,7 @@ public class MainViewModel : BaseViewModel
         IMetadataProvider? metadataProvider = null,
         IImportService? importService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
-        AppSettingsService? appSettingsService = null)
+        IAppSettingsProvider? appSettingsProvider = null)
     {
         _infinityArmyApi = infinityArmyApi;
         _factionProvider = factionProvider;
@@ -39,7 +39,7 @@ public class MainViewModel : BaseViewModel
         _metadataProvider = metadataProvider;
         _importService = importService;
         _factionLogoCacheService = factionLogoCacheService;
-        _appSettingsService = appSettingsService;
+        _appSettingsProvider = appSettingsProvider;
         IncrementCounterCommand = new Command(OnIncrementCounter);
         DownloadMetadataCommand = new Command(async () => await DownloadMetadataAsync());
         DownloadArmyDataCommand = new Command(async () => await DownloadArmyDataAsync());
@@ -431,16 +431,16 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    private async Task LoadGlobalSettingsAsync()
+    private Task LoadGlobalSettingsAsync()
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync();
+            var showInches = _appSettingsProvider.GetShowUnitsInInches();
             _showUnitsInInches = showInches;
             OnPropertyChanged(nameof(ShowUnitsInInches));
             OnPropertyChanged(nameof(ShowUnitsInCentimeters));
@@ -449,23 +449,27 @@ public class MainViewModel : BaseViewModel
         {
             Console.Error.WriteLine($"LoadGlobalSettingsAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task SaveDisplayUnitsSettingAsync(bool showInches)
+    private Task SaveDisplayUnitsSettingAsync(bool showInches)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            await _appSettingsService.SetShowUnitsInInchesAsync(showInches);
+            _appSettingsProvider.SetShowUnitsInInches(showInches);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"SaveDisplayUnitsSettingAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
     private static int CompareVersions(string left, string right)
@@ -545,3 +549,4 @@ public class MainViewModel : BaseViewModel
         }
     }
 }
+

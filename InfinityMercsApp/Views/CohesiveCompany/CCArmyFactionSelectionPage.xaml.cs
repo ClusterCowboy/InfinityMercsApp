@@ -68,8 +68,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private readonly ArmySourceSelectionMode _mode;
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IFactionProvider? _factionProvider;
-    private readonly ICohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
-    private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
+    private readonly CohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
+    private readonly SpecOpsDataAccessor _specOpsDataAccessor;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();    private SKPicture? _filterIconPicture;
@@ -101,8 +101,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
-        ISpecOpsDataAccessor specOpsDataAccessor,
-        ICohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
+        SpecOpsDataAccessor specOpsDataAccessor,
+        CohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider)
         : base(mode, metadataProvider, factionProvider, specOpsDataAccessor, cohesiveCompanyFactionQueryAccessor, factionLogoCacheService, appSettingsProvider)

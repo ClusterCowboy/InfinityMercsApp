@@ -4,14 +4,14 @@ using System.Text.Json.Nodes;
 namespace InfinityMercsApp.Data.Database;
 
 /// <summary>
-/// Wrapper around <see cref="IArmyDataAccessor"/> that merges Mercs-only resume queries
+/// Wrapper around <see cref="ArmyDataAccessor"/> that merges Mercs-only resume queries
 /// across one or two source factions.
 /// </summary>
-public sealed class MercsArmyListAccessor : IMercsArmyListAccessor
+public sealed class MercsArmyListAccessor
 {
-    private readonly IArmyDataAccessor _armyDataAccessor;
+    private readonly ArmyDataAccessor _armyDataAccessor;
 
-    public MercsArmyListAccessor(IArmyDataAccessor armyDataAccessor)
+    public MercsArmyListAccessor(ArmyDataAccessor armyDataAccessor)
     {
         _armyDataAccessor = armyDataAccessor;
     }

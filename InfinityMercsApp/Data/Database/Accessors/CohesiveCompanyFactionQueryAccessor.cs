@@ -1,13 +1,13 @@
 namespace InfinityMercsApp.Data.Database;
 
-public sealed class CohesiveCompanyFactionQueryAccessor : ICohesiveCompanyFactionQueryAccessor
+public sealed class CohesiveCompanyFactionQueryAccessor
 {
-    private readonly IArmyDataAccessor _armyDataAccessor;
-    private readonly IMercsArmyListAccessor _mercsArmyListAccessor;
+    private readonly ArmyDataAccessor _armyDataAccessor;
+    private readonly MercsArmyListAccessor _mercsArmyListAccessor;
 
     public CohesiveCompanyFactionQueryAccessor(
-        IArmyDataAccessor armyDataAccessor,
-        IMercsArmyListAccessor mercsArmyListAccessor)
+        ArmyDataAccessor armyDataAccessor,
+        MercsArmyListAccessor mercsArmyListAccessor)
     {
         _armyDataAccessor = armyDataAccessor;
         _mercsArmyListAccessor = mercsArmyListAccessor;

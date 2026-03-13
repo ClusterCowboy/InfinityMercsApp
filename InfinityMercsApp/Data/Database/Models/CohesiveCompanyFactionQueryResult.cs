@@ -1,12 +1,5 @@
 namespace InfinityMercsApp.Data.Database;
 
-public interface ICohesiveCompanyFactionQueryAccessor
-{
-    Task<CohesiveCompanyFactionQueryResult> GetFilterQuerySourceAsync(
-        IReadOnlyCollection<int> factionIds,
-        CancellationToken cancellationToken = default);
-}
-
 public sealed class CohesiveCompanyFactionQueryResult
 {
     public IReadOnlyDictionary<int, string> TypeLookup { get; init; } = new Dictionary<int, string>();

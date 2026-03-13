@@ -1,14 +1,8 @@
-using InfinityMercsApp.Infrastructure.API.InfinityArmy;
-using InfinityMercsApp.Infrastructure.Providers;
-using InfinityMercsApp.Infrastructure.Repositories;
 using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.UnitEncyclopedia;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace InfinityMercsApp;
 
@@ -43,12 +37,11 @@ public static class ServiceRegistryExtensions
 
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
-        services.AddSingleton<IDatabaseContext, DatabaseContext>()
-                .AddSingleton<ISpecOpsDataAccessor, SpecOpsDataAccessor>()
-                .AddSingleton<IArmyDataAccessor, ArmyDataAccessor>()
-                .AddSingleton<IMercsArmyListAccessor, MercsArmyListAccessor>()
-                .AddSingleton<ICohesiveCompanyFactionQueryAccessor, CohesiveCompanyFactionQueryAccessor>()
-                .AddSingleton<AppSettingsService>()
+        services.AddSingleton<DatabaseContext>()
+                .AddSingleton<SpecOpsDataAccessor>()
+                .AddSingleton<ArmyDataAccessor>()
+                .AddSingleton<MercsArmyListAccessor>()
+                .AddSingleton<CohesiveCompanyFactionQueryAccessor>()
                 .AddSingleton<INavigationService, MauiNavigationService>()
                 .AddSingleton<ICompanySelectionPageFactory, CompanySelectionPageFactory>()
                 .AddSingleton<FactionLogoCacheService>()
@@ -58,4 +51,3 @@ public static class ServiceRegistryExtensions
         return services;
     }
 }
-

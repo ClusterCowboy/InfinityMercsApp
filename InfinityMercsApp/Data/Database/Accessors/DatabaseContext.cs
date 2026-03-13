@@ -4,7 +4,7 @@ using SQLite;
 
 namespace InfinityMercsApp.Data.Database;
 
-public class DatabaseContext : IDatabaseContext
+public class DatabaseContext
 {
     public SQLiteAsyncConnection Connection { get; }
     private bool _isInitialized;

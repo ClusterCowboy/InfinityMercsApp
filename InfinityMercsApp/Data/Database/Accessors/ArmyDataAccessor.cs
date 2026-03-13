@@ -5,7 +5,7 @@ using SQLite;
 namespace InfinityMercsApp.Data.Database;
 
 /// @brief SQLite-backed accessor for imported army snapshot data and non-SpecOps query paths.
-public class ArmyDataAccessor : IArmyDataAccessor
+public class ArmyDataAccessor
 {
     private const int CharacterCategory = 10;
     private const int TagType = 4;
@@ -19,15 +19,15 @@ public class ArmyDataAccessor : IArmyDataAccessor
         Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
     };
 
-    private readonly IDatabaseContext _databaseContext;
+    private readonly DatabaseContext _databaseContext;
     // Spec-Ops persistence/query concerns live in the dedicated accessor to keep this class focused.
-    private readonly ISpecOpsDataAccessor _specOpsDataAccessor;
+    private readonly SpecOpsDataAccessor _specOpsDataAccessor;
     private readonly SQLiteAsyncConnection _connection;
 
     /// @brief Creates a new army data accessor.
     /// @param databaseContext Database context providing connection and initialization.
     /// @param specOpsDataAccessor Accessor responsible for SpecOps data.
-    public ArmyDataAccessor(IDatabaseContext databaseContext, ISpecOpsDataAccessor specOpsDataAccessor)
+    public ArmyDataAccessor(DatabaseContext databaseContext, SpecOpsDataAccessor specOpsDataAccessor)
     {
         _databaseContext = databaseContext;
         _specOpsDataAccessor = specOpsDataAccessor;
