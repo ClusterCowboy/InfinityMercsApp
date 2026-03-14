@@ -1,4 +1,3 @@
-using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.CohesiveCompany;
@@ -10,23 +9,23 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
 {
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IFactionProvider? _factionProvider;
-    private readonly SpecOpsDataAccessor _specOpsDataAccessor;
-    private readonly CohesiveCompanyFactionQueryAccessor? _cohesiveCompanyFactionQueryAccessor;
+    private readonly ISpecOpsProvider _specOpsProvider;
+    private readonly ICohesiveCompanyFactionQueryProvider _cohesiveCompanyFactionQueryProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
 
     public CompanySelectionPageFactory(
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
-        SpecOpsDataAccessor specOpsDataAccessor,
-        CohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
+        ISpecOpsProvider specOpsProvider,
+        ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider)
     {
         _metadataProvider = metadataProvider;
         _factionProvider = factionProvider;
-        _specOpsDataAccessor = specOpsDataAccessor;
-        _cohesiveCompanyFactionQueryAccessor = cohesiveCompanyFactionQueryAccessor;
+        _specOpsProvider = specOpsProvider;
+        _cohesiveCompanyFactionQueryProvider = cohesiveCompanyFactionQueryProvider;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsProvider = appSettingsProvider;
     }
@@ -37,8 +36,8 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             mode,
             _metadataProvider,
             _factionProvider,
-            _specOpsDataAccessor,
-            _cohesiveCompanyFactionQueryAccessor,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
             _factionLogoCacheService,
             _appSettingsProvider);
     }
@@ -49,8 +48,8 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             mode,
             _metadataProvider,
             _factionProvider,
-            _specOpsDataAccessor,
-            _cohesiveCompanyFactionQueryAccessor,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
             _factionLogoCacheService,
             _appSettingsProvider);
     }

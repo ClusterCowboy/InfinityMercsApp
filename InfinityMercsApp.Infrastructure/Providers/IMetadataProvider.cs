@@ -1,5 +1,4 @@
-using InfinityMercsApp.Domain.Models.DataImport;
-using InfinityMercsApp.Infrastructure.Models.Database.Metadata;
+using InfinityMercsApp.Domain.Models.Metadata;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
 
@@ -47,3 +46,4 @@ public interface IMetadataProvider
     /// <returns></returns>
     IReadOnlyList<Skill> GetSkills();
 }
+

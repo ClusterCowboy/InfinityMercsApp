@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Infrastructure.Models.Database.Army;
+using InfinityMercsApp.Domain.Models.Army;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
 
@@ -64,3 +64,4 @@ public interface IFactionProvider
     /// <returns></returns>
     IReadOnlyList<Resume> GetResumeByFactionMercsOnly(int factionId);
 }
+

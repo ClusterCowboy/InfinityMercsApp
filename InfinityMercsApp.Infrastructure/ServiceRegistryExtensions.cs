@@ -16,6 +16,7 @@ public static class ServiceRegistryExtensions
                 .AddSingleton<IArmyImportProvider, ArmyImportProvider>()
                 .AddSingleton<IFactionProvider, FactionProvider>()
                 .AddSingleton<IMetadataProvider, MetadataProvider>()
+                .AddSingleton<ICohesiveCompanyFactionQueryProvider, CohesiveCompanyFactionQueryProvider>()
                 .AddSingleton<ISpecOpsProvider, SpecOpsProvider>();
         return services;
     }

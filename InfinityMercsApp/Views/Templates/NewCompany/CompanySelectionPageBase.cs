@@ -1,4 +1,3 @@
-using InfinityMercsApp.Data.Database;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
@@ -17,16 +16,16 @@ public abstract class CompanySelectionPageBase : ContentPage
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
-        SpecOpsDataAccessor specOpsDataAccessor,
-        CohesiveCompanyFactionQueryAccessor? cohesiveCompanyFactionQueryAccessor,
+        ISpecOpsProvider specOpsProvider,
+        ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider)
     {
         Mode = mode;
         MetadataProvider = metadataProvider;
         FactionProvider = factionProvider;
-        SpecOpsDataAccessor = specOpsDataAccessor;
-        CohesiveCompanyFactionQueryAccessor = cohesiveCompanyFactionQueryAccessor;
+        SpecOpsProvider = specOpsProvider;
+        CohesiveCompanyFactionQueryProvider = cohesiveCompanyFactionQueryProvider;
         FactionLogoCacheService = factionLogoCacheService;
         AppSettingsProvider = appSettingsProvider;
     }
@@ -34,8 +33,8 @@ public abstract class CompanySelectionPageBase : ContentPage
     protected ArmySourceSelectionMode Mode { get; }
     protected IMetadataProvider? MetadataProvider { get; }
     protected IFactionProvider? FactionProvider { get; }
-    protected SpecOpsDataAccessor SpecOpsDataAccessor { get; }
-    protected CohesiveCompanyFactionQueryAccessor? CohesiveCompanyFactionQueryAccessor { get; }
+    protected ISpecOpsProvider SpecOpsProvider { get; }
+    protected ICohesiveCompanyFactionQueryProvider CohesiveCompanyFactionQueryProvider { get; }
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
     protected IAppSettingsProvider? AppSettingsProvider { get; }
 

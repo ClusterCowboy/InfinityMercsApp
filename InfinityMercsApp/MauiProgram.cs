@@ -1,8 +1,6 @@
 using System.Net;
 using InfinityMercsApp.Infrastructure;
 using InfinityMercsApp.Infrastructure.Options;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Data.WebAccess;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;

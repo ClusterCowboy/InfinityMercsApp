@@ -1,8 +1,18 @@
 namespace InfinityMercsApp.Infrastructure.Providers;
 
-using InfinityMercsApp.Domain.Models.DataImport;
-using InfinityMercsApp.Infrastructure.Models.Database.Metadata;
+using DomainFaction = InfinityMercsApp.Domain.Models.Metadata.Faction;
+using DomainSkill = InfinityMercsApp.Domain.Models.Metadata.Skill;
+using DomainWeapon = InfinityMercsApp.Domain.Models.Metadata.Weapon;
 using InfinityMercsApp.Infrastructure.Repositories;
+using DbAmmunition = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Ammunition;
+using DbBooty = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Booty;
+using DbEquipment = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Equipments;
+using DbFaction = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Faction;
+using DbHackProgram = InfinityMercsApp.Infrastructure.Models.Database.Metadata.HackingProgram;
+using DbMartialArt = InfinityMercsApp.Infrastructure.Models.Database.Metadata.MartialArt;
+using DbMetachemistry = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Metachemistry;
+using DbSkill = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Skill;
+using DbWeapon = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Weapon;
 using System.Text.Json;
 
 /// <inheritdoc/>
@@ -11,7 +21,7 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     /// <inheritdoc/>
     public void Import(Models.API.Metadata.MetadataDocument metadata)
     {
-        var factions = metadata.Factions.Select(x => new Faction
+        var factions = metadata.Factions.Select(x => new DbFaction
         {
             Id = x.Id,
             ParentId = x.Parent,
@@ -21,14 +31,14 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             Logo = x.Logo
         }).ToList();
 
-        var ammunitions = metadata.Ammunitions.Select(x => new Ammunition
+        var ammunitions = metadata.Ammunitions.Select(x => new DbAmmunition
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var weapons = metadata.Weapons.Select(x => new Weapon
+        var weapons = metadata.Weapons.Select(x => new DbWeapon
         {
             WeaponKey = BuildWeaponKey(x),
             WeaponId = x.Id,
@@ -46,21 +56,21 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             DistanceJson = x.Distance is null ? null : JsonSerializer.Serialize(x.Distance)
         }).ToList();
 
-        var skills = metadata.Skills.Select(x => new Skill
+        var skills = metadata.Skills.Select(x => new DbSkill
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var equips = metadata.Equips.Select(x => new Equipments
+        var equips = metadata.Equips.Select(x => new DbEquipment
         {
             Id = x.Id,
             Name = x.Name,
             Wiki = x.Wiki
         }).ToList();
 
-        var hacks = metadata.Hack.Select(x => new HackingProgram
+        var hacks = metadata.Hack.Select(x => new DbHackProgram
         {
             Name = x.Name,
             Opponent = x.Opponent,
@@ -74,7 +84,7 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             TargetJson = x.Target is null ? null : JsonSerializer.Serialize(x.Target)
         }).ToList();
 
-        var martialArts = metadata.MartialArts.Select(x => new MartialArt
+        var martialArts = metadata.MartialArts.Select(x => new DbMartialArt
         {
             Name = x.Name,
             Opponent = x.Opponent,
@@ -83,29 +93,29 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             Burst = x.Burst
         }).ToList();
 
-        var metachemistry = metadata.Metachemistry.Select(x => new Metachemistry
+        var metachemistry = metadata.Metachemistry.Select(x => new DbMetachemistry
         {
             Id = x.Id,
             Name = x.Name,
             Value = x.Value
         }).ToList();
 
-        var booty = metadata.Booty.Select(x => new Booty
+        var booty = metadata.Booty.Select(x => new DbBooty
         {
             Id = x.Id,
             Name = x.Name,
             Value = x.Value
         }).ToList();
 
-        sqliteRepository.DeleteAll<Faction>();
-        sqliteRepository.DeleteAll<Ammunition>();
-        sqliteRepository.DeleteAll<Weapon>();
-        sqliteRepository.DeleteAll<Skill>();
-        sqliteRepository.DeleteAll<Equipments>();
-        sqliteRepository.DeleteAll<HackingProgram>();
-        sqliteRepository.DeleteAll<MartialArt>();
-        sqliteRepository.DeleteAll<Metachemistry>();
-        sqliteRepository.DeleteAll<Booty>();
+        sqliteRepository.DeleteAll<DbFaction>();
+        sqliteRepository.DeleteAll<DbAmmunition>();
+        sqliteRepository.DeleteAll<DbWeapon>();
+        sqliteRepository.DeleteAll<DbSkill>();
+        sqliteRepository.DeleteAll<DbEquipment>();
+        sqliteRepository.DeleteAll<DbHackProgram>();
+        sqliteRepository.DeleteAll<DbMartialArt>();
+        sqliteRepository.DeleteAll<DbMetachemistry>();
+        sqliteRepository.DeleteAll<DbBooty>();
 
         sqliteRepository.Insert(factions);
         sqliteRepository.Insert(ammunitions);
@@ -121,44 +131,87 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     /// <inheritdoc/>
     public bool HasMetadata()
     {
-        return sqliteRepository.GetAll<Faction>(x => true).Count() > 0;
+        return sqliteRepository.GetAll<DbFaction>(x => true).Count() > 0;
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<Faction> GetFactions(bool includeDiscontinued = false)
+    public IReadOnlyList<DomainFaction> GetFactions(bool includeDiscontinued = false)
     {
-        if (!includeDiscontinued)
+        var records = includeDiscontinued
+            ? sqliteRepository.GetAll<DbFaction>(x => true, x => x.Name).ToList()
+            : sqliteRepository.GetAll<DbFaction>(x => !x.Discontinued).OrderBy(x => x.Name).ToList();
+
+        return records.Select(MapFaction).ToList();
+    }
+
+    /// <inheritdoc/>
+    public DomainFaction? GetFactionById(int id)
+    {
+        var row = sqliteRepository.GetById<DbFaction>(id);
+        return row is null ? null : MapFaction(row);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<DomainWeapon> SearchWeaponsByName(string searchTerm)
+    {
+        var records = string.IsNullOrWhiteSpace(searchTerm)
+            ? sqliteRepository.GetAll<DbWeapon>(x => true, x => x.Name).Take(100).ToList()
+            : sqliteRepository.GetAll<DbWeapon>(x => x.Name.Contains(searchTerm), x => x.Name).Take(100).ToList();
+        return records.Select(MapWeapon).ToList();
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<DomainSkill> GetSkills()
+    {
+        return sqliteRepository.GetAll<DbSkill>(x => true, x => x.Name)
+            .Select(MapSkill)
+            .ToList();
+    }
+
+    private static DomainFaction MapFaction(DbFaction source)
+    {
+        return new DomainFaction
         {
-            return sqliteRepository.GetAll<Faction>(x => !x.Discontinued).OrderBy(x => x.Name).ToList();
-        }
-
-        return sqliteRepository.GetAll<Faction>(x => true, x => x.Name).ToList();
+            Id = source.Id,
+            ParentId = source.ParentId,
+            Name = source.Name,
+            Slug = source.Slug,
+            Discontinued = source.Discontinued,
+            Logo = source.Logo
+        };
     }
 
-    /// <inheritdoc/>
-    public Faction? GetFactionById(int id)
+    private static DomainWeapon MapWeapon(DbWeapon source)
     {
-        return sqliteRepository.GetById<Faction>(id);
-    }
-
-    /// <inheritdoc/>
-    public IReadOnlyList<Weapon> SearchWeaponsByName(string searchTerm)
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        return new DomainWeapon
         {
-            return sqliteRepository.GetAll<Weapon>(x => true, x => x.Name).Take(100).ToList();
-        }
-
-        return sqliteRepository.GetAll<Weapon>(x => x.Name.Contains(searchTerm), x => x.Name).Take(100).ToList();
+            WeaponKey = source.WeaponKey,
+            WeaponId = source.WeaponId,
+            Name = source.Name,
+            Type = source.Type,
+            Mode = source.Mode,
+            Wiki = source.Wiki,
+            AmmunitionId = source.AmmunitionId,
+            Burst = source.Burst,
+            Damage = source.Damage,
+            Saving = source.Saving,
+            SavingNum = source.SavingNum,
+            Profile = source.Profile,
+            PropertiesJson = source.PropertiesJson,
+            DistanceJson = source.DistanceJson
+        };
     }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<Skill> GetSkills()
+    private static DomainSkill MapSkill(DbSkill source)
     {
-        return sqliteRepository.GetAll<Skill>(x => true, x => x.Name).ToList();
+        return new DomainSkill
+        {
+            Id = source.Id,
+            Name = source.Name,
+            Wiki = source.Wiki
+        };
     }
 
-    /// <inheritdoc/>
     private static string BuildWeaponKey(Models.API.Metadata.Weapon weapon)
     {
         return $"{weapon.Id}:{weapon.Name}:{weapon.Mode ?? string.Empty}";

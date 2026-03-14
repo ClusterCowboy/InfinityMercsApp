@@ -81,10 +81,13 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
+	  <ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Remove="_tempdiag\\**\\*.cs" />
+		<Compile Remove="Data\\Database\\**\\*.cs" />
+		<Compile Remove="Data\\WebAccess\\**\\*.cs" />
 		<Content Remove="_tempdiag\\**\\*" />
 		<EmbeddedResource Remove="_tempdiag\\**\\*" />
 		<None Remove="_tempdiag\\**\\*" />

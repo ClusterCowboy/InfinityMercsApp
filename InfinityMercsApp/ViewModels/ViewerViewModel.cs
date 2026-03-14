@@ -5,10 +5,11 @@ using System.Text.RegularExpressions;
 using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Infrastructure.Models.Database.Army;
+using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
+using Resume = InfinityMercsApp.Domain.Models.Army.Resume;
 
 namespace InfinityMercsApp.ViewModels;
 
@@ -1035,19 +1036,9 @@ public class ViewerViewModel : BaseViewModel
             if (_factionLogoCacheService is not null)
             {
                 UnitsStatus = "Preparing unit SVG cache...";
-                var cacheResult = await _factionLogoCacheService.CacheUnitLogosAsync(
+                var cacheResult = await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(
                     SelectedFaction.Id,
-                    units.Select(x => new Infrastructure.Models.API.Army.Resume
-                    {
-                        Id = x.UnitId,
-                        IdArmy = x.IdArmy,
-                        Isc = x.Isc,
-                        Name = x.Name,
-                        Slug = x.Slug,
-                        Logo = x.Logo,
-                        Type = x.Type,
-                        Category = x.Category
-                    }),
+                    units,
                     cancellationToken);
                 Console.Error.WriteLine($"Unit cache for faction {SelectedFaction.Id}: downloaded={cacheResult.Downloaded}, reused={cacheResult.CachedReuse}, failed={cacheResult.Failed}");
             }
