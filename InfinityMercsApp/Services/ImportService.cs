@@ -1,8 +1,6 @@
 using InfinityMercsApp.Domain.Models.DataImport;
 using InfinityMercsApp.Infrastructure.API.InfinityArmy;
-using InfinityMercsApp.Infrastructure.Models.App;
 using InfinityMercsApp.Infrastructure.Providers;
-using InfinityMercsApp.Infrastructure.Repositories;
 using System.Globalization;
 
 namespace InfinityMercsApp.Services;
@@ -13,10 +11,9 @@ internal class ImportService(
     IFactionProvider factionProvider,
     IMetadataProvider metadataProvider,
     IArmyImportProvider armyImportProvider,
-    ISQLiteRepository sqliteRepository,
+    IAppSettingsProvider appSettingsProvider,
     FactionLogoCacheService factionLogoCacheService) : IImportService
 {
-    private const string LastStartupUpdateAttemptKey = "startup_update_last_attempt_utc";
     private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
 
     /// <inheritdoc/>
@@ -208,43 +205,19 @@ internal class ImportService(
 
     private bool ShouldAttemptStartupUpdate()
     {
-        var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == LastStartupUpdateAttemptKey).FirstOrDefault();
-
-        if (setting is null)
+        var lastAttemptUtc = appSettingsProvider.GetStartupUpdateLastAttemptUtc();
+        if (!lastAttemptUtc.HasValue)
         {
             return true;
         }
 
-        if (!DateTimeOffset.TryParse(
-                setting.Value,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out var lastAttemptUtc))
-        {
-            return true;
-        }
-
-        var elapsed = DateTimeOffset.UtcNow - lastAttemptUtc;
+        var elapsed = DateTimeOffset.UtcNow - lastAttemptUtc.Value;
         return elapsed >= StartupUpdateInterval;
     }
 
     private void RecordStartupUpdateAttempt()
     {
-        var value = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
-        var existingSetting = sqliteRepository.GetAll<AppSetting>(x => x.Key == LastStartupUpdateAttemptKey).FirstOrDefault();
-
-        if (existingSetting is null)
-        {
-            sqliteRepository.Insert([new AppSetting
-            {
-                Key = LastStartupUpdateAttemptKey,
-                Value = value
-            }]);
-            return;
-        }
-
-        existingSetting.Value = value;
-        sqliteRepository.Update(existingSetting);
+        appSettingsProvider.SetStartupUpdateLastAttemptUtc(DateTimeOffset.UtcNow);
     }
 
     private async Task<FactionImportResult> ImportFactionAsync(FactionTarget faction)

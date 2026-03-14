@@ -123,3 +123,4 @@ And more
 - [] Filter criteria are no longer populating correctly
 - [] Create an indicator (yellow circle?) to indicate filter is on
 - [] Background Colors not populating correctly based on faction
+- [] Evaulation of Fireteam level is not correct

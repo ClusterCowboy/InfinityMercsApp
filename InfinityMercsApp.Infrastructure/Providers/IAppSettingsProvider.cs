@@ -28,4 +28,16 @@ public interface IAppSettingsProvider
     /// </summary>
     /// <param name="endpoint"></param>
     public void SetFeedbackApiEndpoint(string endpoint);
+
+    /// <summary>
+    /// Gets the last startup update attempt timestamp in UTC.
+    /// </summary>
+    /// <returns>The timestamp if present and parseable; otherwise null.</returns>
+    public DateTimeOffset? GetStartupUpdateLastAttemptUtc();
+
+    /// <summary>
+    /// Sets the last startup update attempt timestamp in UTC.
+    /// </summary>
+    /// <param name="attemptedAtUtc">The UTC timestamp to persist.</param>
+    public void SetStartupUpdateLastAttemptUtc(DateTimeOffset attemptedAtUtc);
 }

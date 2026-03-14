@@ -1,5 +1,6 @@
-﻿using InfinityMercsApp.Infrastructure.Models.App;
+using InfinityMercsApp.Infrastructure.Models.App;
 using InfinityMercsApp.Infrastructure.Repositories;
+using System.Globalization;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
 
@@ -10,11 +11,11 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     private const string DisplayUnitsInches = "inches";
     private const string DisplayUnitsCentimeters = "centimeters";
     private const string FeedbackApiEndpointKey = "feedback_api_endpoint";
+    private const string StartupUpdateLastAttemptUtcKey = "startup_update_last_attempt_utc";
 
     /// <inheritdoc/>
     public bool GetShowUnitsInInches()
     {
-
         var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == DisplayUnitsKey).FirstOrDefault();
 
         if (setting is null)
@@ -72,5 +73,46 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
         existing.Value = sanitizedValue;
         sqliteRepository.Update(existing);
     }
-}
 
+    /// <inheritdoc/>
+    public DateTimeOffset? GetStartupUpdateLastAttemptUtc()
+    {
+        var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey).FirstOrDefault();
+
+        if (setting is null || string.IsNullOrWhiteSpace(setting.Value))
+        {
+            return null;
+        }
+
+        if (!DateTimeOffset.TryParse(
+                setting.Value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var lastAttemptUtc))
+        {
+            return null;
+        }
+
+        return lastAttemptUtc;
+    }
+
+    /// <inheritdoc/>
+    public void SetStartupUpdateLastAttemptUtc(DateTimeOffset attemptedAtUtc)
+    {
+        var value = attemptedAtUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+        var existing = sqliteRepository.GetAll<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey).FirstOrDefault();
+
+        if (existing is null)
+        {
+            sqliteRepository.Insert([new AppSetting
+            {
+                Key = StartupUpdateLastAttemptUtcKey,
+                Value = value
+            }]);
+            return;
+        }
+
+        existing.Value = value;
+        sqliteRepository.Update(existing);
+    }
+}
