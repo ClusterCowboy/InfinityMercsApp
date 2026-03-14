@@ -11,7 +11,7 @@ public interface IMetadataProvider
     /// Imports data to SQLite.
     /// </summary>
     /// <param name="metadata"></param>
-    void Import(Models.API.Metadata.MetadataDocument metadata);
+    void Import(MetadataDocument metadata);
 
     /// <summary>
     /// Determines whether metadata exists.

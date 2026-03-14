@@ -1,5 +1,6 @@
 namespace InfinityMercsApp.Infrastructure.Providers;
 
+using DomainMetadataDocument = InfinityMercsApp.Domain.Models.Metadata.MetadataDocument;
 using DomainFaction = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using DomainSkill = InfinityMercsApp.Domain.Models.Metadata.Skill;
 using DomainWeapon = InfinityMercsApp.Domain.Models.Metadata.Weapon;
@@ -13,18 +14,17 @@ using DbMartialArt = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Ma
 using DbMetachemistry = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Metachemistry;
 using DbSkill = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Skill;
 using DbWeapon = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Weapon;
-using System.Text.Json;
 
 /// <inheritdoc/>
 public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMetadataProvider
 {
     /// <inheritdoc/>
-    public void Import(Models.API.Metadata.MetadataDocument metadata)
+    public void Import(DomainMetadataDocument metadata)
     {
         var factions = metadata.Factions.Select(x => new DbFaction
         {
             Id = x.Id,
-            ParentId = x.Parent,
+            ParentId = x.ParentId,
             Name = x.Name,
             Slug = x.Slug,
             Discontinued = x.Discontinued,
@@ -40,20 +40,20 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
 
         var weapons = metadata.Weapons.Select(x => new DbWeapon
         {
-            WeaponKey = BuildWeaponKey(x),
-            WeaponId = x.Id,
+            WeaponKey = string.IsNullOrWhiteSpace(x.WeaponKey) ? BuildWeaponKey(x) : x.WeaponKey,
+            WeaponId = x.WeaponId,
             Name = x.Name,
             Type = x.Type,
             Mode = x.Mode,
             Wiki = x.Wiki,
-            AmmunitionId = x.Ammunition,
+            AmmunitionId = x.AmmunitionId,
             Burst = x.Burst,
             Damage = x.Damage,
             Saving = x.Saving,
             SavingNum = x.SavingNum,
             Profile = x.Profile,
-            PropertiesJson = x.Properties is null ? null : JsonSerializer.Serialize(x.Properties),
-            DistanceJson = x.Distance is null ? null : JsonSerializer.Serialize(x.Distance)
+            PropertiesJson = x.PropertiesJson,
+            DistanceJson = x.DistanceJson
         }).ToList();
 
         var skills = metadata.Skills.Select(x => new DbSkill
@@ -79,9 +79,9 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             Attack = x.Attack,
             Burst = x.Burst,
             Extra = x.Extra,
-            SkillTypeJson = x.SkillType is null ? null : JsonSerializer.Serialize(x.SkillType),
-            DevicesJson = x.Devices is null ? null : JsonSerializer.Serialize(x.Devices),
-            TargetJson = x.Target is null ? null : JsonSerializer.Serialize(x.Target)
+            SkillTypeJson = x.SkillTypeJson,
+            DevicesJson = x.DevicesJson,
+            TargetJson = x.TargetJson
         }).ToList();
 
         var martialArts = metadata.MartialArts.Select(x => new DbMartialArt
@@ -212,8 +212,8 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
         };
     }
 
-    private static string BuildWeaponKey(Models.API.Metadata.Weapon weapon)
+    private static string BuildWeaponKey(DomainWeapon weapon)
     {
-        return $"{weapon.Id}:{weapon.Name}:{weapon.Mode ?? string.Empty}";
+        return $"{weapon.WeaponId}:{weapon.Name}:{weapon.Mode ?? string.Empty}";
     }
 }

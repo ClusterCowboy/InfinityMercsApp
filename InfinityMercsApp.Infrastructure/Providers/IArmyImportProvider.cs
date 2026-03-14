@@ -1,4 +1,4 @@
-using InfinityMercsApp.Infrastructure.Models.API.Army;
+using InfinityMercsApp.Domain.Models.Army;
 
 namespace InfinityMercsApp.Infrastructure.Providers;
 
@@ -14,5 +14,5 @@ public interface IArmyImportProvider
     /// <param name="apiFaction"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task ImportAsync(int factionId, Faction apiFaction, CancellationToken cancellationToken = default);
+    Task ImportAsync(int factionId, ArmyImportFaction apiFaction, CancellationToken cancellationToken = default);
 }

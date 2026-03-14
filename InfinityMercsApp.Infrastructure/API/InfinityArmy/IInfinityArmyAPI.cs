@@ -1,4 +1,5 @@
-﻿using InfinityMercsApp.Infrastructure.Models.API.Metadata;
+using InfinityMercsApp.Domain.Models.Army;
+using InfinityMercsApp.Domain.Models.Metadata;
 
 namespace InfinityMercsApp.Infrastructure.API.InfinityArmy;
 
@@ -20,5 +21,5 @@ public interface IInfinityArmyAPI
     /// <param name="factionId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<Models.API.Army.Faction?> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default);
+    Task<ArmyImportFaction?> GetArmyDataAsync(int factionId, CancellationToken cancellationToken = default);
 }

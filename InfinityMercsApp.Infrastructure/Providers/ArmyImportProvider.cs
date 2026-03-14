@@ -1,7 +1,9 @@
+using DomainArmyImportFaction = InfinityMercsApp.Domain.Models.Army.ArmyImportFaction;
+using DomainArmyImportResume = InfinityMercsApp.Domain.Models.Army.ArmyImportResume;
+using DomainArmyImportUnit = InfinityMercsApp.Domain.Models.Army.ArmyImportUnit;
 using InfinityMercsApp.Infrastructure.Models.Database.Army;
 using InfinityMercsApp.Infrastructure.Repositories;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Faction = InfinityMercsApp.Infrastructure.Models.Database.Army.Faction;
 using Resume = InfinityMercsApp.Infrastructure.Models.Database.Army.Resume;
 using Unit = InfinityMercsApp.Infrastructure.Models.Database.Army.Unit;
@@ -16,7 +18,7 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
     private bool _specopsBackfillCompleted;
 
     /// <inheritdoc/>
-    public async Task ImportAsync(int factionId, Models.API.Army.Faction apiFaction, CancellationToken cancellationToken = default)
+    public async Task ImportAsync(int factionId, DomainArmyImportFaction apiFaction, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -25,13 +27,13 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
             FactionId = factionId,
             Version = apiFaction.Version,
             ImportedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ReinforcementsJson = ToJsonOrNull(apiFaction.Reinforcements),
-            FiltersJson = ToJsonOrNull(apiFaction.Filters),
-            FireteamsJson = ToJsonOrNull(apiFaction.Fireteams),
-            RelationsJson = ToJsonOrNull(apiFaction.Relations),
-            SpecopsJson = ToJsonOrNull(apiFaction.Specops),
-            FireteamChartJson = ToJsonOrNull(apiFaction.FireteamChart),
-            RawJson = JsonSerializer.Serialize(apiFaction)
+            ReinforcementsJson = apiFaction.ReinforcementsJson,
+            FiltersJson = apiFaction.FiltersJson,
+            FireteamsJson = apiFaction.FireteamsJson,
+            RelationsJson = apiFaction.RelationsJson,
+            SpecopsJson = apiFaction.SpecopsJson,
+            FireteamChartJson = apiFaction.FireteamChartJson,
+            RawJson = apiFaction.RawJson
         };
 
         var units = apiFaction.Units.Select(x => new Unit
@@ -45,10 +47,10 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
             IscAbbr = x.IscAbbr,
             Name = x.Name,
             Slug = x.Slug,
-            ProfileGroupsJson = ToJsonOrNull(x.ProfileGroups),
-            OptionsJson = ToJsonOrNull(x.Options),
-            FiltersJson = ToJsonOrNull(x.Filters),
-            FactionsJson = ToJsonOrNull(x.Factions)
+            ProfileGroupsJson = x.ProfileGroupsJson,
+            OptionsJson = x.OptionsJson,
+            FiltersJson = x.FiltersJson,
+            FactionsJson = x.FactionsJson
         }).ToList();
 
         var resume = apiFaction.Resume.Select(x => new Resume
@@ -69,10 +71,11 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
             ? await TryGetFactionSpecopsRootAsync(YuJingFactionId, cancellationToken)
             : default;
 
-        var specopsSkills = BuildSpecopsSkillRecords(factionId, apiFaction.Specops, yuJingSpecops);
-        var specopsEquips = BuildSpecopsEquipRecords(factionId, apiFaction.Specops, yuJingSpecops);
-        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, apiFaction.Specops, yuJingSpecops);
-        var specopsUnits = BuildSpecopsUnitRecords(factionId, apiFaction.Specops);
+        var specopsRoot = ParseJsonElement(apiFaction.SpecopsJson);
+        var specopsSkills = BuildSpecopsSkillRecords(factionId, specopsRoot, yuJingSpecops);
+        var specopsEquips = BuildSpecopsEquipRecords(factionId, specopsRoot, yuJingSpecops);
+        var specopsWeapons = BuildSpecopsWeaponRecords(factionId, specopsRoot, yuJingSpecops);
+        var specopsUnits = BuildSpecopsUnitRecords(factionId, specopsRoot);
 
         sqliteRepository.Delete<Unit>(x => x.FactionId == factionId);
         sqliteRepository.Delete<Resume>(x => x.FactionId == factionId);
@@ -91,14 +94,32 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
         sqliteRepository.Insert(specopsUnits);
     }
 
-    private static string BuildUnitKey(int factionId, Models.API.Army.Unit unit)
+    private static string BuildUnitKey(int factionId, DomainArmyImportUnit unit)
     {
         return $"{factionId}:{unit.Id}:{unit.IdArmy ?? 0}:{unit.Slug ?? string.Empty}";
     }
 
-    private static string BuildResumeKey(int factionId, Models.API.Army.Resume resume)
+    private static string BuildResumeKey(int factionId, DomainArmyImportResume resume)
     {
         return $"{factionId}:{resume.Id}:{resume.Slug ?? string.Empty}";
+    }
+
+    private static JsonElement ParseJsonElement(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return default;
+        }
+
+        try
+        {
+            using var jsonDocument = JsonDocument.Parse(json);
+            return jsonDocument.RootElement.Clone();
+        }
+        catch
+        {
+            return default;
+        }
     }
 
     private async Task EnsureSpecopsIndexedAsync(CancellationToken cancellationToken)

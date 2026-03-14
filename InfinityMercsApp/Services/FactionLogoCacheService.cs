@@ -1,6 +1,5 @@
-using ApiFaction = InfinityMercsApp.Infrastructure.Models.API.Metadata.Faction;
-using ApiResume = InfinityMercsApp.Infrastructure.Models.API.Army.Resume;
 using DomainFaction = InfinityMercsApp.Domain.Models.Metadata.Faction;
+using DomainArmyImportResume = InfinityMercsApp.Domain.Models.Army.ArmyImportResume;
 using DomainResume = InfinityMercsApp.Domain.Models.Army.Resume;
 using Microsoft.Maui.Storage;
 
@@ -54,40 +53,6 @@ public class FactionLogoCacheService
         return result;
     }
 
-    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<ApiFaction> factions, CancellationToken cancellationToken = default)
-    {
-        Directory.CreateDirectory(_localCacheDirectory);
-        var result = new LogoCacheResult();
-
-        foreach (var faction in factions)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            result.TotalFactions++;
-
-            if (faction.Id <= 0)
-            {
-                result.MissingLogoUrl++;
-                continue;
-            }
-
-            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
-            if (ok == EnsureResult.Reused)
-            {
-                result.CachedReuse++;
-            }
-            else if (ok == EnsureResult.CopiedFromPackage)
-            {
-                result.Downloaded++;
-            }
-            else
-            {
-                result.Failed++;
-            }
-        }
-
-        return result;
-    }
-
     public Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
         IEnumerable<DomainFaction> factions,
         CancellationToken cancellationToken = default)
@@ -97,7 +62,7 @@ public class FactionLogoCacheService
 
     public async Task<LogoCacheResult> CacheUnitLogosAsync(
         int factionId,
-        IEnumerable<ApiResume> units,
+        IEnumerable<DomainArmyImportResume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);
