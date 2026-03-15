@@ -1,4 +1,5 @@
 using InfinityMercsApp.Domain.Models.DataImport;
+using DomainArmyImportFaction = InfinityMercsApp.Domain.Models.Army.ArmyImportFaction;
 using InfinityMercsApp.Infrastructure.API.InfinityArmy;
 using InfinityMercsApp.Infrastructure.Providers;
 using System.Globalization;
@@ -164,16 +165,61 @@ internal class ImportService(
         }
 
         var parallelDegree = Math.Max(2, Environment.ProcessorCount);
-        var importTasks = factions
+        var downloadTasks = factions
             .AsParallel()
             .WithDegreeOfParallelism(parallelDegree)
-            .Select(ImportFactionAsync)
+            .Select(DownloadFactionAsync)
             .ToArray();
 
-        var importResults = await Task.WhenAll(importTasks);
-        updatedCount += importResults.Count(x => x.Status == ImportStatus.Updated);
-        skippedCount += importResults.Count(x => x.Status == ImportStatus.Skipped);
-        errorCount += importResults.Count(x => x.Status == ImportStatus.Error);
+        var downloadResults = await Task.WhenAll(downloadTasks);
+        var queuedForSerialImport = new List<FactionDownloadResult>(downloadResults.Length);
+
+        foreach (var result in downloadResults.OrderBy(x => x.Faction.Id))
+        {
+            if (result.Status == DownloadStatus.Error)
+            {
+                errorCount++;
+                continue;
+            }
+
+            if (result.Status == DownloadStatus.NoData || result.Army is null || string.IsNullOrWhiteSpace(result.Version))
+            {
+                skippedCount++;
+                continue;
+            }
+
+            queuedForSerialImport.Add(result);
+        }
+
+        foreach (var result in queuedForSerialImport)
+        {
+            var factionId = result.Faction.Id;
+            var latestVersion = result.Version!;
+            var latestArmy = result.Army!;
+
+            var snapshot = factionProvider.GetFactionSnapshot(factionId);
+            var storedVersion = snapshot?.Version;
+            var hasUsableFactionData = snapshot is not null && factionProvider.GetResumeByFaction(factionId).Count > 0;
+            var shouldImportForPresence = !hasUsableFactionData;
+            var shouldImportForVersion = string.IsNullOrWhiteSpace(storedVersion) || CompareVersions(latestVersion, storedVersion) > 0;
+
+            if (!shouldImportForPresence && !shouldImportForVersion)
+            {
+                skippedCount++;
+                continue;
+            }
+
+            yield return new(true, $"Importing faction {result.Faction.Name}...");
+            var imported = await TryImportFactionSerialAsync(result.Faction, latestArmy);
+            if (imported)
+            {
+                updatedCount++;
+            }
+            else
+            {
+                errorCount++;
+            }
+        }
 
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");
     }
@@ -220,7 +266,7 @@ internal class ImportService(
         appSettingsProvider.SetStartupUpdateLastAttemptUtc(DateTimeOffset.UtcNow);
     }
 
-    private async Task<FactionImportResult> ImportFactionAsync(FactionTarget faction)
+    private async Task<FactionDownloadResult> DownloadFactionAsync(FactionTarget faction)
     {
         try
         {
@@ -228,7 +274,7 @@ internal class ImportService(
 
             if (latestArmy is null)
             {
-                return new FactionImportResult(ImportStatus.NoData);
+                return new FactionDownloadResult(faction, null, null, DownloadStatus.NoData);
             }
 
             var latestVersion = latestArmy.Version;
@@ -238,38 +284,41 @@ internal class ImportService(
                 await factionLogoCacheService.CacheUnitLogosAsync(faction.Id, latestArmy.Resume);
             }
 
-            if (string.IsNullOrWhiteSpace(latestVersion))
-            {
-                return new FactionImportResult(ImportStatus.Skipped);
-            }
-
-            var snapshot = factionProvider.GetFactionSnapshot(faction.Id);
-            var storedVersion = snapshot?.Version;
-
-            if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-            {
-                return new FactionImportResult(ImportStatus.Skipped);
-            }
-
-            await armyImportProvider.ImportAsync(faction.Id, latestArmy);
-            return new FactionImportResult(ImportStatus.Updated);
+            return new FactionDownloadResult(faction, latestArmy, latestVersion, DownloadStatus.Ok);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ImportAllDataAsync faction {faction.Id} ({faction.Name}) failed: {ex.Message}");
-            return new FactionImportResult(ImportStatus.Error);
+            return new FactionDownloadResult(faction, null, null, DownloadStatus.Error);
         }
     }
 
-    private readonly record struct FactionImportResult(ImportStatus Status);
+    private async Task<bool> TryImportFactionSerialAsync(FactionTarget faction, DomainArmyImportFaction latestArmy)
+    {
+        try
+        {
+            await armyImportProvider.ImportAsync(faction.Id, latestArmy);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync serial import failed for faction {faction.Id} ({faction.Name}): {ex.Message}");
+            return false;
+        }
+    }
+
+    private readonly record struct FactionDownloadResult(
+        FactionTarget Faction,
+        DomainArmyImportFaction? Army,
+        string? Version,
+        DownloadStatus Status);
 
     private readonly record struct FactionTarget(int Id, string Name);
 
-    private enum ImportStatus
+    private enum DownloadStatus
     {
+        Ok,
         NoData,
-        Skipped,
-        Updated,
         Error
     }
 }
