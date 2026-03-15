@@ -290,134 +290,23 @@ public class MainViewModel : BaseViewModel
             return;
         }
 
-        if (_importService is not null)
+        if (_importService is null)
         {
-            try
-            {
-                IsUpdateInProgress = true;
-                UpdateStatus = "Running online update...";
-                UpdateProgressMessage = "Starting update...";
-
-                await foreach (var result in _importService.ImportAllDataAsync())
-                {
-                    UpdateProgressMessage = result.Message;
-                    UpdateStatus = result.Message;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"UpdateAllDataAsync failed: {ex.Message}");
-                UpdateStatus = $"Update failed: {ex.Message}";
-            }
-            finally
-            {
-                IsUpdateInProgress = false;
-                UpdateProgressMessage = string.Empty;
-            }
-
-            return;
-        }
-
-        if (_infinityArmyApi is null || _metadataProvider is null || _factionProvider is null || _armyImportProvider is null)
-        {
-            UpdateStatus = "Required services are not available.";
+            UpdateStatus = "Update service is not available.";
             return;
         }
 
         try
         {
             IsUpdateInProgress = true;
-            UpdateProgressMessage = "Updating database: downloading metadata...";
-            UpdateStatus = "Downloading metadata...";
+            UpdateStatus = "Running online update...";
+            UpdateProgressMessage = "Starting update...";
 
-            var metadataDocument = await _infinityArmyApi.GetMetaDataAsync();
-            if (metadataDocument is null)
+            await foreach (var result in _importService.ImportAllDataAsync())
             {
-                UpdateStatus = "Metadata download succeeded but parsing failed.";
-                return;
+                UpdateProgressMessage = result.Message;
+                UpdateStatus = result.Message;
             }
-
-            UpdateProgressMessage = "Updating database: importing metadata...";
-            _metadataProvider.Import(metadataDocument);
-
-            if (metadataDocument.Factions.Count == 0)
-            {
-                UpdateStatus = "Metadata download succeeded but no factions were found.";
-                return;
-            }
-
-            if (_factionLogoCacheService is not null)
-            {
-                UpdateProgressMessage = "Updating SVGs: caching faction logos...";
-                var logoCacheResult = await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions);
-                var debugFaction = metadataDocument.Factions.FirstOrDefault(x => x.Id == FactionLogoCacheService.DebugFactionId);
-                var debugInfo = _factionLogoCacheService.GetDebugInfo(FactionLogoCacheService.DebugFactionId, debugFaction?.Logo);
-                Console.Error.WriteLine(
-                    $"[SVG DEBUG] Faction {debugInfo.FactionId}: exists={debugInfo.Exists}, bytes={debugInfo.SizeBytes}, path={debugInfo.LocalPath}, url={debugInfo.ExpectedLogoUrl ?? "<null>"}");
-
-                UpdateStatus =
-                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Reused from cache: {logoCacheResult.CachedReuse}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}. " +
-                    $"Hayabusa(1199): Exists={debugInfo.Exists}, Bytes={debugInfo.SizeBytes}.";
-            }
-
-            var factionIds = metadataDocument.Factions
-                .Select(f => f.Id)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToList();
-
-            var updatedCount = 0;
-            var skippedCount = 0;
-            var errorCount = 0;
-
-            foreach (var factionId in factionIds)
-            {
-                try
-                {
-                    UpdateProgressMessage = $"Updating factions: checking {factionId}...";
-                    UpdateStatus = $"Checking faction {factionId}...";
-
-                    var latestArmy = await _infinityArmyApi.GetArmyDataAsync(factionId);
-                    var latestVersion = latestArmy?.Version;
-
-                    if (_factionLogoCacheService is not null && latestArmy?.Resume is not null)
-                    {
-                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
-                    }
-
-                    if (string.IsNullOrWhiteSpace(latestVersion))
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    if (latestArmy is null)
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    var snapshot = _factionProvider.GetFactionSnapshot(factionId);
-                    var storedVersion = snapshot?.Version;
-
-                    if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    await _armyImportProvider.ImportAsync(factionId, latestArmy);
-                    updatedCount++;
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"UpdateAllDataAsync faction {factionId} failed: {ex.Message}");
-                    errorCount++;
-                }
-            }
-
-            UpdateStatus = $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.";
-            UpdateProgressMessage = "Finalizing update...";
         }
         catch (Exception ex)
         {

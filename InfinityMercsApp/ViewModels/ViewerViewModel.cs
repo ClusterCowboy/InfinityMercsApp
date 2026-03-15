@@ -992,9 +992,7 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             UnitsStatus = "Loading units...";
-            var units = MercsOnlyUnits
-                ? _factionProvider.GetResumeByFactionMercsOnly(SelectedFaction.Id)
-                : _factionProvider.GetResumeByFaction(SelectedFaction.Id);
+            var units = _factionProvider.GetResumeByFaction(SelectedFaction.Id);
 
             var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
             UpdateFireteamCounts(snapshot?.FireteamChartJson);
@@ -1016,22 +1014,6 @@ public class ViewerViewModel : BaseViewModel
             var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
             var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
-
-            var filteredUnitIds = new HashSet<int>();
-            foreach (var unit in units)
-            {
-                var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
-                if (UnitHasVisibleOption(
-                        unitRecord?.ProfileGroupsJson,
-                        skillsLookup,
-                        LieutenantOnlyUnits,
-                        MercsOnlyUnits))
-                {
-                    filteredUnitIds.Add(unit.UnitId);
-                }
-            }
-
-            units = units.Where(x => filteredUnitIds.Contains(x.UnitId)).ToList();
 
             if (_factionLogoCacheService is not null)
             {
