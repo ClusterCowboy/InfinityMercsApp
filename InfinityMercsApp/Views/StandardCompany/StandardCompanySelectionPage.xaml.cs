@@ -79,7 +79,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
-    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();    private SKPicture? _filterIconPicture;
+    private readonly StandardCompanyDataCoordinator _dataCoordinator;
+    private readonly StandardCompanyProfileCoordinator _profileCoordinator;
+    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
+    private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
@@ -130,6 +133,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
         _appSettingsProvider = AppSettingsProvider;
+        _dataCoordinator = new StandardCompanyDataCoordinator(_factionProvider, _cohesiveCompanyFactionQueryProvider);
+        _profileCoordinator = new StandardCompanyProfileCoordinator();
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {
@@ -1025,7 +1030,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             foreach (var factionId in sourceFactionIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var snapshot = GetFactionSnapshotFromProvider(factionId, cancellationToken);
+                var snapshot = _dataCoordinator.GetFactionSnapshot(factionId, cancellationToken);
                 var filtersJson = snapshot?.FiltersJson;
                 if (string.IsNullOrWhiteSpace(filtersJson))
                 {
@@ -1040,7 +1045,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 MergeLookup(ammoLookup, BuildIdNameLookup(filtersJson, "ammunition"));
             }
 
-            var mergedMercsList = await GetMergedMercsArmyListFromQueryAccessorAsync(sourceFactionIds, cancellationToken);
+            var mergedMercsList = await _dataCoordinator.GetMergedMercsArmyListAsync(sourceFactionIds, cancellationToken);
             foreach (var entry in mergedMercsList)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1056,7 +1061,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                AddFilterOptionsFromVisibleProfilesAndOptions(
+                StandardCompanyUnitFilterService.AddFilterOptionsFromVisibleProfilesAndOptions(
                     entry.ProfileGroupsJson,
                     charsLookup,
                     skillsLookup,
@@ -1091,126 +1096,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         return ClonePopupOptionsForCurrentPoints(options);
     }
 
-    private static void AddFilterOptionsFromVisibleProfilesAndOptions(
-        string profileGroupsJson,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost,
-        bool includeProfileValues,
-        HashSet<string> characteristics,
-        HashSet<string> skills,
-        HashSet<string> equipment,
-        HashSet<string> weapons,
-        HashSet<string> ammo)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                var groupHasVisibleOption = false;
-                if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var option in optionsElement.EnumerateArray())
-                    {
-                        if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                        {
-                            continue;
-                        }
-
-                        if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
-                        {
-                            continue;
-                        }
-
-                        var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
-                        if (maxCost.HasValue && optionCost > maxCost.Value)
-                        {
-                            continue;
-                        }
-
-                        groupHasVisibleOption = true;
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "chars"), charsLookup, characteristics);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"), skillsLookup, skills);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"), equipLookup, equipment);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"), weaponsLookup, weapons);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammunition"), ammoLookup, ammo);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammo"), ammoLookup, ammo);
-                    }
-                }
-
-                if (!groupHasVisibleOption)
-                {
-                    continue;
-                }
-
-                if (!includeProfileValues)
-                {
-                    continue;
-                }
-
-                if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var profile in profilesElement.EnumerateArray())
-                {
-                    AddLookupValuesFromContainerArray(profile, "chars", charsLookup, characteristics);
-                    AddLookupValuesFromContainerArray(profile, "skills", skillsLookup, skills);
-                    AddLookupValuesFromContainerArray(profile, "equip", equipLookup, equipment);
-                    AddLookupValuesFromContainerArray(profile, "weapons", weaponsLookup, weapons);
-                    AddLookupValuesFromContainerArray(profile, "ammunition", ammoLookup, ammo);
-                    AddLookupValuesFromContainerArray(profile, "ammo", ammoLookup, ammo);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage AddFilterOptionsFromVisibleProfilesAndOptions failed: {ex.Message}");
-        }
-    }
-
-    private static void AddLookupValuesFromContainerArray(
-        JsonElement container,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        HashSet<string> target)
-    {
-        if (!container.TryGetProperty(propertyName, out var arrayElement) || arrayElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        AddLookupValuesFromEntries(arrayElement.EnumerateArray(), lookup, target);
-    }
-
-    private static void AddLookupValuesFromEntries(
-        IEnumerable<JsonElement> entries,
-        IReadOnlyDictionary<int, string> lookup,
-        HashSet<string> target)
-    {
-        foreach (var entry in entries)
-        {
-            if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name) || string.IsNullOrWhiteSpace(name))
-            {
-                continue;
-            }
-
-            target.Add(name.Trim());
-        }
-    }
-
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         _preparedUnitFilterPopupOptions = null;
@@ -1237,7 +1122,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var faction in factions)
             {
-                var units = GetResumeByFactionMercsOnlyFromProvider(faction.Id, cancellationToken);
+                var units = _dataCoordinator.GetResumeByFactionMercsOnly(faction.Id, cancellationToken);
                 var resumeByUnitId = units
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
@@ -1245,7 +1130,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 var specopsByUnitId = specopsUnits
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
-                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
+                var snapshot = _dataCoordinator.GetFactionSnapshot(faction.Id, cancellationToken);
                 var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
@@ -1319,9 +1204,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                          .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
-                var nonCharacterUnitLimits = FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
-                var nonCharacterNonWildcardUnitLimits = FilterWildcardUnitLimits(nonCharacterUnitLimits);
-                var allowedProfiles = BuildAllowedTeamProfiles(nonCharacterNonWildcardUnitLimits, mergedUnits.Values);
+                var nonCharacterUnitLimits = StandardCompanyTeamService.FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
+                var nonCharacterNonWildcardUnitLimits = StandardCompanyTeamService.FilterWildcardUnitLimits(nonCharacterUnitLimits);
+                var allowedProfiles = StandardCompanyTeamService.BuildAllowedTeamProfiles(nonCharacterNonWildcardUnitLimits, mergedUnits.Values);
                 if (allowedProfiles.Count == 0)
                 {
                     continue;
@@ -1338,13 +1223,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var team in mergedTeams.Values)
             {
-                var isWildcardTeam = IsWildcardTeamName(team.Name);
-                var nonCharacterUnitLimits = FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
+                var isWildcardTeam = StandardCompanyTeamService.IsWildcardTeamName(team.Name);
+                var nonCharacterUnitLimits = StandardCompanyTeamService.FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
                 foreach (var entry in nonCharacterUnitLimits)
                 {
                     var unitName = entry.Key;
                     var value = entry.Value;
-                    if (!isWildcardTeam && !IsWildcardEntry(unitName, value.Slug))
+                    if (!isWildcardTeam && !StandardCompanyTeamService.IsWildcardEntry(unitName, value.Slug))
                     {
                         continue;
                     }
@@ -1368,7 +1253,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             {
                 var wildcardAllowedProfiles = wildcardUnitLimits
                     .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(x => BuildTeamUnitLimitItem(
+                    .Select(x => StandardCompanyTeamService.BuildTeamUnitLimitItem(
                         x.Key,
                         x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
                         x.Value.Max.ToString(),
@@ -1482,17 +1367,17 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             return;
         }
 
-        var combinedEquipment = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
-        var combinedSkills = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
-        var combinedEquipmentText = JoinOrDash(combinedEquipment);
-        var combinedSkillsText = JoinOrDash(combinedSkills);
+        var combinedEquipment = StandardCompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = StandardCompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipmentText = StandardCompanyProfileTextService.JoinOrDash(combinedEquipment);
+        var combinedSkillsText = StandardCompanyProfileTextService.JoinOrDash(combinedSkills);
         var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
-            NameFormatted = profile.NameFormatted ?? BuildNameFormatted(profile.Name),
+            NameFormatted = profile.NameFormatted ?? StandardCompanyProfileTextService.BuildNameFormatted(profile.Name),
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
             CostDisplay = $"C {profile.Cost}",
@@ -1508,12 +1393,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             SavedRangedWeapons = profile.RangedWeapons,
             SavedCcWeapons = profile.MeleeWeapons,
             ExperiencePoints = 0,
-            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
+            EquipmentLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
             HasEquipmentLine = combinedEquipment.Count > 0,
-            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
+            SkillsLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
-            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
+            RangedLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
             HasPeripheralStatBlock = peripheralStats is not null,
             PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
             PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
@@ -1529,9 +1414,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             PeripheralAva = peripheralStats?.Ava ?? "-",
             SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
             SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
-            PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+            PeripheralEquipmentLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-            PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+            PeripheralSkillsLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
             UnitMoveFirstCm = UnitMoveFirstCm,
             UnitMoveSecondCm = UnitMoveSecondCm,
@@ -1609,7 +1494,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             if (unitItem is null)
             {
-                var unitRecord = GetUnitFromProvider(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
+                var unitRecord = _dataCoordinator.GetUnit(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
                 var unitName = !string.IsNullOrWhiteSpace(unitRecord?.Name)
                     ? unitRecord.Name
                     : entry.Name;
@@ -1729,7 +1614,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var specopsByFaction = new Dictionary<int, Dictionary<int, ArmySpecopsUnitRecord>>();
             foreach (var faction in factions)
             {
-                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
+                var snapshot = _dataCoordinator.GetFactionSnapshot(faction.Id, cancellationToken);
                 skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
                 typeLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 charsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
@@ -1762,7 +1647,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                var unitRecord = GetUnitFromProvider(unit.SourceFactionId, unit.Id, cancellationToken);
+                var unitRecord = _dataCoordinator.GetUnit(unit.SourceFactionId, unit.Id, cancellationToken);
                 var profileGroupsJson = unitRecord?.ProfileGroupsJson;
                 if (specopsByFaction.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
                     specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit))
@@ -1773,7 +1658,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     }
                 }
 
-                unit.IsVisible = UnitHasVisibleOptionWithFilter(
+                unit.IsVisible = StandardCompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
                     profileGroupsJson,
                     skillsLookup,
                     charsLookup ?? new Dictionary<int, string>(),
@@ -1798,476 +1683,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 ApplyLieutenantVisualStates();
             }
 
-            RefreshTeamEntryVisibility();
+            StandardCompanyTeamService.RefreshTeamEntryVisibility(TeamEntries, Units);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
         }
-    }
-
-    private void RefreshTeamEntryVisibility()
-    {
-        if (TeamEntries.Count == 0)
-        {
-            return;
-        }
-
-        var visibleUnitNames = new HashSet<string>(
-            Units.Where(x => x.IsVisible).Select(x => x.Name),
-            StringComparer.OrdinalIgnoreCase);
-        var visibleUnitSlugs = new HashSet<string>(
-            Units.Where(x => x.IsVisible)
-                .Select(x => x.Slug?.Trim())
-                .Where(x => !string.IsNullOrWhiteSpace(x))!
-                .Select(x => x!),
-            StringComparer.OrdinalIgnoreCase);
-
-        var visibleNormalizedNames = Units
-            .Where(x => x.IsVisible)
-            .Select(x => NormalizeTeamUnitName(x.Name))
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        foreach (var team in TeamEntries)
-        {
-            var visibleAllowedCount = 0;
-            foreach (var allowed in team.AllowedProfiles)
-            {
-                if (allowed.IsCharacter)
-                {
-                    allowed.IsVisible = false;
-                    continue;
-                }
-
-                var isVisible = IsVisibleTeamAllowedProfile(
-                    allowed.Name,
-                    allowed.Slug,
-                    visibleUnitNames,
-                    visibleUnitSlugs,
-                    visibleNormalizedNames,
-                    treatWildcardAsAlwaysVisible: !team.IsWildcardBucket,
-                    visibleUnits: Units.Where(x => x.IsVisible).ToList(),
-                    resolvedUnitId: allowed.ResolvedUnitId,
-                    resolvedSourceFactionId: allowed.ResolvedSourceFactionId);
-                allowed.IsVisible = isVisible;
-                if (isVisible)
-                {
-                    visibleAllowedCount++;
-                }
-            }
-
-            team.IsVisible = visibleAllowedCount > 0;
-            team.IsExpanded = true;
-        }
-    }
-
-    private static bool IsVisibleTeamAllowedProfile(
-        string? allowedProfileName,
-        string? allowedProfileSlug,
-        HashSet<string> visibleUnitNames,
-        HashSet<string> visibleUnitSlugs,
-        IReadOnlyList<string> visibleNormalizedNames,
-        bool treatWildcardAsAlwaysVisible = true,
-        IReadOnlyList<ArmyUnitSelectionItem>? visibleUnits = null,
-        int? resolvedUnitId = null,
-        int? resolvedSourceFactionId = null)
-    {
-        if (treatWildcardAsAlwaysVisible && IsWildcardEntry(allowedProfileName, allowedProfileSlug))
-        {
-            return true;
-        }
-
-        // For wildcard bucket rows, only show entries that resolve to an actual visible unit.
-        // This prevents false positives from comment text like "(Orc Troops, Bolts)".
-        if (!treatWildcardAsAlwaysVisible)
-        {
-            if (!resolvedUnitId.HasValue || !resolvedSourceFactionId.HasValue || visibleUnits is null)
-            {
-                return false;
-            }
-
-            return visibleUnits.Any(x =>
-                x.Id == resolvedUnitId.Value &&
-                x.SourceFactionId == resolvedSourceFactionId.Value);
-        }
-
-        if (resolvedUnitId.HasValue && resolvedSourceFactionId.HasValue && visibleUnits is not null)
-        {
-            return visibleUnits.Any(x =>
-                x.Id == resolvedUnitId.Value &&
-                x.SourceFactionId == resolvedSourceFactionId.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(allowedProfileSlug) &&
-            (visibleUnitSlugs.Contains(allowedProfileSlug.Trim()) ||
-             ContainsEquivalentSlug(visibleUnitSlugs, allowedProfileSlug)))
-        {
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(allowedProfileName))
-        {
-            return false;
-        }
-
-        if (visibleUnitNames.Contains(allowedProfileName))
-        {
-            return true;
-        }
-
-        var normalizedAllowed = NormalizeTeamUnitName(allowedProfileName);
-        if (string.IsNullOrWhiteSpace(normalizedAllowed))
-        {
-            return false;
-        }
-
-        foreach (var normalizedVisible in visibleNormalizedNames)
-        {
-            if (string.Equals(normalizedAllowed, normalizedVisible, StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterCharacterUnitLimits(
-        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits,
-        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
-    {
-        var filtered = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var unitLimit in unitLimits)
-        {
-            var matchedUnit = ResolveUnitForTeamEntry(unitLimit.Key, unitLimit.Value.Slug, sourceUnits);
-            if (matchedUnit?.IsCharacter == true)
-            {
-                continue;
-            }
-
-            filtered[unitLimit.Key] = unitLimit.Value;
-        }
-
-        return filtered;
-    }
-
-    private static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterWildcardUnitLimits(
-        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits)
-    {
-        var filtered = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var unitLimit in unitLimits)
-        {
-            if (IsWildcardEntry(unitLimit.Key, unitLimit.Value.Slug))
-            {
-                continue;
-            }
-
-            filtered[unitLimit.Key] = unitLimit.Value;
-        }
-
-        return filtered;
-    }
-
-    private static List<ArmyTeamUnitLimitItem> BuildAllowedTeamProfiles(
-        Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits,
-        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
-    {
-        var merged = new Dictionary<string, (string Name, int Min, int Max, string? Slug, bool MinAsterisk, bool IsWildcard)>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var entry in unitLimits)
-        {
-            var name = entry.Key;
-            var value = entry.Value;
-            var isWildcard = IsWildcardEntry(name, value.Slug);
-            var key = isWildcard ? "__WILDCARD__" : name.Trim();
-            var normalizedName = isWildcard ? "Wildcards" : name;
-
-            if (merged.TryGetValue(key, out var existing))
-            {
-                merged[key] = (
-                    existing.Name,
-                    Math.Min(existing.Min, value.Min),
-                    Math.Max(existing.Max, value.Max),
-                    string.IsNullOrWhiteSpace(existing.Slug) ? value.Slug : existing.Slug,
-                    existing.MinAsterisk || value.MinAsterisk,
-                    true == existing.IsWildcard || isWildcard);
-                continue;
-            }
-
-            merged[key] = (
-                normalizedName,
-                value.Min,
-                value.Max,
-                value.Slug,
-                value.MinAsterisk,
-                isWildcard);
-        }
-
-        return merged.Values
-            .OrderBy(x => x.IsWildcard ? 1 : 0)
-            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(x => BuildTeamUnitLimitItem(
-                x.Name,
-                x.MinAsterisk ? "*" : x.Min.ToString(),
-                x.Max.ToString(),
-                x.Slug,
-                sourceUnits))
-            .ToList();
-    }
-
-    private static ArmyTeamUnitLimitItem BuildTeamUnitLimitItem(
-        string displayName,
-        string min,
-        string max,
-        string? slug,
-        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
-    {
-        var matched = ResolveUnitForTeamEntry(displayName, slug, sourceUnits);
-        return new ArmyTeamUnitLimitItem
-        {
-            Name = displayName,
-            Min = min,
-            Max = max,
-            Slug = slug,
-            IsCharacter = matched?.IsCharacter ?? false,
-            CachedLogoPath = matched?.CachedLogoPath,
-            PackagedLogoPath = matched?.PackagedLogoPath,
-            Subtitle = matched?.Subtitle,
-            ResolvedUnitId = matched?.Id,
-            ResolvedSourceFactionId = matched?.SourceFactionId
-        };
-    }
-
-    private static ArmyUnitSelectionItem? ResolveUnitForTeamEntry(
-        string? allowedProfileName,
-        string? allowedProfileSlug,
-        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
-    {
-        var reinforcementOnly = IsReinforcementTeamEntry(allowedProfileName);
-        var preferredSourceUnits = reinforcementOnly
-            ? sourceUnits.Where(IsReinforcementUnit).ToList()
-            : sourceUnits.ToList();
-        var fallbackSourceUnits = reinforcementOnly
-            ? sourceUnits.Where(x => !IsReinforcementUnit(x)).ToList()
-            : [];
-
-        if (!string.IsNullOrWhiteSpace(allowedProfileSlug))
-        {
-            var slugMatch = preferredSourceUnits.FirstOrDefault(x =>
-                !string.IsNullOrWhiteSpace(x.Slug) &&
-                string.Equals(x.Slug.Trim(), allowedProfileSlug.Trim(), StringComparison.Ordinal));
-            if (slugMatch is not null)
-            {
-                return slugMatch;
-            }
-
-            // Rule 3 fallback: when first slug lookup misses, retry with case-insensitive compare.
-            slugMatch = preferredSourceUnits.FirstOrDefault(x =>
-                !string.IsNullOrWhiteSpace(x.Slug) &&
-                string.Equals(x.Slug.Trim(), allowedProfileSlug.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (slugMatch is not null)
-            {
-                return slugMatch;
-            }
-
-            // Final fallback for inconsistent reinforcement slug prefixes in data (e.g. arjuna-unit vs reinf-arjuna-unit).
-            var normalizedAllowedSlug = NormalizeSlugForLookup(allowedProfileSlug);
-            if (!string.IsNullOrWhiteSpace(normalizedAllowedSlug))
-            {
-                slugMatch = preferredSourceUnits.FirstOrDefault(x =>
-                    !string.IsNullOrWhiteSpace(x.Slug) &&
-                    string.Equals(NormalizeSlugForLookup(x.Slug), normalizedAllowedSlug, StringComparison.Ordinal));
-                if (slugMatch is not null)
-                {
-                    return slugMatch;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(allowedProfileName))
-            {
-                var slugFallbackNameMatch = preferredSourceUnits.FirstOrDefault(x =>
-                    string.Equals(x.Name, allowedProfileName, StringComparison.OrdinalIgnoreCase));
-                if (slugFallbackNameMatch is not null)
-                {
-                    return slugFallbackNameMatch;
-                }
-            }
-
-            // Final fallback when no reinforcement record exists for the entry.
-            if (reinforcementOnly)
-            {
-                slugMatch = fallbackSourceUnits.FirstOrDefault(x =>
-                    !string.IsNullOrWhiteSpace(x.Slug) &&
-                    string.Equals(x.Slug.Trim(), allowedProfileSlug.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (slugMatch is not null)
-                {
-                    return slugMatch;
-                }
-            }
-
-            return null;
-        }
-
-        if (string.IsNullOrWhiteSpace(allowedProfileName))
-        {
-            return null;
-        }
-
-        var exactNameMatch = preferredSourceUnits.FirstOrDefault(x =>
-            string.Equals(x.Name, allowedProfileName, StringComparison.OrdinalIgnoreCase));
-        if (exactNameMatch is not null)
-        {
-            return exactNameMatch;
-        }
-
-        var normalizedAllowed = NormalizeTeamUnitName(allowedProfileName);
-        if (string.IsNullOrWhiteSpace(normalizedAllowed))
-        {
-            return null;
-        }
-
-        foreach (var unit in preferredSourceUnits)
-        {
-            var normalizedUnit = NormalizeTeamUnitName(unit.Name);
-            if (string.IsNullOrWhiteSpace(normalizedUnit))
-            {
-                continue;
-            }
-
-            if (string.Equals(normalizedAllowed, normalizedUnit, StringComparison.Ordinal))
-            {
-                return unit;
-            }
-        }
-
-        if (reinforcementOnly)
-        {
-            var fallbackNameMatch = fallbackSourceUnits.FirstOrDefault(x =>
-                string.Equals(x.Name, allowedProfileName, StringComparison.OrdinalIgnoreCase));
-            if (fallbackNameMatch is not null)
-            {
-                return fallbackNameMatch;
-            }
-        }
-
-        return null;
-    }
-
-    private static bool IsWildcardEntry(string? name, string? slug)
-    {
-        return ContainsWildcardToken(name) || ContainsWildcardToken(slug);
-    }
-
-    private static bool ContainsWildcardToken(string? value)
-    {
-        return !string.IsNullOrWhiteSpace(value) &&
-               (value.IndexOf("wildcard", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                value.IndexOf("wild", StringComparison.OrdinalIgnoreCase) >= 0);
-    }
-
-    private static bool IsWildcardTeamName(string? teamName)
-    {
-        return ContainsWildcardToken(teamName);
-    }
-
-    private static bool ContainsEquivalentSlug(HashSet<string> visibleUnitSlugs, string allowedProfileSlug)
-    {
-        var normalizedAllowed = NormalizeSlugForLookup(allowedProfileSlug);
-        if (string.IsNullOrWhiteSpace(normalizedAllowed))
-        {
-            return false;
-        }
-
-        foreach (var visibleSlug in visibleUnitSlugs)
-        {
-            if (string.Equals(NormalizeSlugForLookup(visibleSlug), normalizedAllowed, StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static string NormalizeTeamUnitName(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return string.Empty;
-        }
-
-        var formD = name.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(formD.Length);
-        foreach (var c in formD)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
-            {
-                continue;
-            }
-
-            if (char.IsLetterOrDigit(c))
-            {
-                builder.Append(char.ToUpperInvariant(c));
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static string NormalizeSlugForLookup(string? slug)
-    {
-        if (string.IsNullOrWhiteSpace(slug))
-        {
-            return string.Empty;
-        }
-
-        var lowered = slug.Trim().ToLowerInvariant().Replace('_', '-');
-        var builder = new StringBuilder(lowered.Length);
-        var previousWasDash = false;
-        foreach (var c in lowered)
-        {
-            if (char.IsLetterOrDigit(c))
-            {
-                builder.Append(c);
-                previousWasDash = false;
-            }
-            else if (!previousWasDash)
-            {
-                builder.Append('-');
-                previousWasDash = true;
-            }
-        }
-
-        var normalized = builder.ToString().Trim('-');
-        if (normalized.StartsWith("reinf-", StringComparison.Ordinal))
-        {
-            normalized = normalized["reinf-".Length..];
-        }
-
-        if (normalized.EndsWith("-reinf", StringComparison.Ordinal))
-        {
-            normalized = normalized[..^"-reinf".Length];
-        }
-
-        return normalized;
-    }
-
-    private static bool IsReinforcementTeamEntry(string? allowedProfileName)
-    {
-        return !string.IsNullOrWhiteSpace(allowedProfileName) &&
-               allowedProfileName.IndexOf("REINF", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private static bool IsReinforcementUnit(ArmyUnitSelectionItem unit)
-    {
-        return (!string.IsNullOrWhiteSpace(unit.Name) &&
-                unit.Name.IndexOf("REINF", StringComparison.OrdinalIgnoreCase) >= 0) ||
-               (!string.IsNullOrWhiteSpace(unit.Slug) &&
-                unit.Slug.IndexOf("reinf", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     private bool IsCompanyNameValid(string? value)
@@ -2535,7 +1956,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         try
         {
-            var snapshot = GetFactionSnapshotFromProvider(factionId, cancellationToken);
+            var snapshot = _dataCoordinator.GetFactionSnapshot(factionId, cancellationToken);
             var skillLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var weaponLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
@@ -2790,7 +2211,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         {
             Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync started: id={_selectedUnit.Id}, faction={_selectedUnit.SourceFactionId}, name='{_selectedUnit.Name}'.");
             UnitNameHeading = _selectedUnit.Name;
-            var unit = GetUnitFromProvider(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
+            var unit = _dataCoordinator.GetUnit(_selectedUnit.SourceFactionId, _selectedUnit.Id, cancellationToken);
             ArmySpecopsUnitRecord? specopsUnit = null;
             if (_selectedUnit.IsSpecOps || unit is null)
             {
@@ -2810,7 +2231,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 profileGroupsJson = specopsUnit?.ProfileGroupsJson;
             }
 
-            var snapshot = GetFactionSnapshotFromProvider(_selectedUnit.SourceFactionId, cancellationToken);
+            var snapshot = _dataCoordinator.GetFactionSnapshot(_selectedUnit.SourceFactionId, cancellationToken);
             if (string.IsNullOrWhiteSpace(profileGroupsJson))
             {
                 Console.Error.WriteLine($"ArmyFactionSelectionPage: profile groups not found for faction={_selectedUnit.SourceFactionId}, unit={_selectedUnit.Id}.");
@@ -2829,7 +2250,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 using var doc = JsonDocument.Parse(profileGroupsJson);
                 var options = EnumerateOptions(doc.RootElement).ToList();
                 var visibleOptions = options
-                    .Where(option => !IsPositiveSwc(ReadOptionSwc(option)))
+                    .Where(option => !IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
                     .Where(option => !treatAsSpecOps && LieutenantOnlyUnits ? IsLieutenantOption(option, skillsLookup) : true)
                     .ToList();
                 PopulateUnitStatsFromFirstProfile(doc.RootElement);
@@ -2892,7 +2313,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     .ToList();
 
                 stableSkills = treatAsSpecOps
-                    ? EnsureLieutenantSkill(stableSkills)
+                    ? StandardCompanyProfileTextService.EnsureLieutenantSkill(stableSkills)
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
                 UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = stableEquip;
                 UnitDisplayConfigurationsView.SelectedUnitCommonSkills = stableSkills;
@@ -2975,237 +2396,50 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
         var extrasLookup = BuildExtrasLookup(filtersJson);
-
-        var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
+        var buildRequest = new StandardCompanyProfileBuildRequest
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            ProfileGroupsRoot = profileGroupsRoot,
+            ForceLieutenant = forceLieutenant,
+            ShowTacticalAwarenessIcon = ShowTacticalAwarenessIcon,
+            WeaponsLookup = weaponsLookup,
+            EquipLookup = equipLookup,
+            SkillsLookup = skillsLookup,
+            PeripheralLookup = peripheralLookup,
+            IsControllerGroup = group => StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group),
+            GetDisplayPeripheralEntriesForOption = (group, option) => StandardCompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
+            GetOrderedDisplayNames = (entries, lookup) => GetOrderedIdDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
+            GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
+            ReadOptionSwc = StandardCompanyProfileOptionService.ReadOptionSwc,
+            IsPositiveSwc = IsPositiveSwc,
+            IsMeleeWeaponName = StandardCompanyProfileTextService.IsMeleeWeaponName,
+            ReadAdjustedOptionCost = (group, option) => StandardCompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option),
+            ParseCostValue = ParseCostValue,
+            ReadOptionCost = StandardCompanyProfileOptionService.ReadOptionCost,
+            TryFindPeripheralProfile = peripheralName =>
+                TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
+                    ? peripheralProfile
+                    : (JsonElement?)null,
+            BuildPeripheralStatBlock = (peripheralName, peripheralProfile) => BuildPeripheralStatBlock(peripheralName, peripheralProfile, filtersJson),
+            TryGetPeripheralUnitCost = peripheralName =>
+                TryGetPeripheralUnitCost(profileGroupsRoot, peripheralName, out var peripheralCost)
+                    ? peripheralCost
+                    : (int?)null,
+            TryBuildSinglePeripheralDisplay = peripheralNames =>
             {
-                continue;
-            }
+                var success = TryBuildSinglePeripheralDisplay(peripheralNames, out var peripheralName, out var peripheralCount);
+                return (success, peripheralName, peripheralCount);
+            },
+            ExtractFirstPeripheralName = ExtractFirstPeripheralName,
+            NormalizePeripheralNameForDedupe = NormalizePeripheralNameForDedupe,
+            GetPeripheralTotalCount = GetPeripheralTotalCount,
+            IsLieutenantOption = option => IsLieutenantOption(option, skillsLookup),
+            FormatMoveValue = FormatMoveValue,
+            BuildPeripheralSubtitle = BuildPeripheralSubtitle
+        };
 
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                if (IsPositiveSwc(ReadOptionSwc(option)))
-                {
-                    continue;
-                }
-
-                foreach (var name in GetOrderedIdDisplayNamesFromEntries(
-                             GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
-                             equipLookup,
-                             extrasLookup,
-                             ShowUnitsInInches))
-                {
-                    equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
-                }
-
-                var optionSkillNames = BuildConfigurationSkillNames(
-                    GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
-                        skillsLookup,
-                        extrasLookup,
-                        ShowUnitsInInches));
-                foreach (var name in optionSkillNames)
-                {
-                    skillUsageCounts[name] = skillUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
-                }
-            }
-        }
-
-        var bestConfigurationByKey = new Dictionary<string, (int Index, int PeripheralCount)>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
+        foreach (var profileItem in _profileCoordinator.BuildProfiles(buildRequest))
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
-            {
-                continue;
-            }
-
-            var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
-                ? iscElement.GetString() ?? string.Empty
-                : string.Empty;
-
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                var swc = ReadOptionSwc(option);
-                if (IsPositiveSwc(swc))
-                {
-                    continue;
-                }
-
-                var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty;
-                if (string.IsNullOrWhiteSpace(optionName))
-                {
-                    optionName = groupName;
-                }
-                optionName = BuildOptionDisplayName(option, optionName, equipLookup, skillsLookup);
-
-                var optionWeapons = GetOrderedIdDisplayNamesFromEntries(
-                    GetOptionEntriesWithIncludes(profileGroupsRoot, option, "weapons"),
-                    weaponsLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
-                var rangedWeaponNames = optionWeapons.Where(x => !IsMeleeWeaponName(x)).ToList();
-                var meleeWeaponNames = optionWeapons.Where(IsMeleeWeaponName).ToList();
-
-                var optionEquipmentNames = GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
-                        equipLookup,
-                        extrasLookup,
-                        ShowUnitsInInches)
-                    .ToList();
-                var uniqueEquipmentNames = optionEquipmentNames
-                    .Where(x => equipUsageCounts.TryGetValue(x, out var c) && c == 1)
-                    .ToList();
-                if (uniqueEquipmentNames.Count == 0)
-                {
-                    uniqueEquipmentNames = optionEquipmentNames
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                }
-
-                var optionSkillsNames = BuildConfigurationSkillNames(
-                    GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
-                        skillsLookup,
-                        extrasLookup,
-                        ShowUnitsInInches));
-                var uniqueSkillsNames = optionSkillsNames
-                    .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
-                    .ToList();
-                if (uniqueSkillsNames.Count == 0)
-                {
-                    uniqueSkillsNames = optionSkillsNames
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                }
-
-                var peripheralNames = GetCountedDisplayNamesFromEntries(
-                    GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
-                    peripheralLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
-                var firstPeripheralName = peripheralNames.FirstOrDefault();
-                PeripheralMercsCompanyStats? peripheralStats = null;
-                JsonElement peripheralProfile = default;
-                var hasPeripheralProfile = false;
-                if (!string.IsNullOrWhiteSpace(firstPeripheralName) &&
-                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out peripheralProfile))
-                {
-                    hasPeripheralProfile = true;
-                    peripheralStats = BuildPeripheralStatBlock(ExtractFirstPeripheralName(firstPeripheralName), peripheralProfile, filtersJson);
-                }
-
-                var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
-                var displayPeripheralNames = peripheralNames;
-                var displayCost = cost;
-                if (TryBuildSinglePeripheralDisplay(peripheralNames, out var singlePeripheralName, out var singlePeripheralCount) &&
-                    singlePeripheralCount > 1)
-                {
-                    displayPeripheralNames = [$"{singlePeripheralName} (1)"];
-
-                    if (hasPeripheralProfile)
-                    {
-                        var peripheralCost = TryGetPeripheralUnitCost(profileGroupsRoot, singlePeripheralName, out var resolvedPeripheralCost)
-                            ? resolvedPeripheralCost
-                            : ParseCostValue(ReadOptionCost(peripheralProfile));
-                        var baseCost = ParseCostValue(cost);
-                        if (peripheralCost > 0 && baseCost > 0)
-                        {
-                            var removedPeripheralCount = singlePeripheralCount - 1;
-                            displayCost = Math.Max(0, baseCost - (removedPeripheralCount * peripheralCost))
-                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        }
-                    }
-                }
-
-                var normalizedPeripheralNames = peripheralNames
-                    .Select(NormalizePeripheralNameForDedupe)
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .ToList();
-                var peripheralCount = GetPeripheralTotalCount(peripheralNames);
-                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", normalizedPeripheralNames)}|{swc}";
-                var hasExisting = bestConfigurationByKey.TryGetValue(dedupeKey, out var existingConfiguration);
-                if (hasExisting && peripheralCount >= existingConfiguration.PeripheralCount)
-                {
-                    continue;
-                }
-
-                var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
-                var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
-                var profileItem = new ViewerProfileItem
-                {
-                    GroupName = groupName,
-                    Name = optionName,
-                    ProfileKey = profileKey,
-                    IsLieutenant = isLieutenant,
-                    NameFormatted = BuildNameFormatted(optionName),
-                    RangedWeapons = JoinOrDash(rangedWeaponNames),
-                    RangedWeaponsFormatted = BuildListFormattedString(rangedWeaponNames, Color.FromArgb("#EF4444")),
-                    MeleeWeapons = JoinOrDash(meleeWeaponNames),
-                    MeleeWeaponsFormatted = BuildListFormattedString(meleeWeaponNames, Color.FromArgb("#22C55E")),
-                    UniqueEquipment = JoinOrDash(uniqueEquipmentNames),
-                    UniqueEquipmentFormatted = BuildListFormattedString(uniqueEquipmentNames, Color.FromArgb("#06B6D4")),
-                    UniqueSkills = JoinOrDash(uniqueSkillsNames),
-                    UniqueSkillsFormatted = BuildListFormattedString(
-                        uniqueSkillsNames,
-                        Color.FromArgb("#F59E0B"),
-                        highlightLieutenantPurple: forceLieutenant),
-                    Peripherals = JoinOrDash(displayPeripheralNames),
-                    PeripheralsFormatted = BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
-                    HasPeripheralStatBlock = peripheralStats is not null,
-                    PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
-                    PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
-                    PeripheralCc = peripheralStats?.Cc ?? "-",
-                    PeripheralBs = peripheralStats?.Bs ?? "-",
-                    PeripheralPh = peripheralStats?.Ph ?? "-",
-                    PeripheralWip = peripheralStats?.Wip ?? "-",
-                    PeripheralArm = peripheralStats?.Arm ?? "-",
-                    PeripheralBts = peripheralStats?.Bts ?? "-",
-                    PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
-                    PeripheralVitality = peripheralStats?.Vitality ?? "-",
-                    PeripheralS = peripheralStats?.S ?? "-",
-                    PeripheralAva = peripheralStats?.Ava ?? "-",
-                    PeripheralSubtitle = BuildPeripheralSubtitle(peripheralStats),
-                    PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
-                    HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-                    PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
-                    HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
-                    Swc = swc,
-                    SwcDisplay = $"SWC {swc}",
-                    Cost = displayCost,
-                    ShowProfileTacticalAwarenessIcon = !ShowTacticalAwarenessIcon &&
-                                                       optionSkillsNames.Any(x => x.Contains("tactical awareness", StringComparison.OrdinalIgnoreCase))
-                };
-
-                if (hasExisting)
-                {
-                    Profiles[existingConfiguration.Index] = profileItem;
-                    bestConfigurationByKey[dedupeKey] = (existingConfiguration.Index, peripheralCount);
-                    continue;
-                }
-
-                Profiles.Add(profileItem);
-                bestConfigurationByKey[dedupeKey] = (Profiles.Count - 1, peripheralCount);
-            }
+            Profiles.Add(profileItem);
         }
 
         ApplyLieutenantVisualStates();
@@ -3257,7 +2491,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 continue;
             }
 
-            var quantity = ReadEntryQuantity(entry);
+            var quantity = StandardCompanyProfileOptionService.ReadEntryQuantity(entry);
             counts[displayName] = counts.TryGetValue(displayName, out var existing)
                 ? existing + quantity
                 : quantity;
@@ -3267,438 +2501,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
             .Select(x => $"{x.Key} ({x.Value})")
             .ToList();
-    }
-
-    private static int ReadEntryQuantity(JsonElement entry)
-    {
-        if (entry.ValueKind != JsonValueKind.Object)
-        {
-            return 1;
-        }
-
-        if (entry.TryGetProperty("q", out var quantityElement))
-        {
-            if (quantityElement.ValueKind == JsonValueKind.Number && quantityElement.TryGetInt32(out var quantityNumber))
-            {
-                return Math.Max(1, quantityNumber);
-            }
-
-            if (quantityElement.ValueKind == JsonValueKind.String &&
-                int.TryParse(quantityElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var quantityText))
-            {
-                return Math.Max(1, quantityText);
-            }
-        }
-
-        return 1;
-    }
-
-    private static bool IsMeleeWeaponName(string name)
-    {
-        return Regex.IsMatch(
-            name,
-            @"\bccw\b|\bda ccw\b|\bap ccw\b|\bknife\b|\bsword\b|\bmonofilament\b|\bviral ccw\b|\bpistols?\b|\bclose combat weapon\b|\bcc\s*weapon\b|\bc\.?\s*c\.?\s*weapon\b|\bpara\s*cc\s*weapon\b",
-            RegexOptions.IgnoreCase);
-    }
-
-    private static string JoinOrDash(IEnumerable<string> values)
-    {
-        var list = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
-        return list.Count == 0 ? "-" : string.Join(Environment.NewLine, list);
-    }
-
-    private static List<string> EnsureLieutenantSkill(IEnumerable<string> skills)
-    {
-        var list = skills
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (!list.Any(x => x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)))
-        {
-            list.Add("Lieutenant");
-        }
-
-        return list
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static string ReadOptionSwc(JsonElement option)
-    {
-        if (option.TryGetProperty("swc", out var swcElement))
-        {
-            if (swcElement.ValueKind == JsonValueKind.Number && swcElement.TryGetDecimal(out var swcNumber))
-            {
-                return swcNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            if (swcElement.ValueKind == JsonValueKind.String)
-            {
-                return swcElement.GetString() ?? "-";
-            }
-        }
-
-        return "-";
-    }
-
-    private static string ReadOptionCost(JsonElement option)
-    {
-        if (option.TryGetProperty("points", out var pointsElement))
-        {
-            if (pointsElement.ValueKind == JsonValueKind.Number && pointsElement.TryGetInt32(out var intCost))
-            {
-                return intCost.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            if (pointsElement.ValueKind == JsonValueKind.String)
-            {
-                var points = pointsElement.GetString();
-                return string.IsNullOrWhiteSpace(points) ? "-" : points;
-            }
-        }
-
-        if (option.TryGetProperty("cost", out var costElement))
-        {
-            if (costElement.ValueKind == JsonValueKind.Number && costElement.TryGetInt32(out var costNumber))
-            {
-                return costNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            if (costElement.ValueKind == JsonValueKind.String)
-            {
-                var cost = costElement.GetString();
-                return string.IsNullOrWhiteSpace(cost) ? "-" : cost;
-            }
-        }
-
-        if (option.TryGetProperty("pts", out var ptsElement))
-        {
-            if (ptsElement.ValueKind == JsonValueKind.Number && ptsElement.TryGetInt32(out var ptsNumber))
-            {
-                return ptsNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            if (ptsElement.ValueKind == JsonValueKind.String)
-            {
-                var points = ptsElement.GetString();
-                return string.IsNullOrWhiteSpace(points) ? "-" : points;
-            }
-        }
-
-        return "-";
-    }
-
-    private static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
-    {
-        var baseCostText = ReadOptionCost(option);
-        if (!int.TryParse(baseCostText, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var baseCost))
-        {
-            return baseCostText;
-        }
-
-        var totalPeripheralCount = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option)
-            .Sum(ReadEntryQuantity);
-        if (totalPeripheralCount <= 1)
-        {
-            return baseCostText;
-        }
-
-        var minis = ReadOptionMinis(option);
-        if (minis <= 1 || minis <= totalPeripheralCount)
-        {
-            return baseCostText;
-        }
-
-        if (baseCost <= 0 || baseCost % minis != 0)
-        {
-            return baseCostText;
-        }
-
-        var removedPeripheralCount = totalPeripheralCount - 1;
-        var perModelCost = baseCost / minis;
-        var deduction = removedPeripheralCount * perModelCost;
-        var adjustedCost = Math.Max(0, baseCost - deduction);
-        return adjustedCost.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static IEnumerable<JsonElement> GetControllerPeripheralEntries(JsonElement group)
-    {
-        if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-
-        var collected = new List<JsonElement>();
-        foreach (var profile in profilesElement.EnumerateArray())
-        {
-            if (profile.TryGetProperty("peripheral", out var peripheralElement) &&
-                peripheralElement.ValueKind == JsonValueKind.Array &&
-                peripheralElement.GetArrayLength() > 0)
-            {
-                collected.AddRange(peripheralElement.EnumerateArray().ToList());
-            }
-        }
-
-        return collected;
-    }
-
-    private static HashSet<int> GetControllerPeripheralIds(JsonElement group)
-    {
-        var ids = new HashSet<int>();
-        foreach (var entry in GetControllerPeripheralEntries(group))
-        {
-            if (TryParseId(entry, out var id))
-            {
-                ids.Add(id);
-            }
-        }
-
-        return ids;
-    }
-
-    private static IEnumerable<JsonElement> GetFilteredOptionPeripheralEntries(
-        JsonElement profileGroupsRoot,
-        JsonElement group,
-        JsonElement option)
-    {
-        var allowedIds = GetControllerPeripheralIds(group);
-        var optionEntries = GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").ToList();
-
-        if (allowedIds.Count == 0)
-        {
-            return optionEntries;
-        }
-
-        return optionEntries
-            .Where(entry => TryParseId(entry, out var id) && allowedIds.Contains(id))
-            .ToList();
-    }
-
-    private static IEnumerable<JsonElement> GetDisplayPeripheralEntriesForOption(
-        JsonElement profileGroupsRoot,
-        JsonElement group,
-        JsonElement option)
-    {
-        var optionEntries = GetFilteredOptionPeripheralEntries(profileGroupsRoot, group, option).ToList();
-        if (optionEntries.Count > 0)
-        {
-            return optionEntries;
-        }
-
-        return GetControllerPeripheralEntries(group).ToList();
-    }
-
-    private static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
-    {
-        if (GetControllerPeripheralIds(group).Count > 0)
-        {
-            return true;
-        }
-
-        if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        foreach (var option in optionsElement.EnumerateArray())
-        {
-            if (GetOptionEntriesWithIncludes(profileGroupsRoot, option, "peripheral").Any())
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static int ReadOptionMinis(JsonElement option)
-    {
-        if (!option.TryGetProperty("minis", out var minisElement))
-        {
-            return 0;
-        }
-
-        if (minisElement.ValueKind == JsonValueKind.Number && minisElement.TryGetInt32(out var minisNumber))
-        {
-            return Math.Max(0, minisNumber);
-        }
-
-        if (minisElement.ValueKind == JsonValueKind.String &&
-            int.TryParse(minisElement.GetString(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var minisText))
-        {
-            return Math.Max(0, minisText);
-        }
-
-        return 0;
-    }
-
-    private static string BuildOptionDisplayName(
-        JsonElement option,
-        string baseName,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> skillsLookup)
-    {
-        var details = new List<string>();
-        var normalizedBase = baseName.ToLowerInvariant();
-
-        foreach (var skillName in GetOrderedNames(option, "skills", skillsLookup))
-        {
-            if (IsNameDetailTag(skillName) && !normalizedBase.Contains(skillName.ToLowerInvariant()))
-            {
-                details.Add(skillName);
-            }
-        }
-
-        foreach (var equipName in GetOrderedNames(option, "equip", equipLookup))
-        {
-            if (IsNameDetailTag(equipName) && !normalizedBase.Contains(equipName.ToLowerInvariant()))
-            {
-                details.Add(equipName);
-            }
-        }
-
-        if (option.TryGetProperty("orders", out var ordersElement) && ordersElement.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var order in ordersElement.EnumerateArray())
-            {
-                if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
-                {
-                    continue;
-                }
-
-                var type = typeElement.GetString();
-                if (string.Equals(type, "LIEUTENANT", StringComparison.OrdinalIgnoreCase) &&
-                    !normalizedBase.Contains("lieutenant"))
-                {
-                    details.Add("Lieutenant");
-                }
-            }
-        }
-
-        var distinctDetails = details
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (distinctDetails.Count == 0)
-        {
-            return baseName;
-        }
-
-        return $"{baseName} ({string.Join(", ", distinctDetails)})";
-    }
-
-    private static bool IsNameDetailTag(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        return value.Contains("forward observer", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("hacker", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("hacking device", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("specialist", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("paramedic", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("doctor", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("engineer", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("nco", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static List<string> GetOrderedNames(
-        JsonElement container,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        if (!container.TryGetProperty(propertyName, out var arr) || arr.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-
-        var names = new List<string>();
-        foreach (var entry in arr.EnumerateArray())
-        {
-            if (!TryParseId(entry, out var id))
-            {
-                continue;
-            }
-
-            if (lookup.TryGetValue(id, out var resolvedName) && !string.IsNullOrWhiteSpace(resolvedName))
-            {
-                names.Add(resolvedName);
-            }
-        }
-
-        return names
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static FormattedString BuildNameFormatted(string name)
-    {
-        var formatted = new FormattedString();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            formatted.Spans.Add(new Span { Text = "-" });
-            return formatted;
-        }
-
-        var match = Regex.Match(name, "(lieutenant)", RegexOptions.IgnoreCase);
-        if (!match.Success)
-        {
-            formatted.Spans.Add(new Span { Text = name });
-            return formatted;
-        }
-
-        if (match.Index > 0)
-        {
-            formatted.Spans.Add(new Span { Text = name[..match.Index] });
-        }
-
-        formatted.Spans.Add(new Span
-        {
-            Text = name.Substring(match.Index, match.Length),
-            TextColor = Color.FromArgb("#C084FC")
-        });
-
-        var suffixStart = match.Index + match.Length;
-        if (suffixStart < name.Length)
-        {
-            formatted.Spans.Add(new Span { Text = name[suffixStart..] });
-        }
-
-        return formatted;
-    }
-
-    private static FormattedString BuildListFormattedString(IEnumerable<string> values, Color textColor, bool highlightLieutenantPurple = false)
-    {
-        var formatted = new FormattedString();
-        var lines = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
-        if (lines.Count == 0)
-        {
-            formatted.Spans.Add(new Span { Text = "-", TextColor = textColor });
-            return formatted;
-        }
-
-        for (var i = 0; i < lines.Count; i++)
-        {
-            if (i > 0)
-            {
-                formatted.Spans.Add(new Span { Text = Environment.NewLine, TextColor = textColor });
-            }
-
-            var lineColor = highlightLieutenantPurple && lines[i].Contains("lieutenant", StringComparison.OrdinalIgnoreCase)
-                ? Color.FromArgb("#C084FC")
-                : textColor;
-            formatted.Spans.Add(new Span { Text = lines[i], TextColor = lineColor });
-        }
-
-        return formatted;
     }
 
     private async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)
@@ -3821,65 +2623,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
 
         return list;
-    }
-
-    private static bool IsCommonSpecOpsSkill(string? skillName)
-    {
-        if (string.IsNullOrWhiteSpace(skillName))
-        {
-            return false;
-        }
-
-        return skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
-               skillName.Contains("infinity spec-ops", StringComparison.OrdinalIgnoreCase) ||
-               skillName.Contains("infinity spec ops", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static List<string> BuildConfigurationSkillNames(IEnumerable<string> rawSkillNames)
-    {
-        var result = new List<string>();
-        foreach (var rawName in rawSkillNames)
-        {
-            if (string.IsNullOrWhiteSpace(rawName))
-            {
-                continue;
-            }
-
-            var skillName = rawName.Trim();
-            if (!IsCommonSpecOpsSkill(skillName))
-            {
-                result.Add(skillName);
-                continue;
-            }
-
-            var lieutenantDetail = ExtractLieutenantSkillDetail(skillName);
-            if (!string.IsNullOrWhiteSpace(lieutenantDetail))
-            {
-                result.Add(lieutenantDetail);
-            }
-        }
-
-        return result
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static string? ExtractLieutenantSkillDetail(string skillName)
-    {
-        if (!skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        var detail = Regex.Replace(skillName, "lieutenant", string.Empty, RegexOptions.IgnoreCase).Trim();
-        if (string.IsNullOrWhiteSpace(detail))
-        {
-            return null;
-        }
-
-        detail = detail.Trim('(', ')', '[', ']', '-', ':', ',', ';', ' ');
-        return string.IsNullOrWhiteSpace(detail) ? null : detail;
     }
 
     private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)
@@ -4200,12 +2943,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                         continue;
                     }
 
-                    if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
+                    if (requireZeroSwc && IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
                     {
                         continue;
                     }
 
-                    if (maxCost.HasValue && ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
+                    if (maxCost.HasValue && ParseCostValue(StandardCompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
                     {
                         continue;
                     }
@@ -4217,283 +2960,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasVisibleOption failed: {ex.Message}");
-        }
-
-        return false;
-    }
-
-    private static bool UnitHasVisibleOptionWithFilter(
-        string? profileGroupsJson,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterCriteria criteria,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost = null)
-    {
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return false;
-        }
-
-        var filterQuery = criteria.ToQuery();
-
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return false;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var option in optionsElement.EnumerateArray())
-                {
-                    if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                    {
-                        continue;
-                    }
-
-                    if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
-                    {
-                        continue;
-                    }
-
-                    var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
-                    if (maxCost.HasValue && optionCost > maxCost.Value)
-                    {
-                        continue;
-                    }
-
-                    if (filterQuery.MinPoints.HasValue && optionCost < filterQuery.MinPoints.Value)
-                    {
-                        continue;
-                    }
-
-                    if (filterQuery.MaxPoints.HasValue && optionCost > filterQuery.MaxPoints.Value)
-                    {
-                        continue;
-                    }
-
-                    if (!OptionMatchesUnitFilter(
-                            doc.RootElement,
-                            group,
-                            option,
-                            charsLookup,
-                            skillsLookup,
-                            equipLookup,
-                            weaponsLookup,
-                            ammoLookup,
-                            filterQuery))
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasVisibleOptionWithFilter failed: {ex.Message}");
-        }
-
-        return false;
-    }
-
-    private static bool OptionMatchesUnitFilter(
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterQuery filterQuery)
-    {
-        foreach (var term in filterQuery.Terms)
-        {
-            if (term.Field == UnitFilterField.Classification || term.Values.Count == 0)
-            {
-                continue;
-            }
-
-            var matches = term.Field switch
-            {
-                UnitFilterField.Characteristics => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "chars",
-                    charsLookup),
-                UnitFilterField.Skills => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "skills",
-                    skillsLookup),
-                UnitFilterField.Equipment => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "equip",
-                    equipLookup),
-                UnitFilterField.Weapons => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "weapons",
-                    weaponsLookup),
-                UnitFilterField.Ammo => TermMatchesOptionOnly(
-                    term,
-                    profileGroupsRoot,
-                    option,
-                    ammoLookup,
-                    ["ammunition", "ammo"]),
-                _ => true
-            };
-
-            if (!matches)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool TermMatchesOptionOrGroup(
-        UnitFilterTerm term,
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        return term.MatchMode == UnitFilterMatchMode.All
-            ? term.Values.All(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value))
-            : term.Values.Any(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value));
-    }
-
-    private static bool TermMatchesOptionOnly(
-        UnitFilterTerm term,
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        IReadOnlyDictionary<int, string> lookup,
-        IEnumerable<string> propertyNames)
-    {
-        return term.MatchMode == UnitFilterMatchMode.All
-            ? term.Values.All(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value))
-            : term.Values.Any(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value));
-    }
-
-    private static bool OptionOrGroupContainsLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        return OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue) ||
-               GroupProfilesContainLookupName(profileGroup, propertyName, lookup, expectedValue);
-    }
-
-    private static bool OptionContainsAnyLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        IEnumerable<string> propertyNames,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        foreach (var propertyName in propertyNames)
-        {
-            if (OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool OptionContainsLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
-        {
-            return false;
-        }
-
-        foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
-        {
-            if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
-            {
-                continue;
-            }
-
-            if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool GroupProfilesContainLookupName(
-        JsonElement profileGroup,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
-        {
-            return false;
-        }
-
-        if (!profileGroup.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        foreach (var profile in profilesElement.EnumerateArray())
-        {
-            if (!profile.TryGetProperty(propertyName, out var valuesElement) || valuesElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var entry in valuesElement.EnumerateArray())
-            {
-                if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
-                {
-                    continue;
-                }
-
-                if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
         }
 
         return false;
@@ -4689,31 +3155,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         ShowHackableIcon = false;
     }
 
-    private static List<string> MergeCommonAndUnique(IEnumerable<string> commonValues, string? uniqueValues)
-    {
-        var merged = new List<string>();
-        foreach (var value in commonValues)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                merged.Add(value.Trim());
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(uniqueValues) && uniqueValues != "-")
-        {
-            var uniqueParts = uniqueValues
-                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Where(x => !string.Equals(x, "-", StringComparison.Ordinal))
-                .Select(x => x.Trim());
-            merged.AddRange(uniqueParts);
-        }
-
-        return merged
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private void ResetUnitStatsOnly()
     {
         UnitMoveFirstCm = null;
@@ -4751,8 +3192,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         PeripheralAva = "-";
         PeripheralEquipment = "-";
         PeripheralSkills = "-";
-        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
     private static IEnumerable<JsonElement> EnumerateOptions(JsonElement profileGroupsRoot)
@@ -4974,7 +3415,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             equipLookup,
             extrasLookup,
             ShowUnitsInInches);
-        var skillNames = BuildConfigurationSkillNames(
+        var skillNames = StandardCompanyProfileTextService.BuildConfigurationSkillNames(
             GetOrderedIdDisplayNamesFromEntries(
                 GetContainerEntries(peripheralProfile, "skills"),
                 skillsLookup,
@@ -4998,8 +3439,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             Vitality = vitalityValue,
             S = ReadIntAsString(peripheralProfile, "s"),
             Ava = ReadAvaAsString(peripheralProfile),
-            Equipment = JoinOrDash(equipmentNames),
-            Skills = JoinOrDash(skillNames)
+            Equipment = StandardCompanyProfileTextService.JoinOrDash(equipmentNames),
+            Skills = StandardCompanyProfileTextService.JoinOrDash(skillNames)
         };
     }
 
@@ -5021,8 +3462,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         PeripheralAva = peripheralStats.Ava;
         PeripheralEquipment = peripheralStats.Equipment;
         PeripheralSkills = peripheralStats.Skills;
-        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", StandardCompanyProfileTextService.SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Skills", StandardCompanyProfileTextService.SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
         HasPeripheralStatBlock = true;
     }
 
@@ -5176,13 +3617,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                var optionCost = ParseCostValue(ReadOptionCost(option));
+                var optionCost = ParseCostValue(StandardCompanyProfileOptionService.ReadOptionCost(option));
                 if (optionCost <= 0)
                 {
                     continue;
                 }
 
-                var minis = Math.Max(1, ReadOptionMinis(option));
+                var minis = Math.Max(1, StandardCompanyProfileOptionService.ReadOptionMinis(option));
                 peripheralUnitCost = Math.Max(1, optionCost / minis);
                 return true;
             }
@@ -5216,11 +3657,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
 
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
-        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group));
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            if (hasControllerGroups && !StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group))
             {
                 continue;
             }
@@ -5232,7 +3673,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                if (IsPositiveSwc(ReadOptionSwc(option)))
+                if (IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
                 {
                     continue;
                 }
@@ -5242,7 +3683,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     continue;
                 }
 
-                var peripheralEntries = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
+                var peripheralEntries = StandardCompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
                 foreach (var entry in peripheralEntries)
                 {
                     if (!TryParseId(entry, out var peripheralId))
@@ -5863,63 +4304,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
 
-    private static FormattedString BuildNamedSummaryFormatted(string label, IEnumerable<string> values, Color accentColor, bool highlightLieutenantPurple = false)
-    {
-        var list = values
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var formatted = new FormattedString();
-        formatted.Spans.Add(new Span { Text = $"{label}: " });
-        if (list.Count == 0)
-        {
-            formatted.Spans.Add(new Span { Text = "-" });
-            return formatted;
-        }
-
-        for (var i = 0; i < list.Count; i++)
-        {
-            if (i > 0)
-            {
-                formatted.Spans.Add(new Span { Text = ", " });
-            }
-
-            formatted.Spans.Add(new Span
-            {
-                Text = list[i],
-                TextColor = highlightLieutenantPurple && list[i].Contains("lieutenant", StringComparison.OrdinalIgnoreCase)
-                    ? Color.FromArgb("#C084FC")
-                    : accentColor
-            });
-        }
-
-        return formatted;
-    }
-
-    private static FormattedString BuildMercsCompanyLineFormatted(string label, string? value, Color accentColor)
-    {
-        var normalized = string.IsNullOrWhiteSpace(value)
-            ? "-"
-            : value
-                .Replace("\r\n", ", ", StringComparison.Ordinal)
-                .Replace("\n", ", ", StringComparison.Ordinal)
-                .Replace("\r", ", ", StringComparison.Ordinal);
-
-        var formatted = new FormattedString();
-        formatted.Spans.Add(new Span
-        {
-            Text = $"{label}: "
-        });
-        formatted.Spans.Add(new Span
-        {
-            Text = normalized,
-            TextColor = accentColor
-        });
-        return formatted;
-    }
-
     private static string BuildPeripheralSubtitle(PeripheralMercsCompanyStats? peripheralStats)
     {
         if (peripheralStats is null)
@@ -5928,22 +4312,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
 
         return $"MOV {peripheralStats.Mov} | CC {peripheralStats.Cc} | BS {peripheralStats.Bs} | PH {peripheralStats.Ph} | WIP {peripheralStats.Wip} | ARM {peripheralStats.Arm} | BTS {peripheralStats.Bts} | {peripheralStats.VitalityHeader} {peripheralStats.Vitality} | S {peripheralStats.S} | AVA {peripheralStats.Ava}";
-    }
-
-    private static List<string> SplitDisplayLine(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text) || text == "-")
-        {
-            return [];
-        }
-
-        return text
-            .Replace("\r\n", ",", StringComparison.Ordinal)
-            .Replace('\r', ',')
-            .Replace('\n', ',')
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
-            .ToList();
     }
 
     private static List<string> IntersectNamedIds(
@@ -6071,7 +4439,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         foreach (var option in options)
         {
             var ids = new HashSet<int>();
-            foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+            foreach (var entry in StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
             {
                 if (TryParseId(entry, out var id))
                 {
@@ -6114,7 +4482,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         foreach (var option in options)
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+            foreach (var entry in StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
             {
                 if (!TryParseId(entry, out var id))
                 {
@@ -6143,127 +4511,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         return intersection
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
-    }
-
-    private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName)
-    {
-        var collected = new List<JsonElement>();
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        CollectOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName, collected, visited, null);
-        return collected;
-    }
-
-    private static void CollectOptionEntriesWithIncludes(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName,
-        List<JsonElement> target,
-        HashSet<string> visited,
-        (int GroupId, int OptionId)? includeRef)
-    {
-        var key = includeRef.HasValue
-            ? $"{includeRef.Value.GroupId}:{includeRef.Value.OptionId}"
-            : option.GetRawText().GetHashCode().ToString();
-        if (!visited.Add(key))
-        {
-            return;
-        }
-
-        if (option.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var entry in arr.EnumerateArray())
-            {
-                target.Add(entry);
-            }
-        }
-
-        if (!option.TryGetProperty("includes", out var includesElement) || includesElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        foreach (var include in includesElement.EnumerateArray())
-        {
-            if (include.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            if (!TryParseIncludeReference(include, out var includeGroupId, out var includeOptionId))
-            {
-                continue;
-            }
-
-            var includedOption = FindIncludedOption(profileGroupsRoot, includeGroupId, includeOptionId);
-            if (includedOption.HasValue)
-            {
-                CollectOptionEntriesWithIncludes(
-                    profileGroupsRoot,
-                    includedOption.Value,
-                    propertyName,
-                    target,
-                    visited,
-                    (includeGroupId, includeOptionId));
-            }
-        }
-    }
-
-    private static bool TryParseIncludeReference(JsonElement include, out int groupId, out int optionId)
-    {
-        groupId = 0;
-        optionId = 0;
-
-        if (!include.TryGetProperty("group", out var groupElement) || !TryParseId(groupElement, out groupId))
-        {
-            return false;
-        }
-
-        if (!include.TryGetProperty("option", out var optionElement) || !TryParseId(optionElement, out optionId))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static JsonElement? FindIncludedOption(JsonElement profileGroupsRoot, int groupId, int optionId)
-    {
-        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
-        {
-            if (!group.TryGetProperty("id", out var groupIdElement) ||
-                !TryParseId(groupIdElement, out var parsedGroupId) ||
-                parsedGroupId != groupId)
-            {
-                continue;
-            }
-
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                if (!option.TryGetProperty("id", out var optionIdElement) ||
-                    !TryParseId(optionIdElement, out var parsedOptionId) ||
-                    parsedOptionId != optionId)
-                {
-                    continue;
-                }
-
-                return option;
-            }
-        }
-
-        return null;
     }
 
     private static Dictionary<int, ExtraDefinition> BuildExtrasLookup(string? filtersJson)
@@ -6794,8 +5041,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private void RefreshSummaryFormatted()
     {
         var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+        EquipmentSummaryFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
+        SpecialSkillsSummaryFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted(
             "Special Skills",
             UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
             skillsAccent,
@@ -7004,1683 +5251,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         canvas.DrawRect(inset, inset, e.Info.Width - (inset * 2f), e.Info.Height - (inset * 2f), borderPaint);
     }
 
-    private ArmyFactionRecord? GetFactionSnapshotFromProvider(int factionId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_factionProvider is null || factionId <= 0)
-        {
-            return null;
-        }
-
-        return ToArmyFactionRecord(_factionProvider.GetFactionSnapshot(factionId));
-    }
-
-    private IReadOnlyList<ArmyResumeRecord> GetResumeByFactionMercsOnlyFromProvider(int factionId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_factionProvider is null || factionId <= 0)
-        {
-            return [];
-        }
-
-        var resumes = _factionProvider.GetResumeByFactionMercsOnly(factionId)
-            .Select(ToArmyResumeRecord)
-            .ToList();
-        return resumes;
-    }
-
-    private ArmyUnitRecord? GetUnitFromProvider(int factionId, int unitId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_factionProvider is null || factionId <= 0 || unitId <= 0)
-        {
-            return null;
-        }
-
-        return ToArmyUnitRecord(_factionProvider.GetUnit(factionId, unitId));
-    }
-
-    private async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListFromQueryAccessorAsync(
-        IReadOnlyCollection<int> factionIds,
-        CancellationToken cancellationToken = default)
-    {
-        if (factionIds.Count == 0)
-        {
-            return [];
-        }
-
-        var queryResult = await _cohesiveCompanyFactionQueryProvider.GetFilterQuerySourceAsync(factionIds, cancellationToken);
-        return queryResult.MergedMercsListEntries;
-    }
-
     private bool GetShowUnitsInInchesFromProvider(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return _appSettingsProvider?.GetShowUnitsInInches() ?? false;
     }
 
-    private static ArmyFactionRecord? ToArmyFactionRecord(ArmyFactionRecord? faction)
-    {
-        if (faction is null)
-        {
-            return null;
-        }
-
-        return new ArmyFactionRecord
-        {
-            FactionId = faction.FactionId,
-            Version = faction.Version,
-            ImportedAtUnixSeconds = faction.ImportedAtUnixSeconds,
-            ReinforcementsJson = faction.ReinforcementsJson,
-            FiltersJson = faction.FiltersJson,
-            FireteamsJson = faction.FireteamsJson,
-            RelationsJson = faction.RelationsJson,
-            SpecopsJson = faction.SpecopsJson,
-            FireteamChartJson = faction.FireteamChartJson,
-            RawJson = faction.RawJson
-        };
-    }
-
-    private static ArmyResumeRecord ToArmyResumeRecord(ArmyResumeRecord resume)
-    {
-        return new ArmyResumeRecord
-        {
-            ResumeKey = resume.ResumeKey,
-            FactionId = resume.FactionId,
-            UnitId = resume.UnitId,
-            IdArmy = resume.IdArmy,
-            Isc = resume.Isc,
-            Name = resume.Name,
-            Slug = resume.Slug,
-            Logo = resume.Logo,
-            Type = resume.Type,
-            Category = resume.Category
-        };
-    }
-
-    private static ArmyUnitRecord? ToArmyUnitRecord(ArmyUnitRecord? unit)
-    {
-        if (unit is null)
-        {
-            return null;
-        }
-
-        return new ArmyUnitRecord
-        {
-            UnitKey = unit.UnitKey,
-            FactionId = unit.FactionId,
-            UnitId = unit.UnitId,
-            IdArmy = unit.IdArmy,
-            Canonical = unit.Canonical,
-            Isc = unit.Isc,
-            IscAbbr = unit.IscAbbr,
-            Name = unit.Name,
-            Slug = unit.Slug,
-            ProfileGroupsJson = unit.ProfileGroupsJson,
-            OptionsJson = unit.OptionsJson,
-            FiltersJson = unit.FiltersJson,
-            FactionsJson = unit.FactionsJson
-        };
-    }
-
 }
-
-public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
-{
-    public int Id { get; init; }
-
-    public int ParentId { get; init; }
-
-    public string Name { get; init; } = string.Empty;
-
-    public string? CachedLogoPath { get; init; }
-
-    public string? PackagedLogoPath { get; init; }
-
-    public string? Subtitle => null;
-
-    public bool HasSubtitle => false;
-
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
-
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
-{
-    public int Id { get; init; }
-    public int SourceFactionId { get; init; }
-    public string? Slug { get; init; }
-
-    public int? Type { get; init; }
-    public bool IsCharacter { get; init; }
-
-    public string Name { get; init; } = string.Empty;
-
-    public string? CachedLogoPath { get; init; }
-
-    public string? PackagedLogoPath { get; init; }
-
-    public string? Subtitle { get; init; }
-    public bool IsSpecOps { get; init; }
-
-    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
-
-    private bool _isVisible = true;
-    public bool IsVisible
-    {
-        get => _isVisible;
-        set
-        {
-            if (_isVisible == value)
-            {
-                return;
-            }
-
-            _isVisible = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
-
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-public class ArmyTeamListItem : BaseViewModel
-{
-    public string Name { get; init; } = string.Empty;
-    public string TeamCountsText { get; init; } = string.Empty;
-    public bool HasTeamCounts => !string.IsNullOrWhiteSpace(TeamCountsText);
-    public bool IsWildcardBucket { get; init; }
-    public ObservableCollection<ArmyTeamUnitLimitItem> AllowedProfiles { get; init; } = [];
-
-    private bool _isVisible = true;
-    public bool IsVisible
-    {
-        get => _isVisible;
-        set
-        {
-            if (_isVisible == value)
-            {
-                return;
-            }
-
-            _isVisible = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private bool _isExpanded;
-    public bool IsExpanded
-    {
-        get => _isExpanded;
-        set
-        {
-            if (_isExpanded == value)
-            {
-                return;
-            }
-
-            _isExpanded = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
-{
-    public string Name { get; init; } = string.Empty;
-    public string Min { get; init; } = "0";
-    public string Max { get; init; } = "0";
-    public string? Slug { get; init; }
-    public bool IsCharacter { get; init; }
-    public int? ResolvedUnitId { get; init; }
-    public int? ResolvedSourceFactionId { get; init; }
-    public string? CachedLogoPath { get; init; }
-    public string? PackagedLogoPath { get; init; }
-    public string? Subtitle { get; init; }
-    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
-
-    private bool _isVisible = true;
-    public bool IsVisible
-    {
-        get => _isVisible;
-        set
-        {
-            if (_isVisible == value)
-            {
-                return;
-            }
-
-            _isVisible = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
-
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-public class MercsCompanyEntry : BaseViewModel, IViewerListItem
-{
-    public string Name { get; init; } = string.Empty;
-    public FormattedString? NameFormatted { get; init; }
-    public string CostDisplay { get; init; } = string.Empty;
-    public int CostValue { get; init; }
-    public string ProfileKey { get; init; } = string.Empty;
-    public bool IsLieutenant { get; init; }
-    public int SourceUnitId { get; init; }
-    public int SourceFactionId { get; init; }
-
-    public string? CachedLogoPath { get; init; }
-
-    public string? PackagedLogoPath { get; init; }
-
-    private string? _subtitle;
-    public string? Subtitle
-    {
-        get => _subtitle;
-        set
-        {
-            if (_subtitle == value)
-            {
-                return;
-            }
-
-            _subtitle = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasSubtitle));
-        }
-    }
-    public string UnitTypeCode { get; init; } = string.Empty;
-    public string SavedEquipment { get; init; } = "-";
-    public string SavedSkills { get; init; } = "-";
-    public string SavedRangedWeapons { get; init; } = "-";
-    public string SavedCcWeapons { get; init; } = "-";
-    public int? UnitMoveFirstCm { get; init; }
-    public int? UnitMoveSecondCm { get; init; }
-    public string UnitMoveDisplay { get; set; } = "-";
-    public bool HasPeripheralStatBlock { get; init; }
-    public string PeripheralNameHeading { get; init; } = string.Empty;
-    private string _peripheralMov = "-";
-    public string PeripheralMov
-    {
-        get => _peripheralMov;
-        set
-        {
-            if (_peripheralMov == value)
-            {
-                return;
-            }
-
-            _peripheralMov = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(PeripheralSubtitle));
-        }
-    }
-    public string PeripheralCc { get; init; } = "-";
-    public string PeripheralBs { get; init; } = "-";
-    public string PeripheralPh { get; init; } = "-";
-    public string PeripheralWip { get; init; } = "-";
-    public string PeripheralArm { get; init; } = "-";
-    public string PeripheralBts { get; init; } = "-";
-    public string PeripheralVitalityHeader { get; init; } = "VITA";
-    public string PeripheralVitality { get; init; } = "-";
-    public string PeripheralS { get; init; } = "-";
-    public string PeripheralAva { get; init; } = "-";
-    public int? PeripheralMoveFirstCm { get; init; }
-    public int? PeripheralMoveSecondCm { get; init; }
-    public string SavedPeripheralEquipment { get; init; } = "-";
-    public string SavedPeripheralSkills { get; init; } = "-";
-    public string PeripheralSubtitle => $"MOV {PeripheralMov} | CC {PeripheralCc} | BS {PeripheralBs} | PH {PeripheralPh} | WIP {PeripheralWip} | ARM {PeripheralArm} | BTS {PeripheralBts} | {PeripheralVitalityHeader} {PeripheralVitality} | S {PeripheralS} | AVA {PeripheralAva}";
-
-    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
-
-    public FormattedString EquipmentLineFormatted { get; init; } = new();
-    public bool HasEquipmentLine { get; init; }
-    public FormattedString SkillsLineFormatted { get; init; } = new();
-    public bool HasSkillsLine { get; init; }
-    public FormattedString RangedLineFormatted { get; init; } = new();
-    public FormattedString CcLineFormatted { get; init; } = new();
-    public FormattedString PeripheralEquipmentLineFormatted { get; init; } = new();
-    public bool HasPeripheralEquipmentLine { get; init; }
-    public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
-    public bool HasPeripheralSkillsLine { get; init; }
-    private int _experiencePoints;
-    public int ExperiencePoints
-    {
-        get => _experiencePoints;
-        set
-        {
-            var normalized = Math.Max(0, value);
-            if (_experiencePoints == normalized)
-            {
-                return;
-            }
-
-            _experiencePoints = normalized;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(ExperienceRankName));
-        }
-    }
-
-    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
-
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-            {
-                return;
-            }
-
-            _isSelected = value;
-            OnPropertyChanged();
-        }
-    }
-}
-
-public sealed class SavedCompanyFile
-{
-    public string CompanyName { get; init; } = string.Empty;
-    public string CompanyType { get; init; } = string.Empty;
-    public string CompanyIdentifier { get; init; } = string.Empty;
-    public int CompanyIndex { get; init; }
-    public string CreatedUtc { get; init; } = string.Empty;
-    public int PointsLimit { get; init; }
-    public int CurrentPoints { get; init; }
-    public SavedImprovedCaptainStats ImprovedCaptainStats { get; init; } = new();
-    public List<SavedCompanyFaction> SourceFactions { get; init; } = [];
-    public List<SavedCompanyEntry> Entries { get; init; } = [];
-}
-
-public sealed class SavedImprovedCaptainStats
-{
-    public bool IsEnabled { get; init; }
-    public string CaptainName { get; init; } = string.Empty;
-    public int CcTier { get; init; }
-    public int BsTier { get; init; }
-    public int PhTier { get; init; }
-    public int WipTier { get; init; }
-    public int ArmTier { get; init; }
-    public int BtsTier { get; init; }
-    public int VitalityTier { get; init; }
-    public int CcBonus { get; init; }
-    public int BsBonus { get; init; }
-    public int PhBonus { get; init; }
-    public int WipBonus { get; init; }
-    public int ArmBonus { get; init; }
-    public int BtsBonus { get; init; }
-    public int VitalityBonus { get; init; }
-    public string WeaponChoice1 { get; init; } = string.Empty;
-    public string WeaponChoice2 { get; init; } = string.Empty;
-    public string WeaponChoice3 { get; init; } = string.Empty;
-    public string SkillChoice1 { get; init; } = string.Empty;
-    public string SkillChoice2 { get; init; } = string.Empty;
-    public string SkillChoice3 { get; init; } = string.Empty;
-    public string EquipmentChoice1 { get; init; } = string.Empty;
-    public string EquipmentChoice2 { get; init; } = string.Empty;
-    public string EquipmentChoice3 { get; init; } = string.Empty;
-    public int OptionFactionId { get; init; }
-    public string OptionFactionName { get; init; } = string.Empty;
-}
-
-public sealed class SavedCompanyFaction
-{
-    public int FactionId { get; init; }
-    public string FactionName { get; init; } = string.Empty;
-}
-
-public sealed class SavedCompanyEntry
-{
-    public int EntryIndex { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string BaseUnitName { get; set; } = string.Empty;
-    public string CustomName { get; set; } = string.Empty;
-    public string UnitTypeCode { get; set; } = string.Empty;
-    public string ProfileKey { get; init; } = string.Empty;
-    public int SourceFactionId { get; init; }
-    public int SourceUnitId { get; init; }
-    public int Cost { get; init; }
-    public bool IsLieutenant { get; init; }
-    public string SavedEquipment { get; init; } = "-";
-    public string SavedSkills { get; init; } = "-";
-    public string SavedRangedWeapons { get; init; } = "-";
-    public string SavedCcWeapons { get; init; } = "-";
-    public bool HasPeripheralStatBlock { get; init; }
-    public string PeripheralNameHeading { get; init; } = string.Empty;
-    public string PeripheralMov { get; init; } = "-";
-    public string PeripheralCc { get; init; } = "-";
-    public string PeripheralBs { get; init; } = "-";
-    public string PeripheralPh { get; init; } = "-";
-    public string PeripheralWip { get; init; } = "-";
-    public string PeripheralArm { get; init; } = "-";
-    public string PeripheralBts { get; init; } = "-";
-    public string PeripheralVitalityHeader { get; init; } = "VITA";
-    public string PeripheralVitality { get; init; } = "-";
-    public string PeripheralS { get; init; } = "-";
-    public string PeripheralAva { get; init; } = "-";
-    public string SavedPeripheralEquipment { get; init; } = "-";
-    public string SavedPeripheralSkills { get; init; } = "-";
-    public int ExperiencePoints { get; init; }
-    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
-}
-
-sealed class PeripheralMercsCompanyStats
-{
-    public string NameHeading { get; init; } = string.Empty;
-    public int? MoveFirstCm { get; init; }
-    public int? MoveSecondCm { get; init; }
-    public string Mov { get; init; } = "-";
-    public string Cc { get; init; } = "-";
-    public string Bs { get; init; } = "-";
-    public string Ph { get; init; } = "-";
-    public string Wip { get; init; } = "-";
-    public string Arm { get; init; } = "-";
-    public string Bts { get; init; } = "-";
-    public string VitalityHeader { get; init; } = "VITA";
-    public string Vitality { get; init; } = "-";
-    public string S { get; init; } = "-";
-    public string Ava { get; init; } = "-";
-    public string Equipment { get; init; } = "-";
-    public string Skills { get; init; } = "-";
-}
-
-public sealed class CaptainUpgradeOptionSet
-{
-    public static CaptainUpgradeOptionSet Empty { get; } = new();
-    public List<string> Weapons { get; init; } = [];
-    public List<string> Skills { get; init; } = [];
-    public List<string> Equipment { get; init; } = [];
-    public bool IsEmpty => Weapons.Count == 0 && Skills.Count == 0 && Equipment.Count == 0;
-}
-
-public sealed class CaptainUnitPopupInfo
-{
-    public string Name { get; init; } = string.Empty;
-    public int Cost { get; init; }
-    public string Statline { get; init; } = "-";
-    public string RangedWeapons { get; init; } = "-";
-    public string CcWeapons { get; init; } = "-";
-    public string Skills { get; init; } = "-";
-    public string Equipment { get; init; } = "-";
-    public string? CachedLogoPath { get; init; }
-    public string? PackagedLogoPath { get; init; }
-}
-
-public sealed class CaptainUpgradePopupContext
-{
-    public CaptainUnitPopupInfo Unit { get; init; } = new();
-    public int OptionFactionId { get; init; }
-    public string OptionFactionName { get; init; } = string.Empty;
-    public List<string> WeaponOptions { get; init; } = [];
-    public List<string> SkillOptions { get; init; } = [];
-    public List<string> EquipmentOptions { get; init; } = [];
-}
-
-public sealed class ConfigureCaptainPopupPage : ContentPage
-{
-    private const double UnifiedPickerWidth = 280;
-    private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
-    private static readonly Color DefaultStatColor = Colors.White;
-    private static readonly IReadOnlyDictionary<string, StatPickerDefinition> StatDefinitions = new Dictionary<string, StatPickerDefinition>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["CC"] = new StatPickerDefinition([0, 2, 5, 10], [0, 2, 3, 5]),
-        ["BS"] = new StatPickerDefinition([0, 1, 2, 3], [0, 2, 3, 5]),
-        ["PH"] = new StatPickerDefinition([0, 1, 3], [0, 2, 3], 14),
-        ["WIP"] = new StatPickerDefinition([0, 1, 3, 6], [0, 2, 3, 5], 15),
-        ["ARM"] = new StatPickerDefinition([0, 1, 3], [0, 5, 5]),
-        ["BTS"] = new StatPickerDefinition([0, 3, 6, 9], [0, 2, 3, 5]),
-        ["VITA"] = new StatPickerDefinition([0, 1], [0, 10], 2),
-        ["STR"] = new StatPickerDefinition([0, 1], [0, 10], 2)
-    };
-    private const string NoneChoice = "(None)";
-
-    private readonly CaptainUpgradePopupContext _context;
-    private readonly TaskCompletionSource<SavedImprovedCaptainStats?> _resultSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly SKCanvasView _logoCanvas;
-    private readonly Picker _ccPicker;
-    private readonly Picker _bsPicker;
-    private readonly Picker _phPicker;
-    private readonly Picker _wipPicker;
-    private readonly Picker _armPicker;
-    private readonly Picker _btsPicker;
-    private readonly Picker _vitaPicker;
-    private readonly Picker _weapon1Picker;
-    private readonly Picker _weapon2Picker;
-    private readonly Picker _weapon3Picker;
-    private readonly Picker _skill1Picker;
-    private readonly Picker _skill2Picker;
-    private readonly Picker _skill3Picker;
-    private readonly Picker _equipment1Picker;
-    private readonly Picker _equipment2Picker;
-    private readonly Picker _equipment3Picker;
-    private readonly Label _rangedValueLabel;
-    private readonly Label _ccValueLabel;
-    private readonly Label _skillsValueLabel;
-    private readonly Label _equipmentValueLabel;
-    private readonly Label _upgradeOptionsHeaderLabel;
-    private readonly Label _experienceRemainingLabel;
-    private readonly Button _foundCompanyButton;
-    private readonly IReadOnlyDictionary<string, int> _baseStats;
-    private readonly Grid _statsGrid;
-    private readonly List<string> _statGridOrder = [];
-    private readonly Dictionary<string, string> _statGridBaseValues = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, Label> _statGridValueLabels = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Entry _captainNameEntry;
-    private readonly Label _captainNameHeadingLabel;
-    private readonly SKCanvasView _editCaptainNameCanvas;
-    private readonly SKCanvasView _saveCaptainNameCanvas;
-    private readonly SKCanvasView _rejectCaptainNameCanvas;
-    private string _captainNameCommitted = "Captain";
-    private SKPicture? _logoPicture;
-    private SKPicture? _editCaptainNamePicture;
-    private SKPicture? _saveCaptainNamePicture;
-    private SKPicture? _rejectCaptainNamePicture;
-    private int _isClosing;
-
-    private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
-    {
-        _context = context;
-        _baseStats = ParseBaseStats(context.Unit.Statline);
-        var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
-        BackgroundColor = Color.FromRgba(0, 0, 0, 180);
-        Title = "Captain Configuration";
-
-        _logoCanvas = new SKCanvasView
-        {
-            WidthRequest = 80,
-            HeightRequest = 80,
-            VerticalOptions = LayoutOptions.Start
-        };
-        _logoCanvas.PaintSurface += OnLogoCanvasPaintSurface;
-
-        _ccPicker = BuildStatPicker("CC", ReadBaseStat("CC"));
-        _bsPicker = BuildStatPicker("BS", ReadBaseStat("BS"));
-        _phPicker = BuildStatPicker("PH", ReadBaseStat("PH"));
-        _wipPicker = BuildStatPicker("WIP", ReadBaseStat("WIP"));
-        _armPicker = BuildStatPicker("ARM", ReadBaseStat("ARM"));
-        _btsPicker = BuildStatPicker("BTS", ReadBaseStat("BTS"));
-        _vitaPicker = BuildStatPicker("VITA", ReadBaseStat("VITA", "STR", "W"));
-
-        HookSelectionChanged(_ccPicker);
-        HookSelectionChanged(_bsPicker);
-        HookSelectionChanged(_phPicker);
-        HookSelectionChanged(_wipPicker);
-        HookSelectionChanged(_armPicker);
-        HookSelectionChanged(_btsPicker);
-        HookSelectionChanged(_vitaPicker);
-
-        _weapon1Picker = BuildChoicePicker(context.WeaponOptions);
-        _weapon2Picker = BuildChoicePicker(context.WeaponOptions);
-        _weapon3Picker = BuildChoicePicker(context.WeaponOptions);
-        _skill1Picker = BuildChoicePicker(context.SkillOptions);
-        _skill2Picker = BuildChoicePicker(context.SkillOptions);
-        _skill3Picker = BuildChoicePicker(context.SkillOptions);
-        _equipment1Picker = BuildChoicePicker(context.EquipmentOptions);
-        _equipment2Picker = BuildChoicePicker(context.EquipmentOptions);
-        _equipment3Picker = BuildChoicePicker(context.EquipmentOptions);
-        HookSelectionChanged(_weapon1Picker);
-        HookSelectionChanged(_weapon2Picker);
-        HookSelectionChanged(_weapon3Picker);
-        HookSelectionChanged(_skill1Picker);
-        HookSelectionChanged(_skill2Picker);
-        HookSelectionChanged(_skill3Picker);
-        HookSelectionChanged(_equipment1Picker);
-        HookSelectionChanged(_equipment2Picker);
-        HookSelectionChanged(_equipment3Picker);
-
-        var cancelButton = new Button
-        {
-            Text = "BACK",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
-            Command = new Command(async () => await CloseAsync(false))
-        };
-        _foundCompanyButton = new Button
-        {
-            Text = "FOUND COMPANY",
-            BackgroundColor = Color.FromArgb("#7C3AED"),
-            TextColor = Colors.Black,
-            Command = new Command(async () => await CloseAsync(true))
-        };
-
-        var actions = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition { Width = GridLength.Auto },
-                new ColumnDefinition { Width = GridLength.Star },
-                new ColumnDefinition { Width = GridLength.Auto }
-            },
-            ColumnSpacing = 10,
-            HorizontalOptions = LayoutOptions.Fill,
-            Children = { cancelButton, _foundCompanyButton }
-        };
-        Grid.SetColumn(cancelButton, 0);
-        Grid.SetColumn(_foundCompanyButton, 2);
-
-        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#EF4444"), out _rangedValueLabel);
-        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
-        var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
-        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
-
-        _captainNameEntry = new Entry
-        {
-            Text = _captainNameCommitted,
-            IsReadOnly = true,
-            FontSize = 22,
-            HorizontalOptions = LayoutOptions.Fill
-        };
-        _captainNameHeadingLabel = new Label
-        {
-            Text = _captainNameCommitted,
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 22,
-            LineBreakMode = LineBreakMode.WordWrap
-        };
-        _editCaptainNameCanvas = BuildCaptainNameIconCanvas(OnEditCaptainNameTapped);
-        _editCaptainNameCanvas.PaintSurface += OnEditCaptainNameCanvasPaintSurface;
-        _saveCaptainNameCanvas = BuildCaptainNameIconCanvas(OnSaveCaptainNameTapped);
-        _saveCaptainNameCanvas.PaintSurface += OnSaveCaptainNameCanvasPaintSurface;
-        _rejectCaptainNameCanvas = BuildCaptainNameIconCanvas(OnRejectCaptainNameTapped);
-        _rejectCaptainNameCanvas.PaintSurface += OnRejectCaptainNameCanvasPaintSurface;
-        SetCaptainNameEditMode(isEditing: false);
-
-        var captainNameRow = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition { Width = GridLength.Star },
-                new ColumnDefinition { Width = GridLength.Auto },
-                new ColumnDefinition { Width = GridLength.Auto },
-                new ColumnDefinition { Width = GridLength.Auto }
-            },
-            ColumnSpacing = 8,
-            Children =
-            {
-                _captainNameEntry,
-                _editCaptainNameCanvas,
-                _saveCaptainNameCanvas,
-                _rejectCaptainNameCanvas
-            }
-        };
-        Grid.SetColumn(_captainNameEntry, 0);
-        Grid.SetColumn(_editCaptainNameCanvas, 1);
-        Grid.SetColumn(_saveCaptainNameCanvas, 2);
-        Grid.SetColumn(_rejectCaptainNameCanvas, 3);
-
-        _statsGrid = BuildStatsGrid(_context.Unit.Statline);
-
-        var leftColumn = new VerticalStackLayout
-        {
-            Spacing = 8,
-            Children =
-            {
-                captainNameRow,
-                _logoCanvas,
-                _captainNameHeadingLabel,
-                _statsGrid,
-                rangedBlock,
-                ccBlock,
-                skillsBlock,
-                equipmentBlock
-            }
-        };
-
-        _upgradeOptionsHeaderLabel = new Label
-        {
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 18,
-            TextColor = Colors.White
-        };
-        _experienceRemainingLabel = new Label
-        {
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 15,
-            TextColor = Colors.White
-        };
-
-        var rightColumnBody = new VerticalStackLayout
-        {
-            Spacing = 8,
-            Children =
-            {
-                BuildStatRowPair(("CC", _ccPicker), ("BS", _bsPicker)),
-                BuildStatRowPair(("PH", _phPicker), ("WIP", _wipPicker)),
-                BuildStatRowPair(("ARM", _armPicker), ("BTS", _btsPicker)),
-                BuildStatRowPair(("VITA", _vitaPicker), null),
-                BuildCategorySection("Weapons", _weapon1Picker, _weapon2Picker, _weapon3Picker),
-                BuildCategorySection("Skills", _skill1Picker, _skill2Picker, _skill3Picker),
-                BuildCategorySection("Equipment", _equipment1Picker, _equipment2Picker, _equipment3Picker)
-            }
-        };
-
-        var rightBodyScroll = new ScrollView { Content = rightColumnBody };
-        var leftScroll = new ScrollView { Content = leftColumn };
-        var rightColumn = new Grid
-        {
-            RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Star }
-            },
-            RowSpacing = 6,
-            Children =
-            {
-                _upgradeOptionsHeaderLabel,
-                _experienceRemainingLabel,
-                rightBodyScroll
-            }
-        };
-        Grid.SetRow(_experienceRemainingLabel, 1);
-        Grid.SetRow(rightBodyScroll, 2);
-        var columnsGrid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition { Width = GridLength.Star },
-                new ColumnDefinition { Width = GridLength.Star }
-            },
-            ColumnSpacing = 18,
-            Children = { leftScroll, rightColumn }
-        };
-        Grid.SetColumn(rightColumn, 1);
-
-        var cardContent = new Grid
-        {
-            WidthRequest = 980,
-            RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition { Height = GridLength.Star },
-                new RowDefinition { Height = GridLength.Auto }
-            },
-            RowSpacing = 14,
-            Children = { columnsGrid, actions }
-        };
-        var actionsHost = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition { Width = GridLength.Star },
-                new ColumnDefinition { Width = GridLength.Star }
-            },
-            Children = { actions }
-        };
-        Grid.SetColumn(actions, 0);
-        Grid.SetRow(actions, 1);
-        cardContent.Children.Remove(actions);
-        cardContent.Children.Add(actionsHost);
-        Grid.SetRow(actionsHost, 1);
-
-        var card = new Border
-        {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#374151"),
-            StrokeThickness = 1,
-            Padding = new Thickness(16),
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center,
-            HeightRequest = popupHeight,
-            Content = cardContent
-        };
-
-        Content = new Grid
-        {
-            Children = { card }
-        };
-
-        UpdateProfilePreviewFromSelections();
-        _ = LoadLogoAsync();
-        _ = LoadCaptainNameActionIconsAsync();
-    }
-
-    public static async Task<SavedImprovedCaptainStats?> ShowAsync(INavigation navigation, CaptainUpgradePopupContext context)
-    {
-        var page = new ConfigureCaptainPopupPage(context);
-        await navigation.PushModalAsync(page, false);
-        return await page._resultSource.Task;
-    }
-
-    protected override bool OnBackButtonPressed()
-    {
-        _ = CloseAsync(false);
-        return true;
-    }
-
-    private async Task LoadLogoAsync()
-    {
-        _logoPicture?.Dispose();
-        _logoPicture = null;
-
-        try
-        {
-            Stream? stream = null;
-            if (!string.IsNullOrWhiteSpace(_context.Unit.CachedLogoPath) && File.Exists(_context.Unit.CachedLogoPath))
-            {
-                stream = File.OpenRead(_context.Unit.CachedLogoPath);
-            }
-            else if (!string.IsNullOrWhiteSpace(_context.Unit.PackagedLogoPath))
-            {
-                stream = await FileSystem.Current.OpenAppPackageFileAsync(_context.Unit.PackagedLogoPath);
-            }
-
-            if (stream is null)
-            {
-                _logoCanvas.InvalidateSurface();
-                return;
-            }
-
-            await using (stream)
-            {
-                var svg = new SKSvg();
-                _logoPicture = svg.Load(stream);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ConfigureCaptainPopupPage LoadLogoAsync failed: {ex.Message}");
-            _logoPicture = null;
-        }
-
-        _logoCanvas.InvalidateSurface();
-    }
-
-    private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-
-        if (_logoPicture is null)
-        {
-            return;
-        }
-
-        var bounds = _logoPicture.CullRect;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return;
-        }
-
-        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
-        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
-        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
-
-        canvas.Translate(x, y);
-        canvas.Scale(scale);
-        canvas.DrawPicture(_logoPicture);
-    }
-
-    private async Task CloseAsync(bool confirmed)
-    {
-        if (Interlocked.Exchange(ref _isClosing, 1) == 1)
-        {
-            return;
-        }
-
-        if (!confirmed)
-        {
-            _resultSource.TrySetResult(null);
-            DisposeCaptainNameActionIcons();
-            await DismissModalIfTopAsync();
-
-            return;
-        }
-
-        CommitCaptainNameFromEntry();
-
-        var stats = new SavedImprovedCaptainStats
-        {
-            IsEnabled = true,
-            CaptainName = _captainNameCommitted,
-            CcTier = ReadStatTier(_ccPicker),
-            BsTier = ReadStatTier(_bsPicker),
-            PhTier = ReadStatTier(_phPicker),
-            WipTier = ReadStatTier(_wipPicker),
-            ArmTier = ReadStatTier(_armPicker),
-            BtsTier = ReadStatTier(_btsPicker),
-            VitalityTier = ReadStatTier(_vitaPicker),
-            CcBonus = ReadStatBonus(_ccPicker),
-            BsBonus = ReadStatBonus(_bsPicker),
-            PhBonus = ReadStatBonus(_phPicker),
-            WipBonus = ReadStatBonus(_wipPicker),
-            ArmBonus = ReadStatBonus(_armPicker),
-            BtsBonus = ReadStatBonus(_btsPicker),
-            VitalityBonus = ReadStatBonus(_vitaPicker),
-            WeaponChoice1 = ReadChoice(_weapon1Picker),
-            WeaponChoice2 = ReadChoice(_weapon2Picker),
-            WeaponChoice3 = ReadChoice(_weapon3Picker),
-            SkillChoice1 = ReadChoice(_skill1Picker),
-            SkillChoice2 = ReadChoice(_skill2Picker),
-            SkillChoice3 = ReadChoice(_skill3Picker),
-            EquipmentChoice1 = ReadChoice(_equipment1Picker),
-            EquipmentChoice2 = ReadChoice(_equipment2Picker),
-            EquipmentChoice3 = ReadChoice(_equipment3Picker),
-            OptionFactionId = _context.OptionFactionId,
-            OptionFactionName = _context.OptionFactionName
-        };
-
-        _resultSource.TrySetResult(stats);
-        DisposeCaptainNameActionIcons();
-        await DismissModalIfTopAsync();
-    }
-
-    private async Task DismissModalIfTopAsync()
-    {
-        try
-        {
-            var navigation = Navigation;
-            var modalStack = navigation?.ModalStack;
-            if (modalStack is null || modalStack.Count == 0)
-            {
-                return;
-            }
-
-            if (!ReferenceEquals(modalStack[^1], this))
-            {
-                return;
-            }
-
-            if (navigation is null)
-            {
-                return;
-            }
-
-            await navigation.PopModalAsync(false);
-        }
-        catch (ArgumentException ex) when (ex.Message.Contains("Ambiguous routes matched", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.Error.WriteLine($"ConfigureCaptainPopupPage DismissModalIfTopAsync ignored ambiguous route pop: {ex.Message}");
-        }
-    }
-
-    private static Picker BuildStatPicker(string statName, int baseValue)
-    {
-        var options = BuildStatOptions(statName, baseValue);
-        var picker = new Picker
-        {
-            HorizontalOptions = LayoutOptions.Fill,
-            HorizontalTextAlignment = TextAlignment.Center,
-            ItemsSource = options,
-            ItemDisplayBinding = new Binding(nameof(StatPickerOption.Label)),
-            SelectedIndex = 0
-        };
-
-        return picker;
-    }
-
-    private static Picker BuildChoicePicker(IEnumerable<string> options)
-    {
-        var values = new List<string> { NoneChoice };
-        values.AddRange(options.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase));
-
-        return new Picker
-        {
-            WidthRequest = UnifiedPickerWidth,
-            HorizontalOptions = LayoutOptions.Start,
-            HorizontalTextAlignment = TextAlignment.Center,
-            ItemsSource = values,
-            SelectedIndex = 0
-        };
-    }
-
-    private static View BuildStatRow(string label, Picker picker)
-    {
-        return picker;
-    }
-
-    private static View BuildStatRowPair((string Label, Picker Picker) first, (string Label, Picker Picker)? second)
-    {
-        var grid = new Grid
-        {
-            ColumnSpacing = 8,
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition { Width = GridLength.Star },
-                new ColumnDefinition { Width = GridLength.Star }
-            }
-        };
-
-        var firstCell = BuildStatRow(first.Label, first.Picker);
-        grid.Children.Add(firstCell);
-        Grid.SetColumn(firstCell, 0);
-
-        if (second.HasValue)
-        {
-            var secondCell = BuildStatRow(second.Value.Label, second.Value.Picker);
-            grid.Children.Add(secondCell);
-            Grid.SetColumn(secondCell, 1);
-        }
-
-        return grid;
-    }
-
-    private static View BuildCategorySection(string title, Picker first, Picker second, Picker third)
-    {
-        return new VerticalStackLayout
-        {
-            Spacing = 4,
-            Margin = new Thickness(0, 8, 0, 0),
-            Children =
-            {
-                new Label { Text = title, FontAttributes = FontAttributes.Bold },
-                first,
-                second,
-                third
-            }
-        };
-    }
-
-    private static int ReadStatTier(Picker picker)
-    {
-        return picker.SelectedItem is StatPickerOption option ? option.Tier : 0;
-    }
-
-    private static int ReadStatBonus(Picker picker)
-    {
-        return picker.SelectedItem is StatPickerOption option ? option.Bonus : 0;
-    }
-
-    private static string ReadChoice(Picker picker)
-    {
-        var value = picker.SelectedItem?.ToString() ?? string.Empty;
-        if (string.Equals(value, NoneChoice, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Empty;
-        }
-
-        var normalized = Regex.Replace(value, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
-        return normalized;
-    }
-
-    private static string NormalizeText(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? "-" : value;
-    }
-
-    private static View BuildProfileDetailBlock(string label, Color valueColor, out Label valueLabel)
-    {
-        valueLabel = new Label
-        {
-            Text = "-",
-            FontSize = 19,
-            TextColor = valueColor,
-            HorizontalTextAlignment = TextAlignment.End,
-            LineBreakMode = LineBreakMode.WordWrap
-        };
-
-        return new VerticalStackLayout
-        {
-            Spacing = 1,
-            Children =
-            {
-                new Label
-                {
-                    Text = $"{label}:",
-                    FontSize = 22,
-                    LineBreakMode = LineBreakMode.WordWrap
-                },
-                valueLabel
-            }
-        };
-    }
-
-    private void HookSelectionChanged(Picker picker)
-    {
-        picker.SelectedIndexChanged += (_, _) => UpdateProfilePreviewFromSelections();
-    }
-
-    private void UpdateProfilePreviewFromSelections()
-    {
-        UpdateStatlinePreview();
-        _rangedValueLabel.Text = BuildUpdatedProfileSection(
-            _context.Unit.RangedWeapons,
-            GetSelectedChoices(_weapon1Picker, _weapon2Picker, _weapon3Picker),
-            prependPlus: true);
-        _ccValueLabel.Text = NormalizeText(_context.Unit.CcWeapons);
-        _skillsValueLabel.Text = BuildUpdatedProfileSection(
-            _context.Unit.Skills,
-            GetSelectedChoices(_skill1Picker, _skill2Picker, _skill3Picker),
-            prependPlus: true);
-        _equipmentValueLabel.Text = BuildUpdatedProfileSection(
-            _context.Unit.Equipment,
-            GetSelectedChoices(_equipment1Picker, _equipment2Picker, _equipment3Picker),
-            prependPlus: true);
-        UpdateUpgradeOptionsHeader();
-    }
-
-    private void UpdateUpgradeOptionsHeader()
-    {
-        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
-        var selectedCost =
-            ReadStatPoints(_ccPicker) +
-            ReadStatPoints(_bsPicker) +
-            ReadStatPoints(_phPicker) +
-            ReadStatPoints(_wipPicker) +
-            ReadStatPoints(_armPicker) +
-            ReadStatPoints(_btsPicker) +
-            ReadStatPoints(_vitaPicker) +
-            ReadChoicePoints(_weapon1Picker) +
-            ReadChoicePoints(_weapon2Picker) +
-            ReadChoicePoints(_weapon3Picker) +
-            ReadChoicePoints(_skill1Picker) +
-            ReadChoicePoints(_skill2Picker) +
-            ReadChoicePoints(_skill3Picker) +
-            ReadChoicePoints(_equipment1Picker) +
-            ReadChoicePoints(_equipment2Picker) +
-            ReadChoicePoints(_equipment3Picker);
-        var experienceRemaining = baseExperience - selectedCost;
-
-        _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName})";
-        _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
-        _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
-        _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
-        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
-    }
-
-    private void UpdateStatlinePreview()
-    {
-        UpdateStatsGridValues();
-    }
-
-    private int ReadBaseStat(params string[] statNames)
-    {
-        foreach (var statName in statNames)
-        {
-            if (_baseStats.TryGetValue(statName, out var value))
-            {
-                return value;
-            }
-        }
-
-        return 0;
-    }
-
-    private static List<StatPickerOption> BuildStatOptions(string statName, int baseValue)
-    {
-        if (!StatDefinitions.TryGetValue(statName, out var definition))
-        {
-            return [new StatPickerOption(statName, 0, 0, 0)];
-        }
-
-        var options = new List<StatPickerOption>
-        {
-            new(statName, 0, 0, 0)
-        };
-
-        var currentValue = baseValue;
-        var cumulativeCost = 0;
-        for (var tier = 1; tier <= definition.MaxTier; tier++)
-        {
-            if (definition.HardCap.HasValue && currentValue >= definition.HardCap.Value)
-            {
-                break;
-            }
-
-            var targetValue = baseValue + definition.BonusesByTier[tier];
-            if (definition.HardCap.HasValue)
-            {
-                targetValue = Math.Min(targetValue, definition.HardCap.Value);
-            }
-
-            var appliedBonus = Math.Max(0, targetValue - baseValue);
-            cumulativeCost += definition.CostsByTier[tier];
-            options.Add(new StatPickerOption(statName, tier, appliedBonus, cumulativeCost));
-            currentValue = targetValue;
-        }
-
-        return options;
-    }
-
-    private static int ReadStatPoints(Picker picker)
-    {
-        return picker.SelectedItem is StatPickerOption option ? option.Cost : 0;
-    }
-
-    private static IReadOnlyDictionary<string, int> ParseBaseStats(string? statline)
-    {
-        var values = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        if (string.IsNullOrWhiteSpace(statline))
-        {
-            return values;
-        }
-
-        var matches = Regex.Matches(statline, @"\b(CC|BS|PH|WIP|ARM|BTS|VITA|STR|W)\s+(\d+)\b", RegexOptions.IgnoreCase);
-        foreach (Match match in matches)
-        {
-            if (!match.Success)
-            {
-                continue;
-            }
-
-            var key = match.Groups[1].Value.ToUpperInvariant();
-            if (int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
-            {
-                values[key] = parsed;
-            }
-        }
-
-        return values;
-    }
-
-    private Grid BuildStatsGrid(string? statline)
-    {
-        var entries = ParseStatsGridEntries(statline);
-        var grid = new Grid
-        {
-            ColumnSpacing = 10,
-            RowSpacing = 2,
-            RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Auto }
-            }
-        };
-
-        if (entries.Count == 0)
-        {
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-            var empty = new Label
-            {
-                Text = "-",
-                FontSize = 19,
-                LineBreakMode = LineBreakMode.WordWrap
-            };
-            grid.Children.Add(empty);
-            Grid.SetRow(empty, 0);
-            return grid;
-        }
-
-        for (var i = 0; i < entries.Count; i++)
-        {
-            var (key, value) = entries[i];
-            _statGridOrder.Add(key);
-            _statGridBaseValues[key] = value;
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-
-            var keyLabel = new Label
-            {
-                Text = key,
-                FontSize = 19,
-                FontAttributes = FontAttributes.Bold,
-                HorizontalTextAlignment = TextAlignment.Center
-            };
-            var valueLabel = new Label
-            {
-                Text = value,
-                FontSize = 19,
-                HorizontalTextAlignment = TextAlignment.Center,
-                TextColor = DefaultStatColor
-            };
-
-            _statGridValueLabels[key] = valueLabel;
-            grid.Children.Add(keyLabel);
-            grid.Children.Add(valueLabel);
-            Grid.SetColumn(keyLabel, i);
-            Grid.SetRow(keyLabel, 0);
-            Grid.SetColumn(valueLabel, i);
-            Grid.SetRow(valueLabel, 1);
-        }
-
-        return grid;
-    }
-
-    private static List<(string Key, string Value)> ParseStatsGridEntries(string? statline)
-    {
-        var entries = new List<(string Key, string Value)>();
-        if (string.IsNullOrWhiteSpace(statline))
-        {
-            return entries;
-        }
-
-        foreach (var segment in statline.Split('|', StringSplitOptions.TrimEntries))
-        {
-            var match = Regex.Match(segment, @"^\s*([A-Za-z]+)\s+(.+)\s*$", RegexOptions.IgnoreCase);
-            if (!match.Success)
-            {
-                continue;
-            }
-
-            entries.Add((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value.Trim()));
-        }
-
-        return entries;
-    }
-
-    private void UpdateStatsGridValues()
-    {
-        foreach (var key in _statGridOrder)
-        {
-            if (!_statGridValueLabels.TryGetValue(key, out var valueLabel) ||
-                !_statGridBaseValues.TryGetValue(key, out var rawValue))
-            {
-                continue;
-            }
-
-            if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericBase))
-            {
-                var bonus = ReadStatlineBonus(key);
-                var modifiedValue = numericBase + bonus;
-                valueLabel.Text = modifiedValue.ToString(CultureInfo.InvariantCulture);
-                valueLabel.TextColor = modifiedValue == numericBase ? DefaultStatColor : ModifiedStatColor;
-            }
-            else
-            {
-                valueLabel.Text = rawValue;
-                valueLabel.TextColor = DefaultStatColor;
-            }
-        }
-    }
-
-    private int ReadStatlineBonus(string statKey)
-    {
-        return statKey switch
-        {
-            "CC" => ReadStatBonus(_ccPicker),
-            "BS" => ReadStatBonus(_bsPicker),
-            "PH" => ReadStatBonus(_phPicker),
-            "WIP" => ReadStatBonus(_wipPicker),
-            "ARM" => ReadStatBonus(_armPicker),
-            "BTS" => ReadStatBonus(_btsPicker),
-            "VITA" or "STR" or "W" => ReadStatBonus(_vitaPicker),
-            _ => 0
-        };
-    }
-
-    private static List<string> GetSelectedChoices(params Picker[] pickers)
-    {
-        return pickers
-            .Select(ReadChoice)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static SKCanvasView BuildCaptainNameIconCanvas(EventHandler<TappedEventArgs> tappedHandler)
-    {
-        var canvas = new SKCanvasView
-        {
-            WidthRequest = 28,
-            HeightRequest = 28,
-            VerticalOptions = LayoutOptions.Center
-        };
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += tappedHandler;
-        canvas.GestureRecognizers.Add(tap);
-        return canvas;
-    }
-
-    private void SetCaptainNameEditMode(bool isEditing)
-    {
-        _captainNameEntry.IsEnabled = isEditing;
-        _captainNameEntry.IsReadOnly = !isEditing;
-        _editCaptainNameCanvas.IsVisible = !isEditing;
-        _saveCaptainNameCanvas.IsVisible = isEditing;
-        _rejectCaptainNameCanvas.IsVisible = isEditing;
-    }
-
-    private void OnEditCaptainNameTapped(object? sender, TappedEventArgs e)
-    {
-        SetCaptainNameEditMode(isEditing: true);
-        _captainNameEntry.Focus();
-    }
-
-    private void OnSaveCaptainNameTapped(object? sender, TappedEventArgs e)
-    {
-        CommitCaptainNameFromEntry();
-    }
-
-    private void OnRejectCaptainNameTapped(object? sender, TappedEventArgs e)
-    {
-        _captainNameEntry.Text = _captainNameCommitted;
-        SetCaptainNameEditMode(isEditing: false);
-    }
-
-    private void CommitCaptainNameFromEntry()
-    {
-        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? "Captain" : _captainNameEntry.Text.Trim();
-        _captainNameCommitted = normalized;
-        _captainNameEntry.Text = _captainNameCommitted;
-        _captainNameHeadingLabel.Text = _captainNameCommitted;
-        SetCaptainNameEditMode(isEditing: false);
-    }
-
-    private async Task LoadCaptainNameActionIconsAsync()
-    {
-        DisposeCaptainNameActionIcons();
-
-        try
-        {
-            await using var editStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-edit-333556.svg");
-            var svg = new SKSvg();
-            _editCaptainNamePicture = svg.Load(editStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ConfigureCaptainPopupPage edit icon load failed: {ex.Message}");
-            _editCaptainNamePicture = null;
-        }
-
-        try
-        {
-            await using var saveStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
-            var svg = new SKSvg();
-            _saveCaptainNamePicture = svg.Load(saveStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ConfigureCaptainPopupPage save icon load failed: {ex.Message}");
-            _saveCaptainNamePicture = null;
-        }
-
-        try
-        {
-            await using var rejectStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
-            var svg = new SKSvg();
-            _rejectCaptainNamePicture = svg.Load(rejectStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ConfigureCaptainPopupPage reject icon load failed: {ex.Message}");
-            _rejectCaptainNamePicture = null;
-        }
-
-        _editCaptainNameCanvas.InvalidateSurface();
-        _saveCaptainNameCanvas.InvalidateSurface();
-        _rejectCaptainNameCanvas.InvalidateSurface();
-    }
-
-    private void DisposeCaptainNameActionIcons()
-    {
-        _editCaptainNamePicture?.Dispose();
-        _editCaptainNamePicture = null;
-        _saveCaptainNamePicture?.Dispose();
-        _saveCaptainNamePicture = null;
-        _rejectCaptainNamePicture?.Dispose();
-        _rejectCaptainNamePicture = null;
-    }
-
-    private static void DrawActionIcon(SKCanvas canvas, SKImageInfo info, SKPicture? picture)
-    {
-        canvas.Clear(SKColors.Transparent);
-        if (picture is null)
-        {
-            return;
-        }
-
-        var bounds = picture.CullRect;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return;
-        }
-
-        var scale = Math.Min(info.Width / bounds.Width, info.Height / bounds.Height);
-        var x = (info.Width - (bounds.Width * scale)) / 2f;
-        var y = (info.Height - (bounds.Height * scale)) / 2f;
-        canvas.Translate(x, y);
-        canvas.Scale(scale);
-        canvas.DrawPicture(picture);
-    }
-
-    private void OnEditCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawActionIcon(e.Surface.Canvas, e.Info, _editCaptainNamePicture);
-    }
-
-    private void OnSaveCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawActionIcon(e.Surface.Canvas, e.Info, _saveCaptainNamePicture);
-    }
-
-    private void OnRejectCaptainNameCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawActionIcon(e.Surface.Canvas, e.Info, _rejectCaptainNamePicture);
-    }
-
-    private static int ReadChoicePoints(Picker picker)
-    {
-        var rawValue = picker.SelectedItem?.ToString() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(rawValue) ||
-            string.Equals(rawValue, NoneChoice, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        var match = Regex.Match(rawValue, @"^\s*\(([-+]?\d+)\)");
-        if (!match.Success)
-        {
-            return 0;
-        }
-
-        return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : 0;
-    }
-
-    private static string BuildUpdatedProfileSection(string? baseText, IReadOnlyList<string> additions, bool prependPlus)
-    {
-        var lines = SplitProfileText(baseText);
-        foreach (var addition in additions)
-        {
-            lines.Add(prependPlus ? $"+ {addition}" : addition);
-        }
-
-        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
-    }
-
-    private static List<string> SplitProfileText(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return [];
-        }
-
-        return text
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim())
-            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
-            .ToList();
-    }
-
-}
-
-public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)
-{
-    public int MaxTier => Math.Min(BonusesByTier.Count, CostsByTier.Count) - 1;
-}
-
-public sealed record StatPickerOption(string Stat, int Tier, int Bonus, int Cost)
-{
-    public string Label => $"{Stat.ToUpperInvariant()} +{Bonus} | {Cost}xp";
-}
-
-public static class UnitExperienceRanks
-{
-    private static readonly (int MinXp, string RankName)[] OrderedRanks =
-    [
-        (5, "Newbie"),
-        (10, "Hired Gun"),
-        (30, "Hitman"),
-        (50, "Operative"),
-        (75, "Veteran"),
-        (105, "Officer"),
-        (140, "Legend")
-    ];
-
-    public static string GetRankName(int experiencePoints)
-    {
-        var normalized = Math.Max(0, experiencePoints);
-        for (var i = OrderedRanks.Length - 1; i >= 0; i--)
-        {
-            if (normalized >= OrderedRanks[i].MinXp)
-            {
-                return OrderedRanks[i].RankName;
-            }
-        }
-
-        return "Unranked";
-    }
-
-    public static int GetRankLevel(int experiencePoints)
-    {
-        var normalized = Math.Max(0, experiencePoints);
-        for (var i = OrderedRanks.Length - 1; i >= 0; i--)
-        {
-            if (normalized >= OrderedRanks[i].MinXp)
-            {
-                return i + 1;
-            }
-        }
-
-        return 0;
-    }
-}
-
-
-
-
 
 
 
