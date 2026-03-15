@@ -1,4 +1,5 @@
 using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.Views.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -24,8 +25,10 @@ public partial class UnitEncyclopediaPage : ContentPage
 	private SKPicture? _cubeIconPicture;
 	private SKPicture? _cube2IconPicture;
 	private SKPicture? _hackableIconPicture;
+	private SKPicture? _filterIconPicture;
 	private SKPicture? _selectedUnitPicture;
 	private int _selectedUnitLogoLoadVersion;
+	private UnitFilterPopupView? _activeUnitFilterPopup;
 
 	public UnitEncyclopediaPage(ViewerViewModel viewModel)
 	{
@@ -70,6 +73,8 @@ public partial class UnitEncyclopediaPage : ContentPage
 		_cube2IconPicture = null;
 		_hackableIconPicture?.Dispose();
 		_hackableIconPicture = null;
+		_filterIconPicture?.Dispose();
+		_filterIconPicture = null;
 
 		try
 		{
@@ -148,8 +153,20 @@ public partial class UnitEncyclopediaPage : ContentPage
 			Console.Error.WriteLine($"UnitEncyclopediaPage hackable icon load failed: {ex.Message}");
 		}
 
+		try
+		{
+			await using var filterStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-filter.svg");
+			var filterSvg = new SKSvg();
+			_filterIconPicture = filterSvg.Load(filterStream);
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"UnitEncyclopediaPage filter icon load failed: {ex.Message}");
+		}
+
 		TopIconRowCanvas.InvalidateSurface();
 		BottomIconRowCanvas.InvalidateSurface();
+		UnitSelectionFilterCanvas.InvalidateSurface();
 		UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
 		UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
 		UnitDisplayConfigurationsView.ImpetuousIconPicture = _impetuousIconPicture;
@@ -276,6 +293,68 @@ public partial class UnitEncyclopediaPage : ContentPage
 		}
 	}
 
+	private async void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
+	{
+		try
+		{
+			var options = await _viewModel.BuildUnitFilterPopupOptionsAsync();
+			var popup = new UnitFilterPopupView(
+				options,
+				_viewModel.ActiveUnitFilter,
+				lieutenantOnlyUnits: _viewModel.LieutenantOnlyUnits,
+				teamsView: false);
+			var popupHeight = ResolveUnitFilterPopupHeight();
+			popup.HeightRequest = popupHeight;
+			popup.FilterArmyApplied += OnFilterArmyApplied;
+			popup.CloseRequested += OnUnitFilterPopupCloseRequested;
+			_activeUnitFilterPopup = popup;
+			UnitFilterPopupHost.HeightRequest = popupHeight;
+			UnitFilterPopupHost.Content = popup;
+			UnitFilterOverlay.IsVisible = true;
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"UnitEncyclopediaPage filter popup open failed: {ex.Message}");
+		}
+	}
+
+	private async void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
+	{
+		CloseUnitFilterPopup(sender as UnitFilterPopupView);
+		await _viewModel.ApplyActiveUnitFilterAsync(criteria);
+	}
+
+	private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
+	{
+		CloseUnitFilterPopup(sender as UnitFilterPopupView);
+	}
+
+	private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
+	{
+		var target = popup ?? _activeUnitFilterPopup;
+		if (target is not null)
+		{
+			target.FilterArmyApplied -= OnFilterArmyApplied;
+			target.CloseRequested -= OnUnitFilterPopupCloseRequested;
+		}
+
+		_activeUnitFilterPopup = null;
+		UnitFilterPopupHost.Content = null;
+		UnitFilterPopupHost.HeightRequest = -1;
+		UnitFilterOverlay.IsVisible = false;
+	}
+
+	private double ResolveUnitFilterPopupHeight()
+	{
+		var pageHeight = Height > 0 ? Height : Window?.Height ?? Application.Current?.Windows.FirstOrDefault()?.Page?.Height ?? 0;
+		if (pageHeight <= 0)
+		{
+			return 800;
+		}
+
+		return pageHeight * 0.9;
+	}
+
 	private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
 	{
 		var canvas = e.Surface.Canvas;
@@ -292,6 +371,18 @@ public partial class UnitEncyclopediaPage : ContentPage
 
 		var entries = BuildBottomIconEntries();
 		DrawIconRow(canvas, e.Info, entries.Select(x => x.Picture).ToList());
+	}
+
+	private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+	{
+		var canvas = e.Surface.Canvas;
+		canvas.Clear(SKColors.Transparent);
+		if (_filterIconPicture is null)
+		{
+			return;
+		}
+
+		DrawPictureInRect(canvas, _filterIconPicture, new SKRect(0, 0, e.Info.Width, e.Info.Height));
 	}
 
 	private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()

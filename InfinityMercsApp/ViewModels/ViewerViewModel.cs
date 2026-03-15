@@ -8,6 +8,7 @@ using Microsoft.Maui.Controls;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.Views.Controls;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using Resume = InfinityMercsApp.Domain.Models.Army.Resume;
 
@@ -76,6 +77,7 @@ public class ViewerViewModel : BaseViewModel
     private bool _showUnitsTab = true;
     private bool _mercsOnlyUnits;
     private bool _lieutenantOnlyUnits;
+    private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
     private FactionFilterMode _factionFilterMode = FactionFilterMode.All;
     private List<ViewerFactionItem> _allFactions = [];
     public ViewerViewModel(
@@ -861,6 +863,99 @@ public class ViewerViewModel : BaseViewModel
         }
     }
 
+    public UnitFilterCriteria ActiveUnitFilter => _activeUnitFilter;
+
+    public async Task ApplyActiveUnitFilterAsync(UnitFilterCriteria? criteria, CancellationToken cancellationToken = default)
+    {
+        _activeUnitFilter = criteria ?? UnitFilterCriteria.None;
+        LieutenantOnlyUnits = _activeUnitFilter.LieutenantOnlyUnits;
+
+        if (SelectedFaction is null)
+        {
+            return;
+        }
+
+        await LoadUnitsForSelectedFactionAsync(cancellationToken);
+    }
+
+    public Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        var classification = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var characteristics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var skills = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var equipment = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var weapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var maxPoints = 200;
+
+        if (SelectedFaction is null || _factionProvider is null)
+        {
+            return Task.FromResult(new UnitFilterPopupOptions
+            {
+                Classification = [],
+                Characteristics = [],
+                Skills = [],
+                Equipment = [],
+                Weapons = [],
+                Ammo = [],
+                MinPoints = 0,
+                MaxPoints = maxPoints
+            });
+        }
+
+        var units = _factionProvider.GetResumeByFaction(SelectedFaction.Id);
+        var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
+        var filtersJson = snapshot?.FiltersJson;
+        var typeLookup = BuildIdNameLookup(filtersJson, "type");
+        var charsLookup = BuildIdNameLookup(filtersJson, "chars");
+        var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
+        var equipLookup = BuildIdNameLookup(filtersJson, "equip");
+        var weaponsLookup = BuildIdNameLookup(filtersJson, "weapons");
+        var ammoLookup = BuildIdNameLookup(filtersJson, "ammunition");
+
+        foreach (var unit in units)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (unit.Type.HasValue && typeLookup.TryGetValue(unit.Type.Value, out var typeName) && !string.IsNullOrWhiteSpace(typeName))
+            {
+                classification.Add(typeName.Trim());
+            }
+
+            var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
+            if (string.IsNullOrWhiteSpace(unitRecord?.ProfileGroupsJson))
+            {
+                continue;
+            }
+
+            AddFilterOptionsFromProfilesAndOptions(
+                unitRecord.ProfileGroupsJson,
+                charsLookup,
+                skillsLookup,
+                equipLookup,
+                weaponsLookup,
+                ammoLookup,
+                characteristics,
+                skills,
+                equipment,
+                weapons,
+                ammo,
+                ref maxPoints);
+        }
+
+        return Task.FromResult(new UnitFilterPopupOptions
+        {
+            Classification = classification.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            Characteristics = characteristics.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            Skills = skills.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            Equipment = equipment.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            Weapons = weapons.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            Ammo = ammo.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            MinPoints = 0,
+            MaxPoints = Math.Max(1, maxPoints)
+        });
+    }
+
     public bool ShowAllFactionEntries
     {
         get => _factionFilterMode == FactionFilterMode.All;
@@ -1012,8 +1107,12 @@ public class ViewerViewModel : BaseViewModel
                 allowedFireteamSlugs,
                 allowedFireteamNames);
             var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
+            var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
             var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+            var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
+            var weaponsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+            var ammoLookup = BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
 
             if (_factionLogoCacheService is not null)
             {
@@ -1031,6 +1130,27 @@ public class ViewerViewModel : BaseViewModel
 
             foreach (var unit in orderedUnits)
             {
+                var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
+
+                if (!MatchesClassificationFilter(unit, typeLookup, _activeUnitFilter))
+                {
+                    continue;
+                }
+
+                if (!UnitHasVisibleOptionWithFilter(
+                        unitRecord?.ProfileGroupsJson,
+                        skillsLookup,
+                        charsLookup,
+                        equipLookup,
+                        weaponsLookup,
+                        ammoLookup,
+                        _activeUnitFilter,
+                        requireLieutenant: _activeUnitFilter.LieutenantOnlyUnits,
+                        requireZeroSwc: false))
+                {
+                    continue;
+                }
+
                 Units.Add(new ViewerUnitItem
                 {
                     Id = unit.UnitId,
@@ -1765,16 +1885,50 @@ public class ViewerViewModel : BaseViewModel
         return false;
     }
 
-    private static bool UnitHasVisibleOption(
+    private static bool MatchesClassificationFilter(
+        Resume unit,
+        IReadOnlyDictionary<int, string> typeLookup,
+        UnitFilterCriteria criteria)
+    {
+        var classificationTerm = criteria.ToQuery().GetTerm(UnitFilterField.Classification);
+        if (classificationTerm is null || classificationTerm.Values.Count == 0)
+        {
+            return true;
+        }
+
+        if (!unit.Type.HasValue || typeLookup.Count == 0)
+        {
+            return false;
+        }
+
+        if (!typeLookup.TryGetValue(unit.Type.Value, out var typeName))
+        {
+            return false;
+        }
+
+        return classificationTerm.MatchMode == UnitFilterMatchMode.All
+            ? classificationTerm.Values.All(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase))
+            : classificationTerm.Values.Any(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool UnitHasVisibleOptionWithFilter(
         string? profileGroupsJson,
         IReadOnlyDictionary<int, string> skillsLookup,
+        IReadOnlyDictionary<int, string> charsLookup,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> weaponsLookup,
+        IReadOnlyDictionary<int, string> ammoLookup,
+        UnitFilterCriteria criteria,
         bool requireLieutenant,
-        bool requireMercsZeroSwc)
+        bool requireZeroSwc,
+        int? maxCost = null)
     {
         if (string.IsNullOrWhiteSpace(profileGroupsJson))
         {
             return false;
         }
+
+        var filterQuery = criteria.ToQuery();
 
         try
         {
@@ -1798,7 +1952,37 @@ public class ViewerViewModel : BaseViewModel
                         continue;
                     }
 
-                    if (requireMercsZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
+                    if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
+                    {
+                        continue;
+                    }
+
+                    var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
+                    if (maxCost.HasValue && optionCost > maxCost.Value)
+                    {
+                        continue;
+                    }
+
+                    if (filterQuery.MinPoints.HasValue && optionCost < filterQuery.MinPoints.Value)
+                    {
+                        continue;
+                    }
+
+                    if (filterQuery.MaxPoints.HasValue && optionCost > filterQuery.MaxPoints.Value)
+                    {
+                        continue;
+                    }
+
+                    if (!OptionMatchesUnitFilter(
+                            doc.RootElement,
+                            group,
+                            option,
+                            charsLookup,
+                            skillsLookup,
+                            equipLookup,
+                            weaponsLookup,
+                            ammoLookup,
+                            filterQuery))
                     {
                         continue;
                     }
@@ -1809,7 +1993,196 @@ public class ViewerViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"UnitHasVisibleOption failed: {ex.Message}");
+            Console.Error.WriteLine($"UnitHasVisibleOptionWithFilter failed: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    private static bool OptionMatchesUnitFilter(
+        JsonElement profileGroupsRoot,
+        JsonElement profileGroup,
+        JsonElement option,
+        IReadOnlyDictionary<int, string> charsLookup,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> weaponsLookup,
+        IReadOnlyDictionary<int, string> ammoLookup,
+        UnitFilterQuery filterQuery)
+    {
+        foreach (var term in filterQuery.Terms)
+        {
+            if (term.Field == UnitFilterField.Classification || term.Values.Count == 0)
+            {
+                continue;
+            }
+
+            var matches = term.Field switch
+            {
+                UnitFilterField.Characteristics => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "chars",
+                    charsLookup),
+                UnitFilterField.Skills => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "skills",
+                    skillsLookup),
+                UnitFilterField.Equipment => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "equip",
+                    equipLookup),
+                UnitFilterField.Weapons => TermMatchesOptionOrGroup(
+                    term,
+                    profileGroupsRoot,
+                    profileGroup,
+                    option,
+                    "weapons",
+                    weaponsLookup),
+                UnitFilterField.Ammo => TermMatchesOptionOnly(
+                    term,
+                    profileGroupsRoot,
+                    option,
+                    ammoLookup,
+                    ["ammunition", "ammo"]),
+                _ => true
+            };
+
+            if (!matches)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TermMatchesOptionOrGroup(
+        UnitFilterTerm term,
+        JsonElement profileGroupsRoot,
+        JsonElement profileGroup,
+        JsonElement option,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup)
+    {
+        return term.MatchMode == UnitFilterMatchMode.All
+            ? term.Values.All(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value))
+            : term.Values.Any(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value));
+    }
+
+    private static bool TermMatchesOptionOnly(
+        UnitFilterTerm term,
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        IReadOnlyDictionary<int, string> lookup,
+        IEnumerable<string> propertyNames)
+    {
+        return term.MatchMode == UnitFilterMatchMode.All
+            ? term.Values.All(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value))
+            : term.Values.Any(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value));
+    }
+
+    private static bool OptionOrGroupContainsLookupName(
+        JsonElement profileGroupsRoot,
+        JsonElement profileGroup,
+        JsonElement option,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup,
+        string expectedValue)
+    {
+        return OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue) ||
+               GroupProfilesContainLookupName(profileGroup, propertyName, lookup, expectedValue);
+    }
+
+    private static bool OptionContainsAnyLookupName(
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        IEnumerable<string> propertyNames,
+        IReadOnlyDictionary<int, string> lookup,
+        string expectedValue)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            if (OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool OptionContainsLookupName(
+        JsonElement profileGroupsRoot,
+        JsonElement option,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup,
+        string expectedValue)
+    {
+        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
+        {
+            return false;
+        }
+
+        foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+        {
+            if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
+            {
+                continue;
+            }
+
+            if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool GroupProfilesContainLookupName(
+        JsonElement profileGroup,
+        string propertyName,
+        IReadOnlyDictionary<int, string> lookup,
+        string expectedValue)
+    {
+        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
+        {
+            return false;
+        }
+
+        if (!profileGroup.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var profile in profilesElement.EnumerateArray())
+        {
+            if (!profile.TryGetProperty(propertyName, out var valuesElement) || valuesElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var entry in valuesElement.EnumerateArray())
+            {
+                if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
+                {
+                    continue;
+                }
+
+                if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -2607,6 +2980,144 @@ public class ViewerViewModel : BaseViewModel
         }
 
         return map;
+    }
+
+    private static void AddFilterOptionsFromProfilesAndOptions(
+        string profileGroupsJson,
+        IReadOnlyDictionary<int, string> charsLookup,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        IReadOnlyDictionary<int, string> equipLookup,
+        IReadOnlyDictionary<int, string> weaponsLookup,
+        IReadOnlyDictionary<int, string> ammoLookup,
+        HashSet<string> characteristics,
+        HashSet<string> skills,
+        HashSet<string> equipment,
+        HashSet<string> weapons,
+        HashSet<string> ammo,
+        ref int maxPoints)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(profileGroupsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (var group in doc.RootElement.EnumerateArray())
+            {
+                if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var option in optionsElement.EnumerateArray())
+                    {
+                        var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
+                        maxPoints = Math.Max(maxPoints, optionCost);
+
+                        foreach (var character in GetOrderedIdNames(option, "chars", charsLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(character.Name))
+                            {
+                                characteristics.Add(character.Name.Trim());
+                            }
+                        }
+
+                        foreach (var skill in GetOrderedIdNames(option, "skills", skillsLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(skill.Name))
+                            {
+                                skills.Add(skill.Name.Trim());
+                            }
+                        }
+
+                        foreach (var equip in GetOrderedIdNames(option, "equip", equipLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(equip.Name))
+                            {
+                                equipment.Add(equip.Name.Trim());
+                            }
+                        }
+
+                        foreach (var weapon in GetOrderedIdNames(option, "weapons", weaponsLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(weapon.Name))
+                            {
+                                weapons.Add(weapon.Name.Trim());
+                            }
+                        }
+
+                        foreach (var ammoEntry in GetOrderedIdNames(option, "ammunition", ammoLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(ammoEntry.Name))
+                            {
+                                ammo.Add(ammoEntry.Name.Trim());
+                            }
+                        }
+
+                        foreach (var ammoEntry in GetOrderedIdNames(option, "ammo", ammoLookup))
+                        {
+                            if (!string.IsNullOrWhiteSpace(ammoEntry.Name))
+                            {
+                                ammo.Add(ammoEntry.Name.Trim());
+                            }
+                        }
+                    }
+                }
+
+                if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    foreach (var character in GetOrderedIdNames(profile, "chars", charsLookup))
+                    {
+                        if (!string.IsNullOrWhiteSpace(character.Name))
+                        {
+                            characteristics.Add(character.Name.Trim());
+                        }
+                    }
+
+                    foreach (var skill in GetOrderedIdNames(profile, "skills", skillsLookup))
+                    {
+                        if (!string.IsNullOrWhiteSpace(skill.Name))
+                        {
+                            skills.Add(skill.Name.Trim());
+                        }
+                    }
+
+                    foreach (var equip in GetOrderedIdNames(profile, "equip", equipLookup))
+                    {
+                        if (!string.IsNullOrWhiteSpace(equip.Name))
+                        {
+                            equipment.Add(equip.Name.Trim());
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"AddFilterOptionsFromProfilesAndOptions failed: {ex.Message}");
+        }
+    }
+
+    private static int ParseCostValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 0;
+        }
+
+        var match = Regex.Match(value, @"-?\d+");
+        if (!match.Success)
+        {
+            return 0;
+        }
+
+        return int.TryParse(match.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : 0;
     }
 
     private static string? TryReadLink(JsonElement entry)
