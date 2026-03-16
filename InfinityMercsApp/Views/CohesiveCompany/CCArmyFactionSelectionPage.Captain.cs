@@ -1,19 +1,13 @@
 using TemplateCaptain = InfinityMercsApp.Views.Templates.Captain;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.CohesiveCompany;
 
-/// <summary>
-/// Captain configuration workflow and option resolution.
-/// </summary>
-public partial class StandardCompanySelectionPage
+public partial class CCArmyFactionSelectionPage
 {
-    /// <summary>
-    /// Builds captain upgrade context and opens the captain configuration popup.
-    /// </summary>
     private async Task<SavedImprovedCaptainStats?> ShowCaptainConfigurationAsync(MercsCompanyEntry captainEntry, CancellationToken cancellationToken = default)
     {
-        var sourceFactionId = ResolveCaptainSourceFactionIdForPopup(captainEntry.SourceFactionId);
-        var optionFactionId = ResolveCaptainOptionFactionIdForPopup(sourceFactionId);
+        var sourceFactionId = ResolveCaptainSourceFactionId(captainEntry.SourceFactionId);
+        var optionFactionId = ResolveCaptainOptionFactionId(sourceFactionId);
         var options = await LoadCaptainUpgradeOptionsAsync(optionFactionId, cancellationToken);
 
         if (options.IsEmpty && optionFactionId != sourceFactionId)
@@ -39,7 +33,7 @@ public partial class StandardCompanySelectionPage
         {
             Unit = unitInfo,
             OptionFactionId = optionFactionId,
-            OptionFactionName = await ResolveCaptainOptionFactionNameForPopupAsync(sourceFactionId, optionFactionId, cancellationToken),
+            OptionFactionName = await ResolveCaptainOptionFactionNameAsync(sourceFactionId, optionFactionId, cancellationToken),
             WeaponOptions = options.Weapons,
             SkillOptions = options.Skills,
             EquipmentOptions = options.Equipment
@@ -83,28 +77,19 @@ public partial class StandardCompanySelectionPage
         };
     }
 
-    /// <summary>
-    /// Resolves the captain's source faction id, falling back to the first selected source faction.
-    /// </summary>
-    private int ResolveCaptainSourceFactionIdForPopup(int fallbackSourceFactionId)
+    private int ResolveCaptainSourceFactionId(int fallbackSourceFactionId)
     {
         var firstSource = GetUnitSourceFactions().FirstOrDefault();
         return TemplateCaptain.CaptainPopupInputBuilder.ResolveSourceFactionId(fallbackSourceFactionId, firstSource?.Id);
     }
 
-    /// <summary>
-    /// Resolves the faction used to query captain upgrade options.
-    /// </summary>
-    private int ResolveCaptainOptionFactionIdForPopup(int sourceFactionId)
+    private int ResolveCaptainOptionFactionId(int sourceFactionId)
     {
         var sourceFaction = Factions.FirstOrDefault(x => x.Id == sourceFactionId);
         return TemplateCaptain.CaptainPopupInputBuilder.ResolveOptionFactionId(sourceFactionId, sourceFaction?.ParentId);
     }
 
-    /// <summary>
-    /// Resolves a display name for the faction shown in the captain options popup.
-    /// </summary>
-    private Task<string> ResolveCaptainOptionFactionNameForPopupAsync(
+    private Task<string> ResolveCaptainOptionFactionNameAsync(
         int sourceFactionId,
         int optionFactionId,
         CancellationToken cancellationToken)
@@ -123,9 +108,6 @@ public partial class StandardCompanySelectionPage
         return Task.FromResult(resolved);
     }
 
-    /// <summary>
-    /// Loads captain upgrade options for the provided faction from spec-ops metadata.
-    /// </summary>
     private async Task<CaptainUpgradeOptionSet> LoadCaptainUpgradeOptionsAsync(int factionId, CancellationToken cancellationToken)
     {
         var options = await TemplateCaptain.CaptainPopupInputBuilder.LoadUpgradeOptionsAsync(

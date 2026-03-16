@@ -130,7 +130,7 @@
                     <Label Grid.Row="1" Grid.Column="0" Text="Lieutenant Only Units" VerticalTextAlignment="Center" TextColor="White" />
                     <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding SelectedLieutenantOnlyUnits}" HorizontalOptions="Start" />
 
-                    <Label Grid.Row="2" Grid.Column="0" Text="Fireteams View" VerticalTextAlignment="Center" TextColor="White" />
+                    <Label Grid.Row="2" Grid.Column="0" Text="Fireteam View" VerticalTextAlignment="Center" TextColor="White" />
                     <CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding SelectedTeamsView}" HorizontalOptions="Start" />
                 </Grid>
 
