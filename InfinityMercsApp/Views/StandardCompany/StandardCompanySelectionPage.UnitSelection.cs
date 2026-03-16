@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
@@ -137,7 +137,11 @@ public partial class StandardCompanySelectionPage
         var weapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var sourceFactions = GetUnitSourceFactions();
+        var sourceFactions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+            ShowRightSelectionBox,
+            _factionSelectionState.LeftSlotFaction,
+            _factionSelectionState.RightSlotFaction,
+            faction => faction.Id);
         var sourceFactionIds = sourceFactions
             .Select(x => x.Id)
             .Distinct()
@@ -159,12 +163,12 @@ public partial class StandardCompanySelectionPage
                 continue;
             }
 
-            MergeLookup(typeLookup, BuildIdNameLookup(filtersJson, "type"));
-            MergeLookup(charsLookup, BuildIdNameLookup(filtersJson, "chars"));
-            MergeLookup(skillsLookup, BuildIdNameLookup(filtersJson, "skills"));
-            MergeLookup(equipLookup, BuildIdNameLookup(filtersJson, "equip"));
-            MergeLookup(weaponsLookup, BuildIdNameLookup(filtersJson, "weapons"));
-            MergeLookup(ammoLookup, BuildIdNameLookup(filtersJson, "ammunition"));
+            MergeLookup(typeLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "type"));
+            MergeLookup(charsLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "chars"));
+            MergeLookup(skillsLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "skills"));
+            MergeLookup(equipLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "equip"));
+            MergeLookup(weaponsLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "weapons"));
+            MergeLookup(ammoLookup, CompanyUnitDetailsShared.BuildIdNameLookup(filtersJson, "ammunition"));
         }
 
         var mergedMercsList = await _armyDataService.GetMergedMercsArmyListAsync(sourceFactionIds, cancellationToken);
@@ -228,7 +232,11 @@ public partial class StandardCompanySelectionPage
         _selectedUnit = null;
         ResetUnitDetails();
 
-        var factions = GetUnitSourceFactions();
+        var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+            ShowRightSelectionBox,
+            _factionSelectionState.LeftSlotFaction,
+            _factionSelectionState.RightSlotFaction,
+            faction => faction.Id);
         if (factions.Count == 0)
         {
             return;
@@ -251,8 +259,8 @@ public partial class StandardCompanySelectionPage
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
                 var snapshot = _armyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
-                var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
-                var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
+                var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+                var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
 
                 if (_factionLogoCacheService is not null)

@@ -211,6 +211,73 @@ public static class CompanyUnitFilterService
             maxCost);
     }
 
+    public static bool UnitHasLieutenantOption(
+        string? profileGroupsJson,
+        IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        if (string.IsNullOrWhiteSpace(profileGroupsJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(profileGroupsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
+            foreach (var group in doc.RootElement.EnumerateArray())
+            {
+                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var option in optionsElement.EnumerateArray())
+                {
+                    if (IsLieutenantOption(option, skillsLookup))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyUnitFilterService UnitHasLieutenantOption failed: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    public static bool MatchesClassificationFilter(
+        UnitFilterCriteria criteria,
+        int? unitType,
+        IReadOnlyDictionary<int, string> typeLookup)
+    {
+        var classificationTerm = criteria.ToQuery().GetTerm(UnitFilterField.Classification);
+        if (classificationTerm is null || classificationTerm.Values.Count == 0)
+        {
+            return true;
+        }
+
+        if (!unitType.HasValue || typeLookup.Count == 0)
+        {
+            return false;
+        }
+
+        if (!typeLookup.TryGetValue(unitType.Value, out var typeName))
+        {
+            return false;
+        }
+
+        return classificationTerm.MatchMode == UnitFilterMatchMode.All
+            ? classificationTerm.Values.All(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase))
+            : classificationTerm.Values.Any(value => string.Equals(typeName, value, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static void AddLookupValuesFromContainerArray(
         JsonElement container,
         string propertyName,
@@ -543,5 +610,94 @@ public static class CompanyUnitFilterService
 
         var match = System.Text.RegularExpressions.Regex.Match(cost, "\\d+");
         return match.Success && int.TryParse(match.Value, out var fallback) ? fallback : 0;
+    }
+
+    public static bool TryGetPeripheralUnitCost(JsonElement profileGroupsRoot, string peripheralName, out int peripheralUnitCost)
+    {
+        peripheralUnitCost = 0;
+        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        var expected = NormalizeComparisonToken(peripheralName);
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            return false;
+        }
+
+        foreach (var group in profileGroupsRoot.EnumerateArray())
+        {
+            var groupIsc = group.TryGetProperty("isc", out var groupIscElement) && groupIscElement.ValueKind == JsonValueKind.String
+                ? groupIscElement.GetString() ?? string.Empty
+                : string.Empty;
+            var groupMatch = NormalizeComparisonToken(groupIsc) == expected;
+
+            if (!groupMatch &&
+                group.TryGetProperty("profiles", out var profilesElement) &&
+                profilesElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var profile in profilesElement.EnumerateArray())
+                {
+                    var profileName = profile.TryGetProperty("name", out var profileNameElement) && profileNameElement.ValueKind == JsonValueKind.String
+                        ? profileNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(profileName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch &&
+                group.TryGetProperty("options", out var matchOptionsElement) &&
+                matchOptionsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var option in matchOptionsElement.EnumerateArray())
+                {
+                    var optionName = option.TryGetProperty("name", out var optionNameElement) && optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                    if (NormalizeComparisonToken(optionName) == expected)
+                    {
+                        groupMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!groupMatch ||
+                !group.TryGetProperty("options", out var optionsElement) ||
+                optionsElement.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var option in optionsElement.EnumerateArray())
+            {
+                var optionCost = ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
+                if (optionCost <= 0)
+                {
+                    continue;
+                }
+
+                var minis = Math.Max(1, CompanyProfileOptionService.ReadOptionMinis(option));
+                peripheralUnitCost = Math.Max(1, optionCost / minis);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeComparisonToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return System.Text.RegularExpressions.Regex.Replace(value, @"[^a-z0-9]", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase).ToLowerInvariant();
     }
 }

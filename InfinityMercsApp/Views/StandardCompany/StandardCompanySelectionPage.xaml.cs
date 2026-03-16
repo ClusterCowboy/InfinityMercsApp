@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -1002,7 +1002,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
     {
-        var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
+        var peripheralName = CompanyUnitDetailsShared.ExtractFirstPeripheralName(profile.Peripherals);
         if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return null;
@@ -1148,7 +1148,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
             var pointsRemaining = pointsLimit - currentPoints;
 
-            var factions = GetUnitSourceFactions();
+            var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+                ShowRightSelectionBox,
+                _factionSelectionState.LeftSlotFaction,
+                _factionSelectionState.RightSlotFaction,
+                faction => faction.Id);
             var skillsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var typeLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var charsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
@@ -1159,12 +1163,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             foreach (var faction in factions)
             {
                 var snapshot = _armyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
-                skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
-                typeLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "type");
-                charsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
-                equipLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
-                weaponsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
-                ammoLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
+                skillsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+                typeLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+                charsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "chars");
+                equipLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "equip");
+                weaponsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+                ammoLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
                 var specopsUnits = await _specOpsProvider.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
                 specopsByFaction[faction.Id] = specopsUnits
                     .GroupBy(x => x.UnitId)
@@ -1185,7 +1189,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                 weaponsLookupByFaction.TryGetValue(unit.SourceFactionId, out var weaponsLookup);
                 ammoLookupByFaction.TryGetValue(unit.SourceFactionId, out var ammoLookup);
 
-                if (!MatchesClassificationFilter(unit, typeLookup ?? new Dictionary<int, string>()))
+                if (!CompanyUnitDetailsShared.MatchesClassificationFilter(_activeUnitFilter, unit.Type, typeLookup ?? new Dictionary<int, string>()))
                 {
                     unit.IsVisible = false;
                     continue;
@@ -1269,6 +1273,16 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
 
         SetSelectedUnit(resolved);
+    }
+
+    private ArmyFactionRecord? GetFactionSnapshotFromProvider(int factionId, CancellationToken cancellationToken = default)
+    {
+        return _armyDataService.GetFactionSnapshot(factionId, cancellationToken);
+    }
+
+    private ArmyUnitRecord? GetUnitFromProvider(int factionId, int unitId, CancellationToken cancellationToken = default)
+    {
+        return _armyDataService.GetUnit(factionId, unitId, cancellationToken);
     }
 
 

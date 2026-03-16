@@ -501,32 +501,6 @@ internal static class CompanySelectionSharedUtilities
         return false;
     }
 
-    internal static bool TryGetFirstProfileGroup(string? profileGroupsJson, out JsonElement group)
-    {
-        group = default;
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return false;
-        }
-    
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
-            {
-                return false;
-            }
-    
-            group = doc.RootElement[0].Clone();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage TryGetFirstProfileGroup failed: {ex.Message}");
-            return false;
-        }
-    }
-
     internal static IEnumerable<JsonElement> EnumerateOptions(JsonElement profileGroupsRoot)
     {
         if (profileGroupsRoot.ValueKind != JsonValueKind.Array)

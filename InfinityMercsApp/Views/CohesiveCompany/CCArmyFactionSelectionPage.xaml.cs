@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -951,13 +951,13 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             return Task.FromResult(validCoreFireteams);
         }
 
-        var skillsLookup = BuildIdNameLookup(snapshot.FiltersJson, "skills");
-        var charsLookup = BuildIdNameLookup(snapshot.FiltersJson, "chars");
-        var equipLookup = BuildIdNameLookup(snapshot.FiltersJson, "equip");
-        var weaponsLookup = BuildIdNameLookup(snapshot.FiltersJson, "weapons");
-        var ammoLookup = BuildIdNameLookup(snapshot.FiltersJson, "ammunition");
-        var typeLookup = BuildIdNameLookup(snapshot.FiltersJson, "type");
-        var categoryLookup = BuildIdNameLookup(snapshot.FiltersJson, "category");
+        var skillsLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "skills");
+        var charsLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "chars");
+        var equipLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "equip");
+        var weaponsLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "weapons");
+        var ammoLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "ammunition");
+        var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "type");
+        var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "category");
 
         var units = GetResumeByFactionMercsOnlyFromProvider(faction.Id, cancellationToken);
         var sourceUnits = units.Select(unit => new ArmyUnitSelectionItem
@@ -987,7 +987,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     continue;
                 }
 
-                if (!MatchesClassificationFilter(matchedUnit, typeLookup))
+                if (!CompanyUnitDetailsShared.MatchesClassificationFilter(_activeUnitFilter, matchedUnit.Type, typeLookup))
                 {
                     continue;
                 }
@@ -1357,7 +1357,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         _selectedUnit = null;
         ResetUnitDetails();
 
-        var factions = GetUnitSourceFactions();
+        var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+            ShowRightSelectionBox,
+            _factionSelectionState.LeftSlotFaction,
+            _factionSelectionState.RightSlotFaction,
+            faction => faction.Id);
         if (factions.Count == 0)
         {
             return;
@@ -1380,8 +1384,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     .GroupBy(x => x.UnitId)
                     .ToDictionary(x => x.Key, x => x.First());
                 var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
-                var typeLookup = BuildIdNameLookup(snapshot?.FiltersJson, "type");
-                var categoryLookup = BuildIdNameLookup(snapshot?.FiltersJson, "category");
+                var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+                var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "category");
                 MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
 
                 if (_factionLogoCacheService is not null)
@@ -1671,7 +1675,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)
     {
-        var peripheralName = ExtractFirstPeripheralName(profile.Peripherals);
+        var peripheralName = CompanyUnitDetailsShared.ExtractFirstPeripheralName(profile.Peripherals);
         if (string.IsNullOrWhiteSpace(peripheralName) || string.IsNullOrWhiteSpace(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson))
         {
             return null;
@@ -1819,7 +1823,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
             var pointsRemaining = pointsLimit - currentPoints;
 
-            var factions = GetUnitSourceFactions();
+            var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+                ShowRightSelectionBox,
+                _factionSelectionState.LeftSlotFaction,
+                _factionSelectionState.RightSlotFaction,
+                faction => faction.Id);
             var skillsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var typeLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
             var charsLookupByFaction = new Dictionary<int, IReadOnlyDictionary<int, string>>();
@@ -1830,12 +1838,12 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             foreach (var faction in factions)
             {
                 var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
-                skillsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
-                typeLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "type");
-                charsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
-                equipLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
-                weaponsLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
-                ammoLookupByFaction[faction.Id] = BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
+                skillsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "skills");
+                typeLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+                charsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "chars");
+                equipLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "equip");
+                weaponsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+                ammoLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "ammunition");
                 var specopsUnits = await _specOpsProvider.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
                 specopsByFaction[faction.Id] = specopsUnits
                     .GroupBy(x => x.UnitId)
@@ -1856,7 +1864,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 weaponsLookupByFaction.TryGetValue(unit.SourceFactionId, out var weaponsLookup);
                 ammoLookupByFaction.TryGetValue(unit.SourceFactionId, out var ammoLookup);
 
-                if (!MatchesClassificationFilter(unit, typeLookup ?? new Dictionary<int, string>()))
+                if (!CompanyUnitDetailsShared.MatchesClassificationFilter(_activeUnitFilter, unit.Type, typeLookup ?? new Dictionary<int, string>()))
                 {
                     unit.IsVisible = false;
                     continue;
@@ -2422,7 +2430,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 {
                     Navigation = Navigation,
                     FallbackSourceFactionId = captainEntry.SourceFactionId,
-                    FirstSourceFactionId = GetUnitSourceFactions().FirstOrDefault()?.Id,
+                    FirstSourceFactionId = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+                        ShowRightSelectionBox,
+                        _factionSelectionState.LeftSlotFaction,
+                        _factionSelectionState.RightSlotFaction,
+                        faction => faction.Id).FirstOrDefault()?.Id,
                     UnitName = captainEntry.Name,
                     UnitCost = captainEntry.CostValue,
                     UnitStatline = captainEntry.Subtitle ?? "-",
@@ -2468,7 +2480,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 PointsLimit = int.TryParse(SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
                 CurrentPoints = int.TryParse(SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
                 ImprovedCaptainStats = improvedCaptainStats,
-                SourceFactions = GetUnitSourceFactions()
+                SourceFactions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+                    ShowRightSelectionBox,
+                    _factionSelectionState.LeftSlotFaction,
+                    _factionSelectionState.RightSlotFaction,
+                    faction => faction.Id)
                     .Select(faction => new SavedCompanyFaction
                     {
                         FactionId = faction.Id,
@@ -2554,7 +2570,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         {
             var moveDisplay = FormatMoveValue(entry.UnitMoveFirstCm, entry.UnitMoveSecondCm);
             entry.UnitMoveDisplay = moveDisplay;
-            entry.Subtitle = ReplaceSubtitleMoveDisplay(entry.Subtitle, moveDisplay);
+            entry.Subtitle = CompanyUnitDetailsShared.ReplaceSubtitleMoveDisplay(entry.Subtitle, moveDisplay);
 
             if (entry.HasPeripheralStatBlock)
             {
