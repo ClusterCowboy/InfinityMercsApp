@@ -414,39 +414,6 @@ public sealed class CaptainUpgradeOptionSet
     public bool IsEmpty => Weapons.Count == 0 && Skills.Count == 0 && Equipment.Count == 0;
 }
 
-public sealed class CaptainUnitPopupInfo
-{
-    public string Name { get; init; } = string.Empty;
-    public int Cost { get; init; }
-    public string Statline { get; init; } = "-";
-    public string RangedWeapons { get; init; } = "-";
-    public string CcWeapons { get; init; } = "-";
-    public string Skills { get; init; } = "-";
-    public string Equipment { get; init; } = "-";
-    public string? CachedLogoPath { get; init; }
-    public string? PackagedLogoPath { get; init; }
-}
-
-public sealed class CaptainUpgradePopupContext
-{
-    public CaptainUnitPopupInfo Unit { get; init; } = new();
-    public int OptionFactionId { get; init; }
-    public string OptionFactionName { get; init; } = string.Empty;
-    public List<string> WeaponOptions { get; init; } = [];
-    public List<string> SkillOptions { get; init; } = [];
-    public List<string> EquipmentOptions { get; init; } = [];
-}
-
-public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)
-{
-    public int MaxTier => Math.Min(BonusesByTier.Count, CostsByTier.Count) - 1;
-}
-
-public sealed record StatPickerOption(string Stat, int Tier, int Bonus, int Cost)
-{
-    public string Label => $"{Stat.ToUpperInvariant()} +{Bonus} | {Cost}xp";
-}
-
 public static class UnitExperienceRanks
 {
     private static readonly (int MinXp, string RankName)[] OrderedRanks =
