@@ -33,7 +33,6 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 
 public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUnitDisplayIconState, IUnitDisplayStatState
 {
-    private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
     {
         public TeamAggregate(string name)
@@ -2418,7 +2417,28 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 return;
             }
 
-            var improvedCaptainStats = await ShowCaptainConfigurationAsync(captainEntry);
+            var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<SavedImprovedCaptainStats>(
+                new CompanyCaptainWorkflowRequest
+                {
+                    Navigation = Navigation,
+                    FallbackSourceFactionId = captainEntry.SourceFactionId,
+                    FirstSourceFactionId = GetUnitSourceFactions().FirstOrDefault()?.Id,
+                    UnitName = captainEntry.Name,
+                    UnitCost = captainEntry.CostValue,
+                    UnitStatline = captainEntry.Subtitle ?? "-",
+                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
+                    UnitCcWeapons = captainEntry.SavedCcWeapons,
+                    UnitSkills = captainEntry.SavedSkills,
+                    UnitEquipment = captainEntry.SavedEquipment,
+                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
+                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
+                    TryGetParentFactionId = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetFactionName = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.Name,
+                    TryGetMetadataFactionName = factionId => _armyDataService.GetMetadataFactionById(factionId)?.Name,
+                    ArmyDataService = _armyDataService,
+                    SpecOpsProvider = _specOpsProvider,
+                    ShowUnitsInInches = ShowUnitsInInches
+                });
             if (improvedCaptainStats is null)
             {
                 return;
@@ -2615,7 +2635,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");
             var charsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "chars");
-            var extrasLookup = BuildExtrasLookup(snapshot?.FiltersJson);
+            var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(snapshot?.FiltersJson, ShowUnitsInInches, TryParseId);
             UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = profileGroupsJson;
             UnitDisplayConfigurationsView.SelectedUnitFiltersJson = snapshot?.FiltersJson;
             await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
@@ -2638,22 +2658,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 ShowCube2Icon = techTraits.HasCube2;
                 ShowHackableIcon = techTraits.HasHackable;
 
-                var stableEquipFromProfiles = ComputeCommonDisplayNamesFromProfiles(
-                    profileGroupsJson,
-                    "equip",
-                    equipLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
+                var stableEquipFromProfiles = displayNameContext.ComputeCommonDisplayNamesFromProfiles(profileGroupsJson, "equip", equipLookup);
                 var stableEquipFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
-                    stableEquipFromVisibleOptions = IntersectDisplayNamesWithIncludes(
-                        doc.RootElement,
-                        visibleOptions,
-                        "equip",
-                        equipLookup,
-                        extrasLookup,
-                        ShowUnitsInInches);
+                    stableEquipFromVisibleOptions = displayNameContext.IntersectDisplayNamesWithIncludes(doc.RootElement, visibleOptions, "equip", equipLookup);
                 }
                 var stableEquip = stableEquipFromProfiles
                     .Concat(stableEquipFromVisibleOptions)
@@ -2662,22 +2671,11 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                var stableSkillsFromProfiles = ComputeCommonDisplayNamesFromProfiles(
-                    profileGroupsJson,
-                    "skills",
-                    skillsLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
+                var stableSkillsFromProfiles = displayNameContext.ComputeCommonDisplayNamesFromProfiles(profileGroupsJson, "skills", skillsLookup);
                 var stableSkillsFromVisibleOptions = new List<string>();
                 if (visibleOptions.Count > 0)
                 {
-                    stableSkillsFromVisibleOptions = IntersectDisplayNamesWithIncludes(
-                        doc.RootElement,
-                        visibleOptions,
-                        "skills",
-                        skillsLookup,
-                        extrasLookup,
-                        ShowUnitsInInches);
+                    stableSkillsFromVisibleOptions = displayNameContext.IntersectDisplayNamesWithIncludes(doc.RootElement, visibleOptions, "skills", skillsLookup);
                 }
                 var stableSkills = stableSkillsFromProfiles
                     .Concat(stableSkillsFromVisibleOptions)
@@ -2769,7 +2767,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         var equipLookup = BuildIdNameLookup(filtersJson, "equip");
         var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
-        var extrasLookup = BuildExtrasLookup(filtersJson);
+        var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(filtersJson, ShowUnitsInInches, TryParseId);
 
         var buildRequest = new CompanyProfileBuildRequest<PeripheralMercsCompanyStats>
         {
@@ -2784,8 +2782,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             ShouldIncludeOption = (_, _, optionName) => !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName),
             GetOptionEntriesWithIncludes = (option, propertyName) => GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
             GetDisplayPeripheralEntriesForOption = (group, option) => GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
-            GetOrderedDisplayNames = (entries, lookup) => GetOrderedIdDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
-            GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
+            GetOrderedDisplayNames = (entries, lookup) => displayNameContext.GetOrderedIdDisplayNamesFromEntries(entries, lookup),
+            GetCountedDisplayNames = (entries, lookup) => displayNameContext.GetCountedDisplayNamesFromEntries(entries, lookup),
             ReadOptionSwc = ReadOptionSwc,
             IsPositiveSwc = IsPositiveSwc,
             IsMeleeWeaponName = IsMeleeWeaponName,
@@ -2836,64 +2834,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         }
 
         ApplyLieutenantVisualStates();
-    }
-
-    private static List<string> GetOrderedIdDisplayNamesFromEntries(
-        IEnumerable<JsonElement> entries,
-        IReadOnlyDictionary<int, string> lookup,
-        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
-        bool showUnitsInInches)
-    {
-        var names = new List<string>();
-        foreach (var entry in entries)
-        {
-            if (!TryParseId(entry, out var id))
-            {
-                continue;
-            }
-
-            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
-            names.Add(BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches));
-        }
-
-        return names
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static List<string> GetCountedDisplayNamesFromEntries(
-        IEnumerable<JsonElement> entries,
-        IReadOnlyDictionary<int, string> lookup,
-        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
-        bool showUnitsInInches)
-    {
-        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var entry in entries)
-        {
-            if (!TryParseId(entry, out var id))
-            {
-                continue;
-            }
-
-            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
-            var displayName = BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches);
-            if (string.IsNullOrWhiteSpace(displayName))
-            {
-                continue;
-            }
-
-            var quantity = ReadEntryQuantity(entry);
-            counts[displayName] = counts.TryGetValue(displayName, out var existing)
-                ? existing + quantity
-                : quantity;
-        }
-
-        return counts
-            .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(x => $"{x.Key} ({x.Value})")
-            .ToList();
     }
 
     private static int ReadEntryQuantity(JsonElement entry)
@@ -3895,21 +3835,13 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
         var equipLookup = BuildIdNameLookup(filtersJson, "equip");
         var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
-        var extrasLookup = BuildExtrasLookup(filtersJson);
+        var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(filtersJson, ShowUnitsInInches, TryParseId);
         var peripheralMove = _armyDataService.ReadMoveValue(peripheralProfile);
         var moveFirstCm = peripheralMove.FirstCm;
         var moveSecondCm = peripheralMove.SecondCm;
-        var equipmentNames = GetOrderedIdDisplayNamesFromEntries(
-            GetContainerEntries(peripheralProfile, "equip"),
-            equipLookup,
-            extrasLookup,
-            ShowUnitsInInches);
+        var equipmentNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(GetContainerEntries(peripheralProfile, "equip"), equipLookup);
         var skillNames = BuildConfigurationSkillNames(
-            GetOrderedIdDisplayNamesFromEntries(
-                GetContainerEntries(peripheralProfile, "skills"),
-                skillsLookup,
-                extrasLookup,
-                ShowUnitsInInches));
+            displayNameContext.GetOrderedIdDisplayNamesFromEntries(GetContainerEntries(peripheralProfile, "skills"), skillsLookup));
         var (vitalityHeader, vitalityValue) = ReadVitality(peripheralProfile);
 
         return new PeripheralMercsCompanyStats
@@ -4699,78 +4631,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             .ToList();
     }
 
-    private static List<string> ComputeCommonDisplayNamesFromProfiles(
-        string? profileGroupsJson,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
-        bool showUnitsInInches)
-    {
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return [];
-        }
-
-        HashSet<string>? common = null;
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return [];
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var profile in profilesElement.EnumerateArray())
-                {
-                    var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    if (profile.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var entry in arr.EnumerateArray())
-                        {
-                            if (!TryParseId(entry, out var id))
-                            {
-                                continue;
-                            }
-
-                            var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
-                            set.Add(BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches));
-                        }
-                    }
-
-                    if (common is null)
-                    {
-                        common = set;
-                    }
-                    else
-                    {
-                        common.IntersectWith(set);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage ComputeCommonDisplayNamesFromProfiles failed for '{propertyName}': {ex.Message}");
-            return [];
-        }
-
-        if (common is null || common.Count == 0)
-        {
-            return [];
-        }
-
-        return common
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private static List<string> IntersectNamedIdsWithIncludes(
         JsonElement profileGroupsRoot,
         IReadOnlyList<JsonElement> options,
@@ -4812,159 +4672,12 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             .ToList();
     }
 
-    private static List<string> IntersectDisplayNamesWithIncludes(
-        JsonElement profileGroupsRoot,
-        IReadOnlyList<JsonElement> options,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
-        bool showUnitsInInches)
-    {
-        HashSet<string>? intersection = null;
-        foreach (var option in options)
-        {
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
-            {
-                if (!TryParseId(entry, out var id))
-                {
-                    continue;
-                }
-
-                var baseName = lookup.TryGetValue(id, out var resolvedName) ? resolvedName : id.ToString();
-                names.Add(BuildEntryDisplayName(baseName, entry, extrasLookup, showUnitsInInches));
-            }
-
-            if (intersection is null)
-            {
-                intersection = names;
-            }
-            else
-            {
-                intersection.IntersectWith(names);
-            }
-        }
-
-        if (intersection is null || intersection.Count == 0)
-        {
-            return [];
-        }
-
-        return intersection
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
         JsonElement profileGroupsRoot,
         JsonElement option,
         string propertyName)
     {
         return CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName);
-    }
-
-    private static Dictionary<int, ExtraDefinition> BuildExtrasLookup(string? filtersJson)
-    {
-        var map = new Dictionary<int, ExtraDefinition>();
-        if (string.IsNullOrWhiteSpace(filtersJson))
-        {
-            return map;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(filtersJson);
-            if (!doc.RootElement.TryGetProperty("extras", out var section) || section.ValueKind != JsonValueKind.Array)
-            {
-                return map;
-            }
-
-            foreach (var entry in section.EnumerateArray())
-            {
-                if (!entry.TryGetProperty("id", out var idElement) || !TryParseId(idElement, out var id))
-                {
-                    continue;
-                }
-
-                if (!entry.TryGetProperty("name", out var nameElement) || nameElement.ValueKind != JsonValueKind.String)
-                {
-                    continue;
-                }
-
-                var name = nameElement.GetString();
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                var type = entry.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
-                    ? (typeElement.GetString() ?? string.Empty)
-                    : string.Empty;
-
-                map[id] = new ExtraDefinition(name, type);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage BuildExtrasLookup failed: {ex.Message}");
-        }
-
-        return map;
-    }
-
-    private static string BuildEntryDisplayName(
-        string baseName,
-        JsonElement entry,
-        IReadOnlyDictionary<int, ExtraDefinition> extrasLookup,
-        bool showUnitsInInches)
-    {
-        if (entry.ValueKind != JsonValueKind.Object)
-        {
-            return baseName;
-        }
-
-        if (!entry.TryGetProperty("extra", out var extraElement) || extraElement.ValueKind != JsonValueKind.Array)
-        {
-            return baseName;
-        }
-
-        var extras = new List<string>();
-        foreach (var extraEntry in extraElement.EnumerateArray())
-        {
-            if (!TryParseId(extraEntry, out var extraId))
-            {
-                continue;
-            }
-
-            if (extrasLookup.TryGetValue(extraId, out var definition) &&
-                !string.IsNullOrWhiteSpace(definition.Name))
-            {
-                extras.Add(FormatExtraDisplay(definition, showUnitsInInches));
-            }
-            else
-            {
-                extras.Add(extraId.ToString());
-            }
-        }
-
-        var distinctExtras = extras
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        return distinctExtras.Count == 0
-            ? baseName
-            : $"{baseName} ({string.Join(", ", distinctExtras)})";
-    }
-
-    private static string FormatExtraDisplay(ExtraDefinition definition, bool showUnitsInInches)
-    {
-        if (!string.Equals(definition.Type, "DISTANCE", StringComparison.OrdinalIgnoreCase))
-        {
-            return definition.Name;
-        }
-
-        return ConvertDistanceText(definition.Name, showUnitsInInches);
     }
 
     private static string ConvertDistanceText(string distanceText, bool showUnitsInInches)

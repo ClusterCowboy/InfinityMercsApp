@@ -31,7 +31,6 @@ namespace InfinityMercsApp.Views.StandardCompany;
 
 public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IUnitDisplayIconState, IUnitDisplayStatState
 {
-    private readonly record struct ExtraDefinition(string Name, string Type);
     private sealed class TeamAggregate
     {
         public TeamAggregate(string name)

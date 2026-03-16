@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Views.Templates.NewCompany;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -56,7 +57,28 @@ public partial class StandardCompanySelectionPage
                 return;
             }
 
-            var improvedCaptainStats = await ShowCaptainConfigurationAsync(captainEntry);
+            var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<SavedImprovedCaptainStats>(
+                new CompanyCaptainWorkflowRequest
+                {
+                    Navigation = Navigation,
+                    FallbackSourceFactionId = captainEntry.SourceFactionId,
+                    FirstSourceFactionId = GetUnitSourceFactions().FirstOrDefault()?.Id,
+                    UnitName = captainEntry.Name,
+                    UnitCost = captainEntry.CostValue,
+                    UnitStatline = captainEntry.Subtitle ?? "-",
+                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
+                    UnitCcWeapons = captainEntry.SavedCcWeapons,
+                    UnitSkills = captainEntry.SavedSkills,
+                    UnitEquipment = captainEntry.SavedEquipment,
+                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
+                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
+                    TryGetParentFactionId = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetFactionName = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.Name,
+                    TryGetMetadataFactionName = factionId => _armyDataService.GetMetadataFactionById(factionId)?.Name,
+                    ArmyDataService = _armyDataService,
+                    SpecOpsProvider = _specOpsProvider,
+                    ShowUnitsInInches = ShowUnitsInInches
+                });
             if (improvedCaptainStats is null)
             {
                 return;
