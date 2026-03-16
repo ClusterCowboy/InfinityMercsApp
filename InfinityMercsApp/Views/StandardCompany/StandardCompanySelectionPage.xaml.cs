@@ -1202,7 +1202,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
                     }
                 }
 
-                unit.IsVisible = StandardCompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
+                unit.IsVisible = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
                     profileGroupsJson,
                     skillsLookup,
                     charsLookup ?? new Dictionary<int, string>(),

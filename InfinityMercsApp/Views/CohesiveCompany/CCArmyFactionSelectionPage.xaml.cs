@@ -999,7 +999,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 }
 
                 var requiresFtoProfile = IsFtoLabel(unitLimit.Key);
-                var hasAnyVisibleProfile = UnitHasVisibleOptionWithFilter(
+                var hasAnyVisibleProfile = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
                     unitRecord.ProfileGroupsJson,
                     skillsLookup,
                     charsLookup,
@@ -1010,13 +1010,13 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     requireLieutenant: false,
                     requireZeroSwc: true,
                     maxCost: maxCost,
-                    requireFto: requiresFtoProfile);
+                    optionNamePredicate: requiresFtoProfile ? IsFtoLabel : null);
                 if (!hasAnyVisibleProfile)
                 {
                     continue;
                 }
 
-                var hasVisibleLieutenantProfile = UnitHasVisibleOptionWithFilter(
+                var hasVisibleLieutenantProfile = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
                     unitRecord.ProfileGroupsJson,
                     skillsLookup,
                     charsLookup,
@@ -1027,7 +1027,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     requireLieutenant: true,
                     requireZeroSwc: true,
                     maxCost: maxCost,
-                    requireFto: requiresFtoProfile);
+                    optionNamePredicate: requiresFtoProfile ? IsFtoLabel : null);
 
                 if (!hasVisibleLieutenantProfile)
                 {
@@ -1595,10 +1595,10 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             return;
         }
 
-        var combinedEquipment = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
-        var combinedSkills = MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
-        var combinedEquipmentText = JoinOrDash(combinedEquipment);
-        var combinedSkillsText = JoinOrDash(combinedSkills);
+        var combinedEquipment = CompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipmentText = CompanyProfileTextService.JoinOrDash(combinedEquipment);
+        var combinedSkillsText = CompanyProfileTextService.JoinOrDash(combinedSkills);
         var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
@@ -1606,7 +1606,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         {
             Name = profile.Name,
             BaseUnitName = _selectedUnit.Name,
-            NameFormatted = profile.NameFormatted ?? BuildNameFormatted(profile.Name),
+            NameFormatted = profile.NameFormatted ?? CompanyProfileTextService.BuildNameFormatted(profile.Name),
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
             CostDisplay = $"C {profile.Cost}",
@@ -1622,12 +1622,12 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             SavedRangedWeapons = profile.RangedWeapons,
             SavedCcWeapons = profile.MeleeWeapons,
             ExperiencePoints = 0,
-            EquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
+            EquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
             HasEquipmentLine = combinedEquipment.Count > 0,
-            SkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
+            SkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
-            RangedLineFormatted = BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
+            RangedLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
             HasPeripheralStatBlock = peripheralStats is not null,
             PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
             PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
@@ -1643,9 +1643,9 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
             PeripheralAva = peripheralStats?.Ava ?? "-",
             SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
             SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
-            PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+            PeripheralEquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-            PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+            PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
             UnitMoveFirstCm = UnitMoveFirstCm,
             UnitMoveSecondCm = UnitMoveSecondCm,
@@ -1873,7 +1873,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                     }
                 }
 
-                unit.IsVisible = UnitHasVisibleOptionWithFilter(
+                unit.IsVisible = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
                     profileGroupsJson,
                     skillsLookup,
                     charsLookup ?? new Dictionary<int, string>(),
@@ -2962,8 +2962,8 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
     private void RefreshSummaryFormatted()
     {
         var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
-        EquipmentSummaryFormatted = BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
-        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+        EquipmentSummaryFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
+        SpecialSkillsSummaryFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted(
             "Special Skills",
             UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
             skillsAccent,

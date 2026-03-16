@@ -48,7 +48,7 @@ public partial class CCArmyFactionSelectionPage
                     TryParseId = TryParseId,
                     ApplyGlobalDisplayUnitsPreferenceAsync = ApplyGlobalDisplayUnitsPreferenceAsync,
                     EnumerateOptions = EnumerateOptions,
-                    ReadOptionSwc = ReadOptionSwc,
+                    ReadOptionSwc = CompanyProfileOptionService.ReadOptionSwc,
                     IsPositiveSwc = IsPositiveSwc,
                     IsLieutenantOption = IsLieutenantOption,
                     PopulateUnitStatsFromFirstProfile = PopulateUnitStatsFromFirstProfile,
@@ -67,7 +67,7 @@ public partial class CCArmyFactionSelectionPage
                         ShowCube2Icon = hasCube2;
                         ShowHackableIcon = hasHackable;
                     },
-                    EnsureLieutenantSkill = EnsureLieutenantSkill,
+                    EnsureLieutenantSkill = CompanyProfileTextService.EnsureLieutenantSkill,
                     SetCommonEquipmentSkills = (equipment, skills, highlightLieutenant) =>
                     {
                         UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = equipment.ToList();
@@ -136,18 +136,18 @@ public partial class CCArmyFactionSelectionPage
             EquipLookup = equipLookup,
             SkillsLookup = skillsLookup,
             PeripheralLookup = peripheralLookup,
-            IsControllerGroup = group => IsControllerGroup(profileGroupsRoot, group),
+            IsControllerGroup = group => CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group),
             ShouldIncludeOption = (_, _, optionName) => !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName),
-            GetOptionEntriesWithIncludes = (option, propertyName) => GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
-            GetDisplayPeripheralEntriesForOption = (group, option) => GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
+            GetOptionEntriesWithIncludes = (option, propertyName) => CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
+            GetDisplayPeripheralEntriesForOption = (group, option) => CompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
             GetOrderedDisplayNames = (entries, lookup) => displayNameContext.GetOrderedIdDisplayNamesFromEntries(entries, lookup),
             GetCountedDisplayNames = (entries, lookup) => displayNameContext.GetCountedDisplayNamesFromEntries(entries, lookup),
-            ReadOptionSwc = ReadOptionSwc,
+            ReadOptionSwc = CompanyProfileOptionService.ReadOptionSwc,
             IsPositiveSwc = IsPositiveSwc,
-            IsMeleeWeaponName = IsMeleeWeaponName,
-            ReadAdjustedOptionCost = (group, option) => ReadAdjustedOptionCost(profileGroupsRoot, group, option),
+            IsMeleeWeaponName = CompanyProfileTextService.IsMeleeWeaponName,
+            ReadAdjustedOptionCost = (group, option) => CompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option),
             ParseCostValue = ParseCostValue,
-            ReadOptionCost = ReadOptionCost,
+            ReadOptionCost = CompanyProfileOptionService.ReadOptionCost,
             TryFindPeripheralProfile = peripheralName =>
                 TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
                     ? peripheralProfile
@@ -192,69 +192,6 @@ public partial class CCArmyFactionSelectionPage
         }
 
         ApplyLieutenantVisualStates();
-    }
-
-    private static int ReadEntryQuantity(JsonElement entry)
-    {
-        return CompanyProfileOptionService.ReadEntryQuantity(entry);
-    }
-
-    private static bool IsMeleeWeaponName(string name)
-    {
-        return CompanyProfileTextService.IsMeleeWeaponName(name);
-    }
-
-    private static string JoinOrDash(IEnumerable<string> values)
-    {
-        return CompanyProfileTextService.JoinOrDash(values);
-    }
-
-    private static List<string> EnsureLieutenantSkill(IEnumerable<string> skills)
-    {
-        return CompanyProfileTextService.EnsureLieutenantSkill(skills);
-    }
-
-    private static string ReadOptionSwc(JsonElement option)
-    {
-        return CompanyProfileOptionService.ReadOptionSwc(option);
-    }
-
-    private static string ReadOptionCost(JsonElement option)
-    {
-        return CompanyProfileOptionService.ReadOptionCost(option);
-    }
-
-    private static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
-    {
-        return CompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option);
-    }
-
-    private static IEnumerable<JsonElement> GetDisplayPeripheralEntriesForOption(
-        JsonElement profileGroupsRoot,
-        JsonElement group,
-        JsonElement option)
-    {
-        return CompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option);
-    }
-
-    private static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
-    {
-        return CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group);
-    }
-
-    private static int ReadOptionMinis(JsonElement option)
-    {
-        return CompanyProfileOptionService.ReadOptionMinis(option);
-    }
-
-    private static FormattedString BuildNameFormatted(string name)
-    {
-        return CompanyProfileTextService.BuildNameFormatted(name);
-    }
-
-    private static FormattedString BuildListFormattedString(IEnumerable<string> values, Color textColor, bool highlightLieutenantPurple = false)
-    {
-        return CompanyProfileTextService.BuildListFormattedString(values, textColor, highlightLieutenantPurple);
     }
 
     private async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)
@@ -345,11 +282,6 @@ public partial class CCArmyFactionSelectionPage
         }
 
         return list;
-    }
-
-    private static List<string> BuildConfigurationSkillNames(IEnumerable<string> rawSkillNames)
-    {
-        return CompanyProfileTextService.BuildConfigurationSkillNames(rawSkillNames);
     }
 
     private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)
@@ -503,352 +435,6 @@ public partial class CCArmyFactionSelectionPage
         return CompanySelectionSharedUtilities.UnitHasLieutenantOption(profileGroupsJson, skillsLookup);
     }
 
-    private static bool UnitHasVisibleOption(
-        string? profileGroupsJson,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost = null)
-    {
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return false;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return false;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var option in optionsElement.EnumerateArray())
-                {
-                    if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                    {
-                        continue;
-                    }
-
-                    if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
-                    {
-                        continue;
-                    }
-
-                    if (maxCost.HasValue && ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasVisibleOption failed: {ex.Message}");
-        }
-
-        return false;
-    }
-
-    private static bool UnitHasVisibleOptionWithFilter(
-        string? profileGroupsJson,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterCriteria criteria,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost = null,
-        bool requireFto = false)
-    {
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return false;
-        }
-
-        var filterQuery = criteria.ToQuery();
-
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return false;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var option in optionsElement.EnumerateArray())
-                {
-                    if (requireFto)
-                    {
-                        var optionName = option.TryGetProperty("name", out var optionNameElement) &&
-                                         optionNameElement.ValueKind == JsonValueKind.String
-                            ? optionNameElement.GetString()
-                            : null;
-                        if (!IsFtoLabel(optionName))
-                        {
-                            continue;
-                        }
-                    }
-
-                    if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                    {
-                        continue;
-                    }
-
-                    if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
-                    {
-                        continue;
-                    }
-
-                    var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
-                    if (maxCost.HasValue && optionCost > maxCost.Value)
-                    {
-                        continue;
-                    }
-
-                    if (filterQuery.MinPoints.HasValue && optionCost < filterQuery.MinPoints.Value)
-                    {
-                        continue;
-                    }
-
-                    if (filterQuery.MaxPoints.HasValue && optionCost > filterQuery.MaxPoints.Value)
-                    {
-                        continue;
-                    }
-
-                    if (!OptionMatchesUnitFilter(
-                            doc.RootElement,
-                            group,
-                            option,
-                            charsLookup,
-                            skillsLookup,
-                            equipLookup,
-                            weaponsLookup,
-                            ammoLookup,
-                            filterQuery))
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasVisibleOptionWithFilter failed: {ex.Message}");
-        }
-
-        return false;
-    }
-
-    private static bool OptionMatchesUnitFilter(
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        UnitFilterQuery filterQuery)
-    {
-        foreach (var term in filterQuery.Terms)
-        {
-            if (term.Field == UnitFilterField.Classification || term.Values.Count == 0)
-            {
-                continue;
-            }
-
-            var matches = term.Field switch
-            {
-                UnitFilterField.Characteristics => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "chars",
-                    charsLookup),
-                UnitFilterField.Skills => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "skills",
-                    skillsLookup),
-                UnitFilterField.Equipment => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "equip",
-                    equipLookup),
-                UnitFilterField.Weapons => TermMatchesOptionOrGroup(
-                    term,
-                    profileGroupsRoot,
-                    profileGroup,
-                    option,
-                    "weapons",
-                    weaponsLookup),
-                UnitFilterField.Ammo => TermMatchesOptionOnly(
-                    term,
-                    profileGroupsRoot,
-                    option,
-                    ammoLookup,
-                    ["ammunition", "ammo"]),
-                _ => true
-            };
-
-            if (!matches)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool TermMatchesOptionOrGroup(
-        UnitFilterTerm term,
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        return term.MatchMode == UnitFilterMatchMode.All
-            ? term.Values.All(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value))
-            : term.Values.Any(value => OptionOrGroupContainsLookupName(profileGroupsRoot, profileGroup, option, propertyName, lookup, value));
-    }
-
-    private static bool TermMatchesOptionOnly(
-        UnitFilterTerm term,
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        IReadOnlyDictionary<int, string> lookup,
-        IEnumerable<string> propertyNames)
-    {
-        return term.MatchMode == UnitFilterMatchMode.All
-            ? term.Values.All(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value))
-            : term.Values.Any(value => OptionContainsAnyLookupName(profileGroupsRoot, option, propertyNames, lookup, value));
-    }
-
-    private static bool OptionOrGroupContainsLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement profileGroup,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        return OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue) ||
-               GroupProfilesContainLookupName(profileGroup, propertyName, lookup, expectedValue);
-    }
-
-    private static bool OptionContainsAnyLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        IEnumerable<string> propertyNames,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        foreach (var propertyName in propertyNames)
-        {
-            if (OptionContainsLookupName(profileGroupsRoot, option, propertyName, lookup, expectedValue))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool OptionContainsLookupName(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
-        {
-            return false;
-        }
-
-        foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
-        {
-            if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
-            {
-                continue;
-            }
-
-            if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool GroupProfilesContainLookupName(
-        JsonElement profileGroup,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        string expectedValue)
-    {
-        if (lookup.Count == 0 || string.IsNullOrWhiteSpace(expectedValue))
-        {
-            return false;
-        }
-
-        if (!profileGroup.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        foreach (var profile in profilesElement.EnumerateArray())
-        {
-            if (!profile.TryGetProperty(propertyName, out var valuesElement) || valuesElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var entry in valuesElement.EnumerateArray())
-            {
-                if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
-                {
-                    continue;
-                }
-
-                if (string.Equals(name, expectedValue, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private bool MatchesClassificationFilter(
         ArmyUnitSelectionItem unit,
         IReadOnlyDictionary<int, string> typeLookup)
@@ -960,11 +546,6 @@ public partial class CCArmyFactionSelectionPage
         ShowHackableIcon = false;
     }
 
-    private static List<string> MergeCommonAndUnique(IEnumerable<string> commonValues, string? uniqueValues)
-    {
-        return CompanyProfileTextService.MergeCommonAndUnique(commonValues, uniqueValues);
-    }
-
     private void ResetUnitStatsOnly()
     {
         UnitMoveFirstCm = null;
@@ -1002,8 +583,8 @@ public partial class CCArmyFactionSelectionPage
         PeripheralAva = "-";
         PeripheralEquipment = "-";
         PeripheralSkills = "-";
-        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
     private static IEnumerable<JsonElement> EnumerateOptions(JsonElement profileGroupsRoot)
@@ -1213,8 +794,8 @@ public partial class CCArmyFactionSelectionPage
         PeripheralAva = peripheralStats.Ava;
         PeripheralEquipment = peripheralStats.Equipment;
         PeripheralSkills = peripheralStats.Skills;
-        PeripheralEquipmentFormatted = BuildNamedSummaryFormatted("Equipment", SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = BuildNamedSummaryFormatted("Skills", SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", CompanyProfileTextService.SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", CompanyProfileTextService.SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
         HasPeripheralStatBlock = true;
     }
 
@@ -1331,13 +912,13 @@ public partial class CCArmyFactionSelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                var optionCost = ParseCostValue(ReadOptionCost(option));
+                var optionCost = ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
                 if (optionCost <= 0)
                 {
                     continue;
                 }
 
-                var minis = Math.Max(1, ReadOptionMinis(option));
+                var minis = Math.Max(1, CompanyProfileOptionService.ReadOptionMinis(option));
                 peripheralUnitCost = Math.Max(1, optionCost / minis);
                 return true;
             }
@@ -1365,11 +946,11 @@ public partial class CCArmyFactionSelectionPage
         }
 
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
-        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group));
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            if (hasControllerGroups && !CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group))
             {
                 continue;
             }
@@ -1381,7 +962,7 @@ public partial class CCArmyFactionSelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                if (IsPositiveSwc(ReadOptionSwc(option)))
+                if (IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                 {
                     continue;
                 }
@@ -1391,7 +972,7 @@ public partial class CCArmyFactionSelectionPage
                     continue;
                 }
 
-                var peripheralEntries = GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
+                var peripheralEntries = CompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
                 foreach (var entry in peripheralEntries)
                 {
                     if (!TryParseId(entry, out var peripheralId))
@@ -1893,16 +1474,6 @@ public partial class CCArmyFactionSelectionPage
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
 
-    private static FormattedString BuildNamedSummaryFormatted(string label, IEnumerable<string> values, Color accentColor, bool highlightLieutenantPurple = false)
-    {
-        return CompanyProfileTextService.BuildNamedSummaryFormatted(label, values, accentColor, highlightLieutenantPurple);
-    }
-
-    private static FormattedString BuildMercsCompanyLineFormatted(string label, string? value, Color accentColor)
-    {
-        return CompanyProfileTextService.BuildMercsCompanyLineFormatted(label, value, accentColor);
-    }
-
     private static string BuildPeripheralSubtitle(PeripheralMercsCompanyStats? peripheralStats)
     {
         if (peripheralStats is null)
@@ -1911,11 +1482,6 @@ public partial class CCArmyFactionSelectionPage
         }
 
         return $"MOV {peripheralStats.Mov} | CC {peripheralStats.Cc} | BS {peripheralStats.Bs} | PH {peripheralStats.Ph} | WIP {peripheralStats.Wip} | ARM {peripheralStats.Arm} | BTS {peripheralStats.Bts} | {peripheralStats.VitalityHeader} {peripheralStats.Vitality} | S {peripheralStats.S} | AVA {peripheralStats.Ava}";
-    }
-
-    private static List<string> SplitDisplayLine(string? text)
-    {
-        return CompanyProfileTextService.SplitDisplayLine(text);
     }
 
     private static List<string> IntersectNamedIds(
@@ -1971,7 +1537,7 @@ public partial class CCArmyFactionSelectionPage
         foreach (var option in options)
         {
             var ids = new HashSet<int>();
-            foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+            foreach (var entry in CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
             {
                 if (TryParseId(entry, out var id))
                 {
@@ -2002,14 +1568,6 @@ public partial class CCArmyFactionSelectionPage
             .ToList();
     }
 
-    private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName)
-    {
-        return CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName);
-    }
-
     private static string ConvertDistanceText(string distanceText, bool showUnitsInInches)
     {
         return CompanySelectionSharedUtilities.ConvertDistanceText(distanceText, showUnitsInInches);
@@ -2017,5 +1575,7 @@ public partial class CCArmyFactionSelectionPage
 
 
 }
+
+
 
 

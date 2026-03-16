@@ -1,4 +1,4 @@
-using System.Text.Json;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Templates.NewCompany;
 
@@ -156,7 +156,7 @@ public partial class CCArmyFactionSelectionPage
                 continue;
             }
 
-            AddFilterOptionsFromVisibleProfilesAndOptions(
+            CompanyUnitFilterService.AddFilterOptionsFromVisibleProfilesAndOptions(
                 entry.ProfileGroupsJson,
                 charsLookup,
                 skillsLookup,
@@ -188,126 +188,6 @@ public partial class CCArmyFactionSelectionPage
         _preparedUnitFilterPopupOptions = options;
         Console.WriteLine($"ArmyFactionSelectionPage filter options: class={options.Classification.Count}, chars={options.Characteristics.Count}, skills={options.Skills.Count}, equip={options.Equipment.Count}, weapons={options.Weapons.Count}, ammo={options.Ammo.Count}.");
         return ClonePopupOptionsForCurrentPoints(options);
-    }
-
-    private static void AddFilterOptionsFromVisibleProfilesAndOptions(
-        string profileGroupsJson,
-        IReadOnlyDictionary<int, string> charsLookup,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> ammoLookup,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost,
-        bool includeProfileValues,
-        HashSet<string> characteristics,
-        HashSet<string> skills,
-        HashSet<string> equipment,
-        HashSet<string> weapons,
-        HashSet<string> ammo)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                var groupHasVisibleOption = false;
-                if (group.TryGetProperty("options", out var optionsElement) && optionsElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var option in optionsElement.EnumerateArray())
-                    {
-                        if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                        {
-                            continue;
-                        }
-
-                        if (requireZeroSwc && IsPositiveSwc(ReadOptionSwc(option)))
-                        {
-                            continue;
-                        }
-
-                        var optionCost = ParseCostValue(ReadAdjustedOptionCost(doc.RootElement, group, option));
-                        if (maxCost.HasValue && optionCost > maxCost.Value)
-                        {
-                            continue;
-                        }
-
-                        groupHasVisibleOption = true;
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "chars"), charsLookup, characteristics);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"), skillsLookup, skills);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"), equipLookup, equipment);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"), weaponsLookup, weapons);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammunition"), ammoLookup, ammo);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammo"), ammoLookup, ammo);
-                    }
-                }
-
-                if (!groupHasVisibleOption)
-                {
-                    continue;
-                }
-
-                if (!includeProfileValues)
-                {
-                    continue;
-                }
-
-                if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var profile in profilesElement.EnumerateArray())
-                {
-                    AddLookupValuesFromContainerArray(profile, "chars", charsLookup, characteristics);
-                    AddLookupValuesFromContainerArray(profile, "skills", skillsLookup, skills);
-                    AddLookupValuesFromContainerArray(profile, "equip", equipLookup, equipment);
-                    AddLookupValuesFromContainerArray(profile, "weapons", weaponsLookup, weapons);
-                    AddLookupValuesFromContainerArray(profile, "ammunition", ammoLookup, ammo);
-                    AddLookupValuesFromContainerArray(profile, "ammo", ammoLookup, ammo);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage AddFilterOptionsFromVisibleProfilesAndOptions failed: {ex.Message}");
-        }
-    }
-
-    private static void AddLookupValuesFromContainerArray(
-        JsonElement container,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup,
-        HashSet<string> target)
-    {
-        if (!container.TryGetProperty(propertyName, out var arrayElement) || arrayElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        AddLookupValuesFromEntries(arrayElement.EnumerateArray(), lookup, target);
-    }
-
-    private static void AddLookupValuesFromEntries(
-        IEnumerable<JsonElement> entries,
-        IReadOnlyDictionary<int, string> lookup,
-        HashSet<string> target)
-    {
-        foreach (var entry in entries)
-        {
-            if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name) || string.IsNullOrWhiteSpace(name))
-            {
-                continue;
-            }
-
-            target.Add(name.Trim());
-        }
     }
 
     private static void MergeLookup(Dictionary<int, string> target, IReadOnlyDictionary<int, string> source)

@@ -1,11 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
-using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Services;
 
-public static class StandardCompanyUnitFilterService
+public static class CompanyUnitFilterService
 {
     public static void AddFilterOptionsFromVisibleProfilesAndOptions(
         string profileGroupsJson,
@@ -56,12 +55,12 @@ public static class StandardCompanyUnitFilterService
                         }
 
                         groupHasVisibleOption = true;
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "chars"), charsLookup, characteristics);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"), skillsLookup, skills);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"), equipLookup, equipment);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"), weaponsLookup, weapons);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammunition"), ammoLookup, ammo);
-                        AddLookupValuesFromEntries(GetOptionEntriesWithIncludes(doc.RootElement, option, "ammo"), ammoLookup, ammo);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "chars"), charsLookup, characteristics);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "skills"), skillsLookup, skills);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "equip"), equipLookup, equipment);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "weapons"), weaponsLookup, weapons);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "ammunition"), ammoLookup, ammo);
+                        AddLookupValuesFromEntries(CompanyProfileOptionService.GetOptionEntriesWithIncludes(doc.RootElement, option, "ammo"), ammoLookup, ammo);
                     }
                 }
 
@@ -88,7 +87,7 @@ public static class StandardCompanyUnitFilterService
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"StandardCompanyUnitFilterService AddFilterOptionsFromVisibleProfilesAndOptions failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanyUnitFilterService AddFilterOptionsFromVisibleProfilesAndOptions failed: {ex.Message}");
         }
     }
 
@@ -102,7 +101,8 @@ public static class StandardCompanyUnitFilterService
         UnitFilterCriteria criteria,
         bool requireLieutenant,
         bool requireZeroSwc,
-        int? maxCost = null)
+        int? maxCost = null,
+        Func<string?, bool>? optionNamePredicate = null)
     {
         if (string.IsNullOrWhiteSpace(profileGroupsJson))
         {
@@ -128,6 +128,15 @@ public static class StandardCompanyUnitFilterService
 
                 foreach (var option in optionsElement.EnumerateArray())
                 {
+                    var optionName = option.TryGetProperty("name", out var optionNameElement) &&
+                                     optionNameElement.ValueKind == JsonValueKind.String
+                        ? optionNameElement.GetString()
+                        : null;
+                    if (optionNamePredicate is not null && !optionNamePredicate(optionName))
+                    {
+                        continue;
+                    }
+
                     if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
                     {
                         continue;
@@ -174,7 +183,7 @@ public static class StandardCompanyUnitFilterService
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"StandardCompanyUnitFilterService UnitHasVisibleOptionWithFilter failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanyUnitFilterService UnitHasVisibleOptionWithFilter failed: {ex.Message}");
         }
 
         return false;
@@ -343,7 +352,7 @@ public static class StandardCompanyUnitFilterService
             return false;
         }
 
-        foreach (var entry in GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+        foreach (var entry in CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
         {
             if (!TryParseId(entry, out var id) || !lookup.TryGetValue(id, out var name))
             {
@@ -473,22 +482,6 @@ public static class StandardCompanyUnitFilterService
                && value > 0m;
     }
 
-    private static int ParseCostValue(string? cost)
-    {
-        if (string.IsNullOrWhiteSpace(cost))
-        {
-            return 0;
-        }
-
-        if (int.TryParse(cost, out var parsed))
-        {
-            return parsed;
-        }
-
-        var match = System.Text.RegularExpressions.Regex.Match(cost, "\\d+");
-        return match.Success && int.TryParse(match.Value, out var fallback) ? fallback : 0;
-    }
-
     private static bool TryParseId(JsonElement element, out int id)
     {
         if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numberId))
@@ -514,125 +507,19 @@ public static class StandardCompanyUnitFilterService
         return false;
     }
 
-    private static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName)
+    private static int ParseCostValue(string? cost)
     {
-        var collected = new List<JsonElement>();
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        CollectOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName, collected, visited, null);
-        return collected;
-    }
-
-    private static void CollectOptionEntriesWithIncludes(
-        JsonElement profileGroupsRoot,
-        JsonElement option,
-        string propertyName,
-        List<JsonElement> target,
-        HashSet<string> visited,
-        (int GroupId, int OptionId)? includeRef)
-    {
-        var key = includeRef.HasValue
-            ? $"{includeRef.Value.GroupId}:{includeRef.Value.OptionId}"
-            : option.GetRawText().GetHashCode().ToString();
-        if (!visited.Add(key))
+        if (string.IsNullOrWhiteSpace(cost))
         {
-            return;
+            return 0;
         }
 
-        if (option.TryGetProperty(propertyName, out var arr) && arr.ValueKind == JsonValueKind.Array)
+        if (int.TryParse(cost, out var parsed))
         {
-            foreach (var entry in arr.EnumerateArray())
-            {
-                target.Add(entry);
-            }
+            return parsed;
         }
 
-        if (!option.TryGetProperty("includes", out var includesElement) || includesElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        foreach (var include in includesElement.EnumerateArray())
-        {
-            if (include.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            if (!TryParseIncludeReference(include, out var includeGroupId, out var includeOptionId))
-            {
-                continue;
-            }
-
-            var includedOption = FindIncludedOption(profileGroupsRoot, includeGroupId, includeOptionId);
-            if (includedOption.HasValue)
-            {
-                CollectOptionEntriesWithIncludes(
-                    profileGroupsRoot,
-                    includedOption.Value,
-                    propertyName,
-                    target,
-                    visited,
-                    (includeGroupId, includeOptionId));
-            }
-        }
-    }
-
-    private static bool TryParseIncludeReference(JsonElement include, out int groupId, out int optionId)
-    {
-        groupId = 0;
-        optionId = 0;
-
-        if (!include.TryGetProperty("group", out var groupElement) || !TryParseId(groupElement, out groupId))
-        {
-            return false;
-        }
-
-        if (!include.TryGetProperty("option", out var optionElement) || !TryParseId(optionElement, out optionId))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static JsonElement? FindIncludedOption(JsonElement profileGroupsRoot, int groupId, int optionId)
-    {
-        if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
-        {
-            if (!group.TryGetProperty("id", out var groupIdElement) ||
-                !TryParseId(groupIdElement, out var parsedGroupId) ||
-                parsedGroupId != groupId)
-            {
-                continue;
-            }
-
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                if (!option.TryGetProperty("id", out var optionIdElement) ||
-                    !TryParseId(optionIdElement, out var parsedOptionId) ||
-                    parsedOptionId != optionId)
-                {
-                    continue;
-                }
-
-                return option;
-            }
-        }
-
-        return null;
+        var match = System.Text.RegularExpressions.Regex.Match(cost, "\\d+");
+        return match.Success && int.TryParse(match.Value, out var fallback) ? fallback : 0;
     }
 }
-

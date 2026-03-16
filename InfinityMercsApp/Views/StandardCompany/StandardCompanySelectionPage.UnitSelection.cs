@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using InfinityMercsApp.Domain.Utilities;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Templates.NewCompany;
 
@@ -182,7 +183,7 @@ public partial class StandardCompanySelectionPage
                 continue;
             }
 
-            StandardCompanyUnitFilterService.AddFilterOptionsFromVisibleProfilesAndOptions(
+            CompanyUnitFilterService.AddFilterOptionsFromVisibleProfilesAndOptions(
                 entry.ProfileGroupsJson,
                 charsLookup,
                 skillsLookup,
