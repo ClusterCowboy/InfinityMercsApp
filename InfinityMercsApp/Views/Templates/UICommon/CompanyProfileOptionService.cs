@@ -1,10 +1,14 @@
 using System.Globalization;
 using System.Text.Json;
+using InfinityMercsApp.Views.Templates.NewCompany;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.Templates.UICommon;
 
-public static class StandardCompanyProfileOptionService
+public static class CompanyProfileOptionService
 {
+    /// <summary>
+    /// Reads SWC from an option as normalized text.
+    /// </summary>
     public static string ReadOptionSwc(JsonElement option)
     {
         if (option.TryGetProperty("swc", out var swcElement))
@@ -23,6 +27,9 @@ public static class StandardCompanyProfileOptionService
         return "-";
     }
 
+    /// <summary>
+    /// Reads option cost from points/cost/pts fields.
+    /// </summary>
     public static string ReadOptionCost(JsonElement option)
     {
         if (option.TryGetProperty("points", out var pointsElement))
@@ -70,6 +77,9 @@ public static class StandardCompanyProfileOptionService
         return "-";
     }
 
+    /// <summary>
+    /// Adjusts cost when duplicated peripherals are collapsed for display.
+    /// </summary>
     public static string ReadAdjustedOptionCost(JsonElement profileGroupsRoot, JsonElement group, JsonElement option)
     {
         var baseCostText = ReadOptionCost(option);
@@ -103,6 +113,9 @@ public static class StandardCompanyProfileOptionService
         return adjustedCost.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Reads the minis/model count declared on an option.
+    /// </summary>
     public static int ReadOptionMinis(JsonElement option)
     {
         if (!option.TryGetProperty("minis", out var minisElement))
@@ -124,6 +137,9 @@ public static class StandardCompanyProfileOptionService
         return 0;
     }
 
+    /// <summary>
+    /// Reads entry quantity, defaulting to one.
+    /// </summary>
     public static int ReadEntryQuantity(JsonElement entry)
     {
         if (entry.ValueKind != JsonValueKind.Object)
@@ -148,6 +164,9 @@ public static class StandardCompanyProfileOptionService
         return 1;
     }
 
+    /// <summary>
+    /// Returns peripheral entries for an option, with controller fallback.
+    /// </summary>
     public static IReadOnlyList<JsonElement> GetDisplayPeripheralEntriesForOption(
         JsonElement profileGroupsRoot,
         JsonElement group,
@@ -162,6 +181,9 @@ public static class StandardCompanyProfileOptionService
         return GetControllerPeripheralEntries(group).ToList();
     }
 
+    /// <summary>
+    /// Detects whether a profile group represents a controller/peripheral group.
+    /// </summary>
     public static bool IsControllerGroup(JsonElement profileGroupsRoot, JsonElement group)
     {
         if (GetControllerPeripheralIds(group).Count > 0)
@@ -185,6 +207,9 @@ public static class StandardCompanyProfileOptionService
         return false;
     }
 
+    /// <summary>
+    /// Collects peripheral entries directly from group profiles.
+    /// </summary>
     private static IEnumerable<JsonElement> GetControllerPeripheralEntries(JsonElement group)
     {
         if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
@@ -206,6 +231,9 @@ public static class StandardCompanyProfileOptionService
         return collected;
     }
 
+    /// <summary>
+    /// Builds the set of controller peripheral ids for filtering option peripherals.
+    /// </summary>
     private static HashSet<int> GetControllerPeripheralIds(JsonElement group)
     {
         var ids = new HashSet<int>();
@@ -220,6 +248,9 @@ public static class StandardCompanyProfileOptionService
         return ids;
     }
 
+    /// <summary>
+    /// Filters option peripheral entries to controller-supported ids when present.
+    /// </summary>
     private static IEnumerable<JsonElement> GetFilteredOptionPeripheralEntries(
         JsonElement profileGroupsRoot,
         JsonElement group,
@@ -238,6 +269,9 @@ public static class StandardCompanyProfileOptionService
             .ToList();
     }
 
+    /// <summary>
+    /// Returns option property entries plus recursively included option entries.
+    /// </summary>
     public static IEnumerable<JsonElement> GetOptionEntriesWithIncludes(
         JsonElement profileGroupsRoot,
         JsonElement option,
@@ -249,6 +283,9 @@ public static class StandardCompanyProfileOptionService
         return collected;
     }
 
+    /// <summary>
+    /// Recursively collects entries across include references while preventing cycles.
+    /// </summary>
     private static void CollectOptionEntriesWithIncludes(
         JsonElement profileGroupsRoot,
         JsonElement option,
@@ -304,6 +341,9 @@ public static class StandardCompanyProfileOptionService
         }
     }
 
+    /// <summary>
+    /// Parses include group/option ids from an include object.
+    /// </summary>
     private static bool TryParseIncludeReference(JsonElement include, out int groupId, out int optionId)
     {
         groupId = 0;
@@ -322,6 +362,9 @@ public static class StandardCompanyProfileOptionService
         return true;
     }
 
+    /// <summary>
+    /// Finds a referenced included option by group and option id.
+    /// </summary>
     private static JsonElement? FindIncludedOption(JsonElement profileGroupsRoot, int groupId, int optionId)
     {
         if (profileGroupsRoot.ValueKind != JsonValueKind.Array)
@@ -359,28 +402,11 @@ public static class StandardCompanyProfileOptionService
         return null;
     }
 
+    /// <summary>
+    /// Parses ids from number/string/object id payloads.
+    /// </summary>
     private static bool TryParseId(JsonElement element, out int id)
     {
-        if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numberId))
-        {
-            id = numberId;
-            return true;
-        }
-
-        if (element.ValueKind == JsonValueKind.String &&
-            int.TryParse(element.GetString(), out var stringId))
-        {
-            id = stringId;
-            return true;
-        }
-
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty("id", out var idElement))
-        {
-            return TryParseId(idElement, out id);
-        }
-
-        id = 0;
-        return false;
+        return CompanySelectionSharedUtilities.TryParseId(element, out id);
     }
 }

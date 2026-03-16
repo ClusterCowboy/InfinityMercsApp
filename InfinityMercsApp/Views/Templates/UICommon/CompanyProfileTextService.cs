@@ -4,6 +4,9 @@ namespace InfinityMercsApp.Views.Templates.UICommon;
 
 public static class CompanyProfileTextService
 {
+    /// <summary>
+    /// Returns true when a weapon name should be treated as melee/CC.
+    /// </summary>
     public static bool IsMeleeWeaponName(string name)
     {
         return Regex.IsMatch(
@@ -12,12 +15,18 @@ public static class CompanyProfileTextService
             RegexOptions.IgnoreCase);
     }
 
+    /// <summary>
+    /// Joins values into display lines, or "-" when empty.
+    /// </summary>
     public static string JoinOrDash(IEnumerable<string> values)
     {
         var list = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
         return list.Count == 0 ? "-" : string.Join(Environment.NewLine, list);
     }
 
+    /// <summary>
+    /// Ensures lieutenant skill text exists in the returned sorted list.
+    /// </summary>
     public static List<string> EnsureLieutenantSkill(IEnumerable<string> skills)
     {
         var list = skills
@@ -37,6 +46,9 @@ public static class CompanyProfileTextService
             .ToList();
     }
 
+    /// <summary>
+    /// Normalizes raw option skill names into display-ready unique names.
+    /// </summary>
     public static List<string> BuildConfigurationSkillNames(IEnumerable<string> rawSkillNames)
     {
         var result = new List<string>();
@@ -67,6 +79,9 @@ public static class CompanyProfileTextService
             .ToList();
     }
 
+    /// <summary>
+    /// Merges common values with a comma-delimited unique-value string.
+    /// </summary>
     public static List<string> MergeCommonAndUnique(IEnumerable<string> commonValues, string? uniqueValues)
     {
         var merged = new List<string>();
@@ -92,6 +107,9 @@ public static class CompanyProfileTextService
             .ToList();
     }
 
+    /// <summary>
+    /// Builds a formatted name with lieutenant text highlighted.
+    /// </summary>
     public static FormattedString BuildNameFormatted(string name)
     {
         var formatted = new FormattedString();
@@ -128,6 +146,9 @@ public static class CompanyProfileTextService
         return formatted;
     }
 
+    /// <summary>
+    /// Builds a multi-line formatted list with optional lieutenant highlighting.
+    /// </summary>
     public static FormattedString BuildListFormattedString(
         IEnumerable<string> values,
         Color textColor,
@@ -157,6 +178,9 @@ public static class CompanyProfileTextService
         return formatted;
     }
 
+    /// <summary>
+    /// Builds a labeled, comma-separated summary line.
+    /// </summary>
     public static FormattedString BuildNamedSummaryFormatted(
         string label,
         IEnumerable<string> values,
@@ -196,6 +220,9 @@ public static class CompanyProfileTextService
         return formatted;
     }
 
+    /// <summary>
+    /// Builds a single labeled display line for company details.
+    /// </summary>
     public static FormattedString BuildMercsCompanyLineFormatted(string label, string? value, Color accentColor)
     {
         var normalized = string.IsNullOrWhiteSpace(value)
@@ -218,6 +245,9 @@ public static class CompanyProfileTextService
         return formatted;
     }
 
+    /// <summary>
+    /// Splits display text into normalized item tokens.
+    /// </summary>
     public static List<string> SplitDisplayLine(string? text)
     {
         if (string.IsNullOrWhiteSpace(text) || text == "-")
@@ -234,6 +264,9 @@ public static class CompanyProfileTextService
             .ToList();
     }
 
+    /// <summary>
+    /// Returns true for generic SpecOps skill labels that should be filtered/trimmed.
+    /// </summary>
     private static bool IsCommonSpecOpsSkill(string? skillName)
     {
         if (string.IsNullOrWhiteSpace(skillName))
@@ -246,6 +279,9 @@ public static class CompanyProfileTextService
                skillName.Contains("infinity spec ops", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Extracts lieutenant detail text from a composite skill label.
+    /// </summary>
     private static string? ExtractLieutenantSkillDetail(string skillName)
     {
         if (!skillName.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))

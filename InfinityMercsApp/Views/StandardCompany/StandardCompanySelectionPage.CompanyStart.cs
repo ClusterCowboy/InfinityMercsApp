@@ -1,4 +1,4 @@
-ï»¿using System.Globalization;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -158,7 +158,7 @@ public partial class StandardCompanySelectionPage
         }
 
         var firstToken = subtitle
-            .Split([' ', '-', 'â€“', 'â€”'], StringSplitOptions.RemoveEmptyEntries)
+            .Split([' ', '-', '–', '—'], StringSplitOptions.RemoveEmptyEntries)
             .FirstOrDefault();
         return string.IsNullOrWhiteSpace(firstToken) ? string.Empty : firstToken.Trim().ToUpperInvariant();
     }

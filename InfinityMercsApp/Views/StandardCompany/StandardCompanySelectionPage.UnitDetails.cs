@@ -72,7 +72,7 @@ public partial class StandardCompanySelectionPage
                 using var doc = JsonDocument.Parse(profileGroupsJson);
                 var options = EnumerateOptions(doc.RootElement).ToList();
                 var visibleOptions = options
-                    .Where(option => !IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
+                    .Where(option => !IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                     .Where(option => !treatAsSpecOps && LieutenantOnlyUnits ? IsLieutenantOption(option, skillsLookup) : true)
                     .ToList();
                 PopulateUnitStatsFromFirstProfile(doc.RootElement);
@@ -233,19 +233,19 @@ public partial class StandardCompanySelectionPage
             EquipLookup = equipLookup,
             SkillsLookup = skillsLookup,
             PeripheralLookup = peripheralLookup,
-            IsControllerGroup = group => StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group),
+            IsControllerGroup = group => CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group),
             ShouldIncludeOption = (_, _, _) => true,
             GetOptionEntriesWithIncludes = (option, propertyName) =>
-                StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
-            GetDisplayPeripheralEntriesForOption = (group, option) => StandardCompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
+                CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
+            GetDisplayPeripheralEntriesForOption = (group, option) => CompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
             GetOrderedDisplayNames = (entries, lookup) => GetOrderedIdDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
             GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
-            ReadOptionSwc = StandardCompanyProfileOptionService.ReadOptionSwc,
+            ReadOptionSwc = CompanyProfileOptionService.ReadOptionSwc,
             IsPositiveSwc = IsPositiveSwc,
             IsMeleeWeaponName = CompanyProfileTextService.IsMeleeWeaponName,
-            ReadAdjustedOptionCost = (group, option) => StandardCompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option),
+            ReadAdjustedOptionCost = (group, option) => CompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option),
             ParseCostValue = ParseCostValue,
-            ReadOptionCost = StandardCompanyProfileOptionService.ReadOptionCost,
+            ReadOptionCost = CompanyProfileOptionService.ReadOptionCost,
             TryFindPeripheralProfile = peripheralName =>
                 TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
                     ? peripheralProfile
@@ -343,7 +343,7 @@ public partial class StandardCompanySelectionPage
                 continue;
             }
 
-            var quantity = StandardCompanyProfileOptionService.ReadEntryQuantity(entry);
+            var quantity = CompanyProfileOptionService.ReadEntryQuantity(entry);
             counts[displayName] = counts.TryGetValue(displayName, out var existing)
                 ? existing + quantity
                 : quantity;
@@ -704,12 +704,12 @@ public partial class StandardCompanySelectionPage
                         continue;
                     }
 
-                    if (requireZeroSwc && IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
+                    if (requireZeroSwc && IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                     {
                         continue;
                     }
 
-                    if (maxCost.HasValue && ParseCostValue(StandardCompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
+                    if (maxCost.HasValue && ParseCostValue(CompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
                     {
                         continue;
                     }
@@ -1291,13 +1291,13 @@ public partial class StandardCompanySelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                var optionCost = ParseCostValue(StandardCompanyProfileOptionService.ReadOptionCost(option));
+                var optionCost = ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
                 if (optionCost <= 0)
                 {
                     continue;
                 }
 
-                var minis = Math.Max(1, StandardCompanyProfileOptionService.ReadOptionMinis(option));
+                var minis = Math.Max(1, CompanyProfileOptionService.ReadOptionMinis(option));
                 peripheralUnitCost = Math.Max(1, optionCost / minis);
                 return true;
             }
@@ -1331,11 +1331,11 @@ public partial class StandardCompanySelectionPage
         }
 
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
-        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group));
+        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group));
 
         foreach (var group in profileGroupsRoot.EnumerateArray())
         {
-            if (hasControllerGroups && !StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group))
+            if (hasControllerGroups && !CompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group))
             {
                 continue;
             }
@@ -1347,7 +1347,7 @@ public partial class StandardCompanySelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                if (IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
+                if (IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                 {
                     continue;
                 }
@@ -1357,7 +1357,7 @@ public partial class StandardCompanySelectionPage
                     continue;
                 }
 
-                var peripheralEntries = StandardCompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
+                var peripheralEntries = CompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option).ToList();
                 foreach (var entry in peripheralEntries)
                 {
                     if (!TryParseId(entry, out var peripheralId))
@@ -2057,7 +2057,7 @@ public partial class StandardCompanySelectionPage
         foreach (var option in options)
         {
             var ids = new HashSet<int>();
-            foreach (var entry in StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+            foreach (var entry in CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
             {
                 if (TryParseId(entry, out var id))
                 {
@@ -2103,7 +2103,7 @@ public partial class StandardCompanySelectionPage
         foreach (var option in options)
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
+            foreach (var entry in CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName))
             {
                 if (!TryParseId(entry, out var id))
                 {

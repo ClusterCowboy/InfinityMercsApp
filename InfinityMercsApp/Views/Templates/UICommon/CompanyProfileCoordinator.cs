@@ -54,6 +54,9 @@ internal sealed class CompanyProfileBuildRequest<TPeripheralStats>
 
 internal sealed class CompanyProfileCoordinator
 {
+    /// <summary>
+    /// Builds display-ready viewer profiles from profile-group JSON using injected domain delegates.
+    /// </summary>
     public IReadOnlyList<ViewerProfileItem> BuildProfiles<TPeripheralStats>(CompanyProfileBuildRequest<TPeripheralStats> request)
     {
         if (request.ProfileGroupsRoot.ValueKind != JsonValueKind.Array)
@@ -302,6 +305,9 @@ internal sealed class CompanyProfileCoordinator
         return profiles;
     }
 
+    /// <summary>
+    /// Appends detail tags (like lieutenant/FO/hacker) to a base option display name.
+    /// </summary>
     private static string BuildOptionDisplayName(
         JsonElement option,
         string baseName,
@@ -357,6 +363,9 @@ internal sealed class CompanyProfileCoordinator
         return $"{baseName} ({string.Join(", ", distinctDetails)})";
     }
 
+    /// <summary>
+    /// Reads and resolves names for a given option property, returning distinct sorted results.
+    /// </summary>
     private static List<string> GetOrderedNames(
         JsonElement container,
         string propertyName,
@@ -387,6 +396,9 @@ internal sealed class CompanyProfileCoordinator
             .ToList();
     }
 
+    /// <summary>
+    /// Returns true when a name qualifies as a role/detail tag for display names.
+    /// </summary>
     private static bool IsNameDetailTag(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -406,6 +418,9 @@ internal sealed class CompanyProfileCoordinator
                value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Reads the profile group display name.
+    /// </summary>
     private static string ReadGroupName(JsonElement group)
     {
         return group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
@@ -413,6 +428,9 @@ internal sealed class CompanyProfileCoordinator
             : string.Empty;
     }
 
+    /// <summary>
+    /// Reads option name, falling back to group name when blank.
+    /// </summary>
     private static string ReadOptionNameOrGroup(JsonElement option, string groupName)
     {
         var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String

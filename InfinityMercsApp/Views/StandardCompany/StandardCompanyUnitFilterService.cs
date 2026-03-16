@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using InfinityMercsApp.Views.Controls;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -43,12 +44,12 @@ public static class StandardCompanyUnitFilterService
                             continue;
                         }
 
-                        if (requireZeroSwc && IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
+                        if (requireZeroSwc && IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                         {
                             continue;
                         }
 
-                        var optionCost = ParseCostValue(StandardCompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option));
+                        var optionCost = ParseCostValue(CompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option));
                         if (maxCost.HasValue && optionCost > maxCost.Value)
                         {
                             continue;
@@ -132,12 +133,12 @@ public static class StandardCompanyUnitFilterService
                         continue;
                     }
 
-                    if (requireZeroSwc && IsPositiveSwc(StandardCompanyProfileOptionService.ReadOptionSwc(option)))
+                    if (requireZeroSwc && IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
                     {
                         continue;
                     }
 
-                    var optionCost = ParseCostValue(StandardCompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option));
+                    var optionCost = ParseCostValue(CompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option));
                     if (maxCost.HasValue && optionCost > maxCost.Value)
                     {
                         continue;
