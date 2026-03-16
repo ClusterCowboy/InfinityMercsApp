@@ -3334,8 +3334,19 @@ public class ViewerViewModel : BaseViewModel
         }
 
         var profileElement = firstProfile.Value;
-        (_unitMoveFirstCm, _unitMoveSecondCm) = ParseMoveValues(profileElement);
-        UpdateUnitMoveDisplay();
+        if (_armyDataService is not null)
+        {
+            var move = _armyDataService.ReadMoveValue(profileElement);
+            _unitMoveFirstCm = move.FirstCm;
+            _unitMoveSecondCm = move.SecondCm;
+            UnitMov = move.DisplayValue;
+        }
+        else
+        {
+            _unitMoveFirstCm = null;
+            _unitMoveSecondCm = null;
+            UnitMov = "-";
+        }
         UnitCc = ReadIntAsString(profileElement, "cc");
         UnitBs = ReadIntAsString(profileElement, "bs");
         UnitPh = ReadIntAsString(profileElement, "ph");
@@ -3376,21 +3387,6 @@ public class ViewerViewModel : BaseViewModel
         }
 
         return ava == 255 ? "T" : ava.ToString();
-    }
-
-    private static (int? firstCm, int? secondCm) ParseMoveValues(JsonElement element)
-    {
-        if (!element.TryGetProperty("move", out var moveElement) || moveElement.ValueKind != JsonValueKind.Array)
-        {
-            return (null, null);
-        }
-
-        var values = moveElement.EnumerateArray()
-            .Where(x => x.ValueKind == JsonValueKind.Number && x.TryGetInt32(out _))
-            .Select(x => x.GetInt32())
-            .ToList();
-
-        return values.Count >= 2 ? (values[0], values[1]) : (null, null);
     }
 
     private static (bool HasRegular, bool HasIrregular, bool HasImpetuous, bool HasTacticalAwareness) ParseUnitOrderTraits(JsonElement profileGroupsArray)
@@ -3581,21 +3577,7 @@ public class ViewerViewModel : BaseViewModel
 
     private void UpdateUnitMoveDisplay()
     {
-        if (!_unitMoveFirstCm.HasValue || !_unitMoveSecondCm.HasValue)
-        {
-            UnitMov = "-";
-            return;
-        }
-
-        if (ShowUnitsInInches)
-        {
-            var first = (int)Math.Round(_unitMoveFirstCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            var second = (int)Math.Round(_unitMoveSecondCm.Value / 2.5, MidpointRounding.AwayFromZero);
-            UnitMov = $"{first}-{second}";
-            return;
-        }
-
-        UnitMov = $"{_unitMoveFirstCm.Value}-{_unitMoveSecondCm.Value}";
+        UnitMov = _armyDataService?.FormatMoveValue(_unitMoveFirstCm, _unitMoveSecondCm) ?? "-";
     }
 
     public async Task LoadProfilesForSelectedUnitAsync(CancellationToken cancellationToken = default)

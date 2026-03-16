@@ -3259,8 +3259,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private void PopulateUnitStatsFromElement(JsonElement selectedElement)
     {
-        (UnitMoveFirstCm, UnitMoveSecondCm) = ParseMoveValues(selectedElement);
-        UpdateUnitMoveDisplay();
+        var unitMove = _armyDataService.ReadMoveValue(selectedElement);
+        UnitMoveFirstCm = unitMove.FirstCm;
+        UnitMoveSecondCm = unitMove.SecondCm;
+        UnitMov = unitMove.DisplayValue;
         UnitCc = ReadIntAsString(selectedElement, "cc");
         UnitBs = ReadIntAsString(selectedElement, "bs");
         UnitPh = ReadIntAsString(selectedElement, "ph");
@@ -3294,7 +3296,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private string FormatMoveValue(int? firstCm, int? secondCm)
     {
-        return UnitDisplayConfigurationsView.FormatMoveValue(firstCm, secondCm, ShowUnitsInInches);
+        return _armyDataService.FormatMoveValue(firstCm, secondCm);
     }
 
     private static string ReplaceSubtitleMoveDisplay(string? subtitle, string moveDisplay)
@@ -3313,12 +3315,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
     private void UpdateUnitMoveDisplay()
     {
-        UnitDisplayConfigurationsView.RefreshMoveStatlines();
+        UnitMov = _armyDataService.FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
     }
 
     private void UpdatePeripheralMoveDisplay()
     {
-        UnitDisplayConfigurationsView.RefreshMoveStatlines();
+        PeripheralMov = _armyDataService.FormatMoveValue(PeripheralMoveFirstCm, PeripheralMoveSecondCm);
     }
 
     private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
@@ -3379,7 +3381,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         var equipLookup = BuildIdNameLookup(filtersJson, "equip");
         var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
         var extrasLookup = BuildExtrasLookup(filtersJson);
-        var (moveFirstCm, moveSecondCm) = ParseMoveValues(peripheralProfile);
+        var peripheralMove = _armyDataService.ReadMoveValue(peripheralProfile);
+        var moveFirstCm = peripheralMove.FirstCm;
+        var moveSecondCm = peripheralMove.SecondCm;
         var equipmentNames = GetOrderedIdDisplayNamesFromEntries(
             GetContainerEntries(peripheralProfile, "equip"),
             equipLookup,
@@ -3781,39 +3785,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         {
             yield return entry.Clone();
         }
-    }
-
-    private static (int? firstCm, int? secondCm) ParseMoveValues(JsonElement element)
-    {
-        if (!TryGetPropertyFlexible(element, "move", out var moveElement) &&
-            !TryGetPropertyFlexible(element, "mov", out moveElement))
-        {
-            return (null, null);
-        }
-
-        if (moveElement.ValueKind == JsonValueKind.String)
-        {
-            var parts = (moveElement.GetString() ?? string.Empty)
-                .Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => int.TryParse(x, out var parsed) ? (int?)parsed : null)
-                .Where(x => x.HasValue)
-                .Select(x => x!.Value)
-                .ToList();
-
-            return parts.Count >= 2 ? (parts[0], parts[1]) : (null, null);
-        }
-
-        if (moveElement.ValueKind != JsonValueKind.Array)
-        {
-            return (null, null);
-        }
-
-        var values = moveElement.EnumerateArray()
-            .Where(x => x.ValueKind == JsonValueKind.Number && x.TryGetInt32(out _))
-            .Select(x => x.GetInt32())
-            .ToList();
-
-        return values.Count >= 2 ? (values[0], values[1]) : (null, null);
     }
 
     private static (bool HasRegular, bool HasIrregular, bool HasImpetuous, bool HasTacticalAwareness) ParseUnitOrderTraits(JsonElement profileGroupsArray)
@@ -5222,15 +5193,3 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
