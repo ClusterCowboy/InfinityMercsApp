@@ -13,6 +13,7 @@ This template was derived by comparing:
 - `CompanySelectionPage.xaml.template`: shared page layout shell.
 - `CompanySelectionPageBase.cs.template`: reusable base class with shared state, services, commands, and hook methods.
 - `CompanySelectionPage.xaml.cs.template`: thin subclass + XAML event wrappers + overrides.
+- `CompanySelectionSharedUtilities.cs`: shared static helpers extracted from Standard and Cohesive pages (parsing, formatting, and drawing helpers).
 
 ## What is shared
 - Page layout and major sections (`FACTION SELECTION`, `UNIT SELECTION`, unit display panel)
