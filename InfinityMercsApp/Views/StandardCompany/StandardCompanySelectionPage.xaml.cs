@@ -78,7 +78,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
-    private readonly StandardCompanyProfileCoordinator _profileCoordinator;
+    private readonly CompanyProfileCoordinator _profileCoordinator;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
@@ -130,7 +130,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
         _appSettingsProvider = AppSettingsProvider;
-        _profileCoordinator = new StandardCompanyProfileCoordinator();
+        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {

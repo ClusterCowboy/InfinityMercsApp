@@ -2771,258 +2771,68 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
         var extrasLookup = BuildExtrasLookup(filtersJson);
 
-        var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var hasControllerGroups = profileGroupsRoot.EnumerateArray().Any(group => IsControllerGroup(profileGroupsRoot, group));
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
+        var buildRequest = new CompanyProfileBuildRequest<PeripheralMercsCompanyStats>
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
+            ProfileGroupsRoot = profileGroupsRoot,
+            ForceLieutenant = forceLieutenant,
+            ShowTacticalAwarenessIcon = ShowTacticalAwarenessIcon,
+            WeaponsLookup = weaponsLookup,
+            EquipLookup = equipLookup,
+            SkillsLookup = skillsLookup,
+            PeripheralLookup = peripheralLookup,
+            IsControllerGroup = group => IsControllerGroup(profileGroupsRoot, group),
+            ShouldIncludeOption = (_, _, optionName) => !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName),
+            GetOptionEntriesWithIncludes = (option, propertyName) => GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
+            GetDisplayPeripheralEntriesForOption = (group, option) => GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
+            GetOrderedDisplayNames = (entries, lookup) => GetOrderedIdDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
+            GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
+            ReadOptionSwc = ReadOptionSwc,
+            IsPositiveSwc = IsPositiveSwc,
+            IsMeleeWeaponName = IsMeleeWeaponName,
+            ReadAdjustedOptionCost = (group, option) => ReadAdjustedOptionCost(profileGroupsRoot, group, option),
+            ParseCostValue = ParseCostValue,
+            ReadOptionCost = ReadOptionCost,
+            TryFindPeripheralProfile = peripheralName =>
+                TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
+                    ? peripheralProfile
+                    : (JsonElement?)null,
+            BuildPeripheralStatBlock = (peripheralName, peripheralProfile) => BuildPeripheralStatBlock(peripheralName, peripheralProfile, filtersJson),
+            TryGetPeripheralUnitCost = peripheralName =>
+                TryGetPeripheralUnitCost(profileGroupsRoot, peripheralName, out var peripheralCost)
+                    ? peripheralCost
+                    : (int?)null,
+            TryBuildSinglePeripheralDisplay = peripheralNames =>
             {
-                continue;
-            }
+                var success = TryBuildSinglePeripheralDisplay(peripheralNames, out var peripheralName, out var peripheralCount);
+                return (success, peripheralName, peripheralCount);
+            },
+            ExtractFirstPeripheralName = ExtractFirstPeripheralName,
+            NormalizePeripheralNameForDedupe = NormalizePeripheralNameForDedupe,
+            GetPeripheralTotalCount = GetPeripheralTotalCount,
+            IsLieutenantOption = option => IsLieutenantOption(option, skillsLookup),
+            FormatMoveValue = FormatMoveValue,
+            BuildPeripheralSubtitle = BuildPeripheralSubtitle,
+            ReadPeripheralNameHeading = stats => stats?.NameHeading ?? string.Empty,
+            ReadPeripheralMoveFirstCm = stats => stats?.MoveFirstCm,
+            ReadPeripheralMoveSecondCm = stats => stats?.MoveSecondCm,
+            ReadPeripheralCc = stats => stats?.Cc ?? "-",
+            ReadPeripheralBs = stats => stats?.Bs ?? "-",
+            ReadPeripheralPh = stats => stats?.Ph ?? "-",
+            ReadPeripheralWip = stats => stats?.Wip ?? "-",
+            ReadPeripheralArm = stats => stats?.Arm ?? "-",
+            ReadPeripheralBts = stats => stats?.Bts ?? "-",
+            ReadPeripheralVitalityHeader = stats => stats?.VitalityHeader ?? "VITA",
+            ReadPeripheralVitality = stats => stats?.Vitality ?? "-",
+            ReadPeripheralS = stats => stats?.S ?? "-",
+            ReadPeripheralAva = stats => stats?.Ava ?? "-",
+            ReadPeripheralEquipment = stats => stats?.Equipment ?? "-",
+            ReadPeripheralSkills = stats => stats?.Skills ?? "-"
+        };
 
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                if (IsPositiveSwc(ReadOptionSwc(option)))
-                {
-                    continue;
-                }
-
-                var optionNameForFilter = option.TryGetProperty("name", out var optionNameElementForFilter) &&
-                                          optionNameElementForFilter.ValueKind == JsonValueKind.String
-                    ? optionNameElementForFilter.GetString() ?? string.Empty
-                    : string.Empty;
-                if (string.IsNullOrWhiteSpace(optionNameForFilter))
-                {
-                    optionNameForFilter = group.TryGetProperty("isc", out var groupIscForFilter) && groupIscForFilter.ValueKind == JsonValueKind.String
-                        ? groupIscForFilter.GetString() ?? string.Empty
-                        : string.Empty;
-                }
-
-                if (_restrictSelectedUnitProfilesToFto && !IsFtoLabel(optionNameForFilter))
-                {
-                    continue;
-                }
-
-                foreach (var name in GetOrderedIdDisplayNamesFromEntries(
-                             GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
-                             equipLookup,
-                             extrasLookup,
-                             ShowUnitsInInches))
-                {
-                    equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
-                }
-
-                var optionSkillNames = BuildConfigurationSkillNames(
-                    GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
-                        skillsLookup,
-                        extrasLookup,
-                        ShowUnitsInInches));
-                foreach (var name in optionSkillNames)
-                {
-                    skillUsageCounts[name] = skillUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
-                }
-            }
-        }
-
-        var bestConfigurationByKey = new Dictionary<string, (int Index, int PeripheralCount)>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in profileGroupsRoot.EnumerateArray())
+        var profileCoordinator = new CompanyProfileCoordinator();
+        foreach (var profileItem in profileCoordinator.BuildProfiles(buildRequest))
         {
-            if (hasControllerGroups && !IsControllerGroup(profileGroupsRoot, group))
-            {
-                continue;
-            }
-
-            var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
-                ? iscElement.GetString() ?? string.Empty
-                : string.Empty;
-
-            if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var option in optionsElement.EnumerateArray())
-            {
-                var swc = ReadOptionSwc(option);
-                if (IsPositiveSwc(swc))
-                {
-                    continue;
-                }
-
-                var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty;
-                if (string.IsNullOrWhiteSpace(optionName))
-                {
-                    optionName = groupName;
-                }
-
-                if (_restrictSelectedUnitProfilesToFto && !IsFtoLabel(optionName))
-                {
-                    continue;
-                }
-
-                optionName = BuildOptionDisplayName(option, optionName, equipLookup, skillsLookup);
-
-                var optionWeapons = GetOrderedIdDisplayNamesFromEntries(
-                    GetOptionEntriesWithIncludes(profileGroupsRoot, option, "weapons"),
-                    weaponsLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
-                var rangedWeaponNames = optionWeapons.Where(x => !IsMeleeWeaponName(x)).ToList();
-                var meleeWeaponNames = optionWeapons.Where(IsMeleeWeaponName).ToList();
-
-                var optionEquipmentNames = GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "equip"),
-                        equipLookup,
-                        extrasLookup,
-                        ShowUnitsInInches)
-                    .ToList();
-                var uniqueEquipmentNames = optionEquipmentNames
-                    .Where(x => equipUsageCounts.TryGetValue(x, out var c) && c == 1)
-                    .ToList();
-                if (uniqueEquipmentNames.Count == 0)
-                {
-                    uniqueEquipmentNames = optionEquipmentNames
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                }
-
-                var optionSkillsNames = BuildConfigurationSkillNames(
-                    GetOrderedIdDisplayNamesFromEntries(
-                        GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills"),
-                        skillsLookup,
-                        extrasLookup,
-                        ShowUnitsInInches));
-                var uniqueSkillsNames = optionSkillsNames
-                    .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
-                    .ToList();
-                if (uniqueSkillsNames.Count == 0)
-                {
-                    uniqueSkillsNames = optionSkillsNames
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                }
-
-                var peripheralNames = GetCountedDisplayNamesFromEntries(
-                    GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
-                    peripheralLookup,
-                    extrasLookup,
-                    ShowUnitsInInches);
-                var firstPeripheralName = peripheralNames.FirstOrDefault();
-                PeripheralMercsCompanyStats? peripheralStats = null;
-                JsonElement peripheralProfile = default;
-                var hasPeripheralProfile = false;
-                if (!string.IsNullOrWhiteSpace(firstPeripheralName) &&
-                    TryFindPeripheralStatElement(profileGroupsRoot, ExtractFirstPeripheralName(firstPeripheralName), out peripheralProfile))
-                {
-                    hasPeripheralProfile = true;
-                    peripheralStats = BuildPeripheralStatBlock(ExtractFirstPeripheralName(firstPeripheralName), peripheralProfile, filtersJson);
-                }
-
-                var cost = ReadAdjustedOptionCost(profileGroupsRoot, group, option);
-                var displayPeripheralNames = peripheralNames;
-                var displayCost = cost;
-                if (TryBuildSinglePeripheralDisplay(peripheralNames, out var singlePeripheralName, out var singlePeripheralCount) &&
-                    singlePeripheralCount > 1)
-                {
-                    displayPeripheralNames = [$"{singlePeripheralName} (1)"];
-
-                    if (hasPeripheralProfile)
-                    {
-                        var peripheralCost = TryGetPeripheralUnitCost(profileGroupsRoot, singlePeripheralName, out var resolvedPeripheralCost)
-                            ? resolvedPeripheralCost
-                            : ParseCostValue(ReadOptionCost(peripheralProfile));
-                        var baseCost = ParseCostValue(cost);
-                        if (peripheralCost > 0 && baseCost > 0)
-                        {
-                            var removedPeripheralCount = singlePeripheralCount - 1;
-                            displayCost = Math.Max(0, baseCost - (removedPeripheralCount * peripheralCost))
-                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        }
-                    }
-                }
-
-                var normalizedPeripheralNames = peripheralNames
-                    .Select(NormalizePeripheralNameForDedupe)
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .ToList();
-                var peripheralCount = GetPeripheralTotalCount(peripheralNames);
-                var dedupeKey = $"{groupName}|{optionName}|{string.Join("|", rangedWeaponNames)}|{string.Join("|", meleeWeaponNames)}|{string.Join("|", uniqueEquipmentNames)}|{string.Join("|", uniqueSkillsNames)}|{string.Join("|", normalizedPeripheralNames)}|{swc}";
-                var hasExisting = bestConfigurationByKey.TryGetValue(dedupeKey, out var existingConfiguration);
-                if (hasExisting && peripheralCount >= existingConfiguration.PeripheralCount)
-                {
-                    continue;
-                }
-
-                var isLieutenant = forceLieutenant || IsLieutenantOption(option, skillsLookup);
-                var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
-                var profileItem = new ViewerProfileItem
-                {
-                    GroupName = groupName,
-                    Name = optionName,
-                    ProfileKey = profileKey,
-                    IsLieutenant = isLieutenant,
-                    NameFormatted = BuildNameFormatted(optionName),
-                    RangedWeapons = JoinOrDash(rangedWeaponNames),
-                    RangedWeaponsFormatted = BuildListFormattedString(rangedWeaponNames, Color.FromArgb("#EF4444")),
-                    MeleeWeapons = JoinOrDash(meleeWeaponNames),
-                    MeleeWeaponsFormatted = BuildListFormattedString(meleeWeaponNames, Color.FromArgb("#22C55E")),
-                    UniqueEquipment = JoinOrDash(uniqueEquipmentNames),
-                    UniqueEquipmentFormatted = BuildListFormattedString(uniqueEquipmentNames, Color.FromArgb("#06B6D4")),
-                    UniqueSkills = JoinOrDash(uniqueSkillsNames),
-                    UniqueSkillsFormatted = BuildListFormattedString(
-                        uniqueSkillsNames,
-                        Color.FromArgb("#F59E0B"),
-                        highlightLieutenantPurple: forceLieutenant),
-                    Peripherals = JoinOrDash(displayPeripheralNames),
-                    PeripheralsFormatted = BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
-                    HasPeripheralStatBlock = peripheralStats is not null,
-                    PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
-                    PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
-                    PeripheralCc = peripheralStats?.Cc ?? "-",
-                    PeripheralBs = peripheralStats?.Bs ?? "-",
-                    PeripheralPh = peripheralStats?.Ph ?? "-",
-                    PeripheralWip = peripheralStats?.Wip ?? "-",
-                    PeripheralArm = peripheralStats?.Arm ?? "-",
-                    PeripheralBts = peripheralStats?.Bts ?? "-",
-                    PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
-                    PeripheralVitality = peripheralStats?.Vitality ?? "-",
-                    PeripheralS = peripheralStats?.S ?? "-",
-                    PeripheralAva = peripheralStats?.Ava ?? "-",
-                    PeripheralSubtitle = BuildPeripheralSubtitle(peripheralStats),
-                    PeripheralEquipmentLineFormatted = BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
-                    HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-                    PeripheralSkillsLineFormatted = BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
-                    HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
-                    Swc = swc,
-                    SwcDisplay = $"SWC {swc}",
-                    Cost = displayCost,
-                    ShowProfileTacticalAwarenessIcon = !ShowTacticalAwarenessIcon &&
-                                                       optionSkillsNames.Any(x => x.Contains("tactical awareness", StringComparison.OrdinalIgnoreCase))
-                };
-
-                if (hasExisting)
-                {
-                    Profiles[existingConfiguration.Index] = profileItem;
-                    bestConfigurationByKey[dedupeKey] = (existingConfiguration.Index, peripheralCount);
-                    continue;
-                }
-
-                Profiles.Add(profileItem);
-                bestConfigurationByKey[dedupeKey] = (Profiles.Count - 1, peripheralCount);
-            }
+            Profiles.Add(profileItem);
         }
 
         ApplyLieutenantVisualStates();
@@ -3332,110 +3142,6 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
         }
 
         return 0;
-    }
-
-    private static string BuildOptionDisplayName(
-        JsonElement option,
-        string baseName,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> skillsLookup)
-    {
-        var details = new List<string>();
-        var normalizedBase = baseName.ToLowerInvariant();
-
-        foreach (var skillName in GetOrderedNames(option, "skills", skillsLookup))
-        {
-            if (IsNameDetailTag(skillName) && !normalizedBase.Contains(skillName.ToLowerInvariant()))
-            {
-                details.Add(skillName);
-            }
-        }
-
-        foreach (var equipName in GetOrderedNames(option, "equip", equipLookup))
-        {
-            if (IsNameDetailTag(equipName) && !normalizedBase.Contains(equipName.ToLowerInvariant()))
-            {
-                details.Add(equipName);
-            }
-        }
-
-        if (option.TryGetProperty("orders", out var ordersElement) && ordersElement.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var order in ordersElement.EnumerateArray())
-            {
-                if (!order.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
-                {
-                    continue;
-                }
-
-                var type = typeElement.GetString();
-                if (string.Equals(type, "LIEUTENANT", StringComparison.OrdinalIgnoreCase) &&
-                    !normalizedBase.Contains("lieutenant"))
-                {
-                    details.Add("Lieutenant");
-                }
-            }
-        }
-
-        var distinctDetails = details
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (distinctDetails.Count == 0)
-        {
-            return baseName;
-        }
-
-        return $"{baseName} ({string.Join(", ", distinctDetails)})";
-    }
-
-    private static bool IsNameDetailTag(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        return value.Contains("forward observer", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("hacker", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("hacking device", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("specialist", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("paramedic", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("doctor", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("engineer", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("nco", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static List<string> GetOrderedNames(
-        JsonElement container,
-        string propertyName,
-        IReadOnlyDictionary<int, string> lookup)
-    {
-        if (!container.TryGetProperty(propertyName, out var arr) || arr.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-
-        var names = new List<string>();
-        foreach (var entry in arr.EnumerateArray())
-        {
-            if (!TryParseId(entry, out var id))
-            {
-                continue;
-            }
-
-            if (lookup.TryGetValue(id, out var resolvedName) && !string.IsNullOrWhiteSpace(resolvedName))
-            {
-                names.Add(resolvedName);
-            }
-        }
-
-        return names
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
     }
 
     private static FormattedString BuildNameFormatted(string name)

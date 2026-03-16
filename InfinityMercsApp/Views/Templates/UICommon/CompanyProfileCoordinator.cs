@@ -1,10 +1,10 @@
 using System.Text.Json;
 using InfinityMercsApp.ViewModels;
-using InfinityMercsApp.Views.Templates.UICommon;
+using InfinityMercsApp.Views.Templates.NewCompany;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.Templates.UICommon;
 
-internal sealed class StandardCompanyProfileBuildRequest
+internal sealed class CompanyProfileBuildRequest<TPeripheralStats>
 {
     public required JsonElement ProfileGroupsRoot { get; init; }
     public required bool ForceLieutenant { get; init; }
@@ -14,7 +14,9 @@ internal sealed class StandardCompanyProfileBuildRequest
     public required IReadOnlyDictionary<int, string> SkillsLookup { get; init; }
     public required IReadOnlyDictionary<int, string> PeripheralLookup { get; init; }
     public required Func<JsonElement, bool> IsControllerGroup { get; init; }
-    public required Func<JsonElement, JsonElement, IReadOnlyList<JsonElement>> GetDisplayPeripheralEntriesForOption { get; init; }
+    public required Func<JsonElement, JsonElement, string, bool> ShouldIncludeOption { get; init; }
+    public required Func<JsonElement, string, IEnumerable<JsonElement>> GetOptionEntriesWithIncludes { get; init; }
+    public required Func<JsonElement, JsonElement, IEnumerable<JsonElement>> GetDisplayPeripheralEntriesForOption { get; init; }
     public required Func<IEnumerable<JsonElement>, IReadOnlyDictionary<int, string>, List<string>> GetOrderedDisplayNames { get; init; }
     public required Func<IEnumerable<JsonElement>, IReadOnlyDictionary<int, string>, List<string>> GetCountedDisplayNames { get; init; }
     public required Func<JsonElement, string> ReadOptionSwc { get; init; }
@@ -24,7 +26,7 @@ internal sealed class StandardCompanyProfileBuildRequest
     public required Func<string, int> ParseCostValue { get; init; }
     public required Func<JsonElement, string> ReadOptionCost { get; init; }
     public required Func<string, JsonElement?> TryFindPeripheralProfile { get; init; }
-    public required Func<string, JsonElement, PeripheralMercsCompanyStats?> BuildPeripheralStatBlock { get; init; }
+    public required Func<string, JsonElement, TPeripheralStats?> BuildPeripheralStatBlock { get; init; }
     public required Func<string, int?> TryGetPeripheralUnitCost { get; init; }
     public required Func<IReadOnlyList<string>, (bool Success, string Name, int Count)> TryBuildSinglePeripheralDisplay { get; init; }
     public required Func<string?, string> ExtractFirstPeripheralName { get; init; }
@@ -32,12 +34,27 @@ internal sealed class StandardCompanyProfileBuildRequest
     public required Func<IEnumerable<string>, int> GetPeripheralTotalCount { get; init; }
     public required Func<JsonElement, bool> IsLieutenantOption { get; init; }
     public required Func<int?, int?, string> FormatMoveValue { get; init; }
-    public required Func<PeripheralMercsCompanyStats?, string> BuildPeripheralSubtitle { get; init; }
+    public required Func<TPeripheralStats?, string> BuildPeripheralSubtitle { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralNameHeading { get; init; }
+    public required Func<TPeripheralStats?, int?> ReadPeripheralMoveFirstCm { get; init; }
+    public required Func<TPeripheralStats?, int?> ReadPeripheralMoveSecondCm { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralCc { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralBs { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralPh { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralWip { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralArm { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralBts { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralVitalityHeader { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralVitality { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralS { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralAva { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralEquipment { get; init; }
+    public required Func<TPeripheralStats?, string> ReadPeripheralSkills { get; init; }
 }
 
-internal sealed class StandardCompanyProfileCoordinator
+internal sealed class CompanyProfileCoordinator
 {
-    public IReadOnlyList<ViewerProfileItem> BuildProfiles(StandardCompanyProfileBuildRequest request)
+    public IReadOnlyList<ViewerProfileItem> BuildProfiles<TPeripheralStats>(CompanyProfileBuildRequest<TPeripheralStats> request)
     {
         if (request.ProfileGroupsRoot.ValueKind != JsonValueKind.Array)
         {
@@ -61,6 +78,8 @@ internal sealed class StandardCompanyProfileCoordinator
                 continue;
             }
 
+            var groupName = ReadGroupName(group);
+
             foreach (var option in optionsElement.EnumerateArray())
             {
                 if (request.IsPositiveSwc(request.ReadOptionSwc(option)))
@@ -68,8 +87,14 @@ internal sealed class StandardCompanyProfileCoordinator
                     continue;
                 }
 
+                var optionNameForFilter = ReadOptionNameOrGroup(option, groupName);
+                if (!request.ShouldIncludeOption(group, option, optionNameForFilter))
+                {
+                    continue;
+                }
+
                 foreach (var name in request.GetOrderedDisplayNames(
-                             StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "equip"),
+                             request.GetOptionEntriesWithIncludes(option, "equip"),
                              request.EquipLookup))
                 {
                     equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
@@ -77,7 +102,7 @@ internal sealed class StandardCompanyProfileCoordinator
 
                 var optionSkillNames = CompanyProfileTextService.BuildConfigurationSkillNames(
                     request.GetOrderedDisplayNames(
-                        StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "skills"),
+                        request.GetOptionEntriesWithIncludes(option, "skills"),
                         request.SkillsLookup));
                 foreach (var name in optionSkillNames)
                 {
@@ -95,10 +120,7 @@ internal sealed class StandardCompanyProfileCoordinator
                 continue;
             }
 
-            var groupName = group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
-                ? iscElement.GetString() ?? string.Empty
-                : string.Empty;
-
+            var groupName = ReadGroupName(group);
             if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
             {
                 continue;
@@ -112,24 +134,22 @@ internal sealed class StandardCompanyProfileCoordinator
                     continue;
                 }
 
-                var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty;
-                if (string.IsNullOrWhiteSpace(optionName))
+                var optionName = ReadOptionNameOrGroup(option, groupName);
+                if (!request.ShouldIncludeOption(group, option, optionName))
                 {
-                    optionName = groupName;
+                    continue;
                 }
 
                 optionName = BuildOptionDisplayName(option, optionName, request.EquipLookup, request.SkillsLookup);
 
                 var optionWeapons = request.GetOrderedDisplayNames(
-                    StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "weapons"),
+                    request.GetOptionEntriesWithIncludes(option, "weapons"),
                     request.WeaponsLookup);
                 var rangedWeaponNames = optionWeapons.Where(x => !request.IsMeleeWeaponName(x)).ToList();
                 var meleeWeaponNames = optionWeapons.Where(request.IsMeleeWeaponName).ToList();
 
                 var optionEquipmentNames = request.GetOrderedDisplayNames(
-                        StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "equip"),
+                        request.GetOptionEntriesWithIncludes(option, "equip"),
                         request.EquipLookup)
                     .ToList();
                 var uniqueEquipmentNames = optionEquipmentNames
@@ -145,7 +165,7 @@ internal sealed class StandardCompanyProfileCoordinator
 
                 var optionSkillNames = CompanyProfileTextService.BuildConfigurationSkillNames(
                     request.GetOrderedDisplayNames(
-                        StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "skills"),
+                        request.GetOptionEntriesWithIncludes(option, "skills"),
                         request.SkillsLookup));
                 var uniqueSkillsNames = optionSkillNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
@@ -163,7 +183,7 @@ internal sealed class StandardCompanyProfileCoordinator
                     request.PeripheralLookup);
                 var firstPeripheralName = peripheralNames.FirstOrDefault();
 
-                PeripheralMercsCompanyStats? peripheralStats = null;
+                TPeripheralStats? peripheralStats = default;
                 JsonElement peripheralProfile = default;
                 var hasPeripheralProfile = false;
 
@@ -217,6 +237,9 @@ internal sealed class StandardCompanyProfileCoordinator
 
                 var isLieutenant = request.ForceLieutenant || request.IsLieutenantOption(option);
                 var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
+                var peripheralEquipment = request.ReadPeripheralEquipment(peripheralStats);
+                var peripheralSkills = request.ReadPeripheralSkills(peripheralStats);
+                var hasPeripheralStats = peripheralStats is not null;
                 var profileItem = new ViewerProfileItem
                 {
                     GroupName = groupName,
@@ -237,24 +260,26 @@ internal sealed class StandardCompanyProfileCoordinator
                         highlightLieutenantPurple: request.ForceLieutenant),
                     Peripherals = CompanyProfileTextService.JoinOrDash(displayPeripheralNames),
                     PeripheralsFormatted = CompanyProfileTextService.BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
-                    HasPeripheralStatBlock = peripheralStats is not null,
-                    PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
-                    PeripheralMov = peripheralStats is null ? "-" : request.FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
-                    PeripheralCc = peripheralStats?.Cc ?? "-",
-                    PeripheralBs = peripheralStats?.Bs ?? "-",
-                    PeripheralPh = peripheralStats?.Ph ?? "-",
-                    PeripheralWip = peripheralStats?.Wip ?? "-",
-                    PeripheralArm = peripheralStats?.Arm ?? "-",
-                    PeripheralBts = peripheralStats?.Bts ?? "-",
-                    PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
-                    PeripheralVitality = peripheralStats?.Vitality ?? "-",
-                    PeripheralS = peripheralStats?.S ?? "-",
-                    PeripheralAva = peripheralStats?.Ava ?? "-",
+                    HasPeripheralStatBlock = hasPeripheralStats,
+                    PeripheralNameHeading = request.ReadPeripheralNameHeading(peripheralStats),
+                    PeripheralMov = hasPeripheralStats
+                        ? request.FormatMoveValue(request.ReadPeripheralMoveFirstCm(peripheralStats), request.ReadPeripheralMoveSecondCm(peripheralStats))
+                        : "-",
+                    PeripheralCc = request.ReadPeripheralCc(peripheralStats),
+                    PeripheralBs = request.ReadPeripheralBs(peripheralStats),
+                    PeripheralPh = request.ReadPeripheralPh(peripheralStats),
+                    PeripheralWip = request.ReadPeripheralWip(peripheralStats),
+                    PeripheralArm = request.ReadPeripheralArm(peripheralStats),
+                    PeripheralBts = request.ReadPeripheralBts(peripheralStats),
+                    PeripheralVitalityHeader = request.ReadPeripheralVitalityHeader(peripheralStats),
+                    PeripheralVitality = request.ReadPeripheralVitality(peripheralStats),
+                    PeripheralS = request.ReadPeripheralS(peripheralStats),
+                    PeripheralAva = request.ReadPeripheralAva(peripheralStats),
                     PeripheralSubtitle = request.BuildPeripheralSubtitle(peripheralStats),
-                    PeripheralEquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
-                    HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-                    PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
-                    HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
+                    PeripheralEquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralEquipment, Color.FromArgb("#06B6D4")),
+                    HasPeripheralEquipmentLine = hasPeripheralStats && !string.IsNullOrWhiteSpace(peripheralEquipment) && peripheralEquipment != "-",
+                    PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralSkills, Color.FromArgb("#F59E0B")),
+                    HasPeripheralSkillsLine = hasPeripheralStats && !string.IsNullOrWhiteSpace(peripheralSkills) && peripheralSkills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
                     Cost = displayCost,
@@ -345,7 +370,7 @@ internal sealed class StandardCompanyProfileCoordinator
         var names = new List<string>();
         foreach (var entry in arr.EnumerateArray())
         {
-            if (!TryParseId(entry, out var id))
+            if (!CompanySelectionSharedUtilities.TryParseId(entry, out var id))
             {
                 continue;
             }
@@ -381,28 +406,18 @@ internal sealed class StandardCompanyProfileCoordinator
                value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool TryParseId(JsonElement element, out int id)
+    private static string ReadGroupName(JsonElement group)
     {
-        if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numberId))
-        {
-            id = numberId;
-            return true;
-        }
+        return group.TryGetProperty("isc", out var iscElement) && iscElement.ValueKind == JsonValueKind.String
+            ? iscElement.GetString() ?? string.Empty
+            : string.Empty;
+    }
 
-        if (element.ValueKind == JsonValueKind.String &&
-            int.TryParse(element.GetString(), out var stringId))
-        {
-            id = stringId;
-            return true;
-        }
-
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty("id", out var idElement))
-        {
-            return TryParseId(idElement, out id);
-        }
-
-        id = 0;
-        return false;
+    private static string ReadOptionNameOrGroup(JsonElement option, string groupName)
+    {
+        var optionName = option.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+            ? nameElement.GetString() ?? string.Empty
+            : string.Empty;
+        return string.IsNullOrWhiteSpace(optionName) ? groupName : optionName;
     }
 }

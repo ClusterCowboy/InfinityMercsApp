@@ -224,7 +224,7 @@ public partial class StandardCompanySelectionPage
         var skillsLookup = BuildIdNameLookup(filtersJson, "skills");
         var peripheralLookup = BuildIdNameLookup(filtersJson, "peripheral");
         var extrasLookup = BuildExtrasLookup(filtersJson);
-        var buildRequest = new StandardCompanyProfileBuildRequest
+        var buildRequest = new CompanyProfileBuildRequest<PeripheralMercsCompanyStats>
         {
             ProfileGroupsRoot = profileGroupsRoot,
             ForceLieutenant = forceLieutenant,
@@ -234,6 +234,9 @@ public partial class StandardCompanySelectionPage
             SkillsLookup = skillsLookup,
             PeripheralLookup = peripheralLookup,
             IsControllerGroup = group => StandardCompanyProfileOptionService.IsControllerGroup(profileGroupsRoot, group),
+            ShouldIncludeOption = (_, _, _) => true,
+            GetOptionEntriesWithIncludes = (option, propertyName) =>
+                StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, propertyName),
             GetDisplayPeripheralEntriesForOption = (group, option) => StandardCompanyProfileOptionService.GetDisplayPeripheralEntriesForOption(profileGroupsRoot, group, option),
             GetOrderedDisplayNames = (entries, lookup) => GetOrderedIdDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
             GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
@@ -262,7 +265,22 @@ public partial class StandardCompanySelectionPage
             GetPeripheralTotalCount = GetPeripheralTotalCount,
             IsLieutenantOption = option => IsLieutenantOption(option, skillsLookup),
             FormatMoveValue = FormatMoveValue,
-            BuildPeripheralSubtitle = BuildPeripheralSubtitle
+            BuildPeripheralSubtitle = BuildPeripheralSubtitle,
+            ReadPeripheralNameHeading = stats => stats?.NameHeading ?? string.Empty,
+            ReadPeripheralMoveFirstCm = stats => stats?.MoveFirstCm,
+            ReadPeripheralMoveSecondCm = stats => stats?.MoveSecondCm,
+            ReadPeripheralCc = stats => stats?.Cc ?? "-",
+            ReadPeripheralBs = stats => stats?.Bs ?? "-",
+            ReadPeripheralPh = stats => stats?.Ph ?? "-",
+            ReadPeripheralWip = stats => stats?.Wip ?? "-",
+            ReadPeripheralArm = stats => stats?.Arm ?? "-",
+            ReadPeripheralBts = stats => stats?.Bts ?? "-",
+            ReadPeripheralVitalityHeader = stats => stats?.VitalityHeader ?? "VITA",
+            ReadPeripheralVitality = stats => stats?.Vitality ?? "-",
+            ReadPeripheralS = stats => stats?.S ?? "-",
+            ReadPeripheralAva = stats => stats?.Ava ?? "-",
+            ReadPeripheralEquipment = stats => stats?.Equipment ?? "-",
+            ReadPeripheralSkills = stats => stats?.Skills ?? "-"
         };
 
         foreach (var profileItem in _profileCoordinator.BuildProfiles(buildRequest))
