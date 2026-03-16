@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 

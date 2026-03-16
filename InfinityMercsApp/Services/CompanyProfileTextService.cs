@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace InfinityMercsApp.Views.Templates.UICommon;
+namespace InfinityMercsApp.Services;
 
 public static class CompanyProfileTextService
 {
@@ -299,3 +299,4 @@ public static class CompanyProfileTextService
         return string.IsNullOrWhiteSpace(detail) ? null : detail;
     }
 }
+

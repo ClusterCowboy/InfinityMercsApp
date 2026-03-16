@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using InfinityMercsApp.Views.Templates.NewCompany;
 
-namespace InfinityMercsApp.Views.Templates.UICommon;
+namespace InfinityMercsApp.Services;
 
 public static class CompanyProfileOptionService
 {
@@ -410,3 +410,4 @@ public static class CompanyProfileOptionService
         return CompanySelectionSharedUtilities.TryParseId(element, out id);
     }
 }
+

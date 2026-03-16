@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Views.Templates.NewCompany;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
@@ -261,6 +262,7 @@ public partial class StandardCompanySelectionPage
         return CompanySelectionSharedUtilities.ParseCostValue(cost);
     }
 }
+
 
 
 

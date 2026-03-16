@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using InfinityMercsApp.Domain.Utilities;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
@@ -10,7 +11,6 @@ using Svg.Skia;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
 using InfinityMercsApp.Views.Templates.NewCompany;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
-using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
