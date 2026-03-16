@@ -1011,7 +1011,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         try
         {
             using var doc = JsonDocument.Parse(UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson);
-            if (!TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
+            if (!CompanyPeripheralProfileSelectionService.TryFindPeripheralStatElement(doc.RootElement, peripheralName, out var peripheralProfile))
             {
                 return null;
             }
