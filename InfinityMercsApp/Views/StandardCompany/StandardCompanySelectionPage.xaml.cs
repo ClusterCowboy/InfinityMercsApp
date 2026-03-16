@@ -942,7 +942,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
             CostDisplay = $"C {profile.Cost}",
-            CostValue = ParseCostValue(profile.Cost),
+            CostValue = CompanyUnitFilterService.ParseCostValue(profile.Cost),
             IsLieutenant = profile.IsLieutenant,
             ProfileKey = profile.ProfileKey,
             SourceUnitId = _selectedUnit.Id,
@@ -1101,7 +1101,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
         foreach (var profile in Profiles)
         {
-            var profileCost = ParseCostValue(profile.Cost);
+            var profileCost = CompanyUnitFilterService.ParseCostValue(profile.Cost);
             var overRemainingPoints = profileCost > pointsRemaining;
             var belowMinFilterPoints = _activeUnitFilter.MinPoints.HasValue && profileCost < _activeUnitFilter.MinPoints.Value;
             var aboveMaxFilterPoints = _activeUnitFilter.MaxPoints.HasValue && profileCost > _activeUnitFilter.MaxPoints.Value;
@@ -1273,4 +1273,5 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
 
 }
+
 

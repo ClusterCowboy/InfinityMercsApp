@@ -6,6 +6,8 @@ namespace InfinityMercsApp.Services;
 
 public static class CompanyUnitFilterService
 {
+    private static readonly IReadOnlyDictionary<int, string> EmptyLookup = new Dictionary<int, string>();
+
     public static void AddFilterOptionsFromVisibleProfilesAndOptions(
         string profileGroupsJson,
         IReadOnlyDictionary<int, string> charsLookup,
@@ -187,6 +189,26 @@ public static class CompanyUnitFilterService
         }
 
         return false;
+    }
+
+    public static bool UnitHasVisibleOption(
+        string? profileGroupsJson,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        bool requireLieutenant,
+        bool requireZeroSwc,
+        int? maxCost = null)
+    {
+        return UnitHasVisibleOptionWithFilter(
+            profileGroupsJson,
+            skillsLookup,
+            EmptyLookup,
+            EmptyLookup,
+            EmptyLookup,
+            EmptyLookup,
+            UnitFilterCriteria.None,
+            requireLieutenant,
+            requireZeroSwc,
+            maxCost);
     }
 
     private static void AddLookupValuesFromContainerArray(
@@ -507,7 +529,7 @@ public static class CompanyUnitFilterService
         return false;
     }
 
-    private static int ParseCostValue(string? cost)
+    public static int ParseCostValue(string? cost)
     {
         if (string.IsNullOrWhiteSpace(cost))
         {

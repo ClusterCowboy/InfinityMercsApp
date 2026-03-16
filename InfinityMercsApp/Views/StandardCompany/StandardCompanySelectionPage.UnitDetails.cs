@@ -139,7 +139,7 @@ public partial class StandardCompanySelectionPage
                 TryParseId = TryParseId,
                 BuildIdNameLookup = BuildIdNameLookup,
                 ShouldIncludeOption = (_, _, _) => true,
-                ParseCostValue = ParseCostValue,
+                ParseCostValue = CompanyUnitFilterService.ParseCostValue,
                 TryFindPeripheralProfile = peripheralName =>
                     CompanyPeripheralProfileSelectionService.TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
                         ? peripheralProfile
@@ -469,65 +469,6 @@ public partial class StandardCompanySelectionPage
     private static bool UnitHasLieutenantOption(string? profileGroupsJson, IReadOnlyDictionary<int, string> skillsLookup)
     {
         return CompanySelectionSharedUtilities.UnitHasLieutenantOption(profileGroupsJson, skillsLookup);
-    }
-
-    /// <summary>
-    /// Handles unit has visible option.
-    /// </summary>
-    private static bool UnitHasVisibleOption(
-        string? profileGroupsJson,
-        IReadOnlyDictionary<int, string> skillsLookup,
-        bool requireLieutenant,
-        bool requireZeroSwc,
-        int? maxCost = null)
-    {
-        if (string.IsNullOrWhiteSpace(profileGroupsJson))
-        {
-            return false;
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(profileGroupsJson);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return false;
-            }
-
-            foreach (var group in doc.RootElement.EnumerateArray())
-            {
-                if (!group.TryGetProperty("options", out var optionsElement) || optionsElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var option in optionsElement.EnumerateArray())
-                {
-                    if (requireLieutenant && !IsLieutenantOption(option, skillsLookup))
-                    {
-                        continue;
-                    }
-
-                    if (requireZeroSwc && IsPositiveSwc(CompanyProfileOptionService.ReadOptionSwc(option)))
-                    {
-                        continue;
-                    }
-
-                    if (maxCost.HasValue && ParseCostValue(CompanyProfileOptionService.ReadAdjustedOptionCost(doc.RootElement, group, option)) > maxCost.Value)
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasVisibleOption failed: {ex.Message}");
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -1091,7 +1032,7 @@ public partial class StandardCompanySelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                var optionCost = ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
+                var optionCost = CompanyUnitFilterService.ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
                 if (optionCost <= 0)
                 {
                     continue;
@@ -1715,6 +1656,8 @@ public partial class StandardCompanySelectionPage
         return CompanySelectionSharedUtilities.ConvertDistanceText(distanceText, showUnitsInInches);
     }
 }
+
+
 
 
 

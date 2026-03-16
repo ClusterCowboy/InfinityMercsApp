@@ -15,11 +15,6 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 /// </summary>
 public partial class CCArmyFactionSelectionPage
 {
-    private static int ParseCostValue(string? cost)
-    {
-        return CompanySelectionSharedUtilities.ParseCostValue(cost);
-    }
-
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
         ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
@@ -133,7 +128,7 @@ public partial class CCArmyFactionSelectionPage
                 TryParseId = TryParseId,
                 BuildIdNameLookup = BuildIdNameLookup,
                 ShouldIncludeOption = (_, _, optionName) => !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName),
-                ParseCostValue = ParseCostValue,
+                ParseCostValue = CompanyUnitFilterService.ParseCostValue,
                 TryFindPeripheralProfile = peripheralName =>
                     CompanyPeripheralProfileSelectionService.TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
                         ? peripheralProfile
@@ -897,7 +892,7 @@ public partial class CCArmyFactionSelectionPage
 
             foreach (var option in optionsElement.EnumerateArray())
             {
-                var optionCost = ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
+                var optionCost = CompanyUnitFilterService.ParseCostValue(CompanyProfileOptionService.ReadOptionCost(option));
                 if (optionCost <= 0)
                 {
                     continue;
@@ -1445,6 +1440,8 @@ public partial class CCArmyFactionSelectionPage
 
 
 }
+
+
 
 
 
