@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -8,6 +8,7 @@ using InfinityMercsApp.Views.Templates.NewCompany;
 using Svg.Skia;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -134,7 +135,7 @@ public partial class StandardCompanySelectionPage
                     .ToList();
 
                 stableSkills = treatAsSpecOps
-                    ? StandardCompanyProfileTextService.EnsureLieutenantSkill(stableSkills)
+                    ? CompanyProfileTextService.EnsureLieutenantSkill(stableSkills)
                     : stableSkills.Where(x => !x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)).ToList();
                 UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = stableEquip;
                 UnitDisplayConfigurationsView.SelectedUnitCommonSkills = stableSkills;
@@ -238,7 +239,7 @@ public partial class StandardCompanySelectionPage
             GetCountedDisplayNames = (entries, lookup) => GetCountedDisplayNamesFromEntries(entries, lookup, extrasLookup, ShowUnitsInInches),
             ReadOptionSwc = StandardCompanyProfileOptionService.ReadOptionSwc,
             IsPositiveSwc = IsPositiveSwc,
-            IsMeleeWeaponName = StandardCompanyProfileTextService.IsMeleeWeaponName,
+            IsMeleeWeaponName = CompanyProfileTextService.IsMeleeWeaponName,
             ReadAdjustedOptionCost = (group, option) => StandardCompanyProfileOptionService.ReadAdjustedOptionCost(profileGroupsRoot, group, option),
             ParseCostValue = ParseCostValue,
             ReadOptionCost = StandardCompanyProfileOptionService.ReadOptionCost,
@@ -885,8 +886,8 @@ public partial class StandardCompanySelectionPage
         PeripheralAva = "-";
         PeripheralEquipment = "-";
         PeripheralSkills = "-";
-        PeripheralEquipmentFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", Array.Empty<string>(), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
     /// <summary>
@@ -1089,7 +1090,7 @@ public partial class StandardCompanySelectionPage
             equipLookup,
             extrasLookup,
             ShowUnitsInInches);
-        var skillNames = StandardCompanyProfileTextService.BuildConfigurationSkillNames(
+        var skillNames = CompanyProfileTextService.BuildConfigurationSkillNames(
             GetOrderedIdDisplayNamesFromEntries(
                 GetContainerEntries(peripheralProfile, "skills"),
                 skillsLookup,
@@ -1113,8 +1114,8 @@ public partial class StandardCompanySelectionPage
             Vitality = vitalityValue,
             S = ReadIntAsString(peripheralProfile, "s"),
             Ava = ReadAvaAsString(peripheralProfile),
-            Equipment = StandardCompanyProfileTextService.JoinOrDash(equipmentNames),
-            Skills = StandardCompanyProfileTextService.JoinOrDash(skillNames)
+            Equipment = CompanyProfileTextService.JoinOrDash(equipmentNames),
+            Skills = CompanyProfileTextService.JoinOrDash(skillNames)
         };
     }
 
@@ -1139,8 +1140,8 @@ public partial class StandardCompanySelectionPage
         PeripheralAva = peripheralStats.Ava;
         PeripheralEquipment = peripheralStats.Equipment;
         PeripheralSkills = peripheralStats.Skills;
-        PeripheralEquipmentFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", StandardCompanyProfileTextService.SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
-        PeripheralSkillsFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Skills", StandardCompanyProfileTextService.SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
+        PeripheralEquipmentFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", CompanyProfileTextService.SplitDisplayLine(PeripheralEquipment), Color.FromArgb("#06B6D4"));
+        PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", CompanyProfileTextService.SplitDisplayLine(PeripheralSkills), Color.FromArgb("#F59E0B"));
         HasPeripheralStatBlock = true;
     }
 

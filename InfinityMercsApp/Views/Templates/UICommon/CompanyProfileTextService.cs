@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.Templates.UICommon;
 
-public static class StandardCompanyProfileTextService
+public static class CompanyProfileTextService
 {
     public static bool IsMeleeWeaponName(string name)
     {

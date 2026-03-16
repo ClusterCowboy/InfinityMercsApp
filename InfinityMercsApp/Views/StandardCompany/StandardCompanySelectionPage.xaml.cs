@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -25,6 +25,7 @@ using ArmySpecopsWeaponRecord = InfinityMercsApp.Domain.Models.Army.SpecopsWeapo
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -928,17 +929,17 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             return;
         }
 
-        var combinedEquipment = StandardCompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
-        var combinedSkills = StandardCompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
-        var combinedEquipmentText = StandardCompanyProfileTextService.JoinOrDash(combinedEquipment);
-        var combinedSkillsText = StandardCompanyProfileTextService.JoinOrDash(combinedSkills);
+        var combinedEquipment = CompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, profile.UniqueEquipment);
+        var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedEquipmentText = CompanyProfileTextService.JoinOrDash(combinedEquipment);
+        var combinedSkillsText = CompanyProfileTextService.JoinOrDash(combinedSkills);
         var currentUnitMove = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
         var statline = $"MOV {UnitMov} | CC {UnitCc} | BS {UnitBs} | PH {UnitPh} | WIP {UnitWip} | ARM {UnitArm} | BTS {UnitBts} | {UnitVitalityHeader} {UnitVitality} | S {UnitS}";
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
-            NameFormatted = profile.NameFormatted ?? StandardCompanyProfileTextService.BuildNameFormatted(profile.Name),
+            NameFormatted = profile.NameFormatted ?? CompanyProfileTextService.BuildNameFormatted(profile.Name),
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
             CostDisplay = $"C {profile.Cost}",
@@ -954,12 +955,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             SavedRangedWeapons = profile.RangedWeapons,
             SavedCcWeapons = profile.MeleeWeapons,
             ExperiencePoints = 0,
-            EquipmentLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
+            EquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", combinedEquipmentText, Color.FromArgb("#06B6D4")),
             HasEquipmentLine = combinedEquipment.Count > 0,
-            SkillsLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
+            SkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", combinedSkillsText, Color.FromArgb("#F59E0B")),
             HasSkillsLine = combinedSkills.Count > 0,
-            RangedLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
-            CcLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
+            RangedLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
+            CcLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
             HasPeripheralStatBlock = peripheralStats is not null,
             PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
             PeripheralMov = peripheralStats is null ? "-" : FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
@@ -975,9 +976,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
             PeripheralAva = peripheralStats?.Ava ?? "-",
             SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
             SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
-            PeripheralEquipmentLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+            PeripheralEquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-            PeripheralSkillsLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+            PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
             UnitMoveFirstCm = UnitMoveFirstCm,
             UnitMoveSecondCm = UnitMoveSecondCm,
@@ -1273,3 +1274,4 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
 
 }
+

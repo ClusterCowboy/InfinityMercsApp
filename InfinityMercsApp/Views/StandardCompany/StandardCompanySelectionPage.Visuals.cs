@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using InfinityMercsApp.Domain.Utilities;
@@ -10,6 +10,7 @@ using Svg.Skia;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
 using InfinityMercsApp.Views.Templates.NewCompany;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -387,8 +388,8 @@ public partial class StandardCompanySelectionPage
     private void RefreshSummaryFormatted()
     {
         var (equipmentAccent, skillsAccent) = GetSummaryAccentColorsForSecondaryBackground(UnitHeaderSecondaryColor);
-        EquipmentSummaryFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
-        SpecialSkillsSummaryFormatted = StandardCompanyProfileTextService.BuildNamedSummaryFormatted(
+        EquipmentSummaryFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Equipment", UnitDisplayConfigurationsView.SelectedUnitCommonEquipment, equipmentAccent);
+        SpecialSkillsSummaryFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted(
             "Special Skills",
             UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
             skillsAccent,

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -74,7 +75,7 @@ internal sealed class StandardCompanyProfileCoordinator
                     equipUsageCounts[name] = equipUsageCounts.TryGetValue(name, out var count) ? count + 1 : 1;
                 }
 
-                var optionSkillNames = StandardCompanyProfileTextService.BuildConfigurationSkillNames(
+                var optionSkillNames = CompanyProfileTextService.BuildConfigurationSkillNames(
                     request.GetOrderedDisplayNames(
                         StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "skills"),
                         request.SkillsLookup));
@@ -142,7 +143,7 @@ internal sealed class StandardCompanyProfileCoordinator
                         .ToList();
                 }
 
-                var optionSkillNames = StandardCompanyProfileTextService.BuildConfigurationSkillNames(
+                var optionSkillNames = CompanyProfileTextService.BuildConfigurationSkillNames(
                     request.GetOrderedDisplayNames(
                         StandardCompanyProfileOptionService.GetOptionEntriesWithIncludes(request.ProfileGroupsRoot, option, "skills"),
                         request.SkillsLookup));
@@ -222,20 +223,20 @@ internal sealed class StandardCompanyProfileCoordinator
                     Name = optionName,
                     ProfileKey = profileKey,
                     IsLieutenant = isLieutenant,
-                    NameFormatted = StandardCompanyProfileTextService.BuildNameFormatted(optionName),
-                    RangedWeapons = StandardCompanyProfileTextService.JoinOrDash(rangedWeaponNames),
-                    RangedWeaponsFormatted = StandardCompanyProfileTextService.BuildListFormattedString(rangedWeaponNames, Color.FromArgb("#EF4444")),
-                    MeleeWeapons = StandardCompanyProfileTextService.JoinOrDash(meleeWeaponNames),
-                    MeleeWeaponsFormatted = StandardCompanyProfileTextService.BuildListFormattedString(meleeWeaponNames, Color.FromArgb("#22C55E")),
-                    UniqueEquipment = StandardCompanyProfileTextService.JoinOrDash(uniqueEquipmentNames),
-                    UniqueEquipmentFormatted = StandardCompanyProfileTextService.BuildListFormattedString(uniqueEquipmentNames, Color.FromArgb("#06B6D4")),
-                    UniqueSkills = StandardCompanyProfileTextService.JoinOrDash(uniqueSkillsNames),
-                    UniqueSkillsFormatted = StandardCompanyProfileTextService.BuildListFormattedString(
+                    NameFormatted = CompanyProfileTextService.BuildNameFormatted(optionName),
+                    RangedWeapons = CompanyProfileTextService.JoinOrDash(rangedWeaponNames),
+                    RangedWeaponsFormatted = CompanyProfileTextService.BuildListFormattedString(rangedWeaponNames, Color.FromArgb("#EF4444")),
+                    MeleeWeapons = CompanyProfileTextService.JoinOrDash(meleeWeaponNames),
+                    MeleeWeaponsFormatted = CompanyProfileTextService.BuildListFormattedString(meleeWeaponNames, Color.FromArgb("#22C55E")),
+                    UniqueEquipment = CompanyProfileTextService.JoinOrDash(uniqueEquipmentNames),
+                    UniqueEquipmentFormatted = CompanyProfileTextService.BuildListFormattedString(uniqueEquipmentNames, Color.FromArgb("#06B6D4")),
+                    UniqueSkills = CompanyProfileTextService.JoinOrDash(uniqueSkillsNames),
+                    UniqueSkillsFormatted = CompanyProfileTextService.BuildListFormattedString(
                         uniqueSkillsNames,
                         Color.FromArgb("#F59E0B"),
                         highlightLieutenantPurple: request.ForceLieutenant),
-                    Peripherals = StandardCompanyProfileTextService.JoinOrDash(displayPeripheralNames),
-                    PeripheralsFormatted = StandardCompanyProfileTextService.BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
+                    Peripherals = CompanyProfileTextService.JoinOrDash(displayPeripheralNames),
+                    PeripheralsFormatted = CompanyProfileTextService.BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
                     HasPeripheralStatBlock = peripheralStats is not null,
                     PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
                     PeripheralMov = peripheralStats is null ? "-" : request.FormatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
@@ -250,9 +251,9 @@ internal sealed class StandardCompanyProfileCoordinator
                     PeripheralS = peripheralStats?.S ?? "-",
                     PeripheralAva = peripheralStats?.Ava ?? "-",
                     PeripheralSubtitle = request.BuildPeripheralSubtitle(peripheralStats),
-                    PeripheralEquipmentLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+                    PeripheralEquipmentLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
                     HasPeripheralEquipmentLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
-                    PeripheralSkillsLineFormatted = StandardCompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+                    PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
                     HasPeripheralSkillsLine = peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
