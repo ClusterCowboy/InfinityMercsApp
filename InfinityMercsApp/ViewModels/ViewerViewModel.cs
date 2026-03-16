@@ -25,8 +25,7 @@ public class ViewerViewModel : BaseViewModel
         Sectorials
     }
 
-    private readonly IMetadataProvider? _metadataProvider;
-    private readonly IFactionProvider? _factionProvider;
+    private readonly IArmyDataService? _armyDataService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private bool _isLoading;
@@ -83,11 +82,11 @@ public class ViewerViewModel : BaseViewModel
     public ViewerViewModel(
         IMetadataProvider? metadataProvider = null,
         IFactionProvider? factionProvider = null,
+        IArmyDataService? armyDataService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
         IAppSettingsProvider? appSettingsProvider = null)
     {
-        _metadataProvider = metadataProvider;
-        _factionProvider = factionProvider;
+        _armyDataService = armyDataService;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsProvider = appSettingsProvider;
 
@@ -888,7 +887,7 @@ public class ViewerViewModel : BaseViewModel
         var ammo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var maxPoints = 200;
 
-        if (SelectedFaction is null || _factionProvider is null)
+        if (SelectedFaction is null || _armyDataService is null)
         {
             return Task.FromResult(new UnitFilterPopupOptions
             {
@@ -903,8 +902,8 @@ public class ViewerViewModel : BaseViewModel
             });
         }
 
-        var units = _factionProvider.GetResumeByFaction(SelectedFaction.Id);
-        var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
+        var units = _armyDataService.GetResumeByFaction(SelectedFaction.Id, cancellationToken);
+        var snapshot = _armyDataService.GetFactionSnapshot(SelectedFaction.Id, cancellationToken);
         var filtersJson = snapshot?.FiltersJson;
         var typeLookup = BuildIdNameLookup(filtersJson, "type");
         var charsLookup = BuildIdNameLookup(filtersJson, "chars");
@@ -922,7 +921,7 @@ public class ViewerViewModel : BaseViewModel
                 classification.Add(typeName.Trim());
             }
 
-            var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
+            var unitRecord = _armyDataService.GetUnit(SelectedFaction.Id, unit.UnitId, cancellationToken);
             if (string.IsNullOrWhiteSpace(unitRecord?.ProfileGroupsJson))
             {
                 continue;
@@ -1014,7 +1013,7 @@ public class ViewerViewModel : BaseViewModel
     {
         await ApplyGlobalDisplayUnitsPreferenceAsync(cancellationToken);
 
-        if (_metadataProvider is null)
+        if (_armyDataService is null)
         {
             Status = "Metadata service unavailable.";
             return;
@@ -1024,7 +1023,7 @@ public class ViewerViewModel : BaseViewModel
         {
             IsLoading = true;
             Status = "Loading factions...";
-            var factions = _metadataProvider.GetFactions(includeDiscontinued: true);
+            var factions = _armyDataService.GetMetadataFactions(includeDiscontinued: true, cancellationToken);
             if (_factionLogoCacheService is not null)
             {
                 var factionRecords = factions.Select(x => new FactionRecord
@@ -1078,7 +1077,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_factionProvider is null)
+        if (_armyDataService is null)
         {
             UnitsStatus = "Army data service unavailable.";
             return;
@@ -1087,9 +1086,9 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             UnitsStatus = "Loading units...";
-            var units = _factionProvider.GetResumeByFaction(SelectedFaction.Id);
+            var units = _armyDataService.GetResumeByFaction(SelectedFaction.Id, cancellationToken);
 
-            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
+            var snapshot = _armyDataService.GetFactionSnapshot(SelectedFaction.Id, cancellationToken);
             UpdateFireteamCounts(snapshot?.FireteamChartJson);
             var allowedFireteamSlugs = units
                 .Select(x => x.Slug?.Trim())
@@ -1130,7 +1129,7 @@ public class ViewerViewModel : BaseViewModel
 
             foreach (var unit in orderedUnits)
             {
-                var unitRecord = _factionProvider.GetUnit(SelectedFaction.Id, unit.UnitId);
+                var unitRecord = _armyDataService.GetUnit(SelectedFaction.Id, unit.UnitId, cancellationToken);
 
                 if (!MatchesClassificationFilter(unit, typeLookup, _activeUnitFilter))
                 {
@@ -3626,7 +3625,7 @@ public class ViewerViewModel : BaseViewModel
             return;
         }
 
-        if (_factionProvider is null)
+        if (_armyDataService is null)
         {
             ProfilesStatus = "Army data service unavailable.";
             return;
@@ -3635,8 +3634,8 @@ public class ViewerViewModel : BaseViewModel
         try
         {
             ProfilesStatus = "Loading profiles...";
-            var unit = _factionProvider.GetUnit(SelectedFaction.Id, SelectedUnit.Id);
-            var snapshot = _factionProvider.GetFactionSnapshot(SelectedFaction.Id);
+            var unit = _armyDataService.GetUnit(SelectedFaction.Id, SelectedUnit.Id, cancellationToken);
+            var snapshot = _armyDataService.GetFactionSnapshot(SelectedFaction.Id, cancellationToken);
             var equipLookup = BuildIdNameLookup(snapshot?.FiltersJson, "equip");
             var equipLinks = BuildIdLinkLookup(snapshot?.FiltersJson, "equip");
             var skillsLookup = BuildIdNameLookup(snapshot?.FiltersJson, "skills");

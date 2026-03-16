@@ -2,14 +2,42 @@ using InfinityMercsApp.Infrastructure.Providers;
 using ArmyFactionRecord = InfinityMercsApp.Domain.Models.Army.Faction;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
+using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Services;
 
-internal sealed class StandardCompanyDataCoordinator(
+internal sealed class ArmyDataService(
+    IMetadataProvider? metadataProvider,
     IFactionProvider? factionProvider,
-    ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider)
+    ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider) : IArmyDataService
 {
+    public IReadOnlyList<FactionRecord> GetMetadataFactions(bool includeDiscontinued = false, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (metadataProvider is null)
+        {
+            return [];
+        }
+
+        return metadataProvider
+            .GetFactions(includeDiscontinued)
+            .Select(CloneMetadataFaction)
+            .ToList();
+    }
+
+    public FactionRecord? GetMetadataFactionById(int id, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (metadataProvider is null || id <= 0)
+        {
+            return null;
+        }
+
+        var faction = metadataProvider.GetFactionById(id);
+        return faction is null ? null : CloneMetadataFaction(faction);
+    }
+
     public ArmyFactionRecord? GetFactionSnapshot(int factionId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -18,7 +46,21 @@ internal sealed class StandardCompanyDataCoordinator(
             return null;
         }
 
-        return ToArmyFactionRecord(factionProvider.GetFactionSnapshot(factionId));
+        return CloneArmyFaction(factionProvider.GetFactionSnapshot(factionId));
+    }
+
+    public IReadOnlyList<ArmyResumeRecord> GetResumeByFaction(int factionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (factionProvider is null || factionId <= 0)
+        {
+            return [];
+        }
+
+        return factionProvider
+            .GetResumeByFaction(factionId)
+            .Select(CloneArmyResume)
+            .ToList();
     }
 
     public IReadOnlyList<ArmyResumeRecord> GetResumeByFactionMercsOnly(int factionId, CancellationToken cancellationToken = default)
@@ -29,8 +71,9 @@ internal sealed class StandardCompanyDataCoordinator(
             return [];
         }
 
-        return factionProvider.GetResumeByFactionMercsOnly(factionId)
-            .Select(ToArmyResumeRecord)
+        return factionProvider
+            .GetResumeByFactionMercsOnly(factionId)
+            .Select(CloneArmyResume)
             .ToList();
     }
 
@@ -42,7 +85,7 @@ internal sealed class StandardCompanyDataCoordinator(
             return null;
         }
 
-        return ToArmyUnitRecord(factionProvider.GetUnit(factionId, unitId));
+        return CloneArmyUnit(factionProvider.GetUnit(factionId, unitId));
     }
 
     public async Task<IReadOnlyList<MercsArmyListEntry>> GetMergedMercsArmyListAsync(
@@ -58,7 +101,20 @@ internal sealed class StandardCompanyDataCoordinator(
         return queryResult.MergedMercsListEntries;
     }
 
-    private static ArmyFactionRecord? ToArmyFactionRecord(ArmyFactionRecord? faction)
+    private static FactionRecord CloneMetadataFaction(FactionRecord faction)
+    {
+        return new FactionRecord
+        {
+            Id = faction.Id,
+            ParentId = faction.ParentId,
+            Name = faction.Name,
+            Slug = faction.Slug,
+            Discontinued = faction.Discontinued,
+            Logo = faction.Logo
+        };
+    }
+
+    private static ArmyFactionRecord? CloneArmyFaction(ArmyFactionRecord? faction)
     {
         if (faction is null)
         {
@@ -80,7 +136,7 @@ internal sealed class StandardCompanyDataCoordinator(
         };
     }
 
-    private static ArmyResumeRecord ToArmyResumeRecord(ArmyResumeRecord resume)
+    private static ArmyResumeRecord CloneArmyResume(ArmyResumeRecord resume)
     {
         return new ArmyResumeRecord
         {
@@ -97,7 +153,7 @@ internal sealed class StandardCompanyDataCoordinator(
         };
     }
 
-    private static ArmyUnitRecord? ToArmyUnitRecord(ArmyUnitRecord? unit)
+    private static ArmyUnitRecord? CloneArmyUnit(ArmyUnitRecord? unit)
     {
         if (unit is null)
         {

@@ -13,6 +13,7 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
     private readonly ICohesiveCompanyFactionQueryProvider _cohesiveCompanyFactionQueryProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
+    private readonly IArmyDataService _armyDataService;
 
     public CompanySelectionPageFactory(
         IMetadataProvider? metadataProvider,
@@ -20,7 +21,8 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
         ISpecOpsProvider specOpsProvider,
         ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider,
         FactionLogoCacheService? factionLogoCacheService,
-        IAppSettingsProvider? appSettingsProvider)
+        IAppSettingsProvider? appSettingsProvider,
+        IArmyDataService armyDataService)
     {
         _metadataProvider = metadataProvider;
         _factionProvider = factionProvider;
@@ -28,6 +30,7 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
         _cohesiveCompanyFactionQueryProvider = cohesiveCompanyFactionQueryProvider;
         _factionLogoCacheService = factionLogoCacheService;
         _appSettingsProvider = appSettingsProvider;
+        _armyDataService = armyDataService;
     }
 
     public StandardCompanySelectionPage CreateStandard(ArmySourceSelectionMode mode)
@@ -39,7 +42,8 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _specOpsProvider,
             _cohesiveCompanyFactionQueryProvider,
             _factionLogoCacheService,
-            _appSettingsProvider);
+            _appSettingsProvider,
+            _armyDataService);
     }
 
     public CCArmyFactionSelectionPage CreateCohesive(ArmySourceSelectionMode mode)
@@ -51,6 +55,7 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _specOpsProvider,
             _cohesiveCompanyFactionQueryProvider,
             _factionLogoCacheService,
-            _appSettingsProvider);
+            _appSettingsProvider,
+            _armyDataService);
     }
 }

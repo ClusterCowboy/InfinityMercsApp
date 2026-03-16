@@ -38,6 +38,7 @@ public static class ServiceRegistryExtensions
     {
         services.AddSingleton<INavigationService, MauiNavigationService>()
                 .AddSingleton<ICompanySelectionPageFactory, CompanySelectionPageFactory>()
+                .AddSingleton<IArmyDataService, ArmyDataService>()
                 .AddSingleton<FactionLogoCacheService>()
                 .AddSingleton<IFeedbackService, FeedbackService>()
                 .AddSingleton<IImportService, ImportService>();
