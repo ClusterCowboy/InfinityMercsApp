@@ -1,17 +1,5 @@
 namespace InfinityMercsApp.Views.Common;
 
-public class ArmyFactionSelectionItem : CompanyFactionSelectionItemBase
-{
-}
-
-public class ArmyUnitSelectionItem : CompanyUnitSelectionItemBase
-{
-}
-
-public class ArmyTeamUnitLimitItem : CompanyTeamUnitLimitItemBase
-{
-}
-
 public class ArmyTeamListItem : CompanyTeamListItemBase<ArmyTeamUnitLimitItem>
 {
     public bool ShowTrackingRadioButton => !IsWildcardBucket;
@@ -31,12 +19,4 @@ public class ArmyTeamListItem : CompanyTeamListItemBase<ArmyTeamUnitLimitItem>
             OnPropertyChanged();
         }
     }
-}
-
-public class MercsCompanyEntry : CompanyMercsCompanyEntryBase
-{
-}
-
-internal sealed class PeripheralMercsCompanyStats : CompanyPeripheralMercsCompanyStatsBase
-{
 }

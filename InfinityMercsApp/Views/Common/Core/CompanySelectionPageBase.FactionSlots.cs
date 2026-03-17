@@ -10,20 +10,10 @@ public abstract partial class CompanySelectionPageBase
         Action<TFaction> assignSelectedFactionToActiveSlot)
         where TFaction : CompanyFactionSelectionItemBase
     {
-        if (factionSelectionState.SelectedFaction == item)
-        {
-            assignSelectedFactionToActiveSlot(item);
-            return;
-        }
-
-        if (factionSelectionState.SelectedFaction is not null)
-        {
-            factionSelectionState.SelectedFaction.IsSelected = false;
-        }
-
-        factionSelectionState.SelectedFaction = item;
-        factionSelectionState.SelectedFaction.IsSelected = true;
-        assignSelectedFactionToActiveSlot(item);
+        CompanySelectionFactionSlotsWorkflow.SetSelectedFaction(
+            factionSelectionState,
+            item,
+            assignSelectedFactionToActiveSlot);
     }
 
     protected static bool IsDuplicateSelectionForActiveSlotCore<TFaction>(
@@ -34,21 +24,12 @@ public abstract partial class CompanySelectionPageBase
         TFaction item)
         where TFaction : CompanyFactionSelectionItemBase
     {
-        if (!showRightSelectionBox)
-        {
-            return false;
-        }
-
-        if (activeSlotIndex == 0)
-        {
-            return rightSlotFaction is not null
-                && rightSlotFaction.Id == item.Id
-                && (leftSlotFaction is null || leftSlotFaction.Id != item.Id);
-        }
-
-        return leftSlotFaction is not null
-            && leftSlotFaction.Id == item.Id
-            && (rightSlotFaction is null || rightSlotFaction.Id != item.Id);
+        return CompanySelectionFactionSlotsWorkflow.IsDuplicateSelectionForActiveSlot(
+            showRightSelectionBox,
+            activeSlotIndex,
+            leftSlotFaction,
+            rightSlotFaction,
+            item);
     }
 
     protected static bool TryAssignSelectedFactionToActiveSlotCore<TFaction>(
@@ -61,31 +42,14 @@ public abstract partial class CompanySelectionPageBase
         out bool factionChanged)
         where TFaction : CompanyFactionSelectionItemBase
     {
-        if (IsDuplicateSelectionForActiveSlotCore(
-                showRightSelectionBox,
-                activeSlotIndex,
-                factionSelectionState.LeftSlotFaction,
-                factionSelectionState.RightSlotFaction,
-                item))
-        {
-            factionChanged = false;
-            return false;
-        }
-
-        if (activeSlotIndex == 0 || !showRightSelectionBox)
-        {
-            factionChanged = factionSelectionState.LeftSlotFaction?.Id != item.Id;
-            factionSelectionState.LeftSlotFaction = item;
-            setSlotText(0, item.Name);
-            loadSlotIcon(0, item.CachedLogoPath, item.PackagedLogoPath);
-            return true;
-        }
-
-        factionChanged = factionSelectionState.RightSlotFaction?.Id != item.Id;
-        factionSelectionState.RightSlotFaction = item;
-        setSlotText(1, item.Name);
-        loadSlotIcon(1, item.CachedLogoPath, item.PackagedLogoPath);
-        return true;
+        return CompanySelectionFactionSlotsWorkflow.TryAssignSelectedFactionToActiveSlot(
+            showRightSelectionBox,
+            activeSlotIndex,
+            factionSelectionState,
+            item,
+            setSlotText,
+            loadSlotIcon,
+            out factionChanged);
     }
 
     protected static void ResetMercsCompanyCore<TEntry>(
@@ -93,18 +57,15 @@ public abstract partial class CompanySelectionPageBase
         Action updateMercsCompanyTotal,
         Action? postReset = null)
     {
-        if (mercsCompanyEntries.Count > 0)
-        {
-            mercsCompanyEntries.Clear();
-        }
-
-        updateMercsCompanyTotal();
-        postReset?.Invoke();
+        CompanySelectionFactionSlotsWorkflow.ResetMercsCompany(
+            mercsCompanyEntries,
+            updateMercsCompanyTotal,
+            postReset);
     }
 
     protected static int ResolveActiveSlotIndexCore(int index, bool showRightSelectionBox)
     {
-        return index == 1 && showRightSelectionBox ? 1 : 0;
+        return CompanySelectionFactionSlotsWorkflow.ResolveActiveSlotIndex(index, showRightSelectionBox);
     }
 
     protected static int ResolveAutoSelectedSlotIndexCore<TFaction>(
@@ -114,25 +75,11 @@ public abstract partial class CompanySelectionPageBase
         int currentActiveSlotIndex)
         where TFaction : class
     {
-        if (!showRightSelectionBox)
-        {
-            return 0;
-        }
-
-        var leftEmpty = leftSlotFaction is null;
-        var rightEmpty = rightSlotFaction is null;
-
-        if (leftEmpty && !rightEmpty)
-        {
-            return 0;
-        }
-
-        if (rightEmpty && !leftEmpty)
-        {
-            return 1;
-        }
-
-        return currentActiveSlotIndex;
+        return CompanySelectionFactionSlotsWorkflow.ResolveAutoSelectedSlotIndex(
+            showRightSelectionBox,
+            leftSlotFaction,
+            rightSlotFaction,
+            currentActiveSlotIndex);
     }
 
     protected static void HandleFactionAssignmentSideEffectsCore(
@@ -142,13 +89,11 @@ public abstract partial class CompanySelectionPageBase
         Func<Task> loadUnitsForActiveSlotAsync,
         Action? onAssignmentCompleted = null)
     {
-        autoSelectEmptySlot();
-        if (factionChanged)
-        {
-            resetMercsCompany();
-            _ = loadUnitsForActiveSlotAsync();
-        }
-
-        onAssignmentCompleted?.Invoke();
+        CompanySelectionFactionSlotsWorkflow.HandleFactionAssignmentSideEffects(
+            factionChanged,
+            autoSelectEmptySlot,
+            resetMercsCompany,
+            loadUnitsForActiveSlotAsync,
+            onAssignmentCompleted);
     }
 }

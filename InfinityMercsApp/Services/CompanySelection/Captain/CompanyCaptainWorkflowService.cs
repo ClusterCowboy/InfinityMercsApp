@@ -1,37 +1,10 @@
-﻿using InfinityMercsApp.Infrastructure.Providers;
-using InfinityMercsApp.Services;
 using System.Text.Json;
 using TemplateCaptain = InfinityMercsApp.Views.Common.Captain;
 
 namespace InfinityMercsApp.Views.Common.UICommon;
 
-internal sealed class CompanyCaptainWorkflowRequest
-{
-    public required INavigation Navigation { get; init; }
-    public required int FallbackSourceFactionId { get; init; }
-    public required int? FirstSourceFactionId { get; init; }
-    public required string UnitName { get; init; }
-    public required int UnitCost { get; init; }
-    public required string UnitStatline { get; init; }
-    public required string UnitRangedWeapons { get; init; }
-    public required string UnitCcWeapons { get; init; }
-    public required string UnitSkills { get; init; }
-    public required string UnitEquipment { get; init; }
-    public string? UnitCachedLogoPath { get; init; }
-    public string? UnitPackagedLogoPath { get; init; }
-    public required Func<int, int?> TryGetParentFactionId { get; init; }
-    public required Func<int, string?> TryGetFactionName { get; init; }
-    public required Func<int, string?> TryGetMetadataFactionName { get; init; }
-    public required IArmyDataService ArmyDataService { get; init; }
-    public required ISpecOpsProvider SpecOpsProvider { get; init; }
-    public required bool ShowUnitsInInches { get; init; }
-}
-
 internal static class CompanyCaptainWorkflowService
 {
-    /// <summary>
-    /// Runs the shared captain popup workflow and returns template popup results.
-    /// </summary>
     public static async Task<TemplateCaptain.SavedImprovedCaptainStats?> ShowCaptainConfigurationAsync(
         CompanyCaptainWorkflowRequest request,
         CancellationToken cancellationToken = default)
@@ -84,9 +57,6 @@ internal static class CompanyCaptainWorkflowService
         return await TemplateCaptain.ConfigureCaptainPopupPage.ShowAsync(request.Navigation, context);
     }
 
-    /// <summary>
-    /// Runs captain workflow and maps template result into a caller-provided stats type.
-    /// </summary>
     public static async Task<TStats?> ShowCaptainConfigurationAsync<TStats>(
         CompanyCaptainWorkflowRequest request,
         CancellationToken cancellationToken = default)
@@ -102,9 +72,6 @@ internal static class CompanyCaptainWorkflowService
         return JsonSerializer.Deserialize<TStats>(json);
     }
 
-    /// <summary>
-    /// Resolves the display name shown for captain upgrade options.
-    /// </summary>
     private static string ResolveOptionFactionName(
         CompanyCaptainWorkflowRequest request,
         int sourceFactionId,
@@ -123,4 +90,3 @@ internal static class CompanyCaptainWorkflowService
             metadataOptionName);
     }
 }
-

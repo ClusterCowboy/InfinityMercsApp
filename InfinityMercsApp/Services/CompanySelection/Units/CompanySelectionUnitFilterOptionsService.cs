@@ -4,63 +4,8 @@ using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntr
 
 namespace InfinityMercsApp.Views.Common;
 
-internal static class CompanySelectionUnitFilterWorkflow
+internal static class CompanySelectionUnitFilterOptionsService
 {
-    internal static UnitFilterPopupView? TryOpenUnitFilterPopup(
-        UnitFilterPopupOptions options,
-        UnitFilterCriteria activeUnitFilter,
-        bool lieutenantOnlyUnits,
-        bool teamsView,
-        double popupHeight,
-        EventHandler<UnitFilterCriteria> onFilterArmyApplied,
-        EventHandler onCloseRequested,
-        ContentView popupHost,
-        VisualElement popupOverlay,
-        Action<string>? logError = null)
-    {
-        try
-        {
-            var popup = new UnitFilterPopupView(
-                options,
-                activeUnitFilter,
-                lieutenantOnlyUnits: lieutenantOnlyUnits,
-                teamsView: teamsView);
-            popup.HeightRequest = popupHeight;
-            popup.FilterArmyApplied += onFilterArmyApplied;
-            popup.CloseRequested += onCloseRequested;
-            popupHost.HeightRequest = popupHeight;
-            popupHost.Content = popup;
-            popupOverlay.IsVisible = true;
-            return popup;
-        }
-        catch (Exception ex)
-        {
-            logError?.Invoke($"CompanySelectionPage filter popup open failed: {ex.Message}");
-            return null;
-        }
-    }
-
-    internal static UnitFilterPopupView? CloseUnitFilterPopup(
-        UnitFilterPopupView? requestedPopup,
-        UnitFilterPopupView? activePopup,
-        EventHandler<UnitFilterCriteria> onFilterArmyApplied,
-        EventHandler onCloseRequested,
-        ContentView popupHost,
-        VisualElement popupOverlay)
-    {
-        var target = requestedPopup ?? activePopup;
-        if (target is not null)
-        {
-            target.FilterArmyApplied -= onFilterArmyApplied;
-            target.CloseRequested -= onCloseRequested;
-        }
-
-        popupHost.Content = null;
-        popupHost.HeightRequest = -1;
-        popupOverlay.IsVisible = false;
-        return null;
-    }
-
     internal static UnitFilterCriteria ApplyCriteriaFromPopup(
         UnitFilterCriteria? criteria,
         Action<bool> setLieutenantOnlyUnits,
@@ -74,19 +19,6 @@ internal static class CompanySelectionUnitFilterWorkflow
         }
 
         return resolved;
-    }
-
-    internal static double ResolveUnitFilterPopupHeight(Page page)
-    {
-        var pageHeight = page.Height > 0
-            ? page.Height
-            : page.Window?.Height ?? Application.Current?.Windows.FirstOrDefault()?.Page?.Height ?? 0;
-        if (pageHeight <= 0)
-        {
-            return 800;
-        }
-
-        return pageHeight * 0.9;
     }
 
     internal static int ResolveFilterPopupMaxPoints(string selectedStartSeasonPoints)
@@ -232,5 +164,3 @@ internal static class CompanySelectionUnitFilterWorkflow
         return ClonePopupOptionsForCurrentPoints(options, maxPoints);
     }
 }
-
-

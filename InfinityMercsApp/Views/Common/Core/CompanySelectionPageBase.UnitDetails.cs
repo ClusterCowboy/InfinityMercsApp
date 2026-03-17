@@ -13,15 +13,8 @@ public abstract partial class CompanySelectionPageBase
         Func<int, int, string?>? getCachedUnitLogoPath,
         Func<int, string?>? getCachedFactionLogoPath)
     {
-        if (getCachedUnitLogoPath is null || getCachedFactionLogoPath is null)
-        {
-            return [item.CachedLogoPath];
-        }
-
-        return CompanyUnitDetailsShared.BuildUnitCachedPathCandidates(
-            item.CachedLogoPath,
-            item.SourceFactionId,
-            item.Id,
+        return CompanySelectionUnitDetailsWorkflow.BuildUnitCachedPathCandidates(
+            item,
             leftSlotFactionId,
             rightSlotFactionId,
             getCachedUnitLogoPath,
@@ -35,10 +28,8 @@ public abstract partial class CompanySelectionPageBase
         Func<int, int, string?>? getPackagedUnitLogoPath,
         Func<int, string?>? getPackagedFactionLogoPath)
     {
-        return CompanyUnitDetailsShared.BuildUnitPackagedPathCandidates(
-            item.PackagedLogoPath,
-            item.SourceFactionId,
-            item.Id,
+        return CompanySelectionUnitDetailsWorkflow.BuildUnitPackagedPathCandidates(
+            item,
             leftSlotFactionId,
             rightSlotFactionId,
             getPackagedUnitLogoPath,
@@ -49,23 +40,9 @@ public abstract partial class CompanySelectionPageBase
         string? fireteamChartJson,
         Dictionary<string, CompanyTeamAggregate> target)
     {
-        CompanyUnitDetailsShared.MergeFireteamEntries(
+        CompanySelectionUnitDetailsWorkflow.MergeFireteamEntries(
             fireteamChartJson,
-            entry =>
-            {
-                if (!target.TryGetValue(entry.Name, out var aggregate))
-                {
-                    aggregate = new CompanyTeamAggregate(entry.Name);
-                    target[entry.Name] = aggregate;
-                }
-
-                aggregate.AddCounts(entry.Duo, entry.Haris, entry.Core);
-                foreach (var limit in entry.UnitLimits)
-                {
-                    aggregate.MergeUnitLimit(limit.Name, limit.Min, limit.Max, limit.Slug, limit.MinAsterisk);
-                }
-            },
-            Console.Error.WriteLine);
+            target);
     }
 
     protected static string BuildUnitSubtitleCore(
@@ -73,24 +50,17 @@ public abstract partial class CompanySelectionPageBase
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
     {
-        return CompanyUnitDetailsShared.BuildUnitSubtitle(unit, typeLookup, categoryLookup);
+        return CompanySelectionUnitDetailsWorkflow.BuildUnitSubtitle(unit, typeLookup, categoryLookup);
     }
 
     protected static bool IsCharacterCategoryCore(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
     {
-        return CompanyUnitDetailsShared.IsCharacterCategory(unit, categoryLookup);
+        return CompanySelectionUnitDetailsWorkflow.IsCharacterCategory(unit, categoryLookup);
     }
 
     protected static void ClearSelectedUnitLogoCore(UnitDisplayConfigurationsView unitDisplayView, string? logMessage = null)
     {
-        if (!string.IsNullOrWhiteSpace(logMessage))
-        {
-            Console.WriteLine(logMessage);
-        }
-
-        unitDisplayView.SelectedUnitPicture?.Dispose();
-        unitDisplayView.SelectedUnitPicture = null;
-        unitDisplayView.InvalidateSelectedUnitCanvas();
+        CompanySelectionUnitDetailsWorkflow.ClearSelectedUnitLogo(unitDisplayView, logMessage);
     }
 
     protected static async Task LoadSelectedUnitLogoCoreAsync(
@@ -98,12 +68,9 @@ public abstract partial class CompanySelectionPageBase
         UnitDisplayConfigurationsView unitDisplayView,
         Func<Task<Stream?>> openBestUnitLogoStreamAsync)
     {
-        ClearSelectedUnitLogoCore(unitDisplayView);
-        unitDisplayView.SelectedUnitPicture = await CompanyUnitLogoWorkflowService.LoadSelectedUnitLogoAsync(
-            item.Name,
-            item.Id,
-            item.SourceFactionId,
+        await CompanySelectionUnitDetailsWorkflow.LoadSelectedUnitLogoAsync(
+            item,
+            unitDisplayView,
             openBestUnitLogoStreamAsync);
-        unitDisplayView.InvalidateSelectedUnitCanvas();
     }
 }
