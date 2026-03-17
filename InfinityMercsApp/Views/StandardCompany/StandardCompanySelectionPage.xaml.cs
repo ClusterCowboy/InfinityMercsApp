@@ -29,7 +29,7 @@ using InfinityMercsApp.Views.Templates.UICommon;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
-public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IUnitDisplayIconState, IUnitDisplayStatState
+public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 {
     private sealed class TeamAggregate
     {
@@ -67,19 +67,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         }
     }
 
-    private const double UnitNameHeadingMaxFontSize = 24d;
-    private const double UnitNameHeadingMinFontSize = 11d;
-    private const double UnitNameHeadingFontStep = 0.5d;
-    private const int CharacterCategoryId = 10;
-
     private readonly ArmySourceSelectionMode _mode;
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly IAppSettingsProvider? _appSettingsProvider;
     private readonly CompanyProfileCoordinator _profileCoordinator;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
-    private SKPicture? _filterIconPicture;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
@@ -128,7 +121,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
-        _appSettingsProvider = AppSettingsProvider;
         _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
