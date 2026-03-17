@@ -17,6 +17,15 @@ internal static class CompanyStartSharedState
         return showError ? Color.FromArgb("#EF4444") : Color.FromArgb("#6B7280");
     }
 
+    internal static void ApplyCompanyNameValidationError(
+        bool showError,
+        Action<bool> setShowCompanyNameValidationError,
+        Action<Color> setCompanyNameBorderColor)
+    {
+        setShowCompanyNameValidationError(showError);
+        setCompanyNameBorderColor(GetCompanyNameBorderColor(showError));
+    }
+
     internal static string ExtractUnitTypeCode(string? subtitle)
     {
         if (string.IsNullOrWhiteSpace(subtitle))

@@ -8,20 +8,14 @@ namespace InfinityMercsApp.Views.StandardCompany;
 public partial class StandardCompanySelectionPage
 {
     /// <summary>
-    /// Handles is company name valid.
-    /// </summary>
-    private static bool IsCompanyNameValid(string? value)
-    {
-        return CompanyStartSharedState.IsCompanyNameValid(value);
-    }
-
-    /// <summary>
     /// Handles set company name validation error.
     /// </summary>
     private void SetCompanyNameValidationError(bool showError)
     {
-        ShowCompanyNameValidationError = showError;
-        CompanyNameBorderColor = CompanyStartSharedState.GetCompanyNameBorderColor(showError);
+        CompanyStartSharedState.ApplyCompanyNameValidationError(
+            showError,
+            value => ShowCompanyNameValidationError = value,
+            value => CompanyNameBorderColor = value);
     }
 
     /// <summary>
@@ -29,18 +23,12 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     protected override async Task StartCompanyAsync()
     {
-        if (!IsCompanyNameValid(CompanyName))
-        {
-            SetCompanyNameValidationError(true);
-            return;
-        }
-
-        SetCompanyNameValidationError(false);
-
-        try
-        {
-            await CompanyStartSaveWorkflow.RunAsync<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>(
-                new CompanyStartSaveRequest<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>
+        await CompanyStartExecutionWorkflow.ExecuteAsync<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>(
+            new CompanyStartExecutionRequest<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>
+            {
+                CompanyName = CompanyName,
+                SetCompanyNameValidationError = SetCompanyNameValidationError,
+                BuildSaveRequest = () => new CompanyStartSaveRequest<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>
                 {
                     CompanyName = CompanyName.Trim(),
                     CompanyType = GetCompanyTypeLabel(),
@@ -63,13 +51,13 @@ public partial class StandardCompanySelectionPage
                         var encodedPath = Uri.EscapeDataString(filePath);
                         await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
                     }
-                });
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
-            await DisplayAlert("Save Failed", ex.Message, "OK");
-        }
+                },
+                HandleFailureAsync = async ex =>
+                {
+                    Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
+                    await DisplayAlert("Save Failed", ex.Message, "OK");
+                }
+            });
     }
 
     /// <summary>

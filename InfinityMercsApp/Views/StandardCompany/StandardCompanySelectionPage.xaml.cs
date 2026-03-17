@@ -242,7 +242,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IU
 
             _companyName = value;
             OnPropertyChanged();
-            if (_showCompanyNameValidationError && IsCompanyNameValid(value))
+            if (_showCompanyNameValidationError && CompanyStartSharedState.IsCompanyNameValid(value))
             {
                 SetCompanyNameValidationError(false);
             }
