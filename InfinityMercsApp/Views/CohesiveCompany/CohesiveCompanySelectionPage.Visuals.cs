@@ -8,12 +8,13 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 /// <summary>
 /// Visual layer concerns: icon loading, paint handlers, and faction-theme color application.
 /// </summary>
-public partial class CCArmyFactionSelectionPage
+public partial class CohesiveCompanySelectionPage
 {
     private void OnTrackedFireteamLevelCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         CompanySelectionVisualUiWorkflow.DrawSlotPicture(_trackedFireteamLevelPicture, e);
     }
 }
+
 
 

@@ -5,7 +5,7 @@
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              xmlns:shell="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
              xmlns:templates="clr-namespace:InfinityMercsApp.Views.Common"
-             x:Class="InfinityMercsApp.Views.CohesiveCompany.CCArmyFactionSelectionPage"
+             x:Class="InfinityMercsApp.Views.CohesiveCompany.CohesiveCompanySelectionPage"
              x:Name="ArmyFactionSelectionRoot"
              Title="">
 
@@ -443,6 +443,7 @@
         </Grid>
     </Grid>
 </templates:CompanySelectionPageBase>
+
 
 
 

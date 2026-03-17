@@ -7,7 +7,7 @@ using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage
+public partial class CohesiveCompanySelectionPage
 {
     private Task<List<string>> EvaluateValidCoreFireteamsForFactionAsync(
         FactionRecord faction,
@@ -146,16 +146,10 @@ public partial class CCArmyFactionSelectionPage
 
     private void ResetMercsCompany()
     {
-        if (MercsCompanyEntries.Count == 0)
-        {
-            UpdateMercsCompanyTotal();
-            ReevaluateTrackedFireteamLevel();
-            return;
-        }
-
-        MercsCompanyEntries.Clear();
-        UpdateMercsCompanyTotal();
-        ReevaluateTrackedFireteamLevel();
+        ResetMercsCompanyCore(
+            MercsCompanyEntries,
+            UpdateMercsCompanyTotal,
+            ReevaluateTrackedFireteamLevel);
     }
 
     private void OnTeamTrackingRadioButtonCheckedChanged(object? sender, CheckedChangedEventArgs e)
@@ -371,5 +365,6 @@ public partial class CCArmyFactionSelectionPage
         TrackedFireteamLevelCanvas?.InvalidateSurface();
     }
 }
+
 
 

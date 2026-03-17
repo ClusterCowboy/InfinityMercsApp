@@ -1,10 +1,10 @@
-using InfinityMercsApp.Services;
+﻿using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using SkiaSharp.Views.Maui.Controls;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage
+public partial class CohesiveCompanySelectionPage
 {
     protected override IArmyDataService ArmyDataService => _armyDataService;
     protected override FactionSlotSelectorView FactionSlotSelectorViewForVisuals => FactionSlotSelectorView;
@@ -22,3 +22,4 @@ public partial class CCArmyFactionSelectionPage
     protected override void SetShowCompanyNameValidationError(bool value) => ShowCompanyNameValidationError = value;
     protected override void SetCompanyNameBorderColor(Color value) => CompanyNameBorderColor = value;
 }
+

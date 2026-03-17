@@ -17,7 +17,7 @@ namespace InfinityMercsApp.Views.Common;
 /// This centralizes service resolution and shared UI wiring while allowing
 /// each concrete page to keep its own state models and mode-specific behavior.
 /// </summary>
-public abstract class CompanySelectionPageBase : ContentPage
+public abstract partial class CompanySelectionPageBase : ContentPage
 {
     private SKPicture? _filterIconPicture;
 

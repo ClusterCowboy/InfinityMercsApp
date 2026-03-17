@@ -235,16 +235,12 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private IEnumerable<string?> BuildUnitCachedPathCandidates(ArmyUnitSelectionItem item)
     {
-        return _factionLogoCacheService is null
-            ? [item.CachedLogoPath]
-            : CompanyUnitDetailsShared.BuildUnitCachedPathCandidates(
-                item.CachedLogoPath,
-                item.SourceFactionId,
-                item.Id,
-                _factionSelectionState.LeftSlotFaction?.Id,
-                _factionSelectionState.RightSlotFaction?.Id,
-                _factionLogoCacheService.GetCachedUnitLogoPath,
-                _factionLogoCacheService.GetCachedLogoPath);
+        return BuildUnitCachedPathCandidatesCore(
+            item,
+            _factionSelectionState.LeftSlotFaction?.Id,
+            _factionSelectionState.RightSlotFaction?.Id,
+            _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetCachedUnitLogoPath(factionId, unitId),
+            _factionLogoCacheService is null ? null : factionId => _factionLogoCacheService.GetCachedLogoPath(factionId));
     }
 
     /// <summary>
@@ -252,10 +248,8 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private IEnumerable<string?> BuildUnitPackagedPathCandidates(ArmyUnitSelectionItem item)
     {
-        return CompanyUnitDetailsShared.BuildUnitPackagedPathCandidates(
-            item.PackagedLogoPath,
-            item.SourceFactionId,
-            item.Id,
+        return BuildUnitPackagedPathCandidatesCore(
+            item,
             _factionSelectionState.LeftSlotFaction?.Id,
             _factionSelectionState.RightSlotFaction?.Id,
             _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetPackagedUnitLogoPath(factionId, unitId),
@@ -269,23 +263,7 @@ public partial class StandardCompanySelectionPage
         string? fireteamChartJson,
         Dictionary<string, CompanyTeamAggregate> target)
     {
-        CompanyUnitDetailsShared.MergeFireteamEntries(
-            fireteamChartJson,
-            entry =>
-            {
-                if (!target.TryGetValue(entry.Name, out var aggregate))
-                {
-                    aggregate = new CompanyTeamAggregate(entry.Name);
-                    target[entry.Name] = aggregate;
-                }
-
-                aggregate.AddCounts(entry.Duo, entry.Haris, entry.Core);
-                foreach (var limit in entry.UnitLimits)
-                {
-                    aggregate.MergeUnitLimit(limit.Name, limit.Min, limit.Max, limit.Slug, limit.MinAsterisk);
-                }
-            },
-            Console.Error.WriteLine);
+        MergeFireteamEntriesCore(fireteamChartJson, target);
     }
 
     /// <summary>
@@ -296,7 +274,7 @@ public partial class StandardCompanySelectionPage
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
     {
-        return CompanyUnitDetailsShared.BuildUnitSubtitle(unit, typeLookup, categoryLookup);
+        return BuildUnitSubtitleCore(unit, typeLookup, categoryLookup);
     }
 
     /// <summary>
@@ -304,7 +282,7 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private static bool IsCharacterCategory(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
     {
-        return CompanyUnitDetailsShared.IsCharacterCategory(unit, categoryLookup);
+        return IsCharacterCategoryCore(unit, categoryLookup);
     }
 
     /// <summary>

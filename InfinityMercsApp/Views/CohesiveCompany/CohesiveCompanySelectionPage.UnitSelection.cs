@@ -4,7 +4,7 @@ using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage
+public partial class CohesiveCompanySelectionPage
 {
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
@@ -117,5 +117,6 @@ public partial class CCArmyFactionSelectionPage
             ResolveFilterPopupMaxPoints());
     }
 }
+
 
 

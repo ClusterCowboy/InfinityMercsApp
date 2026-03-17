@@ -1,6 +1,6 @@
 ﻿namespace InfinityMercsApp.Views.Common;
 
-internal sealed class CompanyTeamAggregate
+public sealed class CompanyTeamAggregate
 {
     internal CompanyTeamAggregate(string name)
     {

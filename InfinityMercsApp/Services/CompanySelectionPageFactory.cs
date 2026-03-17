@@ -1,4 +1,4 @@
-using InfinityMercsApp.Infrastructure.Providers;
+﻿using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.CohesiveCompany;
 using InfinityMercsApp.Views.StandardCompany;
@@ -46,9 +46,9 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _armyDataService);
     }
 
-    public CCArmyFactionSelectionPage CreateCohesive(ArmySourceSelectionMode mode)
+    public CohesiveCompanySelectionPage CreateCohesive(ArmySourceSelectionMode mode)
     {
-        return new CCArmyFactionSelectionPage(
+        return new CohesiveCompanySelectionPage(
             mode,
             _metadataProvider,
             _factionProvider,
@@ -59,3 +59,4 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _armyDataService);
     }
 }
+

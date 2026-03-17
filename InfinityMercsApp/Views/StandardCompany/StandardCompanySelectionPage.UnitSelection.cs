@@ -143,69 +143,46 @@ public partial class StandardCompanySelectionPage
 
         try
         {
-            var mergedUnits = new Dictionary<string, ArmyUnitSelectionItem>(StringComparer.OrdinalIgnoreCase);
-            var mergedTeams = new Dictionary<string, CompanyTeamAggregate>(StringComparer.OrdinalIgnoreCase);
-            var wildcardUnitLimits = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var faction in factions)
-            {
-                var units = _armyDataService.GetResumeByFactionMercsOnly(faction.Id, cancellationToken);
-                var resumeByUnitId = units
-                    .GroupBy(x => x.UnitId)
-                    .ToDictionary(x => x.Key, x => x.First());
-                var specopsUnits = await _specOpsProvider.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
-                var specopsByUnitId = specopsUnits
-                    .GroupBy(x => x.UnitId)
-                    .ToDictionary(x => x.Key, x => x.First());
-                var snapshot = _armyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
-                var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
-                var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "category");
-                MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
-
-                if (_factionLogoCacheService is not null)
+            var merged = await BuildMergedUnitsAndTeamsAsync(
+                factions,
+                faction => faction.Id,
+                _armyDataService.GetResumeByFactionMercsOnly,
+                _specOpsProvider.GetSpecopsUnitsByFactionAsync,
+                _armyDataService.GetFactionSnapshot,
+                async (factionId, units, ct) =>
                 {
-                    await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(faction.Id, units, cancellationToken);
-                }
-
-                foreach (var unit in units)
-                {
-                    var key = unit.Name.Trim();
-                    if (string.IsNullOrWhiteSpace(key) || mergedUnits.ContainsKey(key))
+                    if (_factionLogoCacheService is not null)
                     {
-                        continue;
+                        await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(factionId, units, ct);
                     }
-
-                    mergedUnits[key] = new ArmyUnitSelectionItem
-                    {
-                        Id = unit.UnitId,
-                        SourceFactionId = faction.Id,
-                        Slug = unit.Slug,
-                        Name = unit.Name,
-                        Type = unit.Type,
-                        IsCharacter = IsCharacterCategory(unit, categoryLookup),
-                        Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
-                        IsSpecOps = false,
-                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, unit.UnitId),
-                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, unit.UnitId)
-                            ?? $"SVGCache/units/{faction.Id}-{unit.UnitId}.svg"
-                    };
-                }
-
-                foreach (var specopsUnit in specopsUnits.OrderBy(x => x.EntryOrder))
+                },
+                MergeFireteamEntries,
+                IsCharacterCategory,
+                BuildUnitSubtitle,
+                (factionId, unit, typeLookup, categoryLookup) => new ArmyUnitSelectionItem
+                {
+                    Id = unit.UnitId,
+                    SourceFactionId = factionId,
+                    Slug = unit.Slug,
+                    Name = unit.Name,
+                    Type = unit.Type,
+                    IsCharacter = IsCharacterCategory(unit, categoryLookup),
+                    Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
+                    IsSpecOps = false,
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(factionId, unit.UnitId),
+                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(factionId, unit.UnitId)
+                        ?? $"SVGCache/units/{factionId}-{unit.UnitId}.svg"
+                },
+                (factionId, specopsUnit, resumeByUnitId, units, typeLookup, categoryLookup) =>
                 {
                     var baseName = string.IsNullOrWhiteSpace(specopsUnit.Name)
                         ? units.FirstOrDefault(x => x.UnitId == specopsUnit.UnitId)?.Name ?? $"Unit {specopsUnit.UnitId}"
                         : specopsUnit.Name.Trim();
                     var key = $"{baseName} - Spec Ops";
-                    if (string.IsNullOrWhiteSpace(key) || mergedUnits.ContainsKey(key))
-                    {
-                        continue;
-                    }
-
-                    mergedUnits[key] = new ArmyUnitSelectionItem
+                    return new ArmyUnitSelectionItem
                     {
                         Id = specopsUnit.UnitId,
-                        SourceFactionId = faction.Id,
+                        SourceFactionId = factionId,
                         Slug = specopsUnit.Slug,
                         Name = key,
                         Type = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var resumeUnit) ? resumeUnit.Type : null,
@@ -215,30 +192,27 @@ public partial class StandardCompanySelectionPage
                             ? BuildUnitSubtitle(subtitleUnit, typeLookup, categoryLookup)
                             : "Spec Ops",
                         IsSpecOps = true,
-                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, specopsUnit.UnitId),
-                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, specopsUnit.UnitId)
-                            ?? $"SVGCache/units/{faction.Id}-{specopsUnit.UnitId}.svg"
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(factionId, specopsUnit.UnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(factionId, specopsUnit.UnitId)
+                            ?? $"SVGCache/units/{factionId}-{specopsUnit.UnitId}.svg"
                     };
-                }
-            }
+                },
+                cancellationToken);
 
-            foreach (var unit in ArmyUnitSort.OrderByUnitTypeAndName(mergedUnits.Values, x => x.Type, x => x.Name))
-            {
-                Units.Add(unit);
-            }
+            PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
 
-            foreach (var team in mergedTeams.Values
+            foreach (var team in merged.TeamsByName.Values
                          .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
                 var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
                     team.UnitLimits,
-                    mergedUnits.Values,
+                    merged.UnitsByKey.Values,
                     x => x.IsCharacter);
                 var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
                 var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
                     nonCharacterNonWildcardUnitLimits,
-                    mergedUnits.Values,
+                    merged.UnitsByKey.Values,
                     (displayName, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
                         displayName,
                         min,
@@ -259,62 +233,23 @@ public partial class StandardCompanySelectionPage
                 });
             }
 
-            foreach (var team in mergedTeams.Values)
-            {
-                var isWildcardTeam = CompanyTeamMatchingWorkflow.IsWildcardTeamName(team.Name);
-                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
-                    team.UnitLimits,
-                    mergedUnits.Values,
-                    x => x.IsCharacter);
-                foreach (var entry in nonCharacterUnitLimits)
+            var wildcardUnitLimits = BuildWildcardUnitLimits(
+                merged.TeamsByName.Values,
+                merged.UnitsByKey.Values);
+            AppendWildcardTeamEntry<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+                wildcardUnitLimits,
+                merged.UnitsByKey.Values,
+                TeamEntries,
+                (name, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                    name, min, max, slug, sourceUnits),
+                (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {
-                    var unitName = entry.Key;
-                    var value = entry.Value;
-                    if (!isWildcardTeam && !CompanyTeamMatchingWorkflow.IsWildcardEntry(unitName, value.Slug))
-                    {
-                        continue;
-                    }
-
-                    if (wildcardUnitLimits.TryGetValue(unitName, out var existing))
-                    {
-                        wildcardUnitLimits[unitName] = (
-                            Math.Min(existing.Min, value.Min),
-                            Math.Max(existing.Max, value.Max),
-                            string.IsNullOrWhiteSpace(existing.Slug) ? value.Slug : existing.Slug,
-                            existing.MinAsterisk || value.MinAsterisk);
-                    }
-                    else
-                    {
-                        wildcardUnitLimits[unitName] = value;
-                    }
-                }
-            }
-
-            if (wildcardUnitLimits.Count > 0)
-            {
-                var wildcardAllowedProfiles = wildcardUnitLimits
-                    .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(x => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                        x.Key,
-                        x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
-                        x.Value.Max.ToString(),
-                        x.Value.Slug,
-                        mergedUnits.Values))
-                    .Where(x => !x.IsCharacter)
-                    .ToList();
-
-                if (wildcardAllowedProfiles.Count > 0)
-                {
-                    TeamEntries.Add(new ArmyTeamListItem
-                    {
-                        Name = "Wildcards",
-                        TeamCountsText = string.Empty,
-                        IsWildcardBucket = true,
-                        IsExpanded = true,
-                        AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(wildcardAllowedProfiles)
-                    });
-                }
-            }
+                    Name = name,
+                    TeamCountsText = teamCountsText,
+                    IsWildcardBucket = isWildcardBucket,
+                    IsExpanded = isExpanded,
+                    AllowedProfiles = allowedProfiles
+                });
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);

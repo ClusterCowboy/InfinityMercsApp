@@ -2,7 +2,7 @@
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class CCArmyFactionSelectionPage
+public partial class CohesiveCompanySelectionPage
 {
     protected override string CompanyTypeLabel => "Cohesive Company";
 
@@ -41,5 +41,6 @@ public partial class CCArmyFactionSelectionPage
             SeasonPointsCapText);
     }
 }
+
 
 
