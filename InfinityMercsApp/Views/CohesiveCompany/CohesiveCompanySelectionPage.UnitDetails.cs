@@ -2,25 +2,20 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common.NewCompany;
 using static InfinityMercsApp.Views.Common.NewCompany.CompanyUnitDetailsShared;
 using Svg.Skia;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
-
-namespace InfinityMercsApp.Views.StandardCompany;
-
+namespace InfinityMercsApp.Views.CohesiveCompany;
 /// <summary>
 /// Selected-unit detail pipeline: profile parsing, stat projection, and peripheral/trait extraction.
 /// </summary>
-public partial class StandardCompanySelectionPage
+public partial class CCArmyFactionSelectionPage
 {
-    /// <summary>
-    /// Handles load selected unit details async.
-    /// </summary>
     private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
         ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
@@ -106,9 +101,6 @@ public partial class StandardCompanySelectionPage
         }
     }
 
-    /// <summary>
-    /// Handles load selected unit logo async.
-    /// </summary>
     private async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
     {
         UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
@@ -121,9 +113,6 @@ public partial class StandardCompanySelectionPage
         UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
 
-    /// <summary>
-    /// Handles populate profiles from profile groups.
-    /// </summary>
     private void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson, bool forceLieutenant = false)
     {
         Profiles.Clear();
@@ -206,20 +195,11 @@ public partial class StandardCompanySelectionPage
         ApplyLieutenantVisualStates();
     }
 
-    private static bool ShouldIncludeOption(string? optionName)
+    private bool ShouldIncludeOption(string? optionName)
     {
-        return true;
+        return !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName);
     }
 
-    /// <summary>
-    /// Handles get ordered id display names from entries.
-    /// </summary>
-    /// <summary>
-    /// Handles get counted display names from entries.
-    /// </summary>
-    /// <summary>
-    /// Handles open best unit logo stream async.
-    /// </summary>
     private async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)
     {
         return await CompanyUnitDetailsShared.OpenBestUnitLogoStreamAsync(
@@ -230,9 +210,6 @@ public partial class StandardCompanySelectionPage
             BuildUnitPackagedPathCandidates(item));
     }
 
-    /// <summary>
-    /// Handles build unit cached path candidates.
-    /// </summary>
     private IEnumerable<string?> BuildUnitCachedPathCandidates(ArmyUnitSelectionItem item)
     {
         return _factionLogoCacheService is null
@@ -247,9 +224,6 @@ public partial class StandardCompanySelectionPage
                 _factionLogoCacheService.GetCachedLogoPath);
     }
 
-    /// <summary>
-    /// Handles build unit packaged path candidates.
-    /// </summary>
     private IEnumerable<string?> BuildUnitPackagedPathCandidates(ArmyUnitSelectionItem item)
     {
         return CompanyUnitDetailsShared.BuildUnitPackagedPathCandidates(
@@ -262,9 +236,6 @@ public partial class StandardCompanySelectionPage
             _factionLogoCacheService is null ? null : factionId => _factionLogoCacheService.GetPackagedFactionLogoPath(factionId));
     }
 
-    /// <summary>
-    /// Handles merge fireteam entries.
-    /// </summary>
     private static void MergeFireteamEntries(
         string? fireteamChartJson,
         Dictionary<string, CompanyTeamAggregate> target)
@@ -288,9 +259,6 @@ public partial class StandardCompanySelectionPage
             Console.Error.WriteLine);
     }
 
-    /// <summary>
-    /// Handles build unit subtitle.
-    /// </summary>
     private static string BuildUnitSubtitle(
         ArmyResumeRecord unit,
         IReadOnlyDictionary<int, string> typeLookup,
@@ -299,17 +267,11 @@ public partial class StandardCompanySelectionPage
         return CompanyUnitDetailsShared.BuildUnitSubtitle(unit, typeLookup, categoryLookup);
     }
 
-    /// <summary>
-    /// Handles is character category.
-    /// </summary>
     private static bool IsCharacterCategory(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
     {
         return CompanyUnitDetailsShared.IsCharacterCategory(unit, categoryLookup);
     }
 
-    /// <summary>
-    /// Handles reset unit details.
-    /// </summary>
     private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
@@ -344,9 +306,6 @@ public partial class StandardCompanySelectionPage
         ShowHackableIcon = false;
     }
 
-    /// <summary>
-    /// Handles reset unit stats only.
-    /// </summary>
     private void ResetUnitStatsOnly()
     {
         UnitMoveFirstCm = null;
@@ -365,9 +324,6 @@ public partial class StandardCompanySelectionPage
         ResetPeripheralStatsOnly();
     }
 
-    /// <summary>
-    /// Handles reset peripheral stats only.
-    /// </summary>
     private void ResetPeripheralStatsOnly()
     {
         PeripheralMoveFirstCm = null;
@@ -391,17 +347,11 @@ public partial class StandardCompanySelectionPage
         PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
-    /// <summary>
-    /// Handles populate unit stats from first profile.
-    /// </summary>
     private void PopulateUnitStatsFromFirstProfile(JsonElement profileGroupsArray)
     {
         CompanyUnitDetailsShared.PopulateUnitStatsFromFirstProfile(profileGroupsArray, ResetUnitStatsOnly, PopulateUnitStatsFromElement);
     }
 
-    /// <summary>
-    /// Handles populate unit stats from element.
-    /// </summary>
     private void PopulateUnitStatsFromElement(JsonElement selectedElement)
     {
         var projection = CompanyUnitDetailsShared.BuildUnitStatProjection(
@@ -425,33 +375,21 @@ public partial class StandardCompanySelectionPage
         UnitVitality = projection.Vitality;
     }
 
-    /// <summary>
-    /// Handles format move value.
-    /// </summary>
     private string FormatMoveValue(int? firstCm, int? secondCm)
     {
         return _armyDataService.FormatMoveValue(firstCm, secondCm);
     }
 
-    /// <summary>
-    /// Handles update unit move display.
-    /// </summary>
     private void UpdateUnitMoveDisplay()
     {
         UnitMov = _armyDataService.FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
     }
 
-    /// <summary>
-    /// Handles update peripheral move display.
-    /// </summary>
     private void UpdatePeripheralMoveDisplay()
     {
         PeripheralMov = _armyDataService.FormatMoveValue(PeripheralMoveFirstCm, PeripheralMoveSecondCm);
     }
 
-    /// <summary>
-    /// Handles populate peripheral stats from element.
-    /// </summary>
     private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
     {
         var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
@@ -463,9 +401,6 @@ public partial class StandardCompanySelectionPage
         ApplyPeripheralStatBlock(peripheralStats);
     }
 
-    /// <summary>
-    /// Handles update peripheral stat block from visible profiles.
-    /// </summary>
     private void UpdatePeripheralStatBlockFromVisibleProfiles()
     {
         CompanyUnitDetailsShared.UpdatePeripheralStatBlockFromVisibleProfiles(
@@ -480,9 +415,6 @@ public partial class StandardCompanySelectionPage
             Console.Error.WriteLine);
     }
 
-    /// <summary>
-    /// Handles build peripheral stat block.
-    /// </summary>
     private PeripheralMercsCompanyStats? BuildPeripheralStatBlock(string peripheralName, JsonElement peripheralProfile, string? filtersJson)
     {
         return CompanyUnitDetailsShared.BuildPeripheralStatBlock(
@@ -516,9 +448,6 @@ public partial class StandardCompanySelectionPage
             });
     }
 
-    /// <summary>
-    /// Handles apply peripheral stat block.
-    /// </summary>
     private void ApplyPeripheralStatBlock(PeripheralMercsCompanyStats peripheralStats)
     {
         PeripheralMoveFirstCm = peripheralStats.MoveFirstCm;
@@ -542,9 +471,6 @@ public partial class StandardCompanySelectionPage
         HasPeripheralStatBlock = true;
     }
 
-    /// <summary>
-    /// Handles populate peripheral stat block.
-    /// </summary>
     private void PopulatePeripheralStatBlock(
         JsonElement profileGroupsRoot,
         string? filtersJson,
@@ -563,6 +489,9 @@ public partial class StandardCompanySelectionPage
             ResetPeripheralStatsOnly,
             PopulatePeripheralStatsFromElement);
     }
+
+
+
 }
 
 

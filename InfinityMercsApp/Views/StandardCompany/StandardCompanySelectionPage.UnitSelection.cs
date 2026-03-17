@@ -1,8 +1,8 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Templates.NewCompany;
+using InfinityMercsApp.Views.Common.NewCompany;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -352,5 +352,6 @@ public partial class StandardCompanySelectionPage
     }
 
 }
+
 
 

@@ -10,12 +10,14 @@ using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common.UICommon;
 using Microsoft.Maui.Devices;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
+using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Common.NewCompany;
 using ArmyFactionRecord = InfinityMercsApp.Domain.Models.Army.Faction;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmySpecopsEquipRecord = InfinityMercsApp.Domain.Models.Army.SpecopsEquipment;
@@ -23,19 +25,18 @@ using ArmySpecopsSkillRecord = InfinityMercsApp.Domain.Models.Army.SpecopsSkill;
 using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
 using ArmySpecopsWeaponRecord = InfinityMercsApp.Domain.Models.Army.SpecopsWeapon;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
+using CCFactionFireteamValidityRecord = InfinityMercsApp.Domain.Models.Army.CCFactionFireteamValidityRecord;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
-using InfinityMercsApp.Views.Common.UICommon;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.CohesiveCompany;
 
-public partial class StandardCompanySelectionPage : CompanySelectionPageBase
+public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase
 {
     private readonly ArmySourceSelectionMode _mode;
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly CompanyProfileCoordinator _profileCoordinator;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
@@ -44,17 +45,24 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     private int _activeSlotIndex;
     private bool _loaded;
     private bool _lieutenantOnlyUnits;
-    private bool _showFireteams;
+    private bool _showFireteams = true;
     private bool _isFactionSelectionActive = true;
     private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
+    private bool _restrictSelectedUnitProfilesToFto;
     private string _profilesStatus = "Select a unit.";
     private bool _summaryHighlightLieutenant;
+    private bool _areTeamEntriesReady;
     private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
     private UnitFilterPopupView? _activeUnitFilterPopup;
     private UnitFilterPopupOptions? _preparedUnitFilterPopupOptions;
+    private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
+    private string _trackedFireteamName = string.Empty;
+    private int _trackedFireteamLevel;
+    private SKPicture? _trackedFireteamLevelPicture;
+    private bool _isUpdatingTrackedTeamSelection;
 
-    public StandardCompanySelectionPage(
+    public CCArmyFactionSelectionPage(
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
@@ -75,17 +83,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             }
         };
         _mode = Mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
+        Title = "Choose your sectorial:";
+        PageHeading = "Choose your sectorial:";
 
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
-        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
         {
@@ -114,7 +117,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             HandleTeamAllowedProfileSelected(
                 teamItem,
                 Units,
-                (resolved, _) => SetSelectedUnit(resolved)));
+                (resolved, restrictProfiles) => SetSelectedUnit(resolved, restrictProfiles),
+                item => IsFtoLabel(item.Name)));
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
@@ -138,7 +142,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
-    public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
+    public bool ShowRightSelectionBox => false;
     public string PageHeading
     {
         get => _pageHeading;
@@ -267,8 +271,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             _isFactionSelectionActive = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsUnitSelectionActive));
+            OnPropertyChanged(nameof(ShowUnitsList));
+            OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
+
+    public string TrackedFireteamNameDisplay =>
+        string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
 
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
@@ -604,8 +613,24 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         }
     }
 
+    public bool AreTeamEntriesReady
+    {
+        get => _areTeamEntriesReady;
+        private set
+        {
+            if (_areTeamEntriesReady == value)
+            {
+                return;
+            }
+
+            _areTeamEntriesReady = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowTeamsList));
+        }
+    }
+
     public bool ShowUnitsList => !TeamsView;
-    public bool ShowTeamsList => TeamsView;
+    public bool ShowTeamsList => TeamsView && IsUnitSelectionActive && AreTeamEntriesReady;
 
     protected override async void OnAppearing()
     {
@@ -664,8 +689,69 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             // If both variants exist, keep only the non-all-caps "Contracted Back-Up".
             filtered = CollapseContractedBackUpVariants(filtered);
 
-            var items = filtered
-                .OrderBy(x => x.Name)
+            var maxCost = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+            var ordered = filtered.OrderBy(x => x.Name).ToList();
+            var cacheFilterKey = BuildCCFactionValidityFilterKey(maxCost);
+            var visibleFactions = new List<FactionRecord>();
+            var factionIds = ordered.Select(x => x.Id).ToList();
+            var cachedRows = await _specOpsProvider.GetCCFactionFireteamValidityAsync(
+                cacheFilterKey,
+                factionIds,
+                cancellationToken);
+            var cachedByFaction = cachedRows
+                .GroupBy(x => x.FactionId)
+                .ToDictionary(x => x.Key, x => x.OrderByDescending(r => r.EvaluatedAtUnixSeconds).First());
+
+            var factionsToEvaluate = ordered
+                .Where(faction =>
+                    !cachedByFaction.TryGetValue(faction.Id, out var row) ||
+                    string.IsNullOrWhiteSpace(row.ValidCoreFireteamsJson))
+                .ToList();
+
+            foreach (var faction in factionsToEvaluate)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var validCoreFireteamNames = await EvaluateValidCoreFireteamsForFactionAsync(faction, maxCost, cancellationToken);
+                var hasValidCoreFireteams = validCoreFireteamNames.Count > 0;
+                var validCoreFireteamsJson = JsonSerializer.Serialize(validCoreFireteamNames);
+                await _specOpsProvider.UpsertCCFactionFireteamValidityAsync(
+                    faction.Id,
+                    cacheFilterKey,
+                    hasValidCoreFireteams,
+                    validCoreFireteamsJson,
+                    cancellationToken);
+
+                cachedByFaction[faction.Id] = new CCFactionFireteamValidityRecord
+                {
+                    FactionId = faction.Id,
+                    FilterKey = cacheFilterKey,
+                    HasValidCoreFireteams = hasValidCoreFireteams,
+                    ValidCoreFireteamsJson = validCoreFireteamsJson,
+                    EvaluatedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                };
+            }
+
+            _validCoreFireteamsByFaction.Clear();
+            foreach (var row in cachedByFaction.Values)
+            {
+                var validTeams = ParseValidCoreFireteams(row.ValidCoreFireteamsJson);
+                _validCoreFireteamsByFaction[row.FactionId] = validTeams;
+            }
+
+            var validFactionIds = cachedByFaction.Values
+                .Where(x => x.HasValidCoreFireteams)
+                .Select(x => x.FactionId)
+                .ToHashSet();
+
+            foreach (var faction in ordered)
+            {
+                if (validFactionIds.Contains(faction.Id))
+                {
+                    visibleFactions.Add(faction);
+                }
+            }
+
+            var items = visibleFactions
                 .Select(faction => new ArmyFactionSelectionItem
                 {
                     Id = faction.Id,
@@ -792,18 +878,27 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             ResetMercsCompany();
             _ = LoadUnitsForActiveSlotAsync();
         }
+
+        // In CC flow, selecting a faction should immediately advance to unit selection.
+        IsFactionSelectionActive = false;
     }
 
-    private void ResetMercsCompany()
+    private string BuildCCFactionValidityFilterKey(int maxCost)
     {
-        if (MercsCompanyEntries.Count == 0)
-        {
-            UpdateMercsCompanyTotal();
-            return;
-        }
+        var filterQuery = _activeUnitFilter.ToQuery();
+        var termsKey = string.Join(";",
+            filterQuery.Terms
+                .OrderBy(term => term.Field)
+                .Select(term => $"{term.Field}:{term.MatchMode}:{string.Join(",", term.Values.OrderBy(value => value, StringComparer.OrdinalIgnoreCase))}"));
 
-        MercsCompanyEntries.Clear();
-        UpdateMercsCompanyTotal();
+        return string.Join("|",
+            "cc-core-v2",
+            $"pts:{maxCost}",
+            $"lt:{(LieutenantOnlyUnits ? 1 : 0)}",
+            $"terms:{termsKey}",
+            $"min:{_activeUnitFilter.MinPoints?.ToString() ?? string.Empty}",
+            $"max:{_activeUnitFilter.MaxPoints?.ToString() ?? string.Empty}",
+            $"filterlt:{(_activeUnitFilter.LieutenantOnlyUnits ? 1 : 0)}");
     }
 
     private bool IsDuplicateSelectionForActiveSlot(ArmyFactionSelectionItem item)
@@ -854,12 +949,245 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 
-    private void SetSelectedUnit(ArmyUnitSelectionItem item)
+
+    private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
+    {
+        var trackedFireteamNameToRestore = _trackedFireteamName;
+        _preparedUnitFilterPopupOptions = null;
+        AreTeamEntriesReady = false;
+        Units.Clear();
+        TeamEntries.Clear();
+        _selectedUnit = null;
+        ResetUnitDetails();
+
+        var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+            ShowRightSelectionBox,
+            _factionSelectionState.LeftSlotFaction,
+            _factionSelectionState.RightSlotFaction,
+            faction => faction.Id);
+        if (factions.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var mergedUnits = new Dictionary<string, ArmyUnitSelectionItem>(StringComparer.OrdinalIgnoreCase);
+            var mergedTeams = new Dictionary<string, CompanyTeamAggregate>(StringComparer.OrdinalIgnoreCase);
+            var wildcardUnitLimits = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var faction in factions)
+            {
+                var units = GetResumeByFactionMercsOnlyFromProvider(faction.Id, cancellationToken);
+                var resumeByUnitId = units
+                    .GroupBy(x => x.UnitId)
+                    .ToDictionary(x => x.Key, x => x.First());
+                var specopsUnits = await _specOpsProvider.GetSpecopsUnitsByFactionAsync(faction.Id, cancellationToken);
+                var specopsByUnitId = specopsUnits
+                    .GroupBy(x => x.UnitId)
+                    .ToDictionary(x => x.Key, x => x.First());
+                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
+                var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+                var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "category");
+                MergeFireteamEntries(snapshot?.FireteamChartJson, mergedTeams);
+
+                if (_factionLogoCacheService is not null)
+                {
+                    await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(faction.Id, units, cancellationToken);
+                }
+
+                foreach (var unit in units)
+                {
+                    var key = unit.Name.Trim();
+                    if (string.IsNullOrWhiteSpace(key) || mergedUnits.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    mergedUnits[key] = new ArmyUnitSelectionItem
+                    {
+                        Id = unit.UnitId,
+                        SourceFactionId = faction.Id,
+                        Slug = unit.Slug,
+                        Name = unit.Name,
+                        Type = unit.Type,
+                        IsCharacter = IsCharacterCategory(unit, categoryLookup),
+                        Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
+                        IsSpecOps = false,
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, unit.UnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, unit.UnitId)
+                            ?? $"SVGCache/units/{faction.Id}-{unit.UnitId}.svg"
+                    };
+                }
+
+                foreach (var specopsUnit in specopsUnits.OrderBy(x => x.EntryOrder))
+                {
+                    var baseName = string.IsNullOrWhiteSpace(specopsUnit.Name)
+                        ? units.FirstOrDefault(x => x.UnitId == specopsUnit.UnitId)?.Name ?? $"Unit {specopsUnit.UnitId}"
+                        : specopsUnit.Name.Trim();
+                    var key = $"{baseName} - Spec Ops";
+                    if (string.IsNullOrWhiteSpace(key) || mergedUnits.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    mergedUnits[key] = new ArmyUnitSelectionItem
+                    {
+                        Id = specopsUnit.UnitId,
+                        SourceFactionId = faction.Id,
+                        Slug = specopsUnit.Slug,
+                        Name = key,
+                        Type = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var resumeUnit) ? resumeUnit.Type : null,
+                        IsCharacter = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var characterUnit) &&
+                                      IsCharacterCategory(characterUnit, categoryLookup),
+                        Subtitle = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var subtitleUnit)
+                            ? BuildUnitSubtitle(subtitleUnit, typeLookup, categoryLookup)
+                            : "Spec Ops",
+                        IsSpecOps = true,
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(faction.Id, specopsUnit.UnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(faction.Id, specopsUnit.UnitId)
+                            ?? $"SVGCache/units/{faction.Id}-{specopsUnit.UnitId}.svg"
+                    };
+                }
+            }
+
+            foreach (var unit in ArmyUnitSort.OrderByUnitTypeAndName(mergedUnits.Values, x => x.Type, x => x.Name))
+            {
+                Units.Add(unit);
+            }
+
+            var validCoreTeamNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var faction in factions)
+            {
+                if (_validCoreFireteamsByFaction.TryGetValue(faction.Id, out var cachedValidTeamNames))
+                {
+                    foreach (var teamName in cachedValidTeamNames)
+                    {
+                        validCoreTeamNames.Add(teamName);
+                    }
+                }
+            }
+
+            foreach (var team in mergedTeams.Values
+                         .Where(x => x.Core > 0 &&
+                                     (validCoreTeamNames.Count == 0 || validCoreTeamNames.Contains(x.Name)))
+                         .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
+                    team.UnitLimits,
+                    mergedUnits.Values,
+                    x => x.IsCharacter);
+                var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
+                var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
+                    nonCharacterNonWildcardUnitLimits,
+                    mergedUnits.Values,
+                    (displayName, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                        displayName,
+                        min,
+                        max,
+                        slug,
+                        sourceUnits));
+                if (allowedProfiles.Count == 0)
+                {
+                    continue;
+                }
+
+                TeamEntries.Add(new ArmyTeamListItem
+                {
+                    Name = team.Name,
+                    TeamCountsText = $"C: {team.Core}",
+                    IsExpanded = true,
+                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
+                });
+            }
+
+            foreach (var team in mergedTeams.Values)
+            {
+                var isWildcardTeam = CompanyTeamMatchingWorkflow.IsWildcardTeamName(team.Name);
+                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
+                    team.UnitLimits,
+                    mergedUnits.Values,
+                    x => x.IsCharacter);
+                foreach (var entry in nonCharacterUnitLimits)
+                {
+                    var unitName = entry.Key;
+                    var value = entry.Value;
+                    if (!isWildcardTeam && !CompanyTeamMatchingWorkflow.IsWildcardEntry(unitName, value.Slug))
+                    {
+                        continue;
+                    }
+
+                    if (wildcardUnitLimits.TryGetValue(unitName, out var existing))
+                    {
+                        wildcardUnitLimits[unitName] = (
+                            Math.Min(existing.Min, value.Min),
+                            Math.Max(existing.Max, value.Max),
+                            string.IsNullOrWhiteSpace(existing.Slug) ? value.Slug : existing.Slug,
+                            existing.MinAsterisk || value.MinAsterisk);
+                    }
+                    else
+                    {
+                        wildcardUnitLimits[unitName] = value;
+                    }
+                }
+            }
+
+            if (wildcardUnitLimits.Count > 0)
+            {
+                var wildcardAllowedProfiles = wildcardUnitLimits
+                    .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(x => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                        x.Key,
+                        x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
+                        x.Value.Max.ToString(),
+                        x.Value.Slug,
+                        mergedUnits.Values))
+                    .Where(x => !x.IsCharacter)
+                    .ToList();
+
+                if (wildcardAllowedProfiles.Count > 0)
+                {
+                    TeamEntries.Add(new ArmyTeamListItem
+                    {
+                        Name = "Wildcards",
+                        TeamCountsText = string.Empty,
+                        IsWildcardBucket = true,
+                        IsExpanded = true,
+                        AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(wildcardAllowedProfiles)
+                    });
+                }
+            }
+
+            await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            await BuildUnitFilterPopupOptionsAsync(cancellationToken);
+            RestoreTrackedFireteamSelection(trackedFireteamNameToRestore);
+            AreTeamEntriesReady = true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            RestoreTrackedFireteamSelection(string.Empty);
+            AreTeamEntriesReady = false;
+        }
+    }
+
+
+    private void SetSelectedUnit(ArmyUnitSelectionItem item, bool restrictProfilesToFto = false)
     {
         Console.WriteLine($"ArmyFactionSelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
+        var selectionContextChanged = _restrictSelectedUnitProfilesToFto != restrictProfilesToFto;
+        _restrictSelectedUnitProfilesToFto = restrictProfilesToFto;
         if (_selectedUnit == item)
         {
-            Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit skipped (same item instance).");
+            if (selectionContextChanged)
+            {
+                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit context changed; reloading selected unit details.");
+                _ = LoadSelectedUnitDetailsAsync();
+            }
+            else
+            {
+                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit skipped (same item instance).");
+            }
             return;
         }
 
@@ -898,6 +1226,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         var entry = new MercsCompanyEntry
         {
             Name = profile.Name,
+            BaseUnitName = _selectedUnit.Name,
             NameFormatted = profile.NameFormatted ?? CompanyProfileTextService.BuildNameFormatted(profile.Name),
             Subtitle = statline,
             UnitTypeCode = ExtractUnitTypeCode(_selectedUnit.Subtitle),
@@ -956,6 +1285,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         }
 
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -994,6 +1324,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
         MercsCompanyEntries.Remove(entry);
         UpdateMercsCompanyTotal();
+        ReevaluateTrackedFireteamLevel();
         ApplyLieutenantVisualStates();
         _ = ApplyUnitVisibilityFiltersAsync();
     }
@@ -1015,7 +1346,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
             if (unitItem is null)
             {
-                var unitRecord = _armyDataService.GetUnit(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
+                var unitRecord = GetUnitFromProvider(entry.SourceFactionId, entry.SourceUnitId, cancellationToken);
                 var unitName = !string.IsNullOrWhiteSpace(unitRecord?.Name)
                     ? unitRecord.Name
                     : entry.Name;
@@ -1097,6 +1428,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 
     private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
     {
+        AreTeamEntriesReady = false;
         if (Units.Count == 0)
         {
             return;
@@ -1122,7 +1454,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
             var specopsByFaction = new Dictionary<int, Dictionary<int, ArmySpecopsUnitRecord>>();
             foreach (var faction in factions)
             {
-                var snapshot = _armyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
+                var snapshot = GetFactionSnapshotFromProvider(faction.Id, cancellationToken);
                 skillsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "skills");
                 typeLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
                 charsLookupByFaction[faction.Id] = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "chars");
@@ -1155,7 +1487,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                     continue;
                 }
 
-                var unitRecord = _armyDataService.GetUnit(unit.SourceFactionId, unit.Id, cancellationToken);
+                var unitRecord = GetUnitFromProvider(unit.SourceFactionId, unit.Id, cancellationToken);
                 var profileGroupsJson = unitRecord?.ProfileGroupsJson;
                 if (specopsByFaction.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
                     specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit))
@@ -1191,32 +1523,51 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                 ApplyLieutenantVisualStates();
             }
 
-            CompanyTeamVisibilityWorkflow.RefreshTeamEntryVisibility(
-                TeamEntries,
-                Units,
-                team => team.AllowedProfiles,
-                team => team.IsWildcardBucket,
-                (team, value) => team.IsVisible = value,
-                (team, value) => team.IsExpanded = value,
-                allowed => allowed.IsCharacter,
-                (allowed, value) => allowed.IsVisible = value,
-                allowed => allowed.Name,
-                allowed => allowed.Slug,
-                allowed => allowed.ResolvedUnitId,
-                allowed => allowed.ResolvedSourceFactionId,
-                unit => unit.IsVisible,
-                unit => unit.Id,
-                unit => unit.SourceFactionId,
-                unit => unit.Name,
-                unit => unit.Slug);
+            RefreshTeamEntryVisibility();
+            AreTeamEntriesReady = true;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+            AreTeamEntriesReady = false;
         }
     }
 
+    private void RefreshTeamEntryVisibility()
+    {
+        CompanyTeamVisibilityWorkflow.RefreshTeamEntryVisibility(
+            TeamEntries,
+            Units,
+            team => team.AllowedProfiles,
+            team => team.IsWildcardBucket,
+            (team, value) => team.IsVisible = value,
+            (team, value) => team.IsExpanded = value,
+            allowed => allowed.IsCharacter,
+            (allowed, value) => allowed.IsVisible = value,
+            allowed => allowed.Name,
+            allowed => allowed.Slug,
+            allowed => allowed.ResolvedUnitId,
+            allowed => allowed.ResolvedSourceFactionId,
+            unit => unit.IsVisible,
+            unit => unit.Id,
+            unit => unit.SourceFactionId,
+            unit => unit.Name,
+            unit => unit.Slug);
+    }
+
+    private static bool IsFtoLabel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return Regex.IsMatch(value, @"\bFTO\b", RegexOptions.IgnoreCase);
+    }
+
 }
+
+
 
 
 

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -6,7 +6,7 @@ using System.Windows.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
-using InfinityMercsApp.Views.Templates.NewCompany;
+using InfinityMercsApp.Views.Common.NewCompany;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -1457,3 +1457,4 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
         }
     }
 }
+
