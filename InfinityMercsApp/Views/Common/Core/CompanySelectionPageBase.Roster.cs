@@ -214,6 +214,62 @@ public abstract partial class CompanySelectionPageBase
         return item;
     }
 
+    protected static TUnit SetSelectedUnitWithContextCore<TUnit, TContext>(
+        TUnit item,
+        TUnit? currentSelectedUnit,
+        TContext currentContext,
+        TContext requestedContext,
+        Action<TContext> setContext,
+        Action onContextChangedForSameSelection,
+        Action<TUnit> loadSelectedUnitLogo,
+        Action loadSelectedUnitDetails)
+        where TUnit : CompanyUnitSelectionItemBase
+        where TContext : IEquatable<TContext>
+    {
+        var selectionContextChanged = !currentContext.Equals(requestedContext);
+        setContext(requestedContext);
+        return SetSelectedUnitCore(
+            item,
+            currentSelectedUnit,
+            selectionContextChanged,
+            onContextChangedForSameSelection,
+            loadSelectedUnitLogo,
+            loadSelectedUnitDetails);
+    }
+
+    protected static int ApplyLieutenantVisualStatesCore<TEntry, TUnit>(
+        IEnumerable<TEntry> mercsCompanyEntries,
+        IEnumerable<ViewerProfileItem> profiles,
+        string selectedStartSeasonPoints,
+        string seasonPointsCapText,
+        string unitAva,
+        TUnit? selectedUnit,
+        UnitFilterCriteria activeUnitFilter,
+        bool lieutenantOnlyUnits,
+        Func<TEntry, bool> readIsLieutenant,
+        Func<TEntry, int> readSourceUnitId,
+        Func<TEntry, int> readSourceFactionId,
+        Func<TUnit, int> readUnitId,
+        Func<TUnit, int> readSourceFactionIdFromUnit)
+    {
+        var pointsLimit = int.TryParse(selectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
+        var currentPoints = int.TryParse(seasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
+        var avaLimit = CompanySelectionSharedUtilities.ParseAvaLimit(unitAva);
+        return ApplyLieutenantProfileVisibilityCore(
+            mercsCompanyEntries,
+            profiles,
+            pointsLimit,
+            currentPoints,
+            avaLimit,
+            selectedUnit is null ? null : readUnitId(selectedUnit),
+            selectedUnit is null ? null : readSourceFactionIdFromUnit(selectedUnit),
+            activeUnitFilter,
+            lieutenantOnlyUnits,
+            readIsLieutenant,
+            readSourceUnitId,
+            readSourceFactionId);
+    }
+
     protected static void AddMercsCompanyEntryCore<TEntry>(
         TEntry entry,
         IList<TEntry> mercsCompanyEntries,

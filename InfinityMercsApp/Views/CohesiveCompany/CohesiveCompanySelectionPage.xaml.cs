@@ -400,127 +400,64 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     public bool ShowRegularOrderIcon
     {
         get => UnitDisplayConfigurationsView.ShowRegularOrderIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowRegularOrderIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowRegularOrderIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowRegularOrderIcon,
+            x => UnitDisplayConfigurationsView.ShowRegularOrderIcon = x,
+            value);
     }
 
     public bool ShowIrregularOrderIcon
     {
         get => UnitDisplayConfigurationsView.ShowIrregularOrderIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowIrregularOrderIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowIrregularOrderIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowIrregularOrderIcon,
+            x => UnitDisplayConfigurationsView.ShowIrregularOrderIcon = x,
+            value);
     }
 
     public bool ShowImpetuousIcon
     {
         get => UnitDisplayConfigurationsView.ShowImpetuousIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowImpetuousIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowImpetuousIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowImpetuousIcon,
+            x => UnitDisplayConfigurationsView.ShowImpetuousIcon = x,
+            value);
     }
 
     public bool ShowTacticalAwarenessIcon
     {
         get => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon,
+            x => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = x,
+            value);
     }
 
     public bool ShowCubeIcon
     {
         get => UnitDisplayConfigurationsView.ShowCubeIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowCubeIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowCubeIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowCubeIcon,
+            x => UnitDisplayConfigurationsView.ShowCubeIcon = x,
+            value);
     }
 
     public bool ShowCube2Icon
     {
         get => UnitDisplayConfigurationsView.ShowCube2Icon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowCube2Icon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowCube2Icon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowCube2Icon,
+            x => UnitDisplayConfigurationsView.ShowCube2Icon = x,
+            value);
     }
 
     public bool ShowHackableIcon
     {
         get => UnitDisplayConfigurationsView.ShowHackableIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowHackableIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowHackableIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowHackableIcon,
+            x => UnitDisplayConfigurationsView.ShowHackableIcon = x,
+            value);
     }
 
     private bool ShowUnitsInInches
@@ -729,49 +666,16 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
                 }
             }
 
-            foreach (var team in merged.TeamsByName.Values
-                         .Where(x => x.Core > 0 &&
-                                     (validCoreTeamNames.Count == 0 || validCoreTeamNames.Contains(x.Name)))
-                         .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
-                    team.UnitLimits,
-                    merged.UnitsByKey.Values,
-                    x => x.IsCharacter);
-                var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
-                var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
-                    nonCharacterNonWildcardUnitLimits,
-                    merged.UnitsByKey.Values,
-                    (displayName, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                        displayName,
-                        min,
-                        max,
-                        slug,
-                        sourceUnits));
-                if (allowedProfiles.Count == 0)
-                {
-                    continue;
-                }
-
-                TeamEntries.Add(new ArmyTeamListItem
-                {
-                    Name = team.Name,
-                    TeamCountsText = $"C: {team.Core}",
-                    IsExpanded = true,
-                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
-                });
-            }
-
-            var wildcardUnitLimits = BuildWildcardUnitLimits(
-                merged.TeamsByName.Values,
-                merged.UnitsByKey.Values);
-            AppendWildcardTeamEntry<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
-                wildcardUnitLimits,
-                merged.UnitsByKey.Values,
+            BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+                merged,
                 TeamEntries,
-                (name, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                    name, min, max, slug, sourceUnits),
-                (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
+                includeTeam: team => validCoreTeamNames.Count == 0 || validCoreTeamNames.Contains(team.Name),
+                readTeamCount: team => team.Core,
+                buildTeamCountText: team => $"C: {team.Core}",
+                buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
+                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                        name, min, max, slug, sourceUnits),
+                createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {
                     Name = name,
                     TeamCountsText = teamCountsText,

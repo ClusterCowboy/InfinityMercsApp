@@ -176,4 +176,54 @@ public abstract partial class CompanySelectionPageBase
             true,
             new ObservableCollection<TAllowed>(wildcardAllowedProfiles)));
     }
+
+    protected static void BuildTeamEntriesFromMerged<TUnit, TAllowed, TTeam>(
+        CompanyMergedUnitsAndTeams<TUnit> merged,
+        ICollection<TTeam> teamEntries,
+        Func<CompanyTeamAggregate, bool> includeTeam,
+        Func<CompanyTeamAggregate, int> readTeamCount,
+        Func<CompanyTeamAggregate, string> buildTeamCountText,
+        Func<string, string, string, string?, IEnumerable<TUnit>, TAllowed> buildTeamUnitLimitItem,
+        Func<string, string, bool, bool, ObservableCollection<TAllowed>, TTeam> createTeam)
+        where TUnit : CompanyUnitSelectionItemBase
+        where TAllowed : CompanyTeamUnitLimitItemBase
+        where TTeam : CompanyTeamListItemBase<TAllowed>
+    {
+        foreach (var team in merged.TeamsByName.Values
+                     .Where(includeTeam)
+                     .Where(x => readTeamCount(x) > 0)
+                     .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
+                team.UnitLimits,
+                merged.UnitsByKey.Values,
+                x => x.IsCharacter);
+            var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
+            var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
+                nonCharacterNonWildcardUnitLimits,
+                merged.UnitsByKey.Values,
+                buildTeamUnitLimitItem);
+            if (allowedProfiles.Count == 0)
+            {
+                continue;
+            }
+
+            teamEntries.Add(createTeam(
+                team.Name,
+                buildTeamCountText(team),
+                false,
+                true,
+                new ObservableCollection<TAllowed>(allowedProfiles)));
+        }
+
+        var wildcardUnitLimits = BuildWildcardUnitLimits(
+            merged.TeamsByName.Values,
+            merged.UnitsByKey.Values);
+        AppendWildcardTeamEntry(
+            wildcardUnitLimits,
+            merged.UnitsByKey.Values,
+            teamEntries,
+            buildTeamUnitLimitItem,
+            createTeam);
+    }
 }

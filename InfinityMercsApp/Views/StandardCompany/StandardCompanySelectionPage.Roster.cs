@@ -102,22 +102,20 @@ public partial class StandardCompanySelectionPage
 
     private void ApplyLieutenantVisualStates()
     {
-        var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
-        var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
-        var avaLimit = CompanySelectionSharedUtilities.ParseAvaLimit(UnitAva);
-        var visibleProfiles = ApplyLieutenantProfileVisibilityCore(
+        var visibleProfiles = ApplyLieutenantVisualStatesCore(
             MercsCompanyEntries,
             Profiles,
-            pointsLimit,
-            currentPoints,
-            avaLimit,
-            _selectedUnit?.Id,
-            _selectedUnit?.SourceFactionId,
+            SelectedStartSeasonPoints,
+            SeasonPointsCapText,
+            UnitAva,
+            _selectedUnit,
             _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
             entry => entry.IsLieutenant,
             entry => entry.SourceUnitId,
-            entry => entry.SourceFactionId);
+            entry => entry.SourceFactionId,
+            unit => unit.Id,
+            unit => unit.SourceFactionId);
 
         ProfilesStatus = visibleProfiles == 0
             ? "No configurations found for this unit."

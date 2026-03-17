@@ -140,6 +140,25 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             SetSpecialSkillsSummaryFormattedForVisuals);
     }
 
+    protected bool SetAndNotifyUnitHeaderIconFlag(
+        Func<bool> readCurrent,
+        Action<bool> writeCurrent,
+        bool value)
+    {
+        if (readCurrent() == value)
+        {
+            return false;
+        }
+
+        writeCurrent(value);
+        OnPropertyChanged();
+        OnPropertyChanged("HasAnyTopHeaderIcons");
+        OnPropertyChanged("HasAnyBottomHeaderIcons");
+        OnPropertyChanged("HasAnyHeaderIcons");
+        UnitDisplayConfigurationsViewForVisuals.InvalidateHeaderIconsCanvas();
+        return true;
+    }
+
     protected bool GetShowUnitsInInchesFromProvider(CancellationToken cancellationToken = default)
     {
         return CompanySelectionVisualUiWorkflow.GetShowUnitsInInchesFromProvider(AppSettingsProvider, cancellationToken);

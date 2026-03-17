@@ -391,127 +391,64 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     public bool ShowRegularOrderIcon
     {
         get => UnitDisplayConfigurationsView.ShowRegularOrderIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowRegularOrderIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowRegularOrderIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowRegularOrderIcon,
+            x => UnitDisplayConfigurationsView.ShowRegularOrderIcon = x,
+            value);
     }
 
     public bool ShowIrregularOrderIcon
     {
         get => UnitDisplayConfigurationsView.ShowIrregularOrderIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowIrregularOrderIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowIrregularOrderIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowIrregularOrderIcon,
+            x => UnitDisplayConfigurationsView.ShowIrregularOrderIcon = x,
+            value);
     }
 
     public bool ShowImpetuousIcon
     {
         get => UnitDisplayConfigurationsView.ShowImpetuousIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowImpetuousIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowImpetuousIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowImpetuousIcon,
+            x => UnitDisplayConfigurationsView.ShowImpetuousIcon = x,
+            value);
     }
 
     public bool ShowTacticalAwarenessIcon
     {
         get => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyTopHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon,
+            x => UnitDisplayConfigurationsView.ShowTacticalAwarenessIcon = x,
+            value);
     }
 
     public bool ShowCubeIcon
     {
         get => UnitDisplayConfigurationsView.ShowCubeIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowCubeIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowCubeIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowCubeIcon,
+            x => UnitDisplayConfigurationsView.ShowCubeIcon = x,
+            value);
     }
 
     public bool ShowCube2Icon
     {
         get => UnitDisplayConfigurationsView.ShowCube2Icon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowCube2Icon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowCube2Icon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowCube2Icon,
+            x => UnitDisplayConfigurationsView.ShowCube2Icon = x,
+            value);
     }
 
     public bool ShowHackableIcon
     {
         get => UnitDisplayConfigurationsView.ShowHackableIcon;
-        private set
-        {
-            if (UnitDisplayConfigurationsView.ShowHackableIcon == value)
-            {
-                return;
-            }
-
-            UnitDisplayConfigurationsView.ShowHackableIcon = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
-            OnPropertyChanged(nameof(HasAnyHeaderIcons));
-            UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
-        }
+        private set => SetAndNotifyUnitHeaderIconFlag(
+            () => UnitDisplayConfigurationsView.ShowHackableIcon,
+            x => UnitDisplayConfigurationsView.ShowHackableIcon = x,
+            value);
     }
 
     private bool ShowUnitsInInches

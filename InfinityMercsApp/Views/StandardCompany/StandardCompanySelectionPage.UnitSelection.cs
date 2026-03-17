@@ -200,49 +200,16 @@ public partial class StandardCompanySelectionPage
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
-
-            foreach (var team in merged.TeamsByName.Values
-                         .Where(x => x.Duo > 0)
-                         .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
-                    team.UnitLimits,
-                    merged.UnitsByKey.Values,
-                    x => x.IsCharacter);
-                var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
-                var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
-                    nonCharacterNonWildcardUnitLimits,
-                    merged.UnitsByKey.Values,
-                    (displayName, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                        displayName,
-                        min,
-                        max,
-                        slug,
-                        sourceUnits));
-                if (allowedProfiles.Count == 0)
-                {
-                    continue;
-                }
-
-                TeamEntries.Add(new ArmyTeamListItem
-                {
-                    Name = team.Name,
-                    TeamCountsText = $"D: {team.Duo}",
-                    IsExpanded = true,
-                    AllowedProfiles = new ObservableCollection<ArmyTeamUnitLimitItem>(allowedProfiles)
-                });
-            }
-
-            var wildcardUnitLimits = BuildWildcardUnitLimits(
-                merged.TeamsByName.Values,
-                merged.UnitsByKey.Values);
-            AppendWildcardTeamEntry<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
-                wildcardUnitLimits,
-                merged.UnitsByKey.Values,
+            BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+                merged,
                 TeamEntries,
-                (name, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                    name, min, max, slug, sourceUnits),
-                (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
+                includeTeam: _ => true,
+                readTeamCount: team => team.Duo,
+                buildTeamCountText: team => $"D: {team.Duo}",
+                buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
+                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                        name, min, max, slug, sourceUnits),
+                createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {
                     Name = name,
                     TeamCountsText = teamCountsText,
