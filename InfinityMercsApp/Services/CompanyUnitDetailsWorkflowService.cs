@@ -21,7 +21,7 @@ internal sealed class CompanyUnitDetailsWorkflowRequest
     public required Func<string, bool> IsPositiveSwc { get; init; }
     public required Func<JsonElement, IReadOnlyDictionary<int, string>, bool> IsLieutenantOption { get; init; }
     public required Action<JsonElement> PopulateUnitStatsFromFirstProfile { get; init; }
-    public required Func<JsonElement, (bool HasIrregular, bool HasRegular, bool HasImpetuous, bool HasTacticalAwareness)> ParseUnitOrderTraits { get; init; }
+    public required Func<JsonElement, (bool HasRegular, bool HasIrregular, bool HasImpetuous, bool HasTacticalAwareness)> ParseUnitOrderTraits { get; init; }
     public required Action<bool, bool, bool, bool> SetOrderTraits { get; init; }
     public required Func<JsonElement, IReadOnlyDictionary<int, string>, IReadOnlyDictionary<int, string>, IReadOnlyDictionary<int, string>, (bool HasCube, bool HasCube2, bool HasHackable)> ParseUnitTechTraits { get; init; }
     public required Action<bool, bool, bool> SetTechTraits { get; init; }
@@ -96,7 +96,7 @@ internal static class CompanyUnitDetailsWorkflowService
 
         request.PopulateUnitStatsFromFirstProfile(doc.RootElement);
         var orderTraits = request.ParseUnitOrderTraits(doc.RootElement);
-        request.SetOrderTraits(orderTraits.HasIrregular, orderTraits.HasRegular, orderTraits.HasImpetuous, orderTraits.HasTacticalAwareness);
+        request.SetOrderTraits(orderTraits.HasRegular, orderTraits.HasIrregular, orderTraits.HasImpetuous, orderTraits.HasTacticalAwareness);
 
         var techTraits = request.ParseUnitTechTraits(doc.RootElement, equipLookup, skillsLookup, charsLookup);
         request.SetTechTraits(techTraits.HasCube, techTraits.HasCube2, techTraits.HasHackable);

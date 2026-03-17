@@ -138,7 +138,7 @@ internal static class CompanySelectionUnitFilterOptionsService
                 requireLieutenant: false,
                 requireZeroSwc: true,
                 maxCost: null,
-                includeProfileValues: false,
+                includeProfileValues: true,
                 characteristics,
                 skills,
                 equipment,

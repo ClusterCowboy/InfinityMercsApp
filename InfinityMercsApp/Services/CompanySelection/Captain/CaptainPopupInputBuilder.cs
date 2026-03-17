@@ -132,9 +132,13 @@ internal static class CaptainPopupInputBuilder
         try
         {
             using var doc = JsonDocument.Parse(filtersJson);
-            if (!doc.RootElement.TryGetProperty("extra", out var section) || section.ValueKind != JsonValueKind.Array)
+            // Army filters use "extras"; keep "extra" as a backward-compatible fallback.
+            if (!doc.RootElement.TryGetProperty("extras", out var section) || section.ValueKind != JsonValueKind.Array)
             {
-                return map;
+                if (!doc.RootElement.TryGetProperty("extra", out section) || section.ValueKind != JsonValueKind.Array)
+                {
+                    return map;
+                }
             }
 
             foreach (var entry in section.EnumerateArray())

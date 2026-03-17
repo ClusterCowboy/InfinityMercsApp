@@ -183,7 +183,7 @@ internal static class CompanySelectionRosterWorkflow
         bool selectionContextChanged,
         Action onContextChangedForSameSelection,
         Action<TUnit> loadSelectedUnitLogo,
-        Action loadSelectedUnitDetails)
+        Action<TUnit> loadSelectedUnitDetails)
         where TUnit : CompanyUnitSelectionItemBase
     {
         Console.WriteLine($"CompanySelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
@@ -210,7 +210,7 @@ internal static class CompanySelectionRosterWorkflow
         item.IsSelected = true;
         Console.WriteLine($"CompanySelectionPage selected unit now: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
         loadSelectedUnitLogo(item);
-        loadSelectedUnitDetails();
+        loadSelectedUnitDetails(item);
         return item;
     }
 
@@ -222,7 +222,7 @@ internal static class CompanySelectionRosterWorkflow
         Action<TContext> setContext,
         Action onContextChangedForSameSelection,
         Action<TUnit> loadSelectedUnitLogo,
-        Action loadSelectedUnitDetails)
+        Action<TUnit> loadSelectedUnitDetails)
         where TUnit : CompanyUnitSelectionItemBase
         where TContext : IEquatable<TContext>
     {

@@ -118,11 +118,6 @@ This is an app in C# which will allow for the easy creation and managment of a c
 And more
 
 ## Known Defects
-- [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
-- [X] Loading Data from Reinforcements from online isn't working properly
-- [] Units are not loading properly - We always appear to load the unit we clicked on prior to the current unit. Definite conflicts
-- [] Regular, etc are not loading properly
-- [] Filter criteria are no longer populating correctly - Characteristics
 - [] Create an indicator (yellow circle?) to indicate filter is on
 - [] Background Colors not populating correctly based on faction
 - [] Evaulation of Fireteam level is not correct

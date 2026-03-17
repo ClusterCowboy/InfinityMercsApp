@@ -68,7 +68,7 @@
 
                 <Button
                     Grid.Row="2"
-                    Text="? BACK"
+                    Text="← BACK"
                     HorizontalOptions="Start"
                     Clicked="OnBackClicked" />
             </Grid>

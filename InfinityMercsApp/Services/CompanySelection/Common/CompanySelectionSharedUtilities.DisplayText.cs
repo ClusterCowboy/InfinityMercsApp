@@ -11,7 +11,10 @@ internal static partial class CompanySelectionSharedUtilities
             return distanceText;
         }
 
-        var match = Regex.Match(distanceText, @"([+-]?)(\d+(?:\.\d+)?)(?:\s*(?:cm|""|in|inch|inches))?", RegexOptions.IgnoreCase);
+        var match = Regex.Match(
+            distanceText,
+            @"([+-]?)(\d+(?:\.\d+)?)(?:\s*(cm|""|in|inch|inches))?",
+            RegexOptions.IgnoreCase);
         if (!match.Success)
         {
             return distanceText;
@@ -19,20 +22,31 @@ internal static partial class CompanySelectionSharedUtilities
 
         var sign = match.Groups[1].Value;
         var numberText = match.Groups[2].Value;
-        if (!double.TryParse(numberText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var cm))
+        if (!double.TryParse(
+                numberText,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsedValue))
         {
             return distanceText;
         }
 
+        var unitToken = match.Groups[3].Success
+            ? match.Groups[3].Value.Trim().ToLowerInvariant()
+            : string.Empty;
+        var valueInCm = unitToken is "\"" or "in" or "inch" or "inches"
+            ? parsedValue * 2.5
+            : parsedValue;
+
         string replacement;
         if (showUnitsInInches)
         {
-            var inches = (int)Math.Round(cm / 2.5, MidpointRounding.AwayFromZero);
+            var inches = (int)Math.Round(valueInCm / 2.5, MidpointRounding.AwayFromZero);
             replacement = $"{sign}{inches}\"";
         }
         else
         {
-            var roundedCm = Math.Round(cm, 2, MidpointRounding.AwayFromZero);
+            var roundedCm = Math.Round(valueInCm, 2, MidpointRounding.AwayFromZero);
             var cmText = Math.Abs(roundedCm - Math.Round(roundedCm)) < 0.001
                 ? ((int)Math.Round(roundedCm)).ToString(System.Globalization.CultureInfo.InvariantCulture)
                 : roundedCm.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);

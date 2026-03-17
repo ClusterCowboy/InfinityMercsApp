@@ -100,7 +100,7 @@ public abstract partial class CompanySelectionPageBase
         bool selectionContextChanged,
         Action onContextChangedForSameSelection,
         Action<TUnit> loadSelectedUnitLogo,
-        Action loadSelectedUnitDetails)
+        Action<TUnit> loadSelectedUnitDetails)
         where TUnit : CompanyUnitSelectionItemBase
     {
         return CompanySelectionRosterWorkflow.SetSelectedUnit(
@@ -120,7 +120,7 @@ public abstract partial class CompanySelectionPageBase
         Action<TContext> setContext,
         Action onContextChangedForSameSelection,
         Action<TUnit> loadSelectedUnitLogo,
-        Action loadSelectedUnitDetails)
+        Action<TUnit> loadSelectedUnitDetails)
         where TUnit : CompanyUnitSelectionItemBase
         where TContext : IEquatable<TContext>
     {

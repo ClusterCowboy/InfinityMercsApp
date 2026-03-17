@@ -13,7 +13,11 @@ public partial class StandardCompanySelectionPage
             selectionContextChanged: false,
             onContextChangedForSameSelection: () => { },
             loadSelectedUnitLogo: selectedItem => _ = LoadSelectedUnitLogoAsync(selectedItem),
-            loadSelectedUnitDetails: () => _ = LoadSelectedUnitDetailsAsync());
+            loadSelectedUnitDetails: selectedItem =>
+            {
+                _selectedUnit = selectedItem;
+                _ = LoadSelectedUnitDetailsAsync();
+            });
     }
 
     private void AddProfileToMercsCompany(ViewerProfileItem? profile)

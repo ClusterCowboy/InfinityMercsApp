@@ -15,7 +15,11 @@ public partial class CohesiveCompanySelectionPage
             value => _restrictSelectedUnitProfilesToFto = value,
             onContextChangedForSameSelection: () => _ = LoadSelectedUnitDetailsAsync(),
             loadSelectedUnitLogo: selectedItem => _ = LoadSelectedUnitLogoAsync(selectedItem),
-            loadSelectedUnitDetails: () => _ = LoadSelectedUnitDetailsAsync());
+            loadSelectedUnitDetails: selectedItem =>
+            {
+                _selectedUnit = selectedItem;
+                _ = LoadSelectedUnitDetailsAsync();
+            });
     }
 
     private void AddProfileToMercsCompany(ViewerProfileItem? profile)

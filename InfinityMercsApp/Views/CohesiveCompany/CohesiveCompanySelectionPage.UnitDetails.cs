@@ -56,7 +56,7 @@ public partial class CohesiveCompanySelectionPage
                     IsLieutenantOption = IsLieutenantOption,
                     PopulateUnitStatsFromFirstProfile = PopulateUnitStatsFromFirstProfile,
                     ParseUnitOrderTraits = CompanyUnitTraitService.ParseUnitOrderTraits,
-                    SetOrderTraits = (hasIrregular, hasRegular, hasImpetuous, hasTacticalAwareness) =>
+                    SetOrderTraits = (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness) =>
                     {
                         ShowIrregularOrderIcon = hasIrregular;
                         ShowRegularOrderIcon = !hasIrregular && hasRegular;
