@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanySavedImprovedCaptainStatsBase
 {
@@ -116,4 +116,5 @@ public abstract class CompanyCaptainUpgradeOptionSetBase
     public List<string> Equipment { get; init; } = [];
     public bool IsEmpty => Weapons.Count == 0 && Skills.Count == 0 && Equipment.Count == 0;
 }
+
 

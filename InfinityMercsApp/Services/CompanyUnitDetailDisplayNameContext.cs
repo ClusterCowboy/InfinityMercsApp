@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using InfinityMercsApp.Services;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Services;
 
@@ -325,5 +325,6 @@ internal sealed class CompanyUnitDetailDisplayNameContext
 
     private readonly record struct ExtraDefinition(string Name, string Type);
 }
+
 
 

@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using InfinityMercsApp.ViewModels;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanyTeamListItemBase<TAllowedProfile> : BaseViewModel
     where TAllowedProfile : class
@@ -91,4 +91,5 @@ public abstract class CompanyTeamUnitLimitItemBase : BaseViewModel, IViewerListI
         }
     }
 }
+
 

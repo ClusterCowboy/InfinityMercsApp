@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyTeamSelectionWorkflow
 {
@@ -33,4 +33,5 @@ internal static class CompanyTeamSelectionWorkflow
         return resolved;
     }
 }
+
 

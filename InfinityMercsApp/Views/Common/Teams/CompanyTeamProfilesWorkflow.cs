@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyTeamProfilesWorkflow
 {
@@ -183,4 +183,5 @@ internal static class CompanyTeamProfilesWorkflow
             x => x.SourceFactionId);
     }
 }
+
 

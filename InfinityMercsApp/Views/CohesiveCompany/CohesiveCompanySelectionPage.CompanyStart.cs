@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Views.Common.NewCompany;
+﻿using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.CohesiveCompany;
 
@@ -41,4 +41,5 @@ public partial class CCArmyFactionSelectionPage
             SeasonPointsCapText);
     }
 }
+
 

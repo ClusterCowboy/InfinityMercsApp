@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using InfinityMercsApp.ViewModels;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Services;
 
@@ -439,5 +439,6 @@ internal sealed class CompanyProfileCoordinator
         return string.IsNullOrWhiteSpace(optionName) ? groupName : optionName;
     }
 }
+
 
 

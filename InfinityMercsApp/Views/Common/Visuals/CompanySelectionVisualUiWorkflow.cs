@@ -5,7 +5,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionVisualUiWorkflow
 {
@@ -77,4 +77,5 @@ internal static class CompanySelectionVisualUiWorkflow
         return appSettingsProvider?.GetShowUnitsInInches() ?? false;
     }
 }
+
 

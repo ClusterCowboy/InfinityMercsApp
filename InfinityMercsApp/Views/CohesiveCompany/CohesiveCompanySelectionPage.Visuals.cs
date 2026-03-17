@@ -1,5 +1,5 @@
 ﻿using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 
@@ -15,4 +15,5 @@ public partial class CCArmyFactionSelectionPage
         CompanySelectionVisualUiWorkflow.DrawSlotPicture(_trackedFireteamLevelPicture, e);
     }
 }
+
 

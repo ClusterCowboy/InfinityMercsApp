@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 public interface ICompanySourceFaction
 {
@@ -45,4 +45,5 @@ public interface ICompanyMercsEntry
     string? CachedLogoPath { get; }
     string? PackagedLogoPath { get; }
 }
+
 

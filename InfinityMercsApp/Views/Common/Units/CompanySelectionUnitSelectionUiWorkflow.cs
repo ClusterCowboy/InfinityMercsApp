@@ -1,6 +1,6 @@
 ﻿using SkiaSharp.Views.Maui.Controls;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionUnitSelectionUiWorkflow
 {
@@ -38,4 +38,5 @@ internal static class CompanySelectionUnitSelectionUiWorkflow
         applyFilterButtonSize(activeButtonBorder, activeIconCanvas, iconButtonSize);
     }
 }
+
 

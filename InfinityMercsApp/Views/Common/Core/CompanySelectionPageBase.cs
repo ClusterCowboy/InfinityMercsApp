@@ -10,7 +10,7 @@ using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 /// <summary>
 /// Shared abstract base class for company selection pages.
@@ -329,4 +329,5 @@ public abstract class CompanySelectionPageBase : ContentPage
     protected abstract Task LoadSelectedUnitDetailsAsync();
     protected abstract Task StartCompanyAsync();
 }
+
 

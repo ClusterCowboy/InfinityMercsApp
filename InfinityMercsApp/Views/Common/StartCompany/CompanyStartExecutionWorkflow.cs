@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal sealed class CompanyStartExecutionRequest<TFaction, TEntry, TCaptainStats>
     where TFaction : class, ICompanySourceFaction
@@ -36,4 +36,5 @@ internal static class CompanyStartExecutionWorkflow
         }
     }
 }
+
 

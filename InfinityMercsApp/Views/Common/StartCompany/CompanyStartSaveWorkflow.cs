@@ -5,7 +5,7 @@ using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Common.UICommon;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal sealed class CompanyStartSaveRequest<TFaction, TEntry, TCaptainStats>
     where TFaction : class, ICompanySourceFaction
@@ -160,4 +160,5 @@ internal static class CompanyStartSaveWorkflow
         await request.NavigateToCompanyViewerAsync(filePath);
     }
 }
+
 

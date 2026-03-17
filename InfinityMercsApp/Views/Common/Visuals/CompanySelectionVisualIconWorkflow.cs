@@ -2,7 +2,7 @@
 using SkiaSharp;
 using Svg.Skia;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionVisualIconWorkflow
 {
@@ -125,4 +125,5 @@ internal static class CompanySelectionVisualIconWorkflow
         }
     }
 }
+
 

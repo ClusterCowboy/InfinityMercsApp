@@ -10,7 +10,7 @@ using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 using Microsoft.Maui.Devices;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
@@ -1217,6 +1217,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
     }
 
 }
+
 
 
 

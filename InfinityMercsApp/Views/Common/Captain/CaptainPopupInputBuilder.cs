@@ -3,7 +3,7 @@ using System.Text.Json;
 using InfinityMercsApp.Domain.Models.Army;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.Common.Captain;
 
@@ -274,4 +274,5 @@ internal static class CaptainPopupInputBuilder
 
     private sealed record CaptainExtraDefinition(string Name, string Type);
 }
+
 

@@ -1,6 +1,6 @@
 ﻿using InfinityMercsApp.ViewModels;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListItem, ICompanyMercsEntry
 {
@@ -166,4 +166,5 @@ public static class CompanyUnitExperienceRanks
         return 0;
     }
 }
+
 

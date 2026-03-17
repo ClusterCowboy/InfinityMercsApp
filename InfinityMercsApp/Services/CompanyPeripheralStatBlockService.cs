@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using InfinityMercsApp.Services;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Services;
 
@@ -85,5 +85,6 @@ internal static class CompanyPeripheralStatBlockService
         };
     }
 }
+
 
 

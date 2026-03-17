@@ -2,7 +2,7 @@
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -352,6 +352,7 @@ public partial class StandardCompanySelectionPage
     }
 
 }
+
 
 
 

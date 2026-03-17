@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal sealed record CompanyFireteamChartEntry(
     string Name,
@@ -122,4 +122,5 @@ internal static class CompanyUnitDetailsFireteamCommon
         return results;
     }
 }
+
 

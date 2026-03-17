@@ -7,7 +7,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 /// <summary>
 /// Shared static helpers used by Standard and Cohesive company selection pages.
@@ -804,5 +804,6 @@ internal static class CompanySelectionSharedUtilities
     }
 
 }
+
 
 

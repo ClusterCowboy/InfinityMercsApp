@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyTeamVisibilityWorkflow
 {
@@ -80,4 +80,5 @@ internal static class CompanyTeamVisibilityWorkflow
         }
     }
 }
+
 

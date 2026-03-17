@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyTeamMatchingWorkflow
 {
@@ -319,4 +319,5 @@ internal static class CompanyTeamMatchingWorkflow
                 value.IndexOf("wild", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 }
+
 

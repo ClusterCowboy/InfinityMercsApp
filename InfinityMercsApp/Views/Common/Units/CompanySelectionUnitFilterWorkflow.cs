@@ -2,7 +2,7 @@
 using InfinityMercsApp.Views.Controls;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionUnitFilterWorkflow
 {
@@ -232,4 +232,5 @@ internal static class CompanySelectionUnitFilterWorkflow
         return ClonePopupOptionsForCurrentPoints(options, maxPoints);
     }
 }
+
 

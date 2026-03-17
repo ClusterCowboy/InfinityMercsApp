@@ -1,6 +1,6 @@
 ﻿using InfinityMercsApp.ViewModels;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanyFactionSelectionItemBase : BaseViewModel, IViewerListItem, ICompanySourceFaction
 {
@@ -87,4 +87,5 @@ public abstract class CompanyUnitSelectionItemBase : BaseViewModel, IViewerListI
         }
     }
 }
+
 

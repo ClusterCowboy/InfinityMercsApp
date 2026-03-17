@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal sealed class CompanyTeamAggregate
 {
@@ -35,4 +35,5 @@ internal sealed class CompanyTeamAggregate
         UnitLimits[unitName] = (min, max, slug, minAsterisk);
     }
 }
+
 

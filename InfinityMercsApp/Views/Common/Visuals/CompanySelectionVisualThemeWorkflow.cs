@@ -3,7 +3,7 @@ using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal readonly record struct CompanyHeaderColors(Color Primary, Color Secondary, Color PrimaryText, Color SecondaryText);
 
@@ -188,4 +188,5 @@ internal static class CompanySelectionVisualThemeWorkflow
         };
     }
 }
+
 

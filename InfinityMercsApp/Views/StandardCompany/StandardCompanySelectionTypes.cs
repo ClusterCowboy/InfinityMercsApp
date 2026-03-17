@@ -1,5 +1,5 @@
 ﻿using InfinityMercsApp.ViewModels;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -47,4 +47,5 @@ public sealed class CaptainUpgradeOptionSet : CompanyCaptainUpgradeOptionSetBase
 {
     public static CaptainUpgradeOptionSet Empty { get; } = new();
 }
+
 

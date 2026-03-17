@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using InfinityMercsApp.Services;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyUnitDetailsPeripheralCommon
 {
@@ -29,4 +29,5 @@ internal static class CompanyUnitDetailsPeripheralCommon
         });
     }
 }
+
 

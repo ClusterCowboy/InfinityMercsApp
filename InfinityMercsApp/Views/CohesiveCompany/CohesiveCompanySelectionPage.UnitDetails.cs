@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.NewCompany;
-using static InfinityMercsApp.Views.Common.NewCompany.CompanyUnitDetailsShared;
+using InfinityMercsApp.Views.Common;
+using static InfinityMercsApp.Views.Common.CompanyUnitDetailsShared;
 using Svg.Skia;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
@@ -493,6 +493,7 @@ public partial class CCArmyFactionSelectionPage
 
 
 }
+
 
 
 

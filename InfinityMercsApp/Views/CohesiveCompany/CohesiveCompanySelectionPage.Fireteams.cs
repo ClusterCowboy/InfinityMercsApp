@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Services;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 using Svg.Skia;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 
@@ -371,4 +371,5 @@ public partial class CCArmyFactionSelectionPage
         TrackedFireteamLevelCanvas?.InvalidateSurface();
     }
 }
+
 

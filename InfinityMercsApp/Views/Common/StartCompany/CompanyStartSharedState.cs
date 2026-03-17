@@ -1,4 +1,4 @@
-﻿namespace InfinityMercsApp.Views.Common.NewCompany;
+﻿namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyStartSharedState
 {
@@ -75,4 +75,5 @@ internal static class CompanyStartSharedState
         return hasLieutenant && currentPoints <= pointsLimit;
     }
 }
+
 

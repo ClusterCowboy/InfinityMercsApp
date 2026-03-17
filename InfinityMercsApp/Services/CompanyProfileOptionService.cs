@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.Json;
-using InfinityMercsApp.Views.Common.NewCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Services;
 
@@ -410,5 +410,6 @@ public static class CompanyProfileOptionService
         return CompanySelectionSharedUtilities.TryParseId(element, out id);
     }
 }
+
 
 

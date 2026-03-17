@@ -5,7 +5,7 @@ using InfinityMercsApp.Domain.Models.Army;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 
-namespace InfinityMercsApp.Views.Common.NewCompany;
+namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanyUnitDetailsShared
 {
@@ -574,4 +574,5 @@ internal static class CompanyUnitDetailsShared
     }
 
 }
+
 
