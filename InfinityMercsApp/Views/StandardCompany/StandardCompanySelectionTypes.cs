@@ -1,9 +1,10 @@
 using System.Collections.ObjectModel;
 using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.Views.Templates.NewCompany;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
-public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem, ICompanySourceFaction
 {
     public int Id { get; init; }
 
@@ -177,7 +178,7 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class MercsCompanyEntry : BaseViewModel, IViewerListItem
+public class MercsCompanyEntry : BaseViewModel, IViewerListItem, ICompanyMercsEntry
 {
     public string Name { get; init; } = string.Empty;
     public FormattedString? NameFormatted { get; init; }

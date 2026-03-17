@@ -2390,20 +2390,15 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
                 unit.Slug.IndexOf("reinf", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
-    private bool IsCompanyNameValid(string? value)
+    private static bool IsCompanyNameValid(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        return !string.Equals(value.Trim(), "Company Name", StringComparison.OrdinalIgnoreCase);
+        return CompanyStartSharedState.IsCompanyNameValid(value);
     }
 
     private void SetCompanyNameValidationError(bool showError)
     {
         ShowCompanyNameValidationError = showError;
-        CompanyNameBorderColor = showError ? Color.FromArgb("#EF4444") : Color.FromArgb("#6B7280");
+        CompanyNameBorderColor = CompanyStartSharedState.GetCompanyNameBorderColor(showError);
     }
 
     protected override async Task StartCompanyAsync()
@@ -2418,125 +2413,31 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
         try
         {
-            var captainEntry = MercsCompanyEntries.FirstOrDefault(x => x.IsLieutenant) ?? MercsCompanyEntries.FirstOrDefault();
-            if (captainEntry is null)
-            {
-                await DisplayAlert("Save Failed", "Add at least one unit before starting a company.", "OK");
-                return;
-            }
-
-            var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<SavedImprovedCaptainStats>(
-                new CompanyCaptainWorkflowRequest
+            await CompanyStartSaveWorkflow.RunAsync<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>(
+                new CompanyStartSaveRequest<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>
                 {
-                    Navigation = Navigation,
-                    FallbackSourceFactionId = captainEntry.SourceFactionId,
-                    FirstSourceFactionId = CompanyUnitDetailsShared.BuildUnitSourceFactions(
-                        ShowRightSelectionBox,
-                        _factionSelectionState.LeftSlotFaction,
-                        _factionSelectionState.RightSlotFaction,
-                        faction => faction.Id).FirstOrDefault()?.Id,
-                    UnitName = captainEntry.Name,
-                    UnitCost = captainEntry.CostValue,
-                    UnitStatline = captainEntry.Subtitle ?? "-",
-                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
-                    UnitCcWeapons = captainEntry.SavedCcWeapons,
-                    UnitSkills = captainEntry.SavedSkills,
-                    UnitEquipment = captainEntry.SavedEquipment,
-                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
-                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
-                    TryGetParentFactionId = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
-                    TryGetFactionName = factionId => Factions.FirstOrDefault(x => x.Id == factionId)?.Name,
-                    TryGetMetadataFactionName = factionId => _armyDataService.GetMetadataFactionById(factionId)?.Name,
+                    CompanyName = CompanyName.Trim(),
+                    CompanyType = GetCompanyTypeLabel(),
+                    MercsCompanyEntries = MercsCompanyEntries,
+                    ShowRightSelectionBox = ShowRightSelectionBox,
+                    LeftSlotFaction = _factionSelectionState.LeftSlotFaction,
+                    RightSlotFaction = _factionSelectionState.RightSlotFaction,
+                    Factions = Factions,
                     ArmyDataService = _armyDataService,
                     SpecOpsProvider = _specOpsProvider,
-                    ShowUnitsInInches = ShowUnitsInInches
-                });
-            if (improvedCaptainStats is null)
-            {
-                return;
-            }
-
-            var now = DateTimeOffset.UtcNow;
-            var companyName = CompanyName.Trim();
-            var companyType = GetCompanyTypeLabel();
-            var safeFileName = Regex.Replace(companyName.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
-            if (string.IsNullOrWhiteSpace(safeFileName))
-            {
-                safeFileName = "company";
-            }
-
-            var saveDir = Path.Combine(FileSystem.Current.AppDataDirectory, "MercenaryRecords");
-            Directory.CreateDirectory(saveDir);
-            var companyIndex = GetNextCompanyIndex(saveDir, companyName, safeFileName);
-            var fileName = $"{safeFileName}-{companyIndex:D4}.json";
-
-            var payload = new SavedCompanyFile
-            {
-                CompanyName = companyName,
-                CompanyType = companyType,
-                CompanyIdentifier = ComputeCompanyIdentifier(fileName),
-                CompanyIndex = companyIndex,
-                CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
-                PointsLimit = int.TryParse(SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
-                CurrentPoints = int.TryParse(SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
-                ImprovedCaptainStats = improvedCaptainStats,
-                SourceFactions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
-                    ShowRightSelectionBox,
-                    _factionSelectionState.LeftSlotFaction,
-                    _factionSelectionState.RightSlotFaction,
-                    faction => faction.Id)
-                    .Select(faction => new SavedCompanyFaction
+                    Navigation = Navigation,
+                    ShowUnitsInInches = ShowUnitsInInches,
+                    SelectedStartSeasonPoints = SelectedStartSeasonPoints,
+                    SeasonPointsCapText = SeasonPointsCapText,
+                    TryGetMetadataFactionName = factionId => _armyDataService.GetMetadataFactionById(factionId)?.Name,
+                    ReadCaptainName = stats => stats.CaptainName,
+                    DisplayAlertAsync = (title, message, cancel) => DisplayAlert(title, message, cancel),
+                    NavigateToCompanyViewerAsync = async filePath =>
                     {
-                        FactionId = faction.Id,
-                        FactionName = faction.Name
-                    })
-                    .ToList(),
-                Entries = MercsCompanyEntries.Select((entry, entryIndex) => new SavedCompanyEntry
-                {
-                    EntryIndex = entryIndex,
-                    Name = entry.Name,
-                    BaseUnitName = entry.Name,
-                    CustomName = entry.IsLieutenant
-                        ? (string.IsNullOrWhiteSpace(improvedCaptainStats.CaptainName) ? "Captain" : improvedCaptainStats.CaptainName.Trim())
-                        : "Trooper",
-                    UnitTypeCode = string.IsNullOrWhiteSpace(entry.UnitTypeCode)
-                        ? string.Empty
-                        : entry.UnitTypeCode.Trim().ToUpperInvariant(),
-                    ProfileKey = entry.ProfileKey,
-                    SourceFactionId = entry.SourceFactionId,
-                    SourceUnitId = entry.SourceUnitId,
-                    Cost = entry.CostValue,
-                    IsLieutenant = entry.IsLieutenant,
-                    SavedEquipment = entry.SavedEquipment,
-                    SavedSkills = entry.SavedSkills,
-                    SavedRangedWeapons = entry.SavedRangedWeapons,
-                    SavedCcWeapons = entry.SavedCcWeapons,
-                    HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
-                    PeripheralNameHeading = entry.PeripheralNameHeading,
-                    PeripheralMov = entry.PeripheralMov,
-                    PeripheralCc = entry.PeripheralCc,
-                    PeripheralBs = entry.PeripheralBs,
-                    PeripheralPh = entry.PeripheralPh,
-                    PeripheralWip = entry.PeripheralWip,
-                    PeripheralArm = entry.PeripheralArm,
-                    PeripheralBts = entry.PeripheralBts,
-                    PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
-                    PeripheralVitality = entry.PeripheralVitality,
-                    PeripheralS = entry.PeripheralS,
-                    PeripheralAva = entry.PeripheralAva,
-                    SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
-                    SavedPeripheralSkills = entry.SavedPeripheralSkills,
-                    ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
-                }).ToList()
-            };
-
-            var filePath = Path.Combine(saveDir, fileName);
-            await File.WriteAllTextAsync(
-                filePath,
-                JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
-
-            var encodedPath = Uri.EscapeDataString(filePath);
-            await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+                        var encodedPath = Uri.EscapeDataString(filePath);
+                        await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+                    }
+                });
         }
         catch (Exception ex)
         {
@@ -2547,46 +2448,17 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private static string ExtractUnitTypeCode(string? subtitle)
     {
-        if (string.IsNullOrWhiteSpace(subtitle))
-        {
-            return string.Empty;
-        }
-
-        var firstToken = subtitle
-            .Split([' ', '-', '\u2013', '\u2014'], StringSplitOptions.RemoveEmptyEntries)
-            .FirstOrDefault();
-        return string.IsNullOrWhiteSpace(firstToken) ? string.Empty : firstToken.Trim().ToUpperInvariant();
+        return CompanyStartSharedState.ExtractUnitTypeCode(subtitle);
     }
 
     private void UpdateMercsCompanyTotal()
     {
-        var totalCost = MercsCompanyEntries.Sum(x => x.CostValue);
-        SeasonPointsCapText = totalCost.ToString();
+        SeasonPointsCapText = CompanyStartSharedState.ComputeTotalCostText(MercsCompanyEntries);
     }
 
     private void RefreshMercsCompanyEntryDistanceDisplays()
     {
-        foreach (var entry in MercsCompanyEntries)
-        {
-            var moveDisplay = FormatMoveValue(entry.UnitMoveFirstCm, entry.UnitMoveSecondCm);
-            entry.UnitMoveDisplay = moveDisplay;
-            entry.Subtitle = CompanyUnitDetailsShared.ReplaceSubtitleMoveDisplay(entry.Subtitle, moveDisplay);
-
-            if (entry.HasPeripheralStatBlock)
-            {
-                entry.PeripheralMov = FormatMoveValue(entry.PeripheralMoveFirstCm, entry.PeripheralMoveSecondCm);
-            }
-        }
-    }
-
-    private static string ComputeCompanyIdentifier(string fileName)
-    {
-        return CompanySelectionSharedUtilities.ComputeCompanyIdentifier(fileName);
-    }
-
-    private static int GetNextCompanyIndex(string saveDir, string companyName, string safeFileName)
-    {
-        return CompanySelectionSharedUtilities.GetNextCompanyIndex(saveDir, companyName, safeFileName);
+        CompanyStartSharedState.RefreshMercsCompanyEntryDistanceDisplays(MercsCompanyEntries, FormatMoveValue);
     }
 
     private string GetCompanyTypeLabel()
@@ -2596,11 +2468,10 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
     private void UpdateSeasonValidationState()
     {
-        var hasLieutenant = MercsCompanyEntries.Any(x => x.IsLieutenant);
-        var pointsLimit = int.TryParse(SelectedStartSeasonPoints, out var parsedLimit) ? parsedLimit : 0;
-        var currentPoints = int.TryParse(SeasonPointsCapText, out var parsedPoints) ? parsedPoints : 0;
-        var shouldShowCheck = hasLieutenant && currentPoints <= pointsLimit;
-        IsCompanyValid = shouldShowCheck;
+        IsCompanyValid = CompanyStartSharedState.IsSeasonValid(
+            MercsCompanyEntries,
+            SelectedStartSeasonPoints,
+            SeasonPointsCapText);
     }
 
     private void OnTeamAllowedProfileSelected(ArmyTeamUnitLimitItem? teamItem)
@@ -3103,7 +2974,7 @@ public partial class CCArmyFactionSelectionPage : CompanySelectionPageBase, IUni
 
 }
 
-public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem
+public class ArmyFactionSelectionItem : BaseViewModel, IViewerListItem, ICompanySourceFaction
 {
     public int Id { get; init; }
 
@@ -3294,7 +3165,7 @@ public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
     }
 }
 
-public class MercsCompanyEntry : BaseViewModel, IViewerListItem
+public class MercsCompanyEntry : BaseViewModel, IViewerListItem, ICompanyMercsEntry
 {
     public string Name { get; init; } = string.Empty;
     public string BaseUnitName { get; init; } = string.Empty;
