@@ -30,9 +30,9 @@ public partial class CohesiveCompanySelectionPage
 
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
-        _activeUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
+        _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
             GetPreparedPopupOptionsForCurrentPoints(),
-            _activeUnitFilter,
+            _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
             TeamsView,
             ResolveUnitFilterPopupHeight(),
@@ -45,7 +45,7 @@ public partial class CohesiveCompanySelectionPage
 
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
-        _activeUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
+        _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,
             value => TeamsView = value);
@@ -60,9 +60,9 @@ public partial class CohesiveCompanySelectionPage
 
     private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
-        _activeUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
+        _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
             popup,
-            _activeUnitFilterPopup,
+            _filterState.ActiveUnitFilterPopup,
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
             UnitFilterPopupHost,
@@ -95,7 +95,7 @@ public partial class CohesiveCompanySelectionPage
             (factionId, ct) => GetFactionSnapshotFromProvider(factionId, ct)?.FiltersJson,
             (factionIds, ct) => GetMergedMercsArmyListFromQueryAccessorAsync(factionIds, ct),
             ResolveFilterPopupMaxPoints(),
-            value => _preparedUnitFilterPopupOptions = value,
+            value => _filterState.PreparedUnitFilterPopupOptions = value,
             message => Console.WriteLine(message),
             cancellationToken);
     }
@@ -113,7 +113,7 @@ public partial class CohesiveCompanySelectionPage
     private UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
     {
         return CompanySelectionUnitFilterWorkflow.GetPreparedPopupOptionsForCurrentPoints(
-            _preparedUnitFilterPopupOptions,
+            _filterState.PreparedUnitFilterPopupOptions,
             ResolveFilterPopupMaxPoints());
     }
 }

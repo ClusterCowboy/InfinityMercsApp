@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Domain.Models.Army;
@@ -446,7 +446,7 @@ internal static class CompanyUnitDetailsShared
         }
         catch (Exception ex)
         {
-            logError($"ArmyFactionSelectionPage ApplyGlobalDisplayUnitsPreferenceAsync failed: {ex.Message}");
+            logError($"CompanySelectionPage ApplyGlobalDisplayUnitsPreferenceAsync failed: {ex.Message}");
         }
 
         return Task.CompletedTask;
@@ -532,7 +532,7 @@ internal static class CompanyUnitDetailsShared
         }
         catch (Exception ex)
         {
-            logError($"ArmyFactionSelectionPage UpdatePeripheralStatBlockFromVisibleProfiles failed: {ex.Message}");
+            logError($"CompanySelectionPage UpdatePeripheralStatBlockFromVisibleProfiles failed: {ex.Message}");
         }
     }
 

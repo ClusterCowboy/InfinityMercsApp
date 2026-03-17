@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -26,7 +26,7 @@ public partial class StandardCompanySelectionPage
         ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
         if (_selectedUnit is null)
         {
-            Console.Error.WriteLine("ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
+            Console.Error.WriteLine("CompanySelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
             return;
         }
 
@@ -98,11 +98,11 @@ public partial class StandardCompanySelectionPage
                     LogError = Console.Error.WriteLine
                 },
                 cancellationToken);
-            Console.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
+            Console.WriteLine($"CompanySelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadSelectedUnitDetailsAsync failed: {ex}");
+            Console.Error.WriteLine($"CompanySelectionPage LoadSelectedUnitDetailsAsync failed: {ex}");
         }
     }
 
@@ -111,14 +111,10 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
     {
-        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
-        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
-        UnitDisplayConfigurationsView.SelectedUnitPicture = await CompanyUnitLogoWorkflowService.LoadSelectedUnitLogoAsync(
-            item.Name,
-            item.Id,
-            item.SourceFactionId,
+        await LoadSelectedUnitLogoCoreAsync(
+            item,
+            UnitDisplayConfigurationsView,
             () => OpenBestUnitLogoStreamAsync(item));
-        UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
     }
 
     /// <summary>
@@ -297,11 +293,10 @@ public partial class StandardCompanySelectionPage
         }
         if (clearLogo)
         {
-            Console.WriteLine("ArmyFactionSelectionPage ResetUnitDetails: clearing selected unit logo.");
-        UnitDisplayConfigurationsView.SelectedUnitPicture?.Dispose();
-        UnitDisplayConfigurationsView.SelectedUnitPicture = null;
-        UnitDisplayConfigurationsView.InvalidateSelectedUnitCanvas();
-    }
+            ClearSelectedUnitLogoCore(
+                UnitDisplayConfigurationsView,
+                "CompanySelectionPage ResetUnitDetails: clearing selected unit logo.");
+        }
         UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = null;
         UnitDisplayConfigurationsView.SelectedUnitFiltersJson = null;
         ResetUnitStatsOnly();

@@ -30,7 +30,7 @@ public partial class StandardCompanySelectionPage
             ApplyUnitVisibilityCore(
                 Units,
                 lookupContext,
-                _activeUnitFilter,
+                _filterState.ActiveUnitFilter,
                 LieutenantOnlyUnits,
                 pointsRemaining,
                 GetUnitFromProvider,
@@ -47,7 +47,7 @@ public partial class StandardCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
         }
     }
 }

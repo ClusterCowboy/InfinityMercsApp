@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Views.Controls;
+using InfinityMercsApp.Views.Controls;
 using SkiaSharp;
 using Svg.Skia;
 
@@ -40,7 +40,7 @@ internal static class CompanySelectionVisualIconWorkflow
         }
         catch (Exception ex)
         {
-            logError($"ArmyFactionSelectionPage slot icon load failed: {ex.Message}");
+            logError($"CompanySelectionPage slot icon load failed: {ex.Message}");
             SetSlotPicture(factionSlotSelectorView, slotIndex, null);
         }
     }
@@ -120,7 +120,7 @@ internal static class CompanySelectionVisualIconWorkflow
         }
         catch (Exception ex)
         {
-            logError($"ArmyFactionSelectionPage {label} icon load failed: {ex.Message}");
+            logError($"CompanySelectionPage {label} icon load failed: {ex.Message}");
             return null;
         }
     }

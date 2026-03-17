@@ -31,7 +31,7 @@ public partial class CohesiveCompanySelectionPage
             ApplyUnitVisibilityCore(
                 Units,
                 lookupContext,
-                _activeUnitFilter,
+                _filterState.ActiveUnitFilter,
                 LieutenantOnlyUnits,
                 pointsRemaining,
                 GetUnitFromProvider,
@@ -49,7 +49,7 @@ public partial class CohesiveCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
             AreTeamEntriesReady = false;
         }
     }

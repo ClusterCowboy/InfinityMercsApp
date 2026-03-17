@@ -1,4 +1,3 @@
-﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Common;
@@ -28,120 +27,29 @@ public partial class CohesiveCompanySelectionPage
         var ammoLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "ammunition");
         var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "type");
         var categoryLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot.FiltersJson, "category");
-
         var units = GetResumeByFactionMercsOnlyFromProvider(faction.Id, cancellationToken);
-        var sourceUnits = units.Select(unit => new ArmyUnitSelectionItem
-            {
-                Id = unit.UnitId,
-                SourceFactionId = faction.Id,
-                Slug = unit.Slug,
-                Name = unit.Name,
-                Type = unit.Type,
-                IsCharacter = IsCharacterCategory(unit, categoryLookup)
-            })
-            .ToList();
 
-        var teams = new Dictionary<string, CompanyTeamAggregate>(StringComparer.OrdinalIgnoreCase);
-        MergeFireteamEntries(snapshot.FireteamChartJson, teams);
-        foreach (var team in teams.Values
-                     .Where(x => x.Core > 0)
-                     .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
-        {
-            var hasLieutenantProfileAfterFilters = false;
-            foreach (var unitLimit in team.UnitLimits)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var matchedUnit = CompanyTeamMatchingWorkflow.ResolveUnitForTeamEntry(
-                    unitLimit.Key,
-                    unitLimit.Value.Slug,
-                    sourceUnits);
-                if (matchedUnit is null || matchedUnit.IsCharacter)
-                {
-                    continue;
-                }
-
-                if (!CompanyUnitDetailsShared.MatchesClassificationFilter(_activeUnitFilter, matchedUnit.Type, typeLookup))
-                {
-                    continue;
-                }
-
-                var unitRecord = GetUnitFromProvider(faction.Id, matchedUnit.Id, cancellationToken);
-                if (string.IsNullOrWhiteSpace(unitRecord?.ProfileGroupsJson))
-                {
-                    continue;
-                }
-
-                var requiresFtoProfile = IsFtoLabel(unitLimit.Key);
-                var hasAnyVisibleProfile = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
-                    unitRecord.ProfileGroupsJson,
-                    skillsLookup,
-                    charsLookup,
-                    equipLookup,
-                    weaponsLookup,
-                    ammoLookup,
-                    _activeUnitFilter,
-                    requireLieutenant: false,
-                    requireZeroSwc: true,
-                    maxCost: maxCost,
-                    optionNamePredicate: requiresFtoProfile ? IsFtoLabel : null);
-                if (!hasAnyVisibleProfile)
-                {
-                    continue;
-                }
-
-                var hasVisibleLieutenantProfile = CompanyUnitFilterService.UnitHasVisibleOptionWithFilter(
-                    unitRecord.ProfileGroupsJson,
-                    skillsLookup,
-                    charsLookup,
-                    equipLookup,
-                    weaponsLookup,
-                    ammoLookup,
-                    _activeUnitFilter,
-                    requireLieutenant: true,
-                    requireZeroSwc: true,
-                    maxCost: maxCost,
-                    optionNamePredicate: requiresFtoProfile ? IsFtoLabel : null);
-
-                if (!hasVisibleLieutenantProfile)
-                {
-                    continue;
-                }
-
-                hasLieutenantProfileAfterFilters = true;
-                break;
-            }
-
-            if (hasLieutenantProfileAfterFilters)
-            {
-                validCoreFireteams.Add(team.Name);
-            }
-        }
-
-        var normalized = validCoreFireteams
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        return Task.FromResult(normalized);
+        return Task.FromResult(
+            CohesiveCompanyTeamEligibilityWorkflow.EvaluateValidCoreFireteams(
+                snapshot.FireteamChartJson,
+                units,
+                skillsLookup,
+                charsLookup,
+                equipLookup,
+                weaponsLookup,
+                ammoLookup,
+                typeLookup,
+                _filterState.ActiveUnitFilter,
+                maxCost,
+                IsFtoLabel,
+                unit => IsCharacterCategory(unit, categoryLookup),
+                unitId => GetUnitFromProvider(faction.Id, unitId, cancellationToken),
+                (fireteamJson, teams) => MergeFireteamEntries(fireteamJson, teams)));
     }
 
     private static HashSet<string> ParseValidCoreFireteams(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        try
-        {
-            var names = JsonSerializer.Deserialize<List<string>>(json) ?? [];
-            return new HashSet<string>(
-                names.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()),
-                StringComparer.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        }
+        return CohesiveCompanyTeamEligibilityWorkflow.ParseValidCoreFireteams(json);
     }
 
     private void ResetMercsCompany()
@@ -358,7 +266,7 @@ public partial class CohesiveCompanySelectionPage
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"ArmyFactionSelectionPage tracked fireteam icon load failed: {ex.Message}");
+                Console.Error.WriteLine($"CompanySelectionPage tracked fireteam icon load failed: {ex.Message}");
             }
         }
 

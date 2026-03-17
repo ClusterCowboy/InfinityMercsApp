@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
@@ -32,9 +32,9 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
-        _activeUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
+        _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
             GetPreparedPopupOptionsForCurrentPoints(),
-            _activeUnitFilter,
+            _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
             TeamsView,
             ResolveUnitFilterPopupHeight(),
@@ -50,7 +50,7 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
-        _activeUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
+        _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,
             value => TeamsView = value);
@@ -71,9 +71,9 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
-        _activeUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
+        _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
             popup,
-            _activeUnitFilterPopup,
+            _filterState.ActiveUnitFilterPopup,
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
             UnitFilterPopupHost,
@@ -115,7 +115,7 @@ public partial class StandardCompanySelectionPage
             (factionId, ct) => _armyDataService.GetFactionSnapshot(factionId, ct)?.FiltersJson,
             (factionIds, ct) => _armyDataService.GetMergedMercsArmyListAsync(factionIds, ct),
             ResolveFilterPopupMaxPoints(),
-            value => _preparedUnitFilterPopupOptions = value,
+            value => _filterState.PreparedUnitFilterPopupOptions = value,
             message => Console.WriteLine(message),
             cancellationToken);
     }
@@ -125,7 +125,7 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
-        _preparedUnitFilterPopupOptions = null;
+        _filterState.PreparedUnitFilterPopupOptions = null;
         Units.Clear();
         TeamEntries.Clear();
         _selectedUnit = null;
@@ -256,7 +256,7 @@ public partial class StandardCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
         }
     }
 
@@ -282,7 +282,7 @@ public partial class StandardCompanySelectionPage
     private UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
     {
         return CompanySelectionUnitFilterWorkflow.GetPreparedPopupOptionsForCurrentPoints(
-            _preparedUnitFilterPopupOptions,
+            _filterState.PreparedUnitFilterPopupOptions,
             ResolveFilterPopupMaxPoints());
     }
 

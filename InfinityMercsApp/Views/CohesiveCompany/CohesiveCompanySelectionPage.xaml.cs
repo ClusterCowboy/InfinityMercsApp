@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -53,9 +53,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     private string _profilesStatus = "Select a unit.";
     private bool _summaryHighlightLieutenant;
     private bool _areTeamEntriesReady;
-    private UnitFilterCriteria _activeUnitFilter = UnitFilterCriteria.None;
-    private UnitFilterPopupView? _activeUnitFilterPopup;
-    private UnitFilterPopupOptions? _preparedUnitFilterPopupOptions;
+    private readonly CompanySelectionFilterState _filterState = new();
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
     private string _trackedFireteamName = string.Empty;
     private int _trackedFireteamLevel;
@@ -74,14 +72,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
-        FactionSlotSelectorView.LeftSlotTapped += (_, _) => SetActiveSlot(0);
-        FactionSlotSelectorView.RightSlotTapped += (_, _) =>
-        {
-            if (ShowRightSelectionBox)
-            {
-                SetActiveSlot(1);
-            }
-        };
+        WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = "Choose your sectorial:";
         PageHeading = "Choose your sectorial:";
@@ -90,26 +81,12 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
 
-        SelectFactionCommand = new Command<ArmyFactionSelectionItem>(item =>
-        {
-            if (item is null)
-            {
-                return;
-            }
-
-            SetSelectedFaction(item);
-        });
-        SelectUnitCommand = new Command<ArmyUnitSelectionItem>(item =>
-        {
-            if (item is null)
-            {
-                Console.Error.WriteLine("ArmyFactionSelectionPage SelectUnitCommand invoked with null item.");
-                return;
-            }
-
-            Console.WriteLine($"ArmyFactionSelectionPage SelectUnitCommand: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
-            SetSelectedUnit(item);
-        });
+        SelectFactionCommand = CreateSelectFactionCommand<ArmyFactionSelectionItem>(SetSelectedFaction);
+        SelectUnitCommand = CreateSelectUnitCommand<ArmyUnitSelectionItem>(
+            item => SetSelectedUnit(item),
+            item => item.Id,
+            item => item.SourceFactionId,
+            item => item.Name);
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
@@ -119,13 +96,10 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
                 Units,
                 (resolved, restrictProfiles) => SetSelectedUnit(resolved, restrictProfiles),
                 item => IsFtoLabel(item.Name)));
-        _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
+        _startCompanyCommand = CreateStartCompanyCommand(StartCompanyAsync, () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
-        BindingContext = this;
-        SetActiveSlot(0);
-        RefreshSummaryFormatted();
-        _ = LoadHeaderIconsAsync();
+        FinalizePageInitialization(() => SetActiveSlot(0));
     }
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
@@ -660,13 +634,13 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         return LoadSelectedUnitDetailsAsync(CancellationToken.None);
     }
 
-    UnitFilterCriteria ICompanySelectionVisibilityState.ActiveUnitFilter => _activeUnitFilter;
+    UnitFilterCriteria ICompanySelectionVisibilityState.ActiveUnitFilter => _filterState.ActiveUnitFilter;
 
 
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         var trackedFireteamNameToRestore = _trackedFireteamName;
-        _preparedUnitFilterPopupOptions = null;
+        _filterState.PreparedUnitFilterPopupOptions = null;
         AreTeamEntriesReady = false;
         Units.Clear();
         TeamEntries.Clear();
@@ -813,7 +787,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
             RestoreTrackedFireteamSelection(string.Empty);
             AreTeamEntriesReady = false;
         }

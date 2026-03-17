@@ -93,7 +93,7 @@ public partial class CohesiveCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadFactionsAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage LoadFactionsAsync failed: {ex.Message}");
         }
     }
 
@@ -126,7 +126,7 @@ public partial class CohesiveCompanySelectionPage
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
                 out var factionChanged))
         {
-            Console.WriteLine($"[ArmyFactionSelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
+            Console.WriteLine($"[CompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
             return;
         }
 
@@ -143,7 +143,7 @@ public partial class CohesiveCompanySelectionPage
 
     private string BuildCCFactionValidityFilterKey(int maxCost)
     {
-        var filterQuery = _activeUnitFilter.ToQuery();
+        var filterQuery = _filterState.ActiveUnitFilter.ToQuery();
         var termsKey = string.Join(";",
             filterQuery.Terms
                 .OrderBy(term => term.Field)
@@ -154,9 +154,9 @@ public partial class CohesiveCompanySelectionPage
             $"pts:{maxCost}",
             $"lt:{(LieutenantOnlyUnits ? 1 : 0)}",
             $"terms:{termsKey}",
-            $"min:{_activeUnitFilter.MinPoints?.ToString() ?? string.Empty}",
-            $"max:{_activeUnitFilter.MaxPoints?.ToString() ?? string.Empty}",
-            $"filterlt:{(_activeUnitFilter.LieutenantOnlyUnits ? 1 : 0)}");
+            $"min:{_filterState.ActiveUnitFilter.MinPoints?.ToString() ?? string.Empty}",
+            $"max:{_filterState.ActiveUnitFilter.MaxPoints?.ToString() ?? string.Empty}",
+            $"filterlt:{(_filterState.ActiveUnitFilter.LieutenantOnlyUnits ? 1 : 0)}");
     }
 
     private void AutoSelectEmptySlot()

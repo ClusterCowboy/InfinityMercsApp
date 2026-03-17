@@ -33,7 +33,7 @@ public abstract partial class CompanySelectionPageBase
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage BuildMercsCompanyPeripheralStats failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage BuildMercsCompanyPeripheralStats failed: {ex.Message}");
             return null;
         }
     }
@@ -186,17 +186,17 @@ public abstract partial class CompanySelectionPageBase
         Action loadSelectedUnitDetails)
         where TUnit : CompanyUnitSelectionItemBase
     {
-        Console.WriteLine($"ArmyFactionSelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
+        Console.WriteLine($"CompanySelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
         if (currentSelectedUnit == item)
         {
             if (selectionContextChanged)
             {
-                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit context changed; reloading selected unit details.");
+                Console.WriteLine("CompanySelectionPage SetSelectedUnit context changed; reloading selected unit details.");
                 onContextChangedForSameSelection();
             }
             else
             {
-                Console.WriteLine("ArmyFactionSelectionPage SetSelectedUnit skipped (same item instance).");
+                Console.WriteLine("CompanySelectionPage SetSelectedUnit skipped (same item instance).");
             }
 
             return currentSelectedUnit;
@@ -208,7 +208,7 @@ public abstract partial class CompanySelectionPageBase
         }
 
         item.IsSelected = true;
-        Console.WriteLine($"ArmyFactionSelectionPage selected unit now: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
+        Console.WriteLine($"CompanySelectionPage selected unit now: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
         loadSelectedUnitLogo(item);
         loadSelectedUnitDetails();
         return item;
@@ -303,7 +303,7 @@ public abstract partial class CompanySelectionPageBase
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage SelectMercsCompanyEntryAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage SelectMercsCompanyEntryAsync failed: {ex.Message}");
         }
     }
 }

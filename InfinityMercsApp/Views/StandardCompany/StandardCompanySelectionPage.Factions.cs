@@ -29,7 +29,7 @@ public partial class StandardCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage LoadFactionsAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage LoadFactionsAsync failed: {ex.Message}");
         }
     }
 
@@ -62,7 +62,7 @@ public partial class StandardCompanySelectionPage
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
                 out var factionChanged))
         {
-            Console.WriteLine($"[ArmyFactionSelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
+            Console.WriteLine($"[CompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
             return;
         }
 

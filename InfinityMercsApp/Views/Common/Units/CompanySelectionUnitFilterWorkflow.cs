@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Services;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
 
@@ -35,7 +35,7 @@ internal static class CompanySelectionUnitFilterWorkflow
         }
         catch (Exception ex)
         {
-            logError?.Invoke($"ArmyFactionSelectionPage filter popup open failed: {ex.Message}");
+            logError?.Invoke($"CompanySelectionPage filter popup open failed: {ex.Message}");
             return null;
         }
     }
@@ -228,7 +228,7 @@ internal static class CompanySelectionUnitFilterWorkflow
 
         setPreparedOptions(options);
         log?.Invoke(
-            $"ArmyFactionSelectionPage filter options: class={options.Classification.Count}, chars={options.Characteristics.Count}, skills={options.Skills.Count}, equip={options.Equipment.Count}, weapons={options.Weapons.Count}, ammo={options.Ammo.Count}.");
+            $"CompanySelectionPage filter options: class={options.Classification.Count}, chars={options.Characteristics.Count}, skills={options.Skills.Count}, equip={options.Equipment.Count}, weapons={options.Weapons.Count}, ammo={options.Ammo.Count}.");
         return ClonePopupOptionsForCurrentPoints(options, maxPoints);
     }
 }

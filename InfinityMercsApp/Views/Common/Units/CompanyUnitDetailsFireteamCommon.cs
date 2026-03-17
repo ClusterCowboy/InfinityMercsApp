@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace InfinityMercsApp.Views.Common;
 
@@ -43,7 +43,7 @@ internal static class CompanyUnitDetailsFireteamCommon
         }
         catch (Exception ex)
         {
-            logError?.Invoke($"ArmyFactionSelectionPage MergeFireteamEntries failed: {ex.Message}");
+            logError?.Invoke($"CompanySelectionPage MergeFireteamEntries failed: {ex.Message}");
         }
 
         return entries;

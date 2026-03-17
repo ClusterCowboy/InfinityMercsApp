@@ -123,7 +123,7 @@ public partial class CohesiveCompanySelectionPage
             avaLimit,
             _selectedUnit?.Id,
             _selectedUnit?.SourceFactionId,
-            _activeUnitFilter,
+            _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
             entry => entry.IsLieutenant,
             entry => entry.SourceUnitId,

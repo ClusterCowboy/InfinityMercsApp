@@ -1,3 +1,5 @@
+using InfinityMercsApp.Services;
+using InfinityMercsApp.Views.Controls;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 
 namespace InfinityMercsApp.Views.Common;
@@ -77,5 +79,31 @@ public abstract partial class CompanySelectionPageBase
     protected static bool IsCharacterCategoryCore(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
     {
         return CompanyUnitDetailsShared.IsCharacterCategory(unit, categoryLookup);
+    }
+
+    protected static void ClearSelectedUnitLogoCore(UnitDisplayConfigurationsView unitDisplayView, string? logMessage = null)
+    {
+        if (!string.IsNullOrWhiteSpace(logMessage))
+        {
+            Console.WriteLine(logMessage);
+        }
+
+        unitDisplayView.SelectedUnitPicture?.Dispose();
+        unitDisplayView.SelectedUnitPicture = null;
+        unitDisplayView.InvalidateSelectedUnitCanvas();
+    }
+
+    protected static async Task LoadSelectedUnitLogoCoreAsync(
+        CompanyUnitSelectionItemBase item,
+        UnitDisplayConfigurationsView unitDisplayView,
+        Func<Task<Stream?>> openBestUnitLogoStreamAsync)
+    {
+        ClearSelectedUnitLogoCore(unitDisplayView);
+        unitDisplayView.SelectedUnitPicture = await CompanyUnitLogoWorkflowService.LoadSelectedUnitLogoAsync(
+            item.Name,
+            item.Id,
+            item.SourceFactionId,
+            openBestUnitLogoStreamAsync);
+        unitDisplayView.InvalidateSelectedUnitCanvas();
     }
 }

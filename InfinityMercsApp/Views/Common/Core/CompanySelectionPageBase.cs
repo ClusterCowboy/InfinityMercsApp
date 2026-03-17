@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Infrastructure.Providers;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.Controls;
@@ -191,6 +191,66 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             SetCompanyNameBorderColor);
     }
 
+    protected Command CreateSelectFactionCommand<TFaction>(Action<TFaction> setSelectedFaction)
+        where TFaction : class
+    {
+        return new Command<TFaction>(item =>
+        {
+            if (item is null)
+            {
+                return;
+            }
+
+            setSelectedFaction(item);
+        });
+    }
+
+    protected Command CreateSelectUnitCommand<TUnit>(
+        Action<TUnit> setSelectedUnit,
+        Func<TUnit, int> readUnitId,
+        Func<TUnit, int> readSourceFactionId,
+        Func<TUnit, string?> readUnitName)
+        where TUnit : class
+    {
+        return new Command<TUnit>(item =>
+        {
+            if (item is null)
+            {
+                Console.Error.WriteLine("CompanySelectionPage SelectUnitCommand invoked with null item.");
+                return;
+            }
+
+            Console.WriteLine(
+                $"CompanySelectionPage SelectUnitCommand: id={readUnitId(item)}, faction={readSourceFactionId(item)}, name='{readUnitName(item)}'.");
+            setSelectedUnit(item);
+        });
+    }
+
+    protected Command CreateStartCompanyCommand(Func<Task> startCompanyAsync, Func<bool> canExecute)
+    {
+        return new Command(async () => await startCompanyAsync(), canExecute);
+    }
+
+    protected void WireFactionSlotTapHandlers(Action<int> setActiveSlot, Func<bool> showRightSelectionBox)
+    {
+        FactionSlotSelectorViewForVisuals.LeftSlotTapped += (_, _) => setActiveSlot(0);
+        FactionSlotSelectorViewForVisuals.RightSlotTapped += (_, _) =>
+        {
+            if (showRightSelectionBox())
+            {
+                setActiveSlot(1);
+            }
+        };
+    }
+
+    protected void FinalizePageInitialization(Action setInitialActiveSlot)
+    {
+        BindingContext = this;
+        setInitialActiveSlot();
+        RefreshSummaryFormatted();
+        _ = LoadHeaderIconsAsync();
+    }
+
     protected static string ComputeMercsCompanyTotalCostText<TEntry>(IEnumerable<TEntry> entries)
         where TEntry : class, ICompanyMercsEntry
     {
@@ -224,7 +284,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     {
         if (teamItem is null)
         {
-            Console.Error.WriteLine("ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
+            Console.Error.WriteLine("CompanySelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
             return;
         }
 
@@ -243,7 +303,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         if (resolved is null)
         {
             Console.Error.WriteLine(
-                $"ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: unable to resolve unit for team entry '{teamItem.Name}'.");
+                $"CompanySelectionPage OnTeamAllowedProfileTappedFromView: unable to resolve unit for team entry '{teamItem.Name}'.");
             return;
         }
 
@@ -299,7 +359,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
                 },
                 HandleFailureAsync = async ex =>
                 {
-                    Console.Error.WriteLine($"ArmyFactionSelectionPage StartCompanyAsync failed: {ex}");
+                    Console.Error.WriteLine($"CompanySelectionPage StartCompanyAsync failed: {ex}");
                     await DisplayAlert("Save Failed", ex.Message, "OK");
                 }
             });

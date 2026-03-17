@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -164,7 +164,7 @@ internal static class CompanySelectionSharedUtilities
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage BuildIdNameLookup failed for '{sectionName}': {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage BuildIdNameLookup failed for '{sectionName}': {ex.Message}");
         }
     
         return map;
@@ -495,7 +495,7 @@ internal static class CompanySelectionSharedUtilities
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ArmyFactionSelectionPage UnitHasLieutenantOption failed: {ex.Message}");
+            Console.Error.WriteLine($"CompanySelectionPage UnitHasLieutenantOption failed: {ex.Message}");
         }
     
         return false;
