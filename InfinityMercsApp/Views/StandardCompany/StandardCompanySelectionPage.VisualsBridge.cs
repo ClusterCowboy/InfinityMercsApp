@@ -19,4 +19,6 @@ public partial class StandardCompanySelectionPage
     protected override void SetUnitHeaderSecondaryTextColorForVisuals(Color value) => UnitHeaderSecondaryTextColor = value;
     protected override void SetEquipmentSummaryFormattedForVisuals(FormattedString value) => EquipmentSummaryFormatted = value;
     protected override void SetSpecialSkillsSummaryFormattedForVisuals(FormattedString value) => SpecialSkillsSummaryFormatted = value;
+    protected override void SetShowCompanyNameValidationError(bool value) => ShowCompanyNameValidationError = value;
+    protected override void SetCompanyNameBorderColor(Color value) => CompanyNameBorderColor = value;
 }

@@ -1,22 +1,11 @@
 using InfinityMercsApp.Views.Templates.NewCompany;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.CohesiveCompany;
 
-/// <summary>
-/// Company start/save workflow.
-/// </summary>
-public partial class StandardCompanySelectionPage
+public partial class CCArmyFactionSelectionPage
 {
-    protected override string CompanyTypeLabel => _mode switch
-    {
-        ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
-        ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
-        _ => "Unknown Company Type"
-    };
+    protected override string CompanyTypeLabel => "Cohesive Company";
 
-    /// <summary>
-    /// Handles start company async.
-    /// </summary>
     protected override async Task StartCompanyAsync()
     {
         await ExecuteStartCompanyAsync<ArmyFactionSelectionItem, MercsCompanyEntry, SavedImprovedCaptainStats>(
@@ -34,25 +23,16 @@ public partial class StandardCompanySelectionPage
             stats => stats.CaptainName);
     }
 
-    /// <summary>
-    /// Handles update mercs company total.
-    /// </summary>
     private void UpdateMercsCompanyTotal()
     {
         SeasonPointsCapText = ComputeMercsCompanyTotalCostText(MercsCompanyEntries);
     }
 
-    /// <summary>
-    /// Handles refresh mercs company entry distance displays.
-    /// </summary>
     private void RefreshMercsCompanyEntryDistanceDisplays()
     {
         CompanySelectionPageBase.RefreshMercsCompanyEntryDistanceDisplays(MercsCompanyEntries, FormatMoveValue);
     }
 
-    /// <summary>
-    /// Handles update season validation state.
-    /// </summary>
     private void UpdateSeasonValidationState()
     {
         IsCompanyValid = IsCompanySeasonValid(

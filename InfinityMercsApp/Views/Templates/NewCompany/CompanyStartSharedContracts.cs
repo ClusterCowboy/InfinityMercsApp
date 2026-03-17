@@ -1,13 +1,13 @@
 namespace InfinityMercsApp.Views.Templates.NewCompany;
 
-internal interface ICompanySourceFaction
+public interface ICompanySourceFaction
 {
     int Id { get; }
     int ParentId { get; }
     string Name { get; }
 }
 
-internal interface ICompanyMercsEntry
+public interface ICompanyMercsEntry
 {
     string Name { get; }
     int CostValue { get; }

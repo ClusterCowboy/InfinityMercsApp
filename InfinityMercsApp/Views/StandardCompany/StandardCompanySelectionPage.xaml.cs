@@ -31,42 +31,6 @@ namespace InfinityMercsApp.Views.StandardCompany;
 
 public partial class StandardCompanySelectionPage : CompanySelectionPageBase
 {
-    private sealed class TeamAggregate
-    {
-        public TeamAggregate(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-        public int Duo { get; private set; }
-        public int Haris { get; private set; }
-        public int Core { get; private set; }
-        public Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> UnitLimits { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public void AddCounts(int duo, int haris, int core)
-        {
-            Duo += duo;
-            Haris += haris;
-            Core += core;
-        }
-
-        public void MergeUnitLimit(string unitName, int min, int max, string? slug, bool minAsterisk)
-        {
-            if (UnitLimits.TryGetValue(unitName, out var existing))
-            {
-                UnitLimits[unitName] = (
-                    Math.Min(existing.Min, min),
-                    Math.Max(existing.Max, max),
-                    string.IsNullOrWhiteSpace(existing.Slug) ? slug : existing.Slug,
-                    existing.MinAsterisk || minAsterisk);
-                return;
-            }
-
-            UnitLimits[unitName] = (min, max, slug, minAsterisk);
-        }
-    }
-
     private readonly ArmySourceSelectionMode _mode;
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
@@ -146,7 +110,11 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
         AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
-        SelectTeamAllowedProfileCommand = new Command<ArmyTeamUnitLimitItem>(OnTeamAllowedProfileSelected);
+        SelectTeamAllowedProfileCommand = new Command<ArmyTeamUnitLimitItem>(teamItem =>
+            HandleTeamAllowedProfileSelected(
+                teamItem,
+                Units,
+                (resolved, _) => SetSelectedUnit(resolved)));
         _startCompanyCommand = new Command(async () => await StartCompanyAsync(), () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
@@ -1223,60 +1191,30 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase
                 ApplyLieutenantVisualStates();
             }
 
-            StandardCompanyTeamService.RefreshTeamEntryVisibility(TeamEntries, Units);
+            CompanyTeamVisibilityWorkflow.RefreshTeamEntryVisibility(
+                TeamEntries,
+                Units,
+                team => team.AllowedProfiles,
+                team => team.IsWildcardBucket,
+                (team, value) => team.IsVisible = value,
+                (team, value) => team.IsExpanded = value,
+                allowed => allowed.IsCharacter,
+                (allowed, value) => allowed.IsVisible = value,
+                allowed => allowed.Name,
+                allowed => allowed.Slug,
+                allowed => allowed.ResolvedUnitId,
+                allowed => allowed.ResolvedSourceFactionId,
+                unit => unit.IsVisible,
+                unit => unit.Id,
+                unit => unit.SourceFactionId,
+                unit => unit.Name,
+                unit => unit.Slug);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ArmyFactionSelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
         }
     }
-
-
-
-    private void OnTeamAllowedProfileSelected(ArmyTeamUnitLimitItem? teamItem)
-    {
-        if (teamItem is null)
-        {
-            Console.Error.WriteLine("ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: no team item binding context.");
-            return;
-        }
-
-        ArmyUnitSelectionItem? resolved = null;
-        if (teamItem.ResolvedUnitId.HasValue && teamItem.ResolvedSourceFactionId.HasValue)
-        {
-            resolved = Units.FirstOrDefault(x =>
-                x.Id == teamItem.ResolvedUnitId.Value &&
-                x.SourceFactionId == teamItem.ResolvedSourceFactionId.Value);
-        }
-
-        resolved ??= Units.FirstOrDefault(x =>
-            !string.IsNullOrWhiteSpace(teamItem.Slug) &&
-            !string.IsNullOrWhiteSpace(x.Slug) &&
-            string.Equals(x.Slug.Trim(), teamItem.Slug.Trim(), StringComparison.OrdinalIgnoreCase));
-
-        resolved ??= Units.FirstOrDefault(x =>
-            string.Equals(x.Name, teamItem.Name, StringComparison.OrdinalIgnoreCase));
-
-        if (resolved is null)
-        {
-            Console.Error.WriteLine(
-                $"ArmyFactionSelectionPage OnTeamAllowedProfileTappedFromView: unable to resolve unit for team entry '{teamItem.Name}'.");
-            return;
-        }
-
-        SetSelectedUnit(resolved);
-    }
-
-    private ArmyFactionRecord? GetFactionSnapshotFromProvider(int factionId, CancellationToken cancellationToken = default)
-    {
-        return _armyDataService.GetFactionSnapshot(factionId, cancellationToken);
-    }
-
-    private ArmyUnitRecord? GetUnitFromProvider(int factionId, int unitId, CancellationToken cancellationToken = default)
-    {
-        return _armyDataService.GetUnit(factionId, unitId, cancellationToken);
-    }
-
 
 }
 

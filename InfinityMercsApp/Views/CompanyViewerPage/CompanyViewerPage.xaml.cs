@@ -6,6 +6,7 @@ using System.Windows.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
+using InfinityMercsApp.Views.Templates.NewCompany;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -1200,7 +1201,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private static string GetExperienceIconPackagedPath(int experiencePoints)
     {
-        var level = UnitExperienceRanks.GetRankLevel(experiencePoints);
+        var level = CompanyUnitExperienceRanks.GetRankLevel(experiencePoints);
         return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/Experience/noun-{level}-stars.svg";
     }
 
@@ -1414,8 +1415,8 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
     public int ExperiencePoints { get; init; }
-    public int ExperienceLevel => UnitExperienceRanks.GetRankLevel(ExperiencePoints);
-    public string ExperienceRankName => UnitExperienceRanks.GetRankName(ExperiencePoints);
+    public int ExperienceLevel => CompanyUnitExperienceRanks.GetRankLevel(ExperiencePoints);
+    public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
     public string CaptainIconPackagedPath { get; init; } = string.Empty;
     public string ExperienceIconPackagedPath { get; init; } = string.Empty;
     private string _name = string.Empty;

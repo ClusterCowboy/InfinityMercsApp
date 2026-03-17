@@ -238,7 +238,7 @@ public partial class CCArmyFactionSelectionPage
 
     private static void MergeFireteamEntries(
         string? fireteamChartJson,
-        Dictionary<string, TeamAggregate> target)
+        Dictionary<string, CompanyTeamAggregate> target)
     {
         CompanyUnitDetailsShared.MergeFireteamEntries(
             fireteamChartJson,
@@ -246,7 +246,7 @@ public partial class CCArmyFactionSelectionPage
             {
                 if (!target.TryGetValue(entry.Name, out var aggregate))
                 {
-                    aggregate = new TeamAggregate(entry.Name);
+                    aggregate = new CompanyTeamAggregate(entry.Name);
                     target[entry.Name] = aggregate;
                 }
 

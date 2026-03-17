@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
@@ -144,7 +144,7 @@ public partial class StandardCompanySelectionPage
         try
         {
             var mergedUnits = new Dictionary<string, ArmyUnitSelectionItem>(StringComparer.OrdinalIgnoreCase);
-            var mergedTeams = new Dictionary<string, TeamAggregate>(StringComparer.OrdinalIgnoreCase);
+            var mergedTeams = new Dictionary<string, CompanyTeamAggregate>(StringComparer.OrdinalIgnoreCase);
             var wildcardUnitLimits = new Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var faction in factions)
@@ -231,9 +231,20 @@ public partial class StandardCompanySelectionPage
                          .Where(x => x.Duo > 0)
                          .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
-                var nonCharacterUnitLimits = StandardCompanyTeamService.FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
-                var nonCharacterNonWildcardUnitLimits = StandardCompanyTeamService.FilterWildcardUnitLimits(nonCharacterUnitLimits);
-                var allowedProfiles = StandardCompanyTeamService.BuildAllowedTeamProfiles(nonCharacterNonWildcardUnitLimits, mergedUnits.Values);
+                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
+                    team.UnitLimits,
+                    mergedUnits.Values,
+                    x => x.IsCharacter);
+                var nonCharacterNonWildcardUnitLimits = CompanyTeamProfilesWorkflow.FilterWildcardUnitLimits(nonCharacterUnitLimits);
+                var allowedProfiles = CompanyTeamProfilesWorkflow.BuildAllowedTeamProfiles(
+                    nonCharacterNonWildcardUnitLimits,
+                    mergedUnits.Values,
+                    (displayName, min, max, slug, sourceUnits) => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                        displayName,
+                        min,
+                        max,
+                        slug,
+                        sourceUnits));
                 if (allowedProfiles.Count == 0)
                 {
                     continue;
@@ -250,13 +261,16 @@ public partial class StandardCompanySelectionPage
 
             foreach (var team in mergedTeams.Values)
             {
-                var isWildcardTeam = StandardCompanyTeamService.IsWildcardTeamName(team.Name);
-                var nonCharacterUnitLimits = StandardCompanyTeamService.FilterCharacterUnitLimits(team.UnitLimits, mergedUnits.Values);
+                var isWildcardTeam = CompanyTeamMatchingWorkflow.IsWildcardTeamName(team.Name);
+                var nonCharacterUnitLimits = CompanyTeamProfilesWorkflow.FilterCharacterUnitLimits(
+                    team.UnitLimits,
+                    mergedUnits.Values,
+                    x => x.IsCharacter);
                 foreach (var entry in nonCharacterUnitLimits)
                 {
                     var unitName = entry.Key;
                     var value = entry.Value;
-                    if (!isWildcardTeam && !StandardCompanyTeamService.IsWildcardEntry(unitName, value.Slug))
+                    if (!isWildcardTeam && !CompanyTeamMatchingWorkflow.IsWildcardEntry(unitName, value.Slug))
                     {
                         continue;
                     }
@@ -280,7 +294,7 @@ public partial class StandardCompanySelectionPage
             {
                 var wildcardAllowedProfiles = wildcardUnitLimits
                     .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(x => StandardCompanyTeamService.BuildTeamUnitLimitItem(
+                    .Select(x => CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
                         x.Key,
                         x.Value.MinAsterisk ? "*" : x.Value.Min.ToString(),
                         x.Value.Max.ToString(),

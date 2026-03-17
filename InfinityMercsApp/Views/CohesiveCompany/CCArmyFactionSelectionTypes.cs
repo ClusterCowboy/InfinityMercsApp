@@ -1,7 +1,6 @@
-using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Templates.NewCompany;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.CohesiveCompany;
 
 public class ArmyFactionSelectionItem : CompanyFactionSelectionItemBase
 {
@@ -13,6 +12,23 @@ public class ArmyUnitSelectionItem : CompanyUnitSelectionItemBase
 
 public class ArmyTeamListItem : CompanyTeamListItemBase<ArmyTeamUnitLimitItem>
 {
+    public bool ShowTrackingRadioButton => !IsWildcardBucket;
+
+    private bool _isTrackedTeam;
+    public bool IsTrackedTeam
+    {
+        get => _isTrackedTeam;
+        set
+        {
+            if (_isTrackedTeam == value)
+            {
+                return;
+            }
+
+            _isTrackedTeam = value;
+            OnPropertyChanged();
+        }
+    }
 }
 
 public class ArmyTeamUnitLimitItem : CompanyTeamUnitLimitItemBase
