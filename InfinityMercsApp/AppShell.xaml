@@ -4,18 +4,24 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:InfinityMercsApp.Views"
+    xmlns:unitEncyclopediaViews="clr-namespace:InfinityMercsApp.Views.UnitEncyclopedia"
     Shell.FlyoutBehavior="Flyout"
     Title="InfinityMercsApp">
 
     <ShellContent
         Title="Home"
-        ContentTemplate="{DataTemplate views:MainPage}"
-        Route="MainPage" />
+        ContentTemplate="{DataTemplate views:ModeSelectionPage}"
+        Route="ModeSelectionPage" />
 
     <ShellContent
-        Title="Create New Army"
-        ContentTemplate="{DataTemplate views:CreateNewArmyPage}"
-        Route="CreateNewArmyPage" />
+        Title="Create New Company"
+        ContentTemplate="{DataTemplate views:CreateNewCompanyPage}"
+        Route="CreateNewCompanyPage" />
+
+    <ShellContent
+        Title="Standard Company"
+        ContentTemplate="{DataTemplate views:StandardCompanySourcePopupPage}"
+        Route="StandardCompanySourcePopupPage" />
 
     <ShellContent
         Title="Load Company"
@@ -29,8 +35,8 @@
 
     <ShellContent
         Title="Unit Encyclopedia"
-        ContentTemplate="{DataTemplate views:ViewerPage}"
-        Route="ViewerPage" />
+        ContentTemplate="{DataTemplate unitEncyclopediaViews:UnitEncyclopediaPage}"
+        Route="UnitEncyclopediaPage" />
         
     <ShellContent
         Title="Settings"

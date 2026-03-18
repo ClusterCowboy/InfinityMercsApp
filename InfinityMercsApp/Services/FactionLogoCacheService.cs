@@ -1,4 +1,6 @@
-using InfinityMercsApp.Data.Database;
+using DomainFaction = InfinityMercsApp.Domain.Models.Metadata.Faction;
+using DomainArmyImportResume = InfinityMercsApp.Domain.Models.Army.ArmyImportResume;
+using DomainResume = InfinityMercsApp.Domain.Models.Army.Resume;
 using Microsoft.Maui.Storage;
 
 namespace InfinityMercsApp.Services;
@@ -17,7 +19,7 @@ public class FactionLogoCacheService
         _localUnitCacheDirectory = Path.Combine(_localCacheDirectory, "units");
     }
 
-    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<FactionDto> factions, CancellationToken cancellationToken = default)
+    public async Task<LogoCacheResult> CacheAllAsync(IEnumerable<DomainFaction> factions, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localCacheDirectory);
         var result = new LogoCacheResult();
@@ -51,45 +53,16 @@ public class FactionLogoCacheService
         return result;
     }
 
-    public async Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
-        IEnumerable<FactionRecord> factions,
+    public Task<LogoCacheResult> CacheFactionLogosFromRecordsAsync(
+        IEnumerable<DomainFaction> factions,
         CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(_localCacheDirectory);
-        var result = new LogoCacheResult();
-
-        foreach (var faction in factions)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            result.TotalFactions++;
-
-            if (faction.Id <= 0)
-            {
-                result.MissingLogoUrl++;
-                continue;
-            }
-
-            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
-            if (ok == EnsureResult.Reused)
-            {
-                result.CachedReuse++;
-            }
-            else if (ok == EnsureResult.CopiedFromPackage)
-            {
-                result.Downloaded++;
-            }
-            else
-            {
-                result.Failed++;
-            }
-        }
-
-        return result;
+        return CacheAllAsync(factions, cancellationToken);
     }
 
     public async Task<LogoCacheResult> CacheUnitLogosAsync(
         int factionId,
-        IEnumerable<ArmyResumeDto> units,
+        IEnumerable<DomainArmyImportResume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);
@@ -126,7 +99,7 @@ public class FactionLogoCacheService
 
     public async Task<LogoCacheResult> CacheUnitLogosFromRecordsAsync(
         int factionId,
-        IEnumerable<ArmyResumeRecord> units,
+        IEnumerable<DomainResume> units,
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_localUnitCacheDirectory);

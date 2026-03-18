@@ -1,12 +1,16 @@
 using InfinityMercsApp.Views;
 using System.Text;
+using System.Runtime.ExceptionServices;
 
 namespace InfinityMercsApp;
 
 public partial class App : Application
 {
-	public App()
+	private readonly SplashPage _splashPage;
+
+	public App(SplashPage splashPage)
 	{
+		_splashPage = splashPage;
 		CrashLog.Initialize();
 
 		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -19,12 +23,17 @@ public partial class App : Application
 			CrashLog.Write("TaskScheduler.UnobservedTaskException", args.Exception);
 		};
 
+		AppDomain.CurrentDomain.FirstChanceException += (_, args) =>
+		{
+			CrashLog.Write("AppDomain.CurrentDomain.FirstChanceException", args.Exception);
+		};
+
 		InitializeComponent();
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		return new Window(new SplashPage());
+		return new Window(_splashPage);
 	}
 
 	internal static class CrashLog

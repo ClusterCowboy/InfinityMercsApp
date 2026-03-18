@@ -14,6 +14,9 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private const int MaxHeaderIcons = 6;
     private const float IconSize = 24f;
     private const float IconVerticalGap = 5f;
+    private const double DefaultUnitHeadingMaxFontSize = 24d;
+    private const double DefaultUnitHeadingMinFontSize = 11d;
+    private const double DefaultUnitHeadingFontStep = 0.5d;
     private const string DefaultStatValue = "-";
     private const string DefaultVitalityHeader = "VITA";
     public static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
@@ -583,8 +586,17 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         if (BindingContext is IUnitDisplayIconState state)
         {
-            UpdateUnitHeadingFontSize(state);
+            UpdateUnitHeadingFontSize(
+                state.UnitHeadingMaxFontSize,
+                state.UnitHeadingMinFontSize,
+                state.UnitHeadingFontStep);
+            return;
         }
+
+        UpdateUnitHeadingFontSize(
+            DefaultUnitHeadingMaxFontSize,
+            DefaultUnitHeadingMinFontSize,
+            DefaultUnitHeadingFontStep);
     }
 
     /// <summary>
@@ -592,13 +604,15 @@ public partial class UnitDisplayConfigurationsView : ContentView
     /// </summary>
     public void RefreshMoveStatlines()
     {
-        if (BindingContext is not IUnitDisplayStatState state)
+        if (BindingContext is IUnitDisplayStatState state)
         {
+            UnitMov = FormatMoveValue(state.UnitMoveFirstCm, state.UnitMoveSecondCm, state.ShowUnitsInInches);
+            PeripheralMov = FormatMoveValue(state.PeripheralMoveFirstCm, state.PeripheralMoveSecondCm, state.ShowUnitsInInches);
             return;
         }
 
-        state.ApplyUnitMoveDisplay(FormatMoveValue(state.UnitMoveFirstCm, state.UnitMoveSecondCm, state.ShowUnitsInInches));
-        state.ApplyPeripheralMoveDisplay(FormatMoveValue(state.PeripheralMoveFirstCm, state.PeripheralMoveSecondCm, state.ShowUnitsInInches));
+        UnitMov = FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm, ShowUnitsInInches);
+        PeripheralMov = FormatMoveValue(PeripheralMoveFirstCm, PeripheralMoveSecondCm, ShowUnitsInInches);
     }
 
     /// <summary>
@@ -673,11 +687,17 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         if (BindingContext is IUnitDisplayIconState state)
         {
-            UpdateUnitHeadingFontSize(state);
+            UpdateUnitHeadingFontSize(
+                state.UnitHeadingMaxFontSize,
+                state.UnitHeadingMinFontSize,
+                state.UnitHeadingFontStep);
             return;
         }
 
-        UnitNameHeadingSizeChanged?.Invoke(sender, e);
+        UpdateUnitHeadingFontSize(
+            DefaultUnitHeadingMaxFontSize,
+            DefaultUnitHeadingMinFontSize,
+            DefaultUnitHeadingFontStep);
     }
 
     private List<HeaderIconRenderItem> BuildHeaderIconPictures(IUnitDisplayIconState state)
@@ -823,18 +843,18 @@ public partial class UnitDisplayConfigurationsView : ContentView
         DrawPictureInRect(canvas, picture, destination);
     }
 
-    private void UpdateUnitHeadingFontSize(IUnitDisplayIconState state)
+    private void UpdateUnitHeadingFontSize(double maxFontSize, double minFontSize, double fontStep)
     {
         var availableWidth = UnitNameHeadingLabel.Width;
         if (availableWidth <= 0)
         {
-            state.ApplyUnitHeadingFontSize(state.UnitHeadingMaxFontSize);
+            UnitNameHeadingFontSize = maxFontSize;
             return;
         }
 
-        for (var size = state.UnitHeadingMaxFontSize; size >= state.UnitHeadingMinFontSize; size -= state.UnitHeadingFontStep)
+        for (var size = maxFontSize; size >= minFontSize; size -= fontStep)
         {
-            state.ApplyUnitHeadingFontSize(size);
+            UnitNameHeadingFontSize = size;
             var measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
             if (measuredWidth <= availableWidth)
             {
@@ -842,7 +862,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
             }
         }
 
-        state.ApplyUnitHeadingFontSize(state.UnitHeadingMinFontSize);
+        UnitNameHeadingFontSize = minFontSize;
     }
 
     private static void OnHeaderIconVisibilityChanged(BindableObject bindable, object oldValue, object newValue)

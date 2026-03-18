@@ -118,5 +118,6 @@ This is an app in C# which will allow for the easy creation and managment of a c
 And more
 
 ## Known Defects
-- [X] JSA Spec Ops have no weapons or skills hooked up. Fix: Have them use the YJ backend
-T
+- [] Create an indicator (yellow circle?) to indicate filter is on
+- [] Background Colors not populating correctly based on faction
+- [] Evaulation of Fireteam level is not correct

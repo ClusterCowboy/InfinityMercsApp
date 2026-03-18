@@ -4,7 +4,7 @@ using SkiaSharp.Views.Maui;
 using Svg.Skia;
 using System.Windows.Input;
 using InfinityMercsApp.Views;
-using InfinityMercsApp.Views.StandardCompany;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.Controls;
 
