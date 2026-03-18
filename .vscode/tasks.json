@@ -38,5 +38,45 @@
         "isDefault": true
       }
     }
+    ,{
+      "label": "build-maui-windows-tablet",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/InfinityMercsApp/InfinityMercsApp.csproj",
+        "-f",
+        "net9.0-windows10.0.19041.0",
+        "-p:SimulateTablet=true",
+        "--no-restore"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": [
+        "stop-maui-windows-app"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": "$msCompile"
+    }
+    ,{
+      "label": "deploy-development-tablet",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/InfinityMercsApp/InfinityMercsApp.csproj",
+        "-f",
+        "net9.0-android",
+        "-t:Run",
+        "-p:AdbTarget=-s R52N50QHPBN",
+        "-r",
+        "android-arm"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    }
   ]
 }

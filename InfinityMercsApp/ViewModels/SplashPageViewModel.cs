@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using InfinityMercsApp.Messages;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
 using InfinityMercsApp.Views;
@@ -18,6 +20,7 @@ public partial class SplashPageViewModel(
 
         if (updated)
         {
+            WeakReferenceMessenger.Default.Send(new SplashCompletedMessage());
             await navigationService.NavigateToAsync("//ModeSelectionPage");
         }
     }
