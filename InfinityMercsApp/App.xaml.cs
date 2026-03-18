@@ -36,6 +36,7 @@ public partial class App : Application
 		return new Window(_splashPage);
 	}
 
+
 	internal static class CrashLog
 	{
 		private static readonly object Sync = new();

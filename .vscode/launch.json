@@ -1,6 +1,28 @@
 {
   "version": "0.2.0",
   "configurations": [
+    
+
+    {
+      "name": "Development Tablet",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "deploy-development-tablet",
+      "program": "${workspaceFolder}/InfinityMercsApp/bin/Debug/net9.0-android/android-arm/InfinityMercsApp.dll",
+      "cwd": "${workspaceFolder}/InfinityMercsApp",
+      "stopAtEntry": false,
+      "justMyCode": true
+    },
+    {
+      "name": "MAUI Windows (Tablet Aspect)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-maui-windows-tablet",
+      "program": "${workspaceFolder}/InfinityMercsApp/bin/Debug/net9.0-windows10.0.19041.0/win10-x64/InfinityMercsApp.exe",
+      "cwd": "${workspaceFolder}/InfinityMercsApp",
+      "stopAtEntry": false,
+      "justMyCode": true
+    },
     {
       "name": "MAUI Windows (Local Device)",
       "type": "coreclr",
@@ -12,4 +34,5 @@
       "justMyCode": true,
     }
   ]
+  
 }

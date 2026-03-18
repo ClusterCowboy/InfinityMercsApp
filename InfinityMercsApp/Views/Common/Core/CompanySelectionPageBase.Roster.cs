@@ -7,6 +7,10 @@ namespace InfinityMercsApp.Views.Common;
 
 public abstract partial class CompanySelectionPageBase
 {
+    /// <summary>
+    /// Builds the peripheral (e.g. remote or peripheral device) stat block for the currently
+    /// selected unit profile, returning <c>null</c> when the profile has no peripheral stats.
+    /// </summary>
     protected static TPeripheralStats? BuildMercsCompanyPeripheralStatsCore<TPeripheralStats>(
         ViewerProfileItem profile,
         string? selectedUnitProfileGroupsJson,
@@ -21,6 +25,11 @@ public abstract partial class CompanySelectionPageBase
             buildPeripheralStatBlock);
     }
 
+    /// <summary>
+    /// Updates the visibility state of unit profiles based on whether the selected unit
+    /// meets the lieutenant constraints, points limit, and AVA restrictions.
+    /// Returns the count of visible lieutenant profiles.
+    /// </summary>
     protected static int ApplyLieutenantProfileVisibilityCore<TEntry>(
         IEnumerable<TEntry> mercsCompanyEntries,
         IEnumerable<ViewerProfileItem> profiles,
@@ -50,6 +59,10 @@ public abstract partial class CompanySelectionPageBase
             readSourceFactionId);
     }
 
+    /// <summary>
+    /// Constructs a fully populated roster entry from the selected unit, chosen profile,
+    /// equipment/skills lists, and computed stat strings.
+    /// </summary>
     protected static TEntry BuildMercsCompanyEntryCore<TEntry, TUnit, TPeripheralStats>(
         TUnit selectedUnit,
         ViewerProfileItem profile,
@@ -94,6 +107,11 @@ public abstract partial class CompanySelectionPageBase
             peripheralStats);
     }
 
+    /// <summary>
+    /// Applies a unit selection, reloading the logo and details when the unit changes.
+    /// When the same unit is re-selected but the context has changed,
+    /// <paramref name="onContextChangedForSameSelection"/> is invoked instead.
+    /// </summary>
     protected static TUnit SetSelectedUnitCore<TUnit>(
         TUnit item,
         TUnit? currentSelectedUnit,
@@ -112,6 +130,10 @@ public abstract partial class CompanySelectionPageBase
             loadSelectedUnitDetails);
     }
 
+    /// <summary>
+    /// Variant of <see cref="SetSelectedUnitCore{TUnit}"/> that also tracks a typed context value
+    /// (e.g. fireteam slot index), updating it and triggering reload when it differs from the current context.
+    /// </summary>
     protected static TUnit SetSelectedUnitWithContextCore<TUnit, TContext>(
         TUnit item,
         TUnit? currentSelectedUnit,
@@ -135,6 +157,11 @@ public abstract partial class CompanySelectionPageBase
             loadSelectedUnitDetails);
     }
 
+    /// <summary>
+    /// Updates the visual lieutenant badge states on roster entries and profile items
+    /// based on points remaining, AVA, and the active unit filter.
+    /// Returns the count of entries marked as lieutenant.
+    /// </summary>
     protected static int ApplyLieutenantVisualStatesCore<TEntry, TUnit>(
         IEnumerable<TEntry> mercsCompanyEntries,
         IEnumerable<ViewerProfileItem> profiles,
@@ -166,6 +193,10 @@ public abstract partial class CompanySelectionPageBase
             readSourceFactionIdFromUnit);
     }
 
+    /// <summary>
+    /// Adds a new entry to the roster, inserting lieutenant entries at the front of the list
+    /// so they remain visually prominent. Triggers cost and visibility updates after insertion.
+    /// </summary>
     protected static void AddMercsCompanyEntryCore<TEntry>(
         TEntry entry,
         IList<TEntry> mercsCompanyEntries,
@@ -183,6 +214,10 @@ public abstract partial class CompanySelectionPageBase
             applyUnitVisibilityFilters);
     }
 
+    /// <summary>
+    /// Removes an entry from the roster and triggers cost and visibility updates.
+    /// Does nothing when <paramref name="entry"/> is <c>null</c>.
+    /// </summary>
     protected static void RemoveMercsCompanyEntryCore<TEntry>(
         TEntry? entry,
         ICollection<TEntry> mercsCompanyEntries,
@@ -199,6 +234,11 @@ public abstract partial class CompanySelectionPageBase
             applyUnitVisibilityFilters);
     }
 
+    /// <summary>
+    /// Selects a roster entry for detailed viewing, resolving its corresponding unit from the loaded
+    /// unit list or falling back to a freshly fetched unit record when not found.
+    /// Switches the view to unit-selection mode and loads the full unit details.
+    /// </summary>
     protected static async Task SelectMercsCompanyEntryAsyncCore<TEntry, TUnit>(
         TEntry? entry,
         IReadOnlyList<TUnit> units,

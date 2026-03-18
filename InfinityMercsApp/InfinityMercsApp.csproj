@@ -1,5 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<!-- Deploy to physical armeabi-v7a device during development. Not included in release builds. -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<RuntimeIdentifier>android-arm</RuntimeIdentifier>
+	</PropertyGroup>
+
+	<!-- Simulate tablet aspect ratio on Windows when SimulateTablet=true is passed to dotnet build. -->
+	<PropertyGroup Condition="'$(SimulateTablet)' == 'true'">
+		<DefineConstants>$(DefineConstants);SIMULATE_TABLET</DefineConstants>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>

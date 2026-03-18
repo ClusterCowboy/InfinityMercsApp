@@ -19,13 +19,27 @@ namespace InfinityMercsApp.Views.Common;
 /// </summary>
 public abstract partial class CompanySelectionPageBase : ContentPage
 {
+    // Loaded asynchronously at startup; used by both filter canvas variants.
     private SKPicture? _filterIconPicture;
+
+    // True when the unit search/filter is active; drives which filter icon canvas is shown.
     private bool _isUnitFilterActive;
+
+    // Controls whether the faction picker or the unit list / detail panel is visible.
     private bool _isFactionSelectionActive = true;
+
+    // When true, only lieutenant-eligible units are shown in the unit list.
     private bool _lieutenantOnlyUnits;
+
+    // Toggles between the flat unit list and the fireteam composition view.
     private bool _showFireteams;
+
     private string _profilesStatus = "Select a unit.";
 
+    /// <summary>
+    /// Initialises the base page, storing all injected providers and seeding the fireteam view
+    /// toggle from the subclass's <see cref="DefaultTeamsView"/> preference.
+    /// </summary>
     protected CompanySelectionPageBase(
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,
@@ -45,6 +59,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         _showFireteams = DefaultTeamsView;
     }
 
+    /// <summary>Gets the mode (standard vs cohesive) that controls which factions and rules apply.</summary>
     protected ArmySourceSelectionMode Mode { get; }
     protected IMetadataProvider? MetadataProvider { get; }
     protected IFactionProvider? FactionProvider { get; }
@@ -53,11 +68,17 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     protected FactionLogoCacheService? FactionLogoCacheService { get; }
     protected IAppSettingsProvider? AppSettingsProvider { get; }
 
+    /// <summary>Provides army data queries; implemented by each concrete page's DI setup.</summary>
     protected abstract IArmyDataService ArmyDataService { get; }
+
+    // The following abstract members expose the concrete XAML-bound controls to base class logic
+    // without the base class needing to know the specific view hierarchy of each subclass.
     protected abstract FactionSlotSelectorView FactionSlotSelectorViewForVisuals { get; }
     protected abstract UnitDisplayConfigurationsView UnitDisplayConfigurationsViewForVisuals { get; }
     protected abstract SKCanvasView UnitSelectionFilterCanvasInactiveForVisuals { get; }
     protected abstract SKCanvasView UnitSelectionFilterCanvasActiveForVisuals { get; }
+
+    /// <summary>Whether the equipment/skills summary should bold lieutenant entries.</summary>
     protected abstract bool SummaryHighlightLieutenantForVisuals { get; }
     protected abstract Color UnitHeaderSecondaryColorForVisuals { get; }
     protected abstract void SetUnitHeaderPrimaryColorForVisuals(Color value);
@@ -66,15 +87,37 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     protected abstract void SetUnitHeaderSecondaryTextColorForVisuals(Color value);
     protected abstract void SetEquipmentSummaryFormattedForVisuals(FormattedString value);
     protected abstract void SetSpecialSkillsSummaryFormattedForVisuals(FormattedString value);
+
+    /// <summary>Human-readable label for the company type, used when saving the company file.</summary>
     protected abstract string CompanyTypeLabel { get; }
     protected abstract void SetShowCompanyNameValidationError(bool value);
     protected abstract void SetCompanyNameBorderColor(Color value);
+
+    /// <summary>
+    /// When <c>true</c>, the page opens in fireteam view rather than flat unit list.
+    /// Defaults to <c>false</c>; override in cohesive-company pages.
+    /// </summary>
     protected virtual bool DefaultTeamsView => false;
+
+    /// <summary>
+    /// When <c>true</c>, the teams list is only shown after the team entries collection is ready.
+    /// Defaults to <c>false</c>; cohesive pages override this to prevent empty-list flicker.
+    /// </summary>
     protected virtual bool RequireTeamEntriesReadyForTeamsList => false;
+
+    /// <summary>
+    /// Indicates whether the team entries collection has been fully populated.
+    /// Always <c>true</c> in the base; overridden in pages that build entries asynchronously.
+    /// </summary>
     protected virtual bool AreTeamEntriesReadyForTeamsList => true;
+
     protected abstract void ApplyLieutenantVisualStatesFromBase();
     protected abstract Task ApplyUnitVisibilityFiltersFromBaseAsync();
 
+    /// <summary>
+    /// Updates the filter-active flag and forces both filter icon canvases to repaint
+    /// so the active/inactive states reflect the new value immediately.
+    /// </summary>
     protected void SetIsUnitFilterActive(bool value)
     {
         _isUnitFilterActive = value;
@@ -82,6 +125,11 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         UnitSelectionFilterCanvasActiveForVisuals.InvalidateSurface();
     }
 
+    /// <summary>
+    /// Controls whether the faction picker panel is the active view.
+    /// Changing this property notifies <see cref="IsUnitSelectionActive"/>,
+    /// <see cref="ShowUnitsList"/>, and <see cref="ShowTeamsList"/> so bindings update atomically.
+    /// </summary>
     public bool IsFactionSelectionActive
     {
         get => _isFactionSelectionActive;
@@ -100,8 +148,13 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
+    /// <summary>Inverse of <see cref="IsFactionSelectionActive"/>; bound to the unit detail / list area visibility.</summary>
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
+    /// <summary>
+    /// When set to <c>true</c>, only lieutenant-eligible units are shown in the list
+    /// and the lieutenant visual states are refreshed immediately.
+    /// </summary>
     public bool LieutenantOnlyUnits
     {
         get => _lieutenantOnlyUnits;
@@ -119,6 +172,10 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
+    /// <summary>
+    /// Toggles between the flat unit list and the fireteam composition view.
+    /// Notifies <see cref="ShowUnitsList"/> and <see cref="ShowTeamsList"/> on change.
+    /// </summary>
     public bool TeamsView
     {
         get => _showFireteams;
@@ -136,13 +193,23 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
+    /// <summary><c>true</c> when the flat unit list should be shown (i.e. fireteam view is off).</summary>
     public bool ShowUnitsList => !TeamsView;
 
+    /// <summary>
+    /// <c>true</c> when the fireteam list should be visible.
+    /// Guards against showing the list before team entries are populated when
+    /// <see cref="RequireTeamEntriesReadyForTeamsList"/> is active.
+    /// </summary>
     public bool ShowTeamsList =>
         TeamsView &&
         (!RequireTeamEntriesReadyForTeamsList ||
          (IsUnitSelectionActive && AreTeamEntriesReadyForTeamsList));
 
+    /// <summary>
+    /// Status text displayed beneath the profile list (e.g. "Select a unit." or profile load errors).
+    /// Bound to the UI; only notifies bindings when the value actually changes.
+    /// </summary>
     public string ProfilesStatus
     {
         get => _profilesStatus;
@@ -158,6 +225,10 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
+    /// <summary>
+    /// The unit name shown as the primary heading in the detail panel.
+    /// Automatically recalculates the font size when set so long names scale down gracefully.
+    /// </summary>
     public string UnitNameHeading
     {
         get => UnitDisplayConfigurationsViewForVisuals.UnitNameHeading;
@@ -173,6 +244,10 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
+    /// <summary>
+    /// Font size for the unit name heading, adjusted dynamically based on name length.
+    /// Uses a small epsilon comparison to avoid spurious property-change notifications for floating-point deltas.
+    /// </summary>
     public double UnitNameHeadingFontSize
     {
         get => UnitDisplayConfigurationsViewForVisuals.UnitNameHeadingFontSize;
@@ -346,10 +421,13 @@ public abstract partial class CompanySelectionPageBase : ContentPage
 
     public bool HasPeripheralEquipment => UnitDisplayConfigurationsViewForVisuals.HasPeripheralEquipment;
     public bool HasPeripheralSkills => UnitDisplayConfigurationsViewForVisuals.HasPeripheralSkills;
+    // Aggregate icon visibility flags used to conditionally show/hide the icon rows in the header.
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
+    // Each icon property delegates through SetAndNotifyUnitHeaderIconFlag so that any change
+    // also triggers the aggregate HasAny* notifications and invalidates the icon canvas.
     public bool ShowRegularOrderIcon
     {
         get => UnitDisplayConfigurationsViewForVisuals.ShowRegularOrderIcon;
@@ -443,12 +521,20 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         set => UnitDisplayConfigurationsViewForVisuals.PeripheralMoveSecondCm = value;
     }
 
+    /// <summary>
+    /// Creates a bindable Command that invokes the faction-selection handler,
+    /// logging the selection for diagnostics.
+    /// </summary>
     protected Command CreateSelectFactionCommand<TFaction>(Action<TFaction> setSelectedFaction)
         where TFaction : class
     {
         return CompanySelectionPageInteractionWorkflow.CreateSelectFactionCommand(setSelectedFaction);
     }
 
+    /// <summary>
+    /// Creates a bindable Command that invokes the unit-selection handler,
+    /// logging the unit identity for diagnostics.
+    /// </summary>
     protected Command CreateSelectUnitCommand<TUnit>(
         Action<TUnit> setSelectedUnit,
         Func<TUnit, int> readUnitId,
@@ -463,11 +549,19 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             readUnitName);
     }
 
+    /// <summary>
+    /// Creates a bindable Command that wraps the async start-company flow,
+    /// wiring up the <paramref name="canExecute"/> guard to prevent double-submission.
+    /// </summary>
     protected Command CreateStartCompanyCommand(Func<Task> startCompanyAsync, Func<bool> canExecute)
     {
         return CompanySelectionPageInteractionWorkflow.CreateStartCompanyCommand(startCompanyAsync, canExecute);
     }
 
+    /// <summary>
+    /// Subscribes tap handlers to both faction slot buttons so tapping a slot updates
+    /// the active slot index and respects the right-slot visibility state.
+    /// </summary>
     protected void WireFactionSlotTapHandlers(Action<int> setActiveSlot, Func<bool> showRightSelectionBox)
     {
         CompanySelectionPageInteractionWorkflow.WireFactionSlotTapHandlers(
@@ -476,6 +570,11 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             showRightSelectionBox);
     }
 
+    /// <summary>
+    /// Completes page setup by setting the BindingContext, selecting the initial faction slot,
+    /// and kicking off the summary and header icon loads.
+    /// Should be called at the end of each concrete page's constructor or OnAppearing.
+    /// </summary>
     protected void FinalizePageInitialization(Action setInitialActiveSlot)
     {
         CompanySelectionPageInteractionWorkflow.FinalizePageInitialization(
@@ -485,6 +584,10 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             LoadHeaderIconsAsync);
     }
 
+    /// <summary>
+    /// Handles a tap on a team-allowed-profile item, scrolling the unit list to the matching unit
+    /// and optionally restricting the profile selection to a subset of eligible profiles.
+    /// </summary>
     protected void HandleTeamAllowedProfileSelected<TTeamItem, TUnit>(
         TTeamItem? teamItem,
         IEnumerable<TUnit> units,
@@ -521,9 +624,16 @@ public abstract partial class CompanySelectionPageBase : ContentPage
             onUnitNameHeadingSizeChanged);
     }
 
+    /// <summary>Loads the faction list appropriate for the current mode and populates the faction picker.</summary>
     protected abstract Task LoadFactionsAsync();
+
+    /// <summary>Loads units for whichever faction slot is currently active.</summary>
     protected abstract Task LoadUnitsForActiveSlotAsync();
+
+    /// <summary>Loads the full detail data (profiles, equipment, skills) for the currently selected unit.</summary>
     protected abstract Task LoadSelectedUnitDetailsAsync();
+
+    /// <summary>Validates the company and persists it to disk, then navigates to the company viewer.</summary>
     protected abstract Task StartCompanyAsync();
 }
 
