@@ -320,14 +320,26 @@
                         TextColor="#EF4444"
                         VerticalOptions="Center"
                         IsVisible="{Binding ShowCompanyNameValidationError}" />
-                    <Label
+                    <VerticalStackLayout
                         Grid.Column="4"
-                        Text="{Binding TrackedFireteamNameDisplay}"
                         VerticalOptions="Center"
                         HorizontalOptions="Fill"
-                        HorizontalTextAlignment="Center"
-                        LineBreakMode="TailTruncation"
-                        MaxLines="1" />
+                        Spacing="2">
+                        <Label
+                            Text="{Binding TrackedFireteamNameDisplay}"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="Center"
+                            LineBreakMode="TailTruncation"
+                            MaxLines="1" />
+                        <Label
+                            Text="{Binding TrackedFireteamLevelBonusText}"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="Center"
+                            FontSize="11"
+                            IsVisible="{Binding HasTrackedFireteamLevelBonus}"
+                            LineBreakMode="TailTruncation"
+                            MaxLines="1" />
+                    </VerticalStackLayout>
                     <Grid
                         Grid.Column="5"
                         WidthRequest="50"

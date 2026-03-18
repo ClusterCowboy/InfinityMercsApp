@@ -192,6 +192,8 @@ public partial class CohesiveCompanySelectionPage
         }
 
         _trackedFireteamLevel = normalizedLevel;
+        OnPropertyChanged(nameof(TrackedFireteamLevelBonusText));
+        OnPropertyChanged(nameof(HasTrackedFireteamLevelBonus));
         _ = LoadTrackedFireteamLevelIconAsync(_trackedFireteamLevel);
     }
 

@@ -164,7 +164,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
-            _ = RefreshSeasonPointsDependentUnitStateAsync();
+            _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
 
@@ -234,6 +234,12 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     }
     public string TrackedFireteamNameDisplay =>
         string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
+
+    public string? TrackedFireteamLevelBonusText =>
+        CohesiveCompanyFireteamLevelWorkflow.GetBonusText(_trackedFireteamLevel);
+
+    public bool HasTrackedFireteamLevelBonus =>
+        !string.IsNullOrEmpty(TrackedFireteamLevelBonusText);
 
     public bool AreTeamEntriesReady
     {

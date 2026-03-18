@@ -4,6 +4,20 @@ namespace InfinityMercsApp.Views.Common;
 
 internal static class CohesiveCompanyFireteamLevelWorkflow
 {
+    private static readonly string?[] LevelBonuses =
+    [
+        null,               // 0 — no fireteam
+        null,               // 1 — no bonus
+        "BS Attack (+1 SD)",
+        "+3 Discover and +1 Dodge",
+        "+1 BS",
+        "Sixth Sense",
+        "+1 WIP",
+    ];
+
+    internal static string? GetBonusText(int level) =>
+        level >= 0 && level < LevelBonuses.Length ? LevelBonuses[level] : null;
+
     private sealed class AllowedProfileDescriptor
     {
         public required HashSet<string> CountAsNames { get; init; }
