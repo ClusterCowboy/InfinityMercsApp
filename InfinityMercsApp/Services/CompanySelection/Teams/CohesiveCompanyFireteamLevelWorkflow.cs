@@ -15,8 +15,19 @@ internal static class CohesiveCompanyFireteamLevelWorkflow
         "+1 WIP",
     ];
 
-    internal static string? GetBonusText(int level) =>
-        level >= 0 && level < LevelBonuses.Length ? LevelBonuses[level] : null;
+    internal static string? GetBonusText(int level)
+    {
+        if (level <= 0 || level >= LevelBonuses.Length)
+        {
+            return null;
+        }
+
+        var bonuses = LevelBonuses[1..Math.Min(level + 1, LevelBonuses.Length)]
+            .Where(b => b is not null)
+            .ToList();
+
+        return bonuses.Count > 0 ? string.Join(", ", bonuses) : null;
+    }
 
     private sealed class AllowedProfileDescriptor
     {
