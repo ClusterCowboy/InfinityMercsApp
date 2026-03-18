@@ -8,11 +8,24 @@ using Svg.Skia;
 
 namespace InfinityMercsApp.Views.Common.Captain;
 
+/// <summary>
+/// Modal popup page that allows the user to configure captain upgrades before founding a company.
+/// Displays stat upgrade pickers, weapon/skill/equipment choices, and a live experience budget tracker.
+/// Use <see cref="ShowAsync"/> to push the page modally and await the confirmed result.
+/// </summary>
 public sealed class ConfigureCaptainPopupPage : ContentPage
 {
+    // Shared width applied to all choice pickers so they align consistently in the upgrade column.
     private const double UnifiedPickerWidth = 280;
+
+    // Green highlight applied to a stat value when it has been improved above its base.
     private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
     private static readonly Color DefaultStatColor = Colors.White;
+
+    /// <summary>
+    /// Defines the available upgrade tiers, bonuses, and costs for each upgradeable stat.
+    /// Hard-cap values prevent the stat from exceeding a fixed ceiling regardless of tier.
+    /// </summary>
     private static readonly IReadOnlyDictionary<string, StatPickerDefinition> StatDefinitions = new Dictionary<string, StatPickerDefinition>(StringComparer.OrdinalIgnoreCase)
     {
         ["CC"] = new StatPickerDefinition([0, 2, 5, 10], [0, 2, 3, 5]),
@@ -27,8 +40,12 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private const string NoneChoice = "(None)";
 
     private readonly CaptainUpgradePopupContext _context;
+
+    // TaskCompletionSource is used so callers can await ShowAsync() and receive the result only when the modal is dismissed.
     private readonly TaskCompletionSource<SavedImprovedCaptainStats?> _resultSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly SKCanvasView _logoCanvas;
+
+    // One picker per upgradeable stat; wired to SelectionChanged to update the live cost preview.
     private readonly Picker _ccPicker;
     private readonly Picker _bsPicker;
     private readonly Picker _phPicker;
@@ -36,6 +53,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Picker _armPicker;
     private readonly Picker _btsPicker;
     private readonly Picker _vitaPicker;
+
+    // Three slots each for weapons, skills, and equipment — any slot can be set to (None).
     private readonly Picker _weapon1Picker;
     private readonly Picker _weapon2Picker;
     private readonly Picker _weapon3Picker;
@@ -45,6 +64,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Picker _equipment1Picker;
     private readonly Picker _equipment2Picker;
     private readonly Picker _equipment3Picker;
+
+    // Summary labels on the left column that update in real time as selections change.
     private readonly Label _rangedValueLabel;
     private readonly Label _ccValueLabel;
     private readonly Label _skillsValueLabel;
@@ -52,27 +73,42 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Label _upgradeOptionsHeaderLabel;
     private readonly Label _experienceRemainingLabel;
     private readonly Button _foundCompanyButton;
+
+    // Parsed numeric base stats, used to compute deltas when a tier is selected.
     private readonly IReadOnlyDictionary<string, int> _baseStats;
     private readonly Grid _statsGrid;
+
+    // Parallel collections that keep the stat grid in sync with picker selections.
     private readonly List<string> _statGridOrder = [];
     private readonly Dictionary<string, string> _statGridBaseValues = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Label> _statGridValueLabels = new(StringComparer.OrdinalIgnoreCase);
+
+    // Captain name editing state — the Entry becomes editable when the pencil icon is tapped.
     private readonly Entry _captainNameEntry;
     private readonly Label _captainNameHeadingLabel;
     private readonly SKCanvasView _editCaptainNameCanvas;
     private readonly SKCanvasView _saveCaptainNameCanvas;
     private readonly SKCanvasView _rejectCaptainNameCanvas;
     private string _captainNameCommitted = "Captain";
+
+    // SVG pictures loaded asynchronously; nullable until loading completes.
     private SKPicture? _logoPicture;
     private SKPicture? _editCaptainNamePicture;
     private SKPicture? _saveCaptainNamePicture;
     private SKPicture? _rejectCaptainNamePicture;
+
+    // Used with Interlocked.Exchange to ensure CloseAsync runs at most once even with rapid taps.
     private int _isClosing;
 
+    /// <summary>
+    /// Private constructor — callers must use <see cref="ShowAsync"/> so that the modal lifecycle is managed correctly.
+    /// </summary>
     private ConfigureCaptainPopupPage(CaptainUpgradePopupContext context)
     {
         _context = context;
         _baseStats = ParseBaseStats(context.Unit.Statline);
+
+        // Cap the popup height to 80 % of the physical screen height to leave room for the OS chrome.
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
         BackgroundColor = Color.FromRgba(0, 0, 0, 180);
         Title = "Captain Configuration";
@@ -326,6 +362,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _ = LoadCaptainNameActionIconsAsync();
     }
 
+    /// <summary>
+    /// Pushes the popup modally and waits until the user confirms or cancels.
+    /// Returns the configured <see cref="SavedImprovedCaptainStats"/>, or <c>null</c> if cancelled.
+    /// </summary>
     public static async Task<SavedImprovedCaptainStats?> ShowAsync(INavigation navigation, CaptainUpgradePopupContext context)
     {
         var page = new ConfigureCaptainPopupPage(context);
@@ -333,12 +373,21 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return await page._resultSource.Task;
     }
 
+    /// <summary>
+    /// Intercepts the hardware back button so it behaves identically to tapping BACK
+    /// rather than leaving the result source unresolved.
+    /// </summary>
     protected override bool OnBackButtonPressed()
     {
         _ = CloseAsync(false);
         return true;
     }
 
+    /// <summary>
+    /// Loads the unit's faction logo as an SVG picture for the header canvas.
+    /// Prefers the cached on-disk path; falls back to the bundled app-package asset.
+    /// Failures are logged and result in no logo being displayed rather than crashing.
+    /// </summary>
     private async Task LoadLogoAsync()
     {
         _logoPicture?.Dispose();
@@ -347,6 +396,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         try
         {
             Stream? stream = null;
+
+            // Prefer the pre-downloaded cache to avoid reading bundled assets repeatedly.
             if (!string.IsNullOrWhiteSpace(_context.Unit.CachedLogoPath) && File.Exists(_context.Unit.CachedLogoPath))
             {
                 stream = File.OpenRead(_context.Unit.CachedLogoPath);
@@ -377,6 +428,9 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _logoCanvas.InvalidateSurface();
     }
 
+    /// <summary>
+    /// Renders the SVG logo centred and uniformly scaled within the canvas bounds.
+    /// </summary>
     private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
@@ -393,6 +447,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             return;
         }
 
+        // Scale uniformly so the logo fits entirely within the canvas without distortion.
         var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
         var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
         var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
@@ -402,8 +457,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         canvas.DrawPicture(_logoPicture);
     }
 
+    /// <summary>
+    /// Closes the popup, resolving the result source with the configured stats on confirmation
+    /// or with <c>null</c> on cancellation. Guards against being called more than once via
+    /// an atomic flag so that rapid back-button presses cannot double-dismiss the modal.
+    /// </summary>
     private async Task CloseAsync(bool confirmed)
     {
+        // Atomically swap _isClosing to 1; if it was already 1, another call is in progress.
         if (Interlocked.Exchange(ref _isClosing, 1) == 1)
         {
             return;
@@ -418,6 +479,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             return;
         }
 
+        // Ensure any in-progress name edit is committed before capturing the result.
         CommitCaptainNameFromEntry();
 
         var stats = new SavedImprovedCaptainStats
@@ -456,6 +518,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         await DismissModalIfTopAsync();
     }
 
+    /// <summary>
+    /// Pops this page from the modal stack only if it is still the topmost modal.
+    /// Guards against edge cases where navigation state changed between the close request and execution.
+    /// </summary>
     private async Task DismissModalIfTopAsync()
     {
         try
@@ -467,6 +533,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 return;
             }
 
+            // Do not pop if another modal was pushed on top of this one in the meantime.
             if (!ReferenceEquals(modalStack[^1], this))
             {
                 return;
@@ -481,10 +548,15 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         }
         catch (ArgumentException ex) when (ex.Message.Contains("Ambiguous routes matched", StringComparison.OrdinalIgnoreCase))
         {
+            // Shell routing can throw this transiently when dismissing; safe to ignore.
             Console.Error.WriteLine($"ConfigureCaptainPopupPage DismissModalIfTopAsync ignored ambiguous route pop: {ex.Message}");
         }
     }
 
+    /// <summary>
+    /// Creates a stat-upgrade picker pre-populated with the tier options computed from the unit's base value.
+    /// Defaults to index 0 (no upgrade).
+    /// </summary>
     private static Picker BuildStatPicker(string statName, int baseValue)
     {
         var options = BuildStatOptions(statName, baseValue);
@@ -500,6 +572,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return picker;
     }
 
+    /// <summary>
+    /// Creates a choice picker (weapon / skill / equipment) with a leading "(None)" entry
+    /// followed by the deduplicated option list from the context.
+    /// </summary>
     private static Picker BuildChoicePicker(IEnumerable<string> options)
     {
         var values = new List<string> { NoneChoice };
@@ -515,11 +591,16 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
     }
 
+    // Returns just the picker; the label parameter is reserved for potential future use.
     private static View BuildStatRow(string label, Picker picker)
     {
         return picker;
     }
 
+    /// <summary>
+    /// Lays out two stat pickers side by side in equal columns.
+    /// The second slot is optional; if omitted, only the first picker is placed.
+    /// </summary>
     private static View BuildStatRowPair((string Label, Picker Picker) first, (string Label, Picker Picker)? second)
     {
         var grid = new Grid
@@ -546,6 +627,9 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return grid;
     }
 
+    /// <summary>
+    /// Groups three pickers under a bold category heading (Weapons / Skills / Equipment).
+    /// </summary>
     private static View BuildCategorySection(string title, Picker first, Picker second, Picker third)
     {
         return new VerticalStackLayout
@@ -562,16 +646,26 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
     }
 
+    /// <summary>
+    /// Returns the upgrade tier of the currently selected item, or 0 if nothing is selected.
+    /// </summary>
     private static int ReadStatTier(Picker picker)
     {
         return picker.SelectedItem is StatPickerOption option ? option.Tier : 0;
     }
 
+    /// <summary>
+    /// Returns the numeric stat bonus of the currently selected tier, or 0 if nothing is selected.
+    /// </summary>
     private static int ReadStatBonus(Picker picker)
     {
         return picker.SelectedItem is StatPickerOption option ? option.Bonus : 0;
     }
 
+    /// <summary>
+    /// Reads the selected choice label, stripping the leading cost annotation (e.g. "(2) - ")
+    /// and returning an empty string when "(None)" is selected.
+    /// </summary>
     private static string ReadChoice(Picker picker)
     {
         var value = picker.SelectedItem?.ToString() ?? string.Empty;
@@ -580,15 +674,21 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             return string.Empty;
         }
 
+        // Strip the "(cost) - " prefix that is prepended to choice labels for display purposes.
         var normalized = Regex.Replace(value, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
         return normalized;
     }
 
+    // Returns a dash placeholder for null/empty values shown in summary labels.
     private static string NormalizeText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "-" : value;
     }
 
+    /// <summary>
+    /// Builds a two-row block displaying a category label and its coloured value label.
+    /// The value label is returned via an out parameter so callers can update it dynamically.
+    /// </summary>
     private static View BuildProfileDetailBlock(string label, Color valueColor, out Label valueLabel)
     {
         valueLabel = new Label
@@ -616,11 +716,18 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
     }
 
+    /// <summary>
+    /// Subscribes a picker's SelectionChanged event to the shared preview refresh handler.
+    /// </summary>
     private void HookSelectionChanged(Picker picker)
     {
         picker.SelectedIndexChanged += (_, _) => UpdateProfilePreviewFromSelections();
     }
 
+    /// <summary>
+    /// Rebuilds all live-preview labels (statline, ranged, CC, skills, equipment) and
+    /// refreshes the experience budget whenever any picker selection changes.
+    /// </summary>
     private void UpdateProfilePreviewFromSelections()
     {
         UpdateStatlinePreview();
@@ -640,8 +747,13 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         UpdateUpgradeOptionsHeader();
     }
 
+    /// <summary>
+    /// Recalculates remaining experience and updates the header label and Confirm button state.
+    /// Base experience is derived from the unit cost: cheaper units start with more experience to spend.
+    /// </summary>
     private void UpdateUpgradeOptionsHeader()
     {
+        // Units cost at most 28 pts; the remainder becomes the starting experience budget.
         var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
         var selectedCost =
             ReadStatPoints(_ccPicker) +
@@ -664,16 +776,23 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName})";
         _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
+
+        // Turn the remaining exp label red and disable the confirm button when overspent.
         _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
         _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
     }
 
+    // Thin wrapper kept for consistency; may expand to include additional preview logic later.
     private void UpdateStatlinePreview()
     {
         UpdateStatsGridValues();
     }
 
+    /// <summary>
+    /// Looks up the first matching stat key from the parsed base stats dictionary.
+    /// Accepts multiple candidate keys to handle aliases such as VITA / STR / W.
+    /// </summary>
     private int ReadBaseStat(params string[] statNames)
     {
         foreach (var statName in statNames)
@@ -687,10 +806,16 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return 0;
     }
 
+    /// <summary>
+    /// Builds the ordered list of <see cref="StatPickerOption"/> items for a single stat.
+    /// Tiers are added incrementally; a hard cap stops further tiers once the stat hits its ceiling.
+    /// Costs accumulate across tiers so the picker always shows the total spent.
+    /// </summary>
     private static List<StatPickerOption> BuildStatOptions(string statName, int baseValue)
     {
         if (!StatDefinitions.TryGetValue(statName, out var definition))
         {
+            // Unknown stat — return a single "no upgrade" option rather than an empty list.
             return [new StatPickerOption(statName, 0, 0, 0)];
         }
 
@@ -703,6 +828,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var cumulativeCost = 0;
         for (var tier = 1; tier <= definition.MaxTier; tier++)
         {
+            // Skip remaining tiers if the stat has already reached the hard cap.
             if (definition.HardCap.HasValue && currentValue >= definition.HardCap.Value)
             {
                 break;
@@ -711,6 +837,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             var targetValue = baseValue + definition.BonusesByTier[tier];
             if (definition.HardCap.HasValue)
             {
+                // Clamp the bonus so the stat cannot exceed the hard cap even if a tier would push it over.
                 targetValue = Math.Min(targetValue, definition.HardCap.Value);
             }
 
@@ -723,11 +850,18 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return options;
     }
 
+    /// <summary>
+    /// Returns the experience point cost of the currently selected stat tier, or 0 if nothing is selected.
+    /// </summary>
     private static int ReadStatPoints(Picker picker)
     {
         return picker.SelectedItem is StatPickerOption option ? option.Cost : 0;
     }
 
+    /// <summary>
+    /// Parses a raw statline string (e.g. "CC 14 | BS 12 | ...") into a keyed integer dictionary.
+    /// Used to seed the pickers with the correct base values for bonus calculations.
+    /// </summary>
     private static IReadOnlyDictionary<string, int> ParseBaseStats(string? statline)
     {
         var values = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -754,6 +888,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return values;
     }
 
+    /// <summary>
+    /// Constructs the stat grid shown in the left column using the parsed statline.
+    /// Registers each stat's value label in <see cref="_statGridValueLabels"/> so it can be
+    /// updated live when upgrade pickers change.
+    /// </summary>
     private Grid BuildStatsGrid(string? statline)
     {
         var entries = ParseStatsGridEntries(statline);
@@ -770,6 +909,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         if (entries.Count == 0)
         {
+            // Show a single dash column when no stats could be parsed.
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
             var empty = new Label
             {
@@ -782,6 +922,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             return grid;
         }
 
+        // Row 0 = stat key (bold header), Row 1 = current value (updated as tiers change).
         for (var i = 0; i < entries.Count; i++)
         {
             var (key, value) = entries[i];
@@ -816,6 +957,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return grid;
     }
 
+    /// <summary>
+    /// Splits a pipe-delimited statline into (key, value) pairs for the stat grid.
+    /// Segments that do not match the expected "KEY value" pattern are silently skipped.
+    /// </summary>
     private static List<(string Key, string Value)> ParseStatsGridEntries(string? statline)
     {
         var entries = new List<(string Key, string Value)>();
@@ -838,6 +983,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return entries;
     }
 
+    /// <summary>
+    /// Re-evaluates every stat label in the grid, applying the current picker bonus
+    /// and switching the text colour to green when the value has been modified.
+    /// Non-numeric stat values (e.g. "-") are displayed as-is without colour change.
+    /// </summary>
     private void UpdateStatsGridValues()
     {
         foreach (var key in _statGridOrder)
@@ -853,6 +1003,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 var bonus = ReadStatlineBonus(key);
                 var modifiedValue = numericBase + bonus;
                 valueLabel.Text = modifiedValue.ToString(CultureInfo.InvariantCulture);
+                // Highlight in green only when the value differs from the base.
                 valueLabel.TextColor = modifiedValue == numericBase ? DefaultStatColor : ModifiedStatColor;
             }
             else
@@ -863,6 +1014,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         }
     }
 
+    /// <summary>
+    /// Maps a stat key to the corresponding upgrade picker and returns the selected bonus.
+    /// VITA, STR, and W all share the single vitality picker.
+    /// </summary>
     private int ReadStatlineBonus(string statKey)
     {
         return statKey switch
@@ -878,6 +1033,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
     }
 
+    /// <summary>
+    /// Collects the non-empty, deduplicated choice strings from an arbitrary set of pickers.
+    /// Used to build the additions list for the profile preview sections.
+    /// </summary>
     private static List<string> GetSelectedChoices(params Picker[] pickers)
     {
         return pickers
@@ -887,6 +1046,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             .ToList();
     }
 
+    /// <summary>
+    /// Creates a small 28x28 tappable SkiaSharp canvas for the captain-name action icons
+    /// (edit, save, reject).
+    /// </summary>
     private static SKCanvasView BuildCaptainNameIconCanvas(EventHandler<TappedEventArgs> tappedHandler)
     {
         var canvas = new SKCanvasView
@@ -901,6 +1064,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return canvas;
     }
 
+    /// <summary>
+    /// Switches the captain-name row between read-only display mode and editable mode,
+    /// toggling the visibility of the edit/save/reject icon canvases accordingly.
+    /// </summary>
     private void SetCaptainNameEditMode(bool isEditing)
     {
         _captainNameEntry.IsEnabled = isEditing;
@@ -921,12 +1088,19 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         CommitCaptainNameFromEntry();
     }
 
+    /// <summary>
+    /// Discards any unsaved changes to the captain name and reverts the entry to the last committed value.
+    /// </summary>
     private void OnRejectCaptainNameTapped(object? sender, TappedEventArgs e)
     {
         _captainNameEntry.Text = _captainNameCommitted;
         SetCaptainNameEditMode(isEditing: false);
     }
 
+    /// <summary>
+    /// Validates and persists the captain name from the entry field.
+    /// Falls back to "Captain" when the entry is empty or whitespace-only.
+    /// </summary>
     private void CommitCaptainNameFromEntry()
     {
         var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? "Captain" : _captainNameEntry.Text.Trim();
@@ -936,6 +1110,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         SetCaptainNameEditMode(isEditing: false);
     }
 
+    /// <summary>
+    /// Asynchronously loads the three SVG icons used in the captain-name editing row.
+    /// Each icon is loaded independently so a failure in one does not block the others.
+    /// </summary>
     private async Task LoadCaptainNameActionIconsAsync()
     {
         DisposeCaptainNameActionIcons();
@@ -981,6 +1159,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _rejectCaptainNameCanvas.InvalidateSurface();
     }
 
+    /// <summary>
+    /// Releases the three SVG pictures for the captain-name action icons.
+    /// Must be called before the page is dismissed to prevent native resource leaks.
+    /// </summary>
     private void DisposeCaptainNameActionIcons()
     {
         _editCaptainNamePicture?.Dispose();
@@ -991,6 +1173,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _rejectCaptainNamePicture = null;
     }
 
+    /// <summary>
+    /// Renders an SVG action icon centred and uniformly scaled on the given canvas.
+    /// Shared by the edit, save, and reject icon canvases.
+    /// </summary>
     private static void DrawActionIcon(SKCanvas canvas, SKImageInfo info, SKPicture? picture)
     {
         canvas.Clear(SKColors.Transparent);
@@ -1028,6 +1214,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         DrawActionIcon(e.Surface.Canvas, e.Info, _rejectCaptainNamePicture);
     }
 
+    /// <summary>
+    /// Extracts the integer cost prefix from a choice picker item (e.g. "(2) - Sniper Rifle" → 2).
+    /// Returns 0 if the item is "(None)" or has no cost annotation.
+    /// </summary>
     private static int ReadChoicePoints(Picker picker)
     {
         var rawValue = picker.SelectedItem?.ToString() ?? string.Empty;
@@ -1037,6 +1227,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             return 0;
         }
 
+        // The cost is encoded as the first token in parentheses, e.g. "(3)".
         var match = Regex.Match(rawValue, @"^\s*\(([-+]?\d+)\)");
         if (!match.Success)
         {
@@ -1048,6 +1239,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             : 0;
     }
 
+    /// <summary>
+    /// Builds the display text for a profile section (ranged weapons, skills, etc.) by combining
+    /// the unit's base text with the list of chosen additions.
+    /// </summary>
+    /// <param name="prependPlus">When <c>true</c>, additions are prefixed with "+ " to distinguish them from base entries.</param>
     private static string BuildUpdatedProfileSection(string? baseText, IReadOnlyList<string> additions, bool prependPlus)
     {
         var lines = SplitProfileText(baseText);
@@ -1059,6 +1255,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
     }
 
+    /// <summary>
+    /// Splits multi-line profile text into a trimmed, non-empty list of lines,
+    /// discarding bare dash placeholders that indicate an empty field.
+    /// </summary>
     private static List<string> SplitProfileText(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))

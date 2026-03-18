@@ -6,11 +6,19 @@ namespace InfinityMercsApp.Views.Common;
 
 public abstract partial class CompanySelectionPageBase
 {
+    /// <summary>
+    /// Extracts the short unit type code (e.g. "LT", "HVT") from a subtitle string.
+    /// Returns an empty string when the subtitle is null or contains no recognisable code.
+    /// </summary>
     protected static string ExtractUnitTypeCode(string? subtitle)
     {
         return CompanyStartSharedState.ExtractUnitTypeCode(subtitle);
     }
 
+    /// <summary>
+    /// Applies or clears the company name validation error visual by updating the border colour
+    /// and validation-error flag through the provided setter delegates.
+    /// </summary>
     protected static void ApplyCompanyNameValidationError(
         bool showError,
         Action<bool> setShowCompanyNameValidationError,
@@ -22,6 +30,10 @@ public abstract partial class CompanySelectionPageBase
             setCompanyNameBorderColor);
     }
 
+    /// <summary>
+    /// Convenience overload that routes the validation error to the abstract setters
+    /// defined by the concrete page, avoiding the need to pass delegates explicitly.
+    /// </summary>
     protected void SetCompanyNameValidationError(bool showError)
     {
         ApplyCompanyNameValidationError(
@@ -30,12 +42,19 @@ public abstract partial class CompanySelectionPageBase
             SetCompanyNameBorderColor);
     }
 
+    /// <summary>
+    /// Computes the display text for the total points cost of all roster entries.
+    /// </summary>
     protected static string ComputeMercsCompanyTotalCostText<TEntry>(IEnumerable<TEntry> entries)
         where TEntry : class, ICompanyMercsEntry
     {
         return CompanyStartSharedState.ComputeTotalCostText(entries);
     }
 
+    /// <summary>
+    /// Re-evaluates the movement distance display strings for all roster entries,
+    /// applying the current inches/cm preference via <paramref name="formatMoveValue"/>.
+    /// </summary>
     protected static void RefreshMercsCompanyEntryDistanceDisplays<TEntry>(
         IEnumerable<TEntry> entries,
         Func<int?, int?, string> formatMoveValue)
@@ -44,6 +63,9 @@ public abstract partial class CompanySelectionPageBase
         CompanyStartSharedState.RefreshMercsCompanyEntryDistanceDisplays(entries, formatMoveValue);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> when all roster entries fit within the selected season points cap.
+    /// </summary>
     protected static bool IsCompanySeasonValid<TEntry>(
         IEnumerable<TEntry> entries,
         string selectedStartSeasonPoints,
@@ -53,6 +75,11 @@ public abstract partial class CompanySelectionPageBase
         return CompanyStartSharedState.IsSeasonValid(entries, selectedStartSeasonPoints, seasonPointsCapText);
     }
 
+    /// <summary>
+    /// Orchestrates the full "found company" save workflow: validates the company name,
+    /// serialises the roster to disk, and navigates to the company viewer on success.
+    /// Displays an error alert and logs on failure.
+    /// </summary>
     protected async Task ExecuteStartCompanyAsync<TFaction, TEntry, TCaptainStats>(
         string? companyName,
         IEnumerable<TEntry> mercsCompanyEntries,
@@ -93,6 +120,7 @@ public abstract partial class CompanySelectionPageBase
                     TryGetMetadataFactionName = tryGetMetadataFactionName,
                     ReadCaptainName = readCaptainName,
                     DisplayAlertAsync = (title, message, cancel) => DisplayAlert(title, message, cancel),
+                    // URI-encode the file path so it can be passed safely as a Shell query parameter.
                     NavigateToCompanyViewerAsync = async filePath =>
                     {
                         var encodedPath = Uri.EscapeDataString(filePath);
