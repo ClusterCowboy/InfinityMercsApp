@@ -140,6 +140,7 @@ public partial class CohesiveCompanySelectionPage
     {
         var evaluatedLevel = EvaluateTrackedFireteamLevel();
         OnTrackedFireteamLevelEvaluated(evaluatedLevel);
+        ReevaluateIrregularStatus();
     }
 
     private int EvaluateTrackedFireteamLevel()
@@ -175,6 +176,58 @@ public partial class CohesiveCompanySelectionPage
             allowed => allowed.ResolvedUnitId,
             allowed => allowed.ResolvedSourceFactionId);
         return Math.Clamp(level, 0, 6);
+    }
+
+    private void ReevaluateIrregularStatus()
+    {
+        if (MercsCompanyEntries.Count == 0)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_trackedFireteamName))
+        {
+            foreach (var entry in MercsCompanyEntries)
+            {
+                entry.IsIrregular = false;
+            }
+
+            return;
+        }
+
+        var trackedTeam = TeamEntries.FirstOrDefault(x =>
+            x.ShowTrackingRadioButton &&
+            string.Equals(x.Name, _trackedFireteamName, StringComparison.OrdinalIgnoreCase));
+
+        if (trackedTeam is null)
+        {
+            foreach (var entry in MercsCompanyEntries)
+            {
+                entry.IsIrregular = false;
+            }
+
+            return;
+        }
+
+        var effectiveAllowedProfiles = trackedTeam.AllowedProfiles
+            .Concat(TeamEntries
+                .Where(x => x.IsWildcardBucket)
+                .SelectMany(x => x.AllowedProfiles))
+            .DistinctBy(x => $"{x.Name}|{x.ResolvedUnitId}|{x.ResolvedSourceFactionId}", StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        CohesiveCompanyFireteamLevelWorkflow.EvaluateIrregularStatus(
+            MercsCompanyEntries,
+            effectiveAllowedProfiles,
+            entry => entry.BaseUnitName,
+            entry => entry.Name,
+            entry => entry.SourceUnitId,
+            entry => entry.SourceFactionId,
+            allowed => allowed.Name,
+            allowed => allowed.ResolvedUnitId,
+            allowed => allowed.ResolvedSourceFactionId,
+            allowed => allowed.Max,
+            (entry, isIrregular) => entry.IsIrregular = isIrregular);
     }
 
     // Hook point for full fireteam-level evaluation logic. Provide an evaluated value in [1..6].

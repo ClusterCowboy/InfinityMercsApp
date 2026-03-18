@@ -198,6 +198,118 @@ internal static class CohesiveCompanyFireteamLevelWorkflow
         }
     }
 
+    internal static void EvaluateIrregularStatus<TEntry, TAllowedProfile>(
+        IReadOnlyList<TEntry> entries,
+        IReadOnlyList<TAllowedProfile> allowedProfiles,
+        Func<TEntry, string?> readEntryBaseUnitName,
+        Func<TEntry, string?> readEntryName,
+        Func<TEntry, int> readEntrySourceUnitId,
+        Func<TEntry, int> readEntrySourceFactionId,
+        Func<TAllowedProfile, string?> readAllowedName,
+        Func<TAllowedProfile, int?> readAllowedResolvedUnitId,
+        Func<TAllowedProfile, int?> readAllowedResolvedSourceFactionId,
+        Func<TAllowedProfile, string> readAllowedMax,
+        Action<TEntry, bool> setIrregular)
+        where TEntry : class
+        where TAllowedProfile : class
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        if (allowedProfiles.Count == 0)
+        {
+            foreach (var entry in entries)
+            {
+                setIrregular(entry, true);
+            }
+
+            return;
+        }
+
+        var descriptors = new List<AllowedProfileDescriptor>(allowedProfiles.Count);
+        var capacities = new List<int>(allowedProfiles.Count);
+        foreach (var allowed in allowedProfiles)
+        {
+            var name = readAllowedName(allowed);
+            var countAsNames = BuildAllowedNameKeys(name);
+            var resolvedUnitId = readAllowedResolvedUnitId(allowed);
+            var resolvedSourceFactionId = readAllowedResolvedSourceFactionId(allowed);
+            if (countAsNames.Count == 0 && (!resolvedUnitId.HasValue || !resolvedSourceFactionId.HasValue))
+            {
+                continue;
+            }
+
+            descriptors.Add(new AllowedProfileDescriptor
+            {
+                CountAsNames = countAsNames,
+                ResolvedUnitId = resolvedUnitId,
+                ResolvedSourceFactionId = resolvedSourceFactionId
+            });
+            capacities.Add(ParseMaxSlots(readAllowedMax(allowed)));
+        }
+
+        if (descriptors.Count == 0)
+        {
+            foreach (var entry in entries)
+            {
+                setIrregular(entry, true);
+            }
+
+            return;
+        }
+
+        var remainingSlots = capacities.ToArray();
+
+        foreach (var entry in entries)
+        {
+            var entryNameKeys = BuildEntryNameKeys(readEntryBaseUnitName(entry), readEntryName(entry));
+            var entryUnitId = readEntrySourceUnitId(entry);
+            var entryFactionId = readEntrySourceFactionId(entry);
+            var firstWithCapacity = -1;
+            var hasAnyMatch = false;
+
+            for (var i = 0; i < descriptors.Count; i++)
+            {
+                if (!MatchesAllowedDescriptor(descriptors[i], entryNameKeys, entryUnitId, entryFactionId))
+                {
+                    continue;
+                }
+
+                hasAnyMatch = true;
+                if (firstWithCapacity < 0 && remainingSlots[i] > 0)
+                {
+                    firstWithCapacity = i;
+                }
+            }
+
+            if (!hasAnyMatch)
+            {
+                setIrregular(entry, true);
+            }
+            else if (firstWithCapacity >= 0)
+            {
+                remainingSlots[firstWithCapacity]--;
+                setIrregular(entry, false);
+            }
+            else
+            {
+                setIrregular(entry, true);
+            }
+        }
+    }
+
+    private static int ParseMaxSlots(string? maxStr)
+    {
+        if (string.IsNullOrWhiteSpace(maxStr) || maxStr.Trim() == "*")
+        {
+            return int.MaxValue / 2;
+        }
+
+        return int.TryParse(maxStr.Trim(), out var n) && n > 0 ? n : 0;
+    }
+
     private static IEnumerable<string> BuildSimplePluralVariants(string normalized)
     {
         if (string.IsNullOrWhiteSpace(normalized) || normalized.Length <= 1)

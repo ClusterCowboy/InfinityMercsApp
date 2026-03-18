@@ -123,6 +123,22 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
             OnPropertyChanged();
         }
     }
+
+    private bool _isIrregular;
+    public bool IsIrregular
+    {
+        get => _isIrregular;
+        set
+        {
+            if (_isIrregular == value)
+            {
+                return;
+            }
+
+            _isIrregular = value;
+            OnPropertyChanged();
+        }
+    }
 }
 
 
