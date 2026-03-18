@@ -60,6 +60,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
+        SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
@@ -136,9 +137,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
 
             SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
-            UpdateSeasonValidationState();
-            _ = RefreshSeasonPointsDependentUnitStateAsync();
         }
+    }
+
+    private void OnSelectedStartSeasonPointsChanged(object? sender, EventArgs e)
+    {
+        UpdateSeasonValidationState();
+        _ = RefreshSeasonPointsDependentUnitStateAsync();
     }
 
     public string SeasonPointsCapText

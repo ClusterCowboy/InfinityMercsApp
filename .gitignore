@@ -395,3 +395,4 @@ _temp_win_build/
 _temp*/
 _release_test/*
 _build_out/*
+.claude/settings.local.json

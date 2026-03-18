@@ -13,12 +13,13 @@ public partial class SeasonStartPointsView : ContentView
     private SKPicture? _invalidMercsListIcon;
     private bool _showSeasonCheckIcon;
     private bool _isCompanyValid;
+    private string _pointsRemainingText = "75";
 
     public static readonly BindableProperty SeasonPointsCapTextProperty =
-        BindableProperty.Create(nameof(SeasonPointsCapText), typeof(string), typeof(SeasonStartPointsView), "0");
+        BindableProperty.Create(nameof(SeasonPointsCapText), typeof(string), typeof(SeasonStartPointsView), "0", propertyChanged: OnSeasonPointsCapTextChanged);
 
     public static readonly BindableProperty SelectedStartSeasonPointsProperty =
-        BindableProperty.Create(nameof(SelectedStartSeasonPoints), typeof(string), typeof(SeasonStartPointsView), "75", BindingMode.TwoWay);
+        BindableProperty.Create(nameof(SelectedStartSeasonPoints), typeof(string), typeof(SeasonStartPointsView), "75", BindingMode.TwoWay, propertyChanged: OnSelectedStartSeasonPointsChanged);
 
     public static readonly BindableProperty IsCompanyValidProperty =
         BindableProperty.Create(
@@ -53,12 +54,48 @@ public partial class SeasonStartPointsView : ContentView
     }
 
     /// <summary>
+    /// Points remaining (limit minus current cost), formatted as a string for display.
+    /// </summary>
+    public string PointsRemainingText
+    {
+        get => _pointsRemainingText;
+        private set
+        {
+            if (_pointsRemainingText == value) return;
+            _pointsRemainingText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
     /// Whether the current company is valid for start; drives the check/X icon.
     /// </summary>
     public bool IsCompanyValid
     {
         get => _isCompanyValid;
         set => SetValue(IsCompanyValidProperty, value);
+    }
+
+    public event EventHandler? SelectedStartSeasonPointsChanged;
+
+    private static void OnSelectedStartSeasonPointsChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not SeasonStartPointsView view) return;
+        view.UpdatePointsRemaining();
+        view.SelectedStartSeasonPointsChanged?.Invoke(view, EventArgs.Empty);
+    }
+
+    private static void OnSeasonPointsCapTextChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is SeasonStartPointsView view)
+            view.UpdatePointsRemaining();
+    }
+
+    private void UpdatePointsRemaining()
+    {
+        var limit = int.TryParse(SelectedStartSeasonPoints, out var l) ? l : 0;
+        var current = int.TryParse(SeasonPointsCapText, out var c) ? c : 0;
+        PointsRemainingText = (limit - current).ToString();
     }
 
     private static void OnIsCompanyValidChanged(BindableObject bindable, object oldValue, object newValue)

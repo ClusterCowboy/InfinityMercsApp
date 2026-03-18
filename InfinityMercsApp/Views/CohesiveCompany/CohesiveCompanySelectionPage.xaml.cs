@@ -68,6 +68,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
+        SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = "Choose your sectorial:";
@@ -140,9 +141,13 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
             SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
-            UpdateSeasonValidationState();
-            _ = RefreshSeasonPointsDependentUnitStateAsync();
         }
+    }
+
+    private void OnSelectedStartSeasonPointsChanged(object? sender, EventArgs e)
+    {
+        UpdateSeasonValidationState();
+        _ = RefreshSeasonPointsDependentUnitStateAsync();
     }
 
     public string SeasonPointsCapText
