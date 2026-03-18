@@ -20,6 +20,7 @@ namespace InfinityMercsApp.Views.Common;
 public abstract partial class CompanySelectionPageBase : ContentPage
 {
     private SKPicture? _filterIconPicture;
+    private bool _isUnitFilterActive;
     private bool _isFactionSelectionActive = true;
     private bool _lieutenantOnlyUnits;
     private bool _showFireteams;
@@ -73,6 +74,13 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     protected virtual bool AreTeamEntriesReadyForTeamsList => true;
     protected abstract void ApplyLieutenantVisualStatesFromBase();
     protected abstract Task ApplyUnitVisibilityFiltersFromBaseAsync();
+
+    protected void SetIsUnitFilterActive(bool value)
+    {
+        _isUnitFilterActive = value;
+        UnitSelectionFilterCanvasInactiveForVisuals.InvalidateSurface();
+        UnitSelectionFilterCanvasActiveForVisuals.InvalidateSurface();
+    }
 
     public bool IsFactionSelectionActive
     {

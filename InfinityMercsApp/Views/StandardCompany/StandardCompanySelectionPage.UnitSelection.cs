@@ -54,6 +54,7 @@ public partial class StandardCompanySelectionPage
             criteria,
             value => LieutenantOnlyUnits = value,
             value => TeamsView = value);
+        SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();
     }

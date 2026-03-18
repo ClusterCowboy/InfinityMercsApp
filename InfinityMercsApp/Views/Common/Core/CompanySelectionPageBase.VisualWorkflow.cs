@@ -31,7 +31,7 @@ public abstract partial class CompanySelectionPageBase
 
     protected void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
-        CompanySelectionVisualUiWorkflow.DrawFilterIcon(_filterIconPicture, e);
+        CompanySelectionVisualUiWorkflow.DrawFilterIcon(_filterIconPicture, _isUnitFilterActive, e);
     }
 
     protected void OnPeripheralIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

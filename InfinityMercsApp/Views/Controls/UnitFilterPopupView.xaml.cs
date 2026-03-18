@@ -29,6 +29,11 @@ public sealed class UnitFilterCriteria
 
     public static UnitFilterCriteria None { get; } = new();
 
+    public bool IsActive => Terms.Count > 0
+        || (MinPoints.HasValue && MinPoints.Value != 0)
+        || (MaxPoints.HasValue && MaxPoints.Value != 200)
+        || LieutenantOnlyUnits;
+
     public UnitFilterQuery ToQuery()
     {
         return UnitFilterQuery.FromCriteria(this);

@@ -69,6 +69,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     {
         InitializeComponent();
         SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
+        SetIsUnitFilterActive(true);
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = "Choose your sectorial:";
