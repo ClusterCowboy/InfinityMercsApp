@@ -10,6 +10,7 @@ public abstract class CompanySavedCompanyFileBase<TCaptainStats, TFaction, TEntr
     public string CompanyIdentifier { get; init; } = string.Empty;
     public int CompanyIndex { get; init; }
     public string CreatedUtc { get; init; } = string.Empty;
+    public int StartSeasonPoints { get; init; }
     public int PointsLimit { get; init; }
     public int CurrentPoints { get; init; }
     public TCaptainStats ImprovedCaptainStats { get; init; } = new();

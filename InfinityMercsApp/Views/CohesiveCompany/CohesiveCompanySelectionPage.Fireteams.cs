@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Common;
 using Svg.Skia;
@@ -141,6 +140,7 @@ public partial class CohesiveCompanySelectionPage
     {
         var evaluatedLevel = EvaluateTrackedFireteamLevel();
         OnTrackedFireteamLevelEvaluated(evaluatedLevel);
+        ReevaluateIrregularStatus();
     }
 
     private int EvaluateTrackedFireteamLevel()
@@ -158,78 +158,77 @@ public partial class CohesiveCompanySelectionPage
             return 0;
         }
 
-        var allowedNames = BuildTrackedTeamAllowedNameSet(trackedTeam);
-        if (allowedNames.Count == 0)
-        {
-            return 0;
-        }
+        var effectiveAllowedProfiles = trackedTeam.AllowedProfiles
+            .Concat(TeamEntries
+                .Where(x => x.IsWildcardBucket)
+                .SelectMany(x => x.AllowedProfiles))
+            .DistinctBy(x => $"{x.Name}|{x.ResolvedUnitId}|{x.ResolvedSourceFactionId}", StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        var matchingTrooperCount = 0;
-        foreach (var entry in MercsCompanyEntries)
-        {
-            if (IsTrackedTeamMatch(entry, trackedTeam, allowedNames))
-            {
-                matchingTrooperCount++;
-            }
-        }
-
-        return Math.Clamp(matchingTrooperCount, 0, 6);
+        var level = CohesiveCompanyFireteamLevelWorkflow.EvaluateLevelByCapacity(
+            MercsCompanyEntries,
+            effectiveAllowedProfiles,
+            entry => entry.BaseUnitName,
+            entry => entry.Name,
+            entry => entry.SourceUnitId,
+            entry => entry.SourceFactionId,
+            allowed => allowed.Name,
+            allowed => allowed.ResolvedUnitId,
+            allowed => allowed.ResolvedSourceFactionId,
+            allowed => allowed.Max);
+        return Math.Clamp(level, 0, 6);
     }
 
-    private static bool IsTrackedTeamMatch(
-        MercsCompanyEntry entry,
-        ArmyTeamListItem trackedTeam,
-        HashSet<string> allowedNames)
+    private void ReevaluateIrregularStatus()
     {
-        if (trackedTeam.AllowedProfiles.Any(x =>
-                x.ResolvedUnitId.HasValue &&
-                x.ResolvedSourceFactionId.HasValue &&
-                x.ResolvedUnitId.Value == entry.SourceUnitId &&
-                x.ResolvedSourceFactionId.Value == entry.SourceFactionId))
-        {
-            return true;
-        }
-
-        var candidateNames = new HashSet<string>(StringComparer.Ordinal);
-        AddAllowedNameCandidate(candidateNames, entry.BaseUnitName);
-        AddAllowedNameCandidate(candidateNames, entry.Name);
-
-        return candidateNames.Any(allowedNames.Contains);
-    }
-
-    private static HashSet<string> BuildTrackedTeamAllowedNameSet(ArmyTeamListItem trackedTeam)
-    {
-        var allowedNames = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var allowedProfile in trackedTeam.AllowedProfiles)
-        {
-            AddAllowedNameCandidate(allowedNames, allowedProfile.Name);
-
-            foreach (Match match in Regex.Matches(allowedProfile.Name ?? string.Empty, @"\(([^)]*)\)"))
-            {
-                var groupValue = match.Groups[1].Value;
-                foreach (var alias in groupValue.Split([',', '/', ';', '|'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-                {
-                    AddAllowedNameCandidate(allowedNames, alias);
-                }
-            }
-        }
-
-        return allowedNames;
-    }
-
-    private static void AddAllowedNameCandidate(HashSet<string> target, string? rawCandidate)
-    {
-        if (string.IsNullOrWhiteSpace(rawCandidate))
+        if (MercsCompanyEntries.Count == 0)
         {
             return;
         }
 
-        var withoutParens = Regex.Replace(rawCandidate, @"\([^)]*\)", " ");
-        var normalized = CompanyTeamMatchingWorkflow.NormalizeTeamUnitName(withoutParens);
-        if (!string.IsNullOrWhiteSpace(normalized))
+        if (string.IsNullOrWhiteSpace(_trackedFireteamName))
         {
-            target.Add(normalized);
+            foreach (var entry in MercsCompanyEntries)
+            {
+                entry.IsIrregular = false;
+            }
+
+            return;
         }
+
+        var trackedTeam = TeamEntries.FirstOrDefault(x =>
+            x.ShowTrackingRadioButton &&
+            string.Equals(x.Name, _trackedFireteamName, StringComparison.OrdinalIgnoreCase));
+
+        if (trackedTeam is null)
+        {
+            foreach (var entry in MercsCompanyEntries)
+            {
+                entry.IsIrregular = false;
+            }
+
+            return;
+        }
+
+        var effectiveAllowedProfiles = trackedTeam.AllowedProfiles
+            .Concat(TeamEntries
+                .Where(x => x.IsWildcardBucket)
+                .SelectMany(x => x.AllowedProfiles))
+            .DistinctBy(x => $"{x.Name}|{x.ResolvedUnitId}|{x.ResolvedSourceFactionId}", StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        CohesiveCompanyFireteamLevelWorkflow.EvaluateIrregularStatus(
+            MercsCompanyEntries,
+            effectiveAllowedProfiles,
+            entry => entry.BaseUnitName,
+            entry => entry.Name,
+            entry => entry.SourceUnitId,
+            entry => entry.SourceFactionId,
+            allowed => allowed.Name,
+            allowed => allowed.ResolvedUnitId,
+            allowed => allowed.ResolvedSourceFactionId,
+            allowed => allowed.Max,
+            (entry, isIrregular) => entry.IsIrregular = isIrregular);
     }
 
     // Hook point for full fireteam-level evaluation logic. Provide an evaluated value in [1..6].
@@ -247,6 +246,8 @@ public partial class CohesiveCompanySelectionPage
         }
 
         _trackedFireteamLevel = normalizedLevel;
+        OnPropertyChanged(nameof(TrackedFireteamLevelBonusText));
+        OnPropertyChanged(nameof(HasTrackedFireteamLevelBonus));
         _ = LoadTrackedFireteamLevelIconAsync(_trackedFireteamLevel);
     }
 

@@ -60,6 +60,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
+        SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = _mode == ArmySourceSelectionMode.VanillaFactions
@@ -136,10 +137,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
 
             SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
-            UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
-            _ = ApplyUnitVisibilityFiltersAsync();
         }
+    }
+
+    private void OnSelectedStartSeasonPointsChanged(object? sender, EventArgs e)
+    {
+        UpdateSeasonValidationState();
+        _ = RefreshSeasonPointsDependentUnitStateAsync();
     }
 
     public string SeasonPointsCapText
@@ -256,6 +260,13 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     protected override Task LoadUnitsForActiveSlotAsync()
     {
         return LoadUnitsForActiveSlotAsync(CancellationToken.None);
+    }
+
+    private async Task RefreshSeasonPointsDependentUnitStateAsync(CancellationToken cancellationToken = default)
+    {
+        _filterState.PreparedUnitFilterPopupOptions = null;
+        await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+        await BuildUnitFilterPopupOptionsAsync(cancellationToken);
     }
 
     protected override Task LoadSelectedUnitDetailsAsync()

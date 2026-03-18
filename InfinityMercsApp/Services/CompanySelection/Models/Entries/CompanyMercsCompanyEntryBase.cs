@@ -123,6 +123,42 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
             OnPropertyChanged();
         }
     }
+
+    private bool _isIrregular;
+    public bool IsIrregular
+    {
+        get => _isIrregular;
+        set
+        {
+            if (_isIrregular == value)
+            {
+                return;
+            }
+
+            _isIrregular = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowRegularModifier));
+        }
+    }
+
+    private bool _normallyIrregular;
+    public bool NormallyIrregular
+    {
+        get => _normallyIrregular;
+        set
+        {
+            if (_normallyIrregular == value)
+            {
+                return;
+            }
+
+            _normallyIrregular = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowRegularModifier));
+        }
+    }
+
+    public bool ShowRegularModifier => NormallyIrregular && !IsIrregular;
 }
 
 

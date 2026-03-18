@@ -14,6 +14,16 @@ public partial class CohesiveCompanySelectionPage
     {
         CompanySelectionVisualUiWorkflow.DrawSlotPicture(_trackedFireteamLevelPicture, e);
     }
+
+    private void OnIrregularIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        CompanySelectionVisualUiWorkflow.DrawSlotPicture(UnitDisplayConfigurationsViewForVisuals.IrregularOrderIconPicture, e);
+    }
+
+    private void OnRegularModifierIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        CompanySelectionVisualUiWorkflow.DrawSlotPicture(UnitDisplayConfigurationsViewForVisuals.RegularOrderIconPicture, e);
+    }
 }
 
 

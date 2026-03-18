@@ -96,6 +96,9 @@ internal static class CompanyStartSaveWorkflow
 
         var captainName = request.ReadCaptainName(improvedCaptainStats);
         var normalizedCaptainName = string.IsNullOrWhiteSpace(captainName) ? "Captain" : captainName.Trim();
+        var startSeasonPoints = int.TryParse(request.SelectedStartSeasonPoints, out var parsedStartSeasonPoints)
+            ? parsedStartSeasonPoints
+            : 0;
         var payload = new
         {
             CompanyName = companyName,
@@ -103,7 +106,8 @@ internal static class CompanyStartSaveWorkflow
             CompanyIdentifier = CompanySelectionSharedUtilities.ComputeCompanyIdentifier(fileName),
             CompanyIndex = companyIndex,
             CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
-            PointsLimit = int.TryParse(request.SelectedStartSeasonPoints, out var pointsLimit) ? pointsLimit : 0,
+            StartSeasonPoints = startSeasonPoints,
+            PointsLimit = startSeasonPoints,
             CurrentPoints = int.TryParse(request.SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
             ImprovedCaptainStats = improvedCaptainStats,
             SourceFactions = sourceFactions

@@ -298,15 +298,22 @@
 
         <Border Grid.Row="1" StrokeThickness="1" Padding="10">
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
-                    <Label
-                        Grid.Column="0"
-                        Text="Mercs Company"
-                        FontSize="20"
-                        FontAttributes="Bold"
-                        VerticalOptions="Center" />
-                    <Label Grid.Column="1" Text="-" VerticalOptions="Center" />
-                    <Border Grid.Column="2" Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                        <HorizontalStackLayout Spacing="8">
+                            <Label
+                                Text="Mercs Company"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                VerticalOptions="Center" />
+                            <Label Text="-" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <Label
+                            Text="Enter Company Name"
+                            TextColor="#EF4444"
+                            IsVisible="{Binding ShowCompanyNameValidationError}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
                         <Entry
                             WidthRequest="220"
                             Text="{Binding CompanyName}"
@@ -314,22 +321,28 @@
                             ClearButtonVisibility="WhileEditing"
                             VerticalOptions="Center" />
                     </Border>
-                    <Label
-                        Grid.Column="3"
-                        Text="Enter Company Name"
-                        TextColor="#EF4444"
-                        VerticalOptions="Center"
-                        IsVisible="{Binding ShowCompanyNameValidationError}" />
-                    <Label
-                        Grid.Column="4"
-                        Text="{Binding TrackedFireteamNameDisplay}"
+                    <VerticalStackLayout
+                        Grid.Column="2"
                         VerticalOptions="Center"
                         HorizontalOptions="Fill"
-                        HorizontalTextAlignment="Center"
-                        LineBreakMode="TailTruncation"
-                        MaxLines="1" />
+                        Spacing="2">
+                        <Label
+                            Text="{Binding TrackedFireteamNameDisplay}"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="Center"
+                            LineBreakMode="TailTruncation"
+                            MaxLines="1" />
+                        <Label
+                            Text="{Binding TrackedFireteamLevelBonusText}"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="Center"
+                            FontSize="11"
+                            IsVisible="{Binding HasTrackedFireteamLevelBonus}"
+                            LineBreakMode="WordWrap"
+                            MaxLines="2" />
+                    </VerticalStackLayout>
                     <Grid
-                        Grid.Column="5"
+                        Grid.Column="3"
                         WidthRequest="50"
                         HeightRequest="50"
                         Margin="0,0,4,0"
@@ -381,6 +394,40 @@
                                     <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
                                     <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                                     <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding CcLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                                    <VerticalStackLayout
+                                        Grid.Row="6"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2"
+                                        Spacing="2">
+                                        <HorizontalStackLayout
+                                            Spacing="4"
+                                            IsVisible="{Binding IsIrregular}">
+                                            <skia:SKCanvasView
+                                                WidthRequest="16"
+                                                HeightRequest="16"
+                                                VerticalOptions="Center"
+                                                PaintSurface="OnIrregularIconCanvasPaintSurface" />
+                                            <Label
+                                                Text="Irregular"
+                                                FontSize="12"
+                                                TextColor="#F87171"
+                                                VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                        <HorizontalStackLayout
+                                            Spacing="4"
+                                            IsVisible="{Binding ShowRegularModifier}">
+                                            <skia:SKCanvasView
+                                                WidthRequest="16"
+                                                HeightRequest="16"
+                                                VerticalOptions="Center"
+                                                PaintSurface="OnRegularModifierIconCanvasPaintSurface" />
+                                            <Label
+                                                Text="Regular"
+                                                FontSize="12"
+                                                TextColor="#4ADE80"
+                                                VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
                                     <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding HasPeripheralStatBlock}">
                                         <VerticalStackLayout Spacing="4">
                                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">

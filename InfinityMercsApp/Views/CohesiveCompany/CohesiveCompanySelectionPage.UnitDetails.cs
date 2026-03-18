@@ -132,6 +132,8 @@ public partial class CohesiveCompanySelectionPage
                 TryParseId = TryParseId,
                 BuildIdNameLookup = BuildIdNameLookup,
                 ShouldIncludeOption = (_, _, optionName) => ShouldIncludeOption(optionName),
+                AdjustOptionDisplayCost = (group, option, adjustedCost) =>
+                    ApplyCohesiveTacticalAwarenessDiscount(profileGroupsRoot, skillsLookup, group, option, adjustedCost),
                 ParseCostValue = CompanyUnitFilterService.ParseCostValue,
                 TryFindPeripheralProfile = peripheralName =>
                     CompanyPeripheralProfileSelectionService.TryFindPeripheralStatElement(profileGroupsRoot, peripheralName, out var peripheralProfile)
@@ -194,6 +196,99 @@ public partial class CohesiveCompanySelectionPage
     private bool ShouldIncludeOption(string? optionName)
     {
         return !_restrictSelectedUnitProfilesToFto || IsFtoLabel(optionName);
+    }
+
+    private string ApplyCohesiveTacticalAwarenessDiscount(
+        JsonElement profileGroupsRoot,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        JsonElement group,
+        JsonElement option,
+        string adjustedCost)
+    {
+        if (!int.TryParse(adjustedCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedCost))
+        {
+            return adjustedCost;
+        }
+
+        if (!HasTacticalAwarenessInOptionOrGroup(profileGroupsRoot, skillsLookup, group, option))
+        {
+            return adjustedCost;
+        }
+
+        return Math.Max(0, parsedCost - 3).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private bool HasTacticalAwarenessInOptionOrGroup(
+        JsonElement profileGroupsRoot,
+        IReadOnlyDictionary<int, string> skillsLookup,
+        JsonElement group,
+        JsonElement option)
+    {
+        var optionSkills = CompanyProfileOptionService.GetOptionEntriesWithIncludes(profileGroupsRoot, option, "skills");
+        if (ContainsTacticalAwareness(optionSkills, skillsLookup))
+        {
+            return true;
+        }
+
+        if (group.TryGetProperty("profiles", out var profilesElement) &&
+            profilesElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var profile in profilesElement.EnumerateArray())
+            {
+                if (profile.TryGetProperty("skills", out var profileSkills) &&
+                    profileSkills.ValueKind == JsonValueKind.Array &&
+                    ContainsTacticalAwareness(profileSkills.EnumerateArray(), skillsLookup))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool ContainsTacticalAwareness(IEnumerable<JsonElement> skillEntries, IReadOnlyDictionary<int, string> skillsLookup)
+    {
+        foreach (var entry in skillEntries)
+        {
+            if (TryResolveSkillName(entry, skillsLookup, out var skillName) &&
+                skillName.Contains("tactical awareness", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryResolveSkillName(JsonElement entry, IReadOnlyDictionary<int, string> skillsLookup, out string skillName)
+    {
+        skillName = string.Empty;
+
+        if (entry.ValueKind == JsonValueKind.String)
+        {
+            var text = entry.GetString();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            skillName = text.Trim();
+            return true;
+        }
+
+        if (!TryParseId(entry, out var skillId) || !skillsLookup.TryGetValue(skillId, out var lookupName))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(lookupName))
+        {
+            return false;
+        }
+
+        skillName = lookupName;
+        return true;
     }
 
     private async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)

@@ -68,6 +68,8 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
+        SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
+        SetIsUnitFilterActive(true);
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
         Title = "Choose your sectorial:";
@@ -140,10 +142,13 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
             SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
-            UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
-            _ = ApplyUnitVisibilityFiltersAsync();
         }
+    }
+
+    private void OnSelectedStartSeasonPointsChanged(object? sender, EventArgs e)
+    {
+        UpdateSeasonValidationState();
+        _ = RefreshSeasonPointsDependentUnitStateAsync();
     }
 
     public string SeasonPointsCapText
@@ -159,7 +164,6 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
             _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
@@ -231,6 +235,12 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     public string TrackedFireteamNameDisplay =>
         string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
 
+    public string? TrackedFireteamLevelBonusText =>
+        CohesiveCompanyFireteamLevelWorkflow.GetBonusText(_trackedFireteamLevel);
+
+    public bool HasTrackedFireteamLevelBonus =>
+        !string.IsNullOrEmpty(TrackedFireteamLevelBonusText);
+
     public bool AreTeamEntriesReady
     {
         get => _areTeamEntriesReady;
@@ -282,6 +292,21 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     protected override Task LoadUnitsForActiveSlotAsync()
     {
         return LoadUnitsForActiveSlotAsync(CancellationToken.None);
+    }
+
+    private async Task RefreshSeasonPointsDependentUnitStateAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _filterState.PreparedUnitFilterPopupOptions = null;
+            await LoadFactionsAsync(cancellationToken);
+            await LoadUnitsForActiveSlotAsync(cancellationToken);
+            await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanySelectionPage RefreshSeasonPointsDependentUnitStateAsync failed: {ex.Message}");
+        }
     }
 
     protected override Task LoadSelectedUnitDetailsAsync()

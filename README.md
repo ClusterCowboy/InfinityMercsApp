@@ -54,10 +54,10 @@ This is an app in C# which will allow for the easy creation and managment of a c
 - [X] Be able to select two sectorials or one vanilla army
 #### Implement Cohesive Company
 - [X] Give selection of Core fireteams
-- [ ] Allow for Level 6 fireteam
-- [ ] Grant all troopers Number 2
-- [ ] Change fireteam options to ignore Min trooper restriction
-- [ ] Have a 3 point discount on any trooper with Tactical Awareness and remove the skill from them
+- [X] Allow for Level 6 fireteam
+- [X] Grant all troopers Number 2
+- [X] Change fireteam options to ignore Min trooper restriction
+- [X] Have a 3 point discount on any trooper with Tactical Awareness and remove the skill from them
 #### Implement Inspiring Leader
 - [ ] Prompt Selection of Lieutenant from Sectorial
 - [ ] Give Lieutenant Inspiring Leadership

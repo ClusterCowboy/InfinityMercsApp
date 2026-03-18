@@ -9,9 +9,34 @@ namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionVisualUiWorkflow
 {
-    internal static void DrawFilterIcon(SKPicture? filterIconPicture, SKPaintSurfaceEventArgs e)
+    private static readonly SKColor ActiveFilterYellow = new(255, 220, 0, 178);
+
+    internal static void DrawFilterIcon(SKPicture? filterIconPicture, bool isFilterActive, SKPaintSurfaceEventArgs e)
     {
-        DrawSlotPicture(filterIconPicture, e);
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (filterIconPicture is null)
+        {
+            return;
+        }
+
+        var bounds = new SKRect(0, 0, e.Info.Width, e.Info.Height);
+
+        if (isFilterActive)
+        {
+            using var tintPaint = new SKPaint
+            {
+                ColorFilter = SKColorFilter.CreateBlendMode(ActiveFilterYellow, SKBlendMode.SrcIn)
+            };
+            canvas.SaveLayer(bounds, tintPaint);
+            CompanySelectionSharedUtilities.DrawPictureInRect(canvas, filterIconPicture, bounds);
+            canvas.Restore();
+        }
+        else
+        {
+            CompanySelectionSharedUtilities.DrawPictureInRect(canvas, filterIconPicture, bounds);
+        }
     }
 
     internal static void DrawPeripheralIcon(UnitDisplayConfigurationsView unitDisplayConfigurationsView, SKPaintSurfaceEventArgs e)
