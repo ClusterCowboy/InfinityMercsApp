@@ -394,23 +394,40 @@
                                     <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
                                     <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                                     <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding CcLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
-                                    <HorizontalStackLayout
+                                    <VerticalStackLayout
                                         Grid.Row="6"
                                         Grid.Column="0"
                                         Grid.ColumnSpan="2"
-                                        Spacing="4"
-                                        IsVisible="{Binding IsIrregular}">
-                                        <skia:SKCanvasView
-                                            WidthRequest="16"
-                                            HeightRequest="16"
-                                            VerticalOptions="Center"
-                                            PaintSurface="OnIrregularIconCanvasPaintSurface" />
-                                        <Label
-                                            Text="Irregular"
-                                            FontSize="12"
-                                            TextColor="#F87171"
-                                            VerticalOptions="Center" />
-                                    </HorizontalStackLayout>
+                                        Spacing="2">
+                                        <HorizontalStackLayout
+                                            Spacing="4"
+                                            IsVisible="{Binding IsIrregular}">
+                                            <skia:SKCanvasView
+                                                WidthRequest="16"
+                                                HeightRequest="16"
+                                                VerticalOptions="Center"
+                                                PaintSurface="OnIrregularIconCanvasPaintSurface" />
+                                            <Label
+                                                Text="Irregular"
+                                                FontSize="12"
+                                                TextColor="#F87171"
+                                                VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                        <HorizontalStackLayout
+                                            Spacing="4"
+                                            IsVisible="{Binding ShowRegularModifier}">
+                                            <skia:SKCanvasView
+                                                WidthRequest="16"
+                                                HeightRequest="16"
+                                                VerticalOptions="Center"
+                                                PaintSurface="OnRegularModifierIconCanvasPaintSurface" />
+                                            <Label
+                                                Text="Regular"
+                                                FontSize="12"
+                                                TextColor="#4ADE80"
+                                                VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
                                     <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding HasPeripheralStatBlock}">
                                         <VerticalStackLayout Spacing="4">
                                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">

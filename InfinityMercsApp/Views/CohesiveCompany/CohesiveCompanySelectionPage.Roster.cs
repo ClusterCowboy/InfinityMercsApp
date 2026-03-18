@@ -37,7 +37,7 @@ public partial class CohesiveCompanySelectionPage
         }
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
-        var cohesiveCommonSkills = EnsureCohesiveDefaultSkills(UnitDisplayConfigurationsView.SelectedUnitCommonSkills);
+        var cohesiveCommonSkills = EnsureCohesiveDefaultSkills(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.IsLieutenant);
         var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
             _selectedUnit,
             profile,
@@ -58,6 +58,8 @@ public partial class CohesiveCompanySelectionPage
             FormatMoveValue,
             peripheralStats);
 
+        entry.NormallyIrregular = ShowIrregularOrderIcon;
+
         AddMercsCompanyEntryCore(
             entry,
             MercsCompanyEntries,
@@ -71,7 +73,7 @@ public partial class CohesiveCompanySelectionPage
             () => _ = ApplyUnitVisibilityFiltersAsync());
     }
 
-    private static IReadOnlyList<string> EnsureCohesiveDefaultSkills(IReadOnlyCollection<string> selectedUnitCommonSkills)
+    private static IReadOnlyList<string> EnsureCohesiveDefaultSkills(IReadOnlyCollection<string> selectedUnitCommonSkills, bool isLieutenant)
     {
         var skills = selectedUnitCommonSkills
             .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -81,6 +83,11 @@ public partial class CohesiveCompanySelectionPage
         if (!skills.Any(x => x.Contains("number 2", StringComparison.OrdinalIgnoreCase)))
         {
             skills.Add(CohesiveDefaultSkill);
+        }
+
+        if (isLieutenant && !skills.Any(x => x.Contains("ft master", StringComparison.OrdinalIgnoreCase)))
+        {
+            skills.Add("FT Master");
         }
 
         return skills;

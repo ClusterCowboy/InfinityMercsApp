@@ -19,6 +19,11 @@ public partial class CohesiveCompanySelectionPage
     {
         CompanySelectionVisualUiWorkflow.DrawSlotPicture(UnitDisplayConfigurationsViewForVisuals.IrregularOrderIconPicture, e);
     }
+
+    private void OnRegularModifierIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        CompanySelectionVisualUiWorkflow.DrawSlotPicture(UnitDisplayConfigurationsViewForVisuals.RegularOrderIconPicture, e);
+    }
 }
 
 
