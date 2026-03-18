@@ -165,7 +165,7 @@ public partial class CohesiveCompanySelectionPage
             .DistinctBy(x => $"{x.Name}|{x.ResolvedUnitId}|{x.ResolvedSourceFactionId}", StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var level = CohesiveCompanyFireteamLevelWorkflow.EvaluateLevel(
+        var level = CohesiveCompanyFireteamLevelWorkflow.EvaluateLevelByCapacity(
             MercsCompanyEntries,
             effectiveAllowedProfiles,
             entry => entry.BaseUnitName,
@@ -174,7 +174,8 @@ public partial class CohesiveCompanySelectionPage
             entry => entry.SourceFactionId,
             allowed => allowed.Name,
             allowed => allowed.ResolvedUnitId,
-            allowed => allowed.ResolvedSourceFactionId);
+            allowed => allowed.ResolvedSourceFactionId,
+            allowed => allowed.Max);
         return Math.Clamp(level, 0, 6);
     }
 
