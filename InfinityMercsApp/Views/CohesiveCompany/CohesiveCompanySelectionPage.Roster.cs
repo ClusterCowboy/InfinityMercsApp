@@ -5,6 +5,8 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 
 public partial class CohesiveCompanySelectionPage
 {
+    private const string CohesiveDefaultSkill = "Number 2";
+
     private void SetSelectedUnit(ArmyUnitSelectionItem item, bool restrictProfilesToFto = false)
     {
         _selectedUnit = SetSelectedUnitWithContextCore(
@@ -35,11 +37,12 @@ public partial class CohesiveCompanySelectionPage
         }
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
+        var cohesiveCommonSkills = EnsureCohesiveDefaultSkills(UnitDisplayConfigurationsView.SelectedUnitCommonSkills);
         var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,
-            UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
+            cohesiveCommonSkills,
             UnitMov,
             UnitCc,
             UnitBs,
@@ -66,6 +69,21 @@ public partial class CohesiveCompanySelectionPage
                 ApplyLieutenantVisualStates();
             },
             () => _ = ApplyUnitVisibilityFiltersAsync());
+    }
+
+    private static IReadOnlyList<string> EnsureCohesiveDefaultSkills(IReadOnlyCollection<string> selectedUnitCommonSkills)
+    {
+        var skills = selectedUnitCommonSkills
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToList();
+
+        if (!skills.Any(x => x.Contains("number 2", StringComparison.OrdinalIgnoreCase)))
+        {
+            skills.Add(CohesiveDefaultSkill);
+        }
+
+        return skills;
     }
 
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)

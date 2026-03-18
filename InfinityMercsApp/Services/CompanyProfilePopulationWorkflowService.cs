@@ -14,6 +14,7 @@ internal sealed class CompanyProfilePopulationRequest<TPeripheralStats>
     public required CompanyUnitDetailDisplayNameContext.TryParseIdDelegate TryParseId { get; init; }
     public required Func<string?, string, IReadOnlyDictionary<int, string>> BuildIdNameLookup { get; init; }
     public required Func<JsonElement, JsonElement, string, bool> ShouldIncludeOption { get; init; }
+    public Func<JsonElement, JsonElement, string, string>? AdjustOptionDisplayCost { get; init; }
     public required Func<string, int> ParseCostValue { get; init; }
     public required Func<string, JsonElement?> TryFindPeripheralProfile { get; init; }
     public required Func<string, JsonElement, TPeripheralStats?> BuildPeripheralStatBlock { get; init; }
@@ -78,7 +79,13 @@ internal static class CompanyProfilePopulationWorkflowService
             ReadOptionSwc = CompanyProfileOptionService.ReadOptionSwc,
             IsPositiveSwc = IsPositiveSwc,
             IsMeleeWeaponName = CompanyProfileTextService.IsMeleeWeaponName,
-            ReadAdjustedOptionCost = (group, option) => CompanyProfileOptionService.ReadAdjustedOptionCost(request.ProfileGroupsRoot, group, option),
+            ReadAdjustedOptionCost = (group, option) =>
+            {
+                var adjustedCost = CompanyProfileOptionService.ReadAdjustedOptionCost(request.ProfileGroupsRoot, group, option);
+                return request.AdjustOptionDisplayCost is null
+                    ? adjustedCost
+                    : request.AdjustOptionDisplayCost(group, option, adjustedCost);
+            },
             ParseCostValue = request.ParseCostValue,
             ReadOptionCost = CompanyProfileOptionService.ReadOptionCost,
             TryFindPeripheralProfile = request.TryFindPeripheralProfile,

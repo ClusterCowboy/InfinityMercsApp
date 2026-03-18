@@ -106,7 +106,7 @@ public partial class CohesiveCompanySelectionPage
                 buildTeamCountText: team => $"C: {team.Core}",
                 buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
                     CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
-                        name, min, max, slug, sourceUnits),
+                        name, NormalizeCohesiveDisplayedMinimum(min), max, slug, sourceUnits),
                 createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {
                     Name = name,
@@ -127,5 +127,20 @@ public partial class CohesiveCompanySelectionPage
             RestoreTrackedFireteamSelection(string.Empty);
             AreTeamEntriesReady = false;
         }
+    }
+
+    private static string NormalizeCohesiveDisplayedMinimum(string min)
+    {
+        if (string.Equals(min?.Trim(), "*", StringComparison.Ordinal))
+        {
+            return "0";
+        }
+
+        if (int.TryParse(min, out var parsedMin) && parsedMin > 0)
+        {
+            return "0";
+        }
+
+        return min;
     }
 }

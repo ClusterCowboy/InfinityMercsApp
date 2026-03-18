@@ -141,8 +141,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             SeasonStartPointsView.SelectedStartSeasonPoints = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
-            _ = ApplyUnitVisibilityFiltersAsync();
+            _ = RefreshSeasonPointsDependentUnitStateAsync();
         }
     }
 
@@ -159,8 +158,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
-            _ = ApplyUnitVisibilityFiltersAsync();
+            _ = RefreshSeasonPointsDependentUnitStateAsync();
         }
     }
 
@@ -282,6 +280,21 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     protected override Task LoadUnitsForActiveSlotAsync()
     {
         return LoadUnitsForActiveSlotAsync(CancellationToken.None);
+    }
+
+    private async Task RefreshSeasonPointsDependentUnitStateAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _filterState.PreparedUnitFilterPopupOptions = null;
+            await LoadFactionsAsync(cancellationToken);
+            await LoadUnitsForActiveSlotAsync(cancellationToken);
+            await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanySelectionPage RefreshSeasonPointsDependentUnitStateAsync failed: {ex.Message}");
+        }
     }
 
     protected override Task LoadSelectedUnitDetailsAsync()
