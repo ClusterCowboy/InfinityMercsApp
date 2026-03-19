@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Data.Database;
+using InfinityMercsApp.Models;
 using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
@@ -749,12 +750,7 @@ public class ViewerViewModel : BaseViewModel
 
     public void ApplySavedStatline(string? statline)
     {
-        if (string.IsNullOrWhiteSpace(statline))
-        {
-            return;
-        }
-
-        var segments = ParseStatlineSegments(statline);
+        var segments = UnitStatline.ParseSegments(statline);
         if (segments.Count == 0)
         {
             return;
@@ -767,16 +763,16 @@ public class ViewerViewModel : BaseViewModel
             UnitMov = mov;
         }
 
-        UnitCc = ReadStatlineValue(segments, "CC", UnitCc);
-        UnitBs = ReadStatlineValue(segments, "BS", UnitBs);
-        UnitPh = ReadStatlineValue(segments, "PH", UnitPh);
-        UnitWip = ReadStatlineValue(segments, "WIP", UnitWip);
-        UnitArm = ReadStatlineValue(segments, "ARM", UnitArm);
-        UnitBts = ReadStatlineValue(segments, "BTS", UnitBts);
-        UnitS = ReadStatlineValue(segments, "S", UnitS);
-        UnitAva = ReadStatlineValue(segments, "AVA", UnitAva);
+        UnitCc = UnitStatline.ReadValue(segments, "CC", UnitCc);
+        UnitBs = UnitStatline.ReadValue(segments, "BS", UnitBs);
+        UnitPh = UnitStatline.ReadValue(segments, "PH", UnitPh);
+        UnitWip = UnitStatline.ReadValue(segments, "WIP", UnitWip);
+        UnitArm = UnitStatline.ReadValue(segments, "ARM", UnitArm);
+        UnitBts = UnitStatline.ReadValue(segments, "BTS", UnitBts);
+        UnitS = UnitStatline.ReadValue(segments, "S", UnitS);
+        UnitAva = UnitStatline.ReadValue(segments, "AVA", UnitAva);
 
-        var vitalityHeader = ResolveVitalityHeader(segments);
+        var vitalityHeader = UnitStatline.ResolveVitalityHeader(segments);
         if (!string.IsNullOrWhiteSpace(vitalityHeader) &&
             segments.TryGetValue(vitalityHeader, out var vitality) &&
             !string.IsNullOrWhiteSpace(vitality))
@@ -784,62 +780,6 @@ public class ViewerViewModel : BaseViewModel
             UnitVitalityHeader = vitalityHeader;
             UnitVitality = vitality;
         }
-    }
-
-    private static Dictionary<string, string> ParseStatlineSegments(string statline)
-    {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var segment in statline.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-        {
-            var parts = segment.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2)
-            {
-                continue;
-            }
-
-            var key = parts[0].Trim().ToUpperInvariant();
-            var value = parts[1].Trim();
-            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            result[key] = value;
-        }
-
-        return result;
-    }
-
-    private static string ReadStatlineValue(IReadOnlyDictionary<string, string> segments, string key, string fallback)
-    {
-        return segments.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
-            ? value
-            : fallback;
-    }
-
-    private static string ResolveVitalityHeader(IReadOnlyDictionary<string, string> segments)
-    {
-        if (segments.ContainsKey("STR"))
-        {
-            return "STR";
-        }
-
-        if (segments.ContainsKey("W"))
-        {
-            return "W";
-        }
-
-        foreach (var key in segments.Keys)
-        {
-            if (key is "MOV" or "CC" or "BS" or "PH" or "WIP" or "ARM" or "BTS" or "S" or "AVA")
-            {
-                continue;
-            }
-
-            return key;
-        }
-
-        return string.Empty;
     }
 
     private static string MergeSummaryAndUnique(string summaryLine, string uniqueValues)

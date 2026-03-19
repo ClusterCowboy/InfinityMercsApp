@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,6 +17,16 @@ public sealed class TagCompanyCustomTagModel
     public string ProfileKey { get; } = "__tag-company-custom-tag__";
     public string IconPath { get; } = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
     public string UnitTypeCode { get; } = "TAG";
+    public static IReadOnlyList<string> RestrictedSpecOpsKeywords { get; } =
+    [
+        "Forward Deployment",
+        "Strategic Deployment",
+        "Infiltration",
+        "Impersonation",
+        "Parachutist",
+        "Combat Jump",
+        "Engineer"
+    ];
 
     public string Mov { get; } = "6-2";
     public int Cc { get; } = 15;
@@ -42,6 +53,75 @@ public sealed class TagCompanyCustomTagModel
     ];
 
     public string BaseSkillsText => string.Join(", ", BaseSkills);
+
+    public bool IsCustomTagProfile(string? profileKey)
+    {
+        return string.Equals(profileKey, ProfileKey, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public string ResolveName(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? DefaultName
+            : value.Trim();
+    }
+
+    public string ResolveSavedStatline(string? statline)
+    {
+        return string.IsNullOrWhiteSpace(statline) || statline.Trim() == "-"
+            ? BuildStatline()
+            : statline.Trim();
+    }
+
+    public string ResolvePackagedLogoPath(string? packagedLogoPath)
+    {
+        return string.IsNullOrWhiteSpace(packagedLogoPath)
+            ? IconPath
+            : packagedLogoPath.Trim();
+    }
+
+    public static string NormalizeProfileText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    }
+
+    public TagCompanyCustomTagProfile BuildProfile(
+        string? customName = null,
+        IEnumerable<string?>? extraWeapons = null,
+        IEnumerable<string?>? extraSkills = null,
+        IEnumerable<string?>? extraEquipment = null,
+        int ccBonus = 0,
+        int bsBonus = 0,
+        int phBonus = 0,
+        int wipBonus = 0,
+        int armBonus = 0,
+        int btsBonus = 0,
+        int vitalityBonus = 0,
+        int spentExperience = 0)
+    {
+        var normalizedWeapons = NormalizeChoices(extraWeapons);
+        var normalizedSkills = NormalizeChoices(extraSkills);
+        var normalizedEquipment = NormalizeChoices(extraEquipment);
+
+        return new TagCompanyCustomTagProfile
+        {
+            Name = ResolveName(customName),
+            Cost = Cost,
+            Statline = BuildStatline(
+                ccBonus: ccBonus,
+                bsBonus: bsBonus,
+                phBonus: phBonus,
+                wipBonus: wipBonus,
+                armBonus: armBonus,
+                btsBonus: btsBonus,
+                vitalityBonus: vitalityBonus),
+            Equipment = BuildEquipmentText(normalizedEquipment),
+            Skills = BuildSkillsText(normalizedSkills),
+            RangedWeapons = BuildRangedWeaponsText(normalizedWeapons),
+            CcWeapons = BuildCcWeaponsText(),
+            ExperiencePoints = Math.Max(0, spentExperience)
+        };
+    }
 
     public string BuildStatline(
         int ccBonus = 0,
@@ -73,6 +153,20 @@ public sealed class TagCompanyCustomTagModel
     public string BuildEquipmentText(IEnumerable<string>? extraEquipment)
     {
         return MergeBaseAndChoices("-", extraEquipment, prependPlus: true);
+    }
+
+    private static List<string> NormalizeChoices(IEnumerable<string?>? values)
+    {
+        if (values is null)
+        {
+            return [];
+        }
+
+        return values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string MergeBaseAndChoices(string baseValue, IEnumerable<string>? extraValues, bool prependPlus)

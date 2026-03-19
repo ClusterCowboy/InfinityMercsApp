@@ -28,6 +28,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private readonly ViewerViewModel _viewerViewModel;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly TagCompanyCustomTagModel _tagCompanyCustomTagModel = TagCompanyCustomTagModel.Default;
 
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
@@ -383,13 +384,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var savedRangedWeapons = entry.SavedRangedWeapons;
                 var savedSkills = entry.SavedSkills;
                 var savedEquipment = entry.SavedEquipment;
-                var isTagCompanyCustomTag = string.Equals(entry.ProfileKey, TagCompanyCustomTagModel.Default.ProfileKey, StringComparison.OrdinalIgnoreCase);
-                var savedStatline = !IsDashOrEmpty(entry.SavedStatline)
-                    ? entry.SavedStatline
-                    : (isTagCompanyCustomTag ? TagCompanyCustomTagModel.Default.BuildStatline() : "-");
+                var isTagCompanyCustomTag = _tagCompanyCustomTagModel.IsCustomTagProfile(entry.ProfileKey);
+                var savedStatline = isTagCompanyCustomTag
+                    ? _tagCompanyCustomTagModel.ResolveSavedStatline(entry.SavedStatline)
+                    : (IsDashOrEmpty(entry.SavedStatline) ? "-" : entry.SavedStatline);
                 var packagedLogoPath = string.IsNullOrWhiteSpace(entry.SavedPackagedLogoPath)
                     ? (isTagCompanyCustomTag
-                        ? TagCompanyCustomTagModel.Default.IconPath
+                        ? _tagCompanyCustomTagModel.ResolvePackagedLogoPath(entry.SavedPackagedLogoPath)
                         : (_factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
                             ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"))
                     : entry.SavedPackagedLogoPath;
@@ -803,10 +804,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private bool IsSelectedTagCompanyCustomTag()
     {
-        return string.Equals(
-            _selectedCompanyUnit?.ProfileKey,
-            TagCompanyCustomTagModel.Default.ProfileKey,
-            StringComparison.OrdinalIgnoreCase);
+        return _tagCompanyCustomTagModel.IsCustomTagProfile(_selectedCompanyUnit?.ProfileKey);
     }
 
     private void RefreshHeaderIconRows()
