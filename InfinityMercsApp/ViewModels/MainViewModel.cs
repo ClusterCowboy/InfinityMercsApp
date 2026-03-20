@@ -1,27 +1,20 @@
 using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Windows.Input;
-using InfinityMercsApp.Data.Database;
-using InfinityMercsApp.Data.WebAccess;
+using InfinityMercsApp.Infrastructure.API.InfinityArmy;
+using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.ViewModels;
 
 public class MainViewModel : BaseViewModel
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString,
-        Converters = { new RelaxedInt32Converter(), new RelaxedNullableInt32Converter() }
-    };
-
-    private readonly IWebAccessObject? _webAccessObject;
-    private readonly IArmyDataAccessor? _armyDataAccessor;
-    private readonly IMetadataAccessor? _metadataAccessor;
+    private readonly IInfinityArmyAPI? _infinityArmyApi;
+    private readonly IFactionProvider? _factionProvider;
+    private readonly IArmyImportProvider? _armyImportProvider;
+    private readonly IMetadataProvider? _metadataProvider;
+    private readonly IImportService? _importService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly AppSettingsService? _appSettingsService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private int _count;
     private string _metadataStatus = "Metadata file not downloaded yet.";
     private string _armyStatus = "Army file not downloaded yet.";
@@ -32,17 +25,21 @@ public class MainViewModel : BaseViewModel
     private bool _showUnitsInInches = true;
 
     public MainViewModel(
-        IWebAccessObject? webAccessObject = null,
-        IArmyDataAccessor? armyDataAccessor = null,
-        IMetadataAccessor? metadataAccessor = null,
+        IInfinityArmyAPI? infinityArmyApi = null,
+        IFactionProvider? factionProvider = null,
+        IArmyImportProvider? armyImportProvider = null,
+        IMetadataProvider? metadataProvider = null,
+        IImportService? importService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
-        AppSettingsService? appSettingsService = null)
+        IAppSettingsProvider? appSettingsProvider = null)
     {
-        _webAccessObject = webAccessObject;
-        _armyDataAccessor = armyDataAccessor;
-        _metadataAccessor = metadataAccessor;
+        _infinityArmyApi = infinityArmyApi;
+        _factionProvider = factionProvider;
+        _armyImportProvider = armyImportProvider;
+        _metadataProvider = metadataProvider;
+        _importService = importService;
         _factionLogoCacheService = factionLogoCacheService;
-        _appSettingsService = appSettingsService;
+        _appSettingsProvider = appSettingsProvider;
         IncrementCounterCommand = new Command(OnIncrementCounter);
         DownloadMetadataCommand = new Command(async () => await DownloadMetadataAsync());
         DownloadArmyDataCommand = new Command(async () => await DownloadArmyDataAsync());
@@ -200,7 +197,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task DownloadMetadataAsync()
     {
-        if (_webAccessObject is null)
+        if (_infinityArmyApi is null)
         {
             MetadataStatus = "Web API service is not available.";
             return;
@@ -210,13 +207,12 @@ public class MainViewModel : BaseViewModel
         {
             MetadataStatus = "Downloading metadata...";
 
-            var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            if (_metadataAccessor is not null)
+            var metadataDocument = await _infinityArmyApi.GetMetaDataAsync();
+            if (metadataDocument is not null && _metadataProvider is not null)
             {
-                await _metadataAccessor.ImportFromJsonAsync(metadataJson);
+                _metadataProvider.Import(metadataDocument);
             }
 
-            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
             if (metadataDocument is null || metadataDocument.Factions.Count == 0)
             {
                 MetadataStatus = "Metadata imported to DB. No factions found.";
@@ -242,8 +238,7 @@ public class MainViewModel : BaseViewModel
                 try
                 {
                     MetadataStatus = $"Fetching faction data for {factionId}...";
-                    var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
-                    var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+                    var latestArmy = await _infinityArmyApi.GetArmyDataAsync(factionId);
                     var latestVersion = latestArmy?.Version;
 
                     if (_factionLogoCacheService is not null && latestArmy?.Resume is not null)
@@ -251,7 +246,7 @@ public class MainViewModel : BaseViewModel
                         await _factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
                     }
 
-                    if (_armyDataAccessor is not null)
+                    if (_factionProvider is not null && _armyImportProvider is not null && latestArmy is not null)
                     {
                         if (string.IsNullOrWhiteSpace(latestVersion))
                         {
@@ -259,7 +254,7 @@ public class MainViewModel : BaseViewModel
                             continue;
                         }
 
-                        var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId);
+                        var snapshot = _factionProvider.GetFactionSnapshot(factionId);
                         var storedVersion = snapshot?.Version;
 
                         if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
@@ -268,7 +263,7 @@ public class MainViewModel : BaseViewModel
                             continue;
                         }
 
-                        await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
+                        await _armyImportProvider.ImportAsync(factionId, latestArmy);
                         updatedCount++;
                     }
                 }
@@ -295,96 +290,23 @@ public class MainViewModel : BaseViewModel
             return;
         }
 
-        if (_webAccessObject is null || _metadataAccessor is null || _armyDataAccessor is null)
+        if (_importService is null)
         {
-            UpdateStatus = "Required services are not available.";
+            UpdateStatus = "Update service is not available.";
             return;
         }
 
         try
         {
             IsUpdateInProgress = true;
-            UpdateProgressMessage = "Updating database: downloading metadata...";
-            UpdateStatus = "Downloading metadata...";
+            UpdateStatus = "Running online update...";
+            UpdateProgressMessage = "Starting update...";
 
-            var metadataJson = await _webAccessObject.GetMetaDataAsync();
-            UpdateProgressMessage = "Updating database: importing metadata...";
-            await _metadataAccessor.ImportFromJsonAsync(metadataJson);
-
-            var metadataDocument = JsonSerializer.Deserialize<MetadataDocument>(metadataJson, JsonOptions);
-            if (metadataDocument is null || metadataDocument.Factions.Count == 0)
+            await foreach (var result in _importService.ImportAllDataAsync())
             {
-                UpdateStatus = "Metadata download succeeded but no factions were found.";
-                return;
+                UpdateProgressMessage = result.Message;
+                UpdateStatus = result.Message;
             }
-
-            if (_factionLogoCacheService is not null)
-            {
-                UpdateProgressMessage = "Updating SVGs: caching faction logos...";
-                var logoCacheResult = await _factionLogoCacheService.CacheAllAsync(metadataDocument.Factions);
-                var debugFaction = metadataDocument.Factions.FirstOrDefault(x => x.Id == FactionLogoCacheService.DebugFactionId);
-                var debugInfo = _factionLogoCacheService.GetDebugInfo(FactionLogoCacheService.DebugFactionId, debugFaction?.Logo);
-                Console.Error.WriteLine(
-                    $"[SVG DEBUG] Faction {debugInfo.FactionId}: exists={debugInfo.Exists}, bytes={debugInfo.SizeBytes}, path={debugInfo.LocalPath}, url={debugInfo.ExpectedLogoUrl ?? "<null>"}");
-
-                UpdateStatus =
-                    $"SVG cache complete. Downloaded: {logoCacheResult.Downloaded}, Reused from cache: {logoCacheResult.CachedReuse}, Failed: {logoCacheResult.Failed}, Missing URL: {logoCacheResult.MissingLogoUrl}, Invalid URL: {logoCacheResult.InvalidLogoUrl}. " +
-                    $"Hayabusa(1199): Exists={debugInfo.Exists}, Bytes={debugInfo.SizeBytes}.";
-            }
-
-            var factionIds = metadataDocument.Factions
-                .Select(f => f.Id)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToList();
-
-            var updatedCount = 0;
-            var skippedCount = 0;
-            var errorCount = 0;
-
-            foreach (var factionId in factionIds)
-            {
-                try
-                {
-                    UpdateProgressMessage = $"Updating factions: checking {factionId}...";
-                    UpdateStatus = $"Checking faction {factionId}...";
-
-                    var latestArmyJson = await _webAccessObject.GetArmyDataAsync(factionId);
-                    var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(latestArmyJson, JsonOptions);
-                    var latestVersion = latestArmy?.Version;
-
-                    if (_factionLogoCacheService is not null && latestArmy?.Resume is not null)
-                    {
-                        await _factionLogoCacheService.CacheUnitLogosAsync(factionId, latestArmy.Resume);
-                    }
-
-                    if (string.IsNullOrWhiteSpace(latestVersion))
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId);
-                    var storedVersion = snapshot?.Version;
-
-                    if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
-                    {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, latestArmyJson);
-                    updatedCount++;
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"UpdateAllDataAsync faction {factionId} failed: {ex.Message}");
-                    errorCount++;
-                }
-            }
-
-            UpdateStatus = $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.";
-            UpdateProgressMessage = "Finalizing update...";
         }
         catch (Exception ex)
         {
@@ -398,16 +320,16 @@ public class MainViewModel : BaseViewModel
         }
     }
 
-    private async Task LoadGlobalSettingsAsync()
+    private Task LoadGlobalSettingsAsync()
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            var showInches = await _appSettingsService.GetShowUnitsInInchesAsync();
+            var showInches = _appSettingsProvider.GetShowUnitsInInches();
             _showUnitsInInches = showInches;
             OnPropertyChanged(nameof(ShowUnitsInInches));
             OnPropertyChanged(nameof(ShowUnitsInCentimeters));
@@ -416,23 +338,27 @@ public class MainViewModel : BaseViewModel
         {
             Console.Error.WriteLine($"LoadGlobalSettingsAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task SaveDisplayUnitsSettingAsync(bool showInches)
+    private Task SaveDisplayUnitsSettingAsync(bool showInches)
     {
-        if (_appSettingsService is null)
+        if (_appSettingsProvider is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            await _appSettingsService.SetShowUnitsInInchesAsync(showInches);
+            _appSettingsProvider.SetShowUnitsInInches(showInches);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"SaveDisplayUnitsSettingAsync failed: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
     private static int CompareVersions(string left, string right)
@@ -462,7 +388,7 @@ public class MainViewModel : BaseViewModel
 
     private async Task DownloadArmyDataAsync()
     {
-        if (_webAccessObject is null)
+        if (_infinityArmyApi is null)
         {
             ArmyStatus = "Web API service is not available.";
             return;
@@ -478,11 +404,10 @@ public class MainViewModel : BaseViewModel
         {
             ArmyStatus = $"Downloading army data for faction {factionId}...";
 
-            var armyJson = await _webAccessObject.GetArmyDataAsync(factionId);
-            var latestArmy = JsonSerializer.Deserialize<ArmyDocument>(armyJson, JsonOptions);
+            var latestArmy = await _infinityArmyApi.GetArmyDataAsync(factionId);
             var latestVersion = latestArmy?.Version;
 
-            if (_armyDataAccessor is not null)
+            if (_factionProvider is not null && _armyImportProvider is not null && latestArmy is not null)
             {
                 if (string.IsNullOrWhiteSpace(latestVersion))
                 {
@@ -490,7 +415,7 @@ public class MainViewModel : BaseViewModel
                     return;
                 }
 
-                var snapshot = await _armyDataAccessor.GetFactionSnapshotAsync(factionId);
+                var snapshot = _factionProvider.GetFactionSnapshot(factionId);
                 var storedVersion = snapshot?.Version;
                 if (!string.IsNullOrWhiteSpace(storedVersion) && CompareVersions(latestVersion, storedVersion) <= 0)
                 {
@@ -498,7 +423,7 @@ public class MainViewModel : BaseViewModel
                     return;
                 }
 
-                await _armyDataAccessor.ImportFactionArmyFromJsonAsync(factionId, armyJson);
+                await _armyImportProvider.ImportAsync(factionId, latestArmy);
                 ArmyStatus = $"Faction {factionId} updated to version {latestVersion}.";
             }
             else
@@ -513,3 +438,4 @@ public class MainViewModel : BaseViewModel
         }
     }
 }
+

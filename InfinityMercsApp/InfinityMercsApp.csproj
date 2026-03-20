@@ -1,5 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<!-- Deploy to physical armeabi-v7a device during development. Not included in release builds. -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<RuntimeIdentifier>android-arm</RuntimeIdentifier>
+	</PropertyGroup>
+
+	<!-- Simulate tablet aspect ratio on Windows when SimulateTablet=true is passed to dotnet build. -->
+	<PropertyGroup Condition="'$(SimulateTablet)' == 'true'">
+		<DefineConstants>$(DefineConstants);SIMULATE_TABLET</DefineConstants>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
@@ -58,16 +68,29 @@
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		<MauiAsset Include="SVGCache\**" LogicalName="SVGCache/%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiImage Include="Resources\Images\MercsIcons\single_sectorial.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\MercsIcons\multiple_sectorials.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</MauiImage>
 		<MauiAsset Update="SVGCache\**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-		<PackageReference Include="Markdig" Version="0.37.0" />
+		<PackageReference Include="Markdig" Version="1.1.1" />
 		<PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="3.119.1" />
 		<PackageReference Include="Svg.Skia" Version="3.0.5" />
-		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\InfinityMercsApp.Infrastructure\InfinityMercsApp.Infrastructure.csproj" />
+	  <ProjectReference Include="..\InfinityMercsApp.Domain\InfinityMercsApp.Domain.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -75,6 +98,42 @@
 		<Content Remove="_tempdiag\\**\\*" />
 		<EmbeddedResource Remove="_tempdiag\\**\\*" />
 		<None Remove="_tempdiag\\**\\*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Views\CreateNewCompanyPage.xaml.cs">
+	    <DependentUpon>CreateNewCompanyPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\ModeSelectionPage.xaml.cs">
+	    <DependentUpon>ModeSelectionPage.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiImage Include="Resources\Images\MercsIcons\airborne_company.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
+	  <MauiImage Include="Resources\Images\MercsIcons\proxy_pack.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
+	  <MauiImage Include="Resources\Images\MercsIcons\tag_company.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
+	  <MauiImage Include="Resources\Images\MercsIcons\standard_company.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
+	  <MauiImage Include="Resources\Images\MercsIcons\inspiring_leadership.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
+	  <MauiImage Include="Resources\Images\MercsIcons\cohesive_company.svg">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiImage>
 	</ItemGroup>
 
 </Project>

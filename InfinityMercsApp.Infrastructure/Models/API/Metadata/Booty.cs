@@ -1,0 +1,15 @@
+﻿namespace InfinityMercsApp.Infrastructure.Models.API.Metadata;
+
+using System.Text.Json.Serialization;
+
+public class Booty
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("value")]
+    public string Value { get; set; } = string.Empty;
+}

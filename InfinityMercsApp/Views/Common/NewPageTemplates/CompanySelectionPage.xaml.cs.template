@@ -1,0 +1,52 @@
+using SkiaSharp.Views.Maui;
+
+namespace {{NAMESPACE}};
+
+/// <summary>
+/// Derived page template. Keep page-specific behavior here; move shared logic into CompanySelectionPageBase.
+/// </summary>
+public partial class {{PAGE_CLASS}} : CompanySelectionPageBase
+{
+    // Mode-specific fields:
+    // Shared: UnitFilterCriteria / UnitFilterPopupView
+    // Cohesive additions: tracked fireteam/FTO state
+
+    public {{PAGE_CLASS}}(ArmySourceSelectionMode mode)
+        : base(mode)
+    {
+        InitializeComponent();
+        InitializeBase(UnitDisplayConfigurationsView);
+    }
+
+    // XAML event wrappers.
+    private void OnLeftSlotTapped(object? sender, TappedEventArgs e) => HandleLeftSlotTapped();
+    private void OnRightSlotTapped(object? sender, TappedEventArgs e) => HandleRightSlotTapped();
+    private void OnLeftSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => HandleLeftSlotCanvasPaintSurface(e);
+    private void OnRightSlotCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => HandleRightSlotCanvasPaintSurface(e);
+    private void OnSeasonValidationCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => HandleSeasonValidationCanvasPaintSurface(e);
+
+    // Override shared hooks from CompanySelectionPageBase as needed.
+    protected override Task LoadFactionsAsync()
+    {
+        // TODO: bring over existing faction load logic.
+        return Task.CompletedTask;
+    }
+
+    protected override Task LoadUnitsForActiveSlotAsync()
+    {
+        // TODO: bring over existing unit load logic.
+        return Task.CompletedTask;
+    }
+
+    protected override Task LoadSelectedUnitDetailsAsync()
+    {
+        // TODO: bring over existing selected unit detail load logic.
+        return Task.CompletedTask;
+    }
+
+    protected override Task StartCompanyAsync()
+    {
+        // TODO: bring over existing start company flow.
+        return Task.CompletedTask;
+    }
+}

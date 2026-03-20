@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<views:ContentPageBase
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+    xmlns:views="clr-namespace:InfinityMercsApp.Views"
+    x:Class="InfinityMercsApp.Views.ModeSelectionPage"
+    Title="Home">
+
+    <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*">
+        <Image
+            x:Name="HeaderImage"
+            Grid.Row="0"
+            HeightRequest="220"
+            HorizontalOptions="Center"
+            WidthRequest="420"
+            Source="m2_no_bg_short.webp" />
+
+        <Label
+            Grid.Row="1"
+            Text="MERCENARIES"
+            FontSize="28"
+            HorizontalTextAlignment="Center" />
+
+        <Label
+            Grid.Row="2"
+            Text="Dirty fights in the world of Infinity: The Game"
+            FontSize="22"
+            HorizontalTextAlignment="Center" />
+
+        <HorizontalStackLayout Grid.Row="3" Spacing="12" VerticalOptions="Center" HorizontalOptions="Center">
+            <Button
+                Text="New Company"
+                WidthRequest="170"
+                Command="{Binding NavigateToCreateNewCompanyCommand}"
+                HorizontalOptions="Center" />
+
+            <Button
+                Text="Load Company"
+                WidthRequest="170"
+                Command="{Binding NavigateToLoadArmyCommand}"
+                HorizontalOptions="Center" />
+        </HorizontalStackLayout>
+    </Grid>
+
+</views:ContentPageBase>
