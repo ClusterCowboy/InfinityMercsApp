@@ -92,7 +92,8 @@ public abstract partial class CompanySelectionPageBase
         string selectedStartSeasonPoints,
         string seasonPointsCapText,
         Func<int, string?> tryGetMetadataFactionName,
-        Func<TCaptainStats, string?> readCaptainName)
+        Func<TCaptainStats, string?> readCaptainName,
+        Func<TEntry, TCaptainStats?>? tryGetPreconfiguredCaptainStats = null)
         where TFaction : class, ICompanySourceFaction
         where TEntry : class, ICompanyMercsEntry
         where TCaptainStats : class
@@ -119,6 +120,7 @@ public abstract partial class CompanySelectionPageBase
                     SeasonPointsCapText = seasonPointsCapText,
                     TryGetMetadataFactionName = tryGetMetadataFactionName,
                     ReadCaptainName = readCaptainName,
+                    TryGetPreconfiguredCaptainStats = tryGetPreconfiguredCaptainStats,
                     DisplayAlertAsync = (title, message, cancel) => DisplayAlert(title, message, cancel),
                     // URI-encode the file path so it can be passed safely as a Shell query parameter.
                     NavigateToCompanyViewerAsync = async filePath =>

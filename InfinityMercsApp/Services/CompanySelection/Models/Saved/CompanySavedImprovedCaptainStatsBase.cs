@@ -3,6 +3,7 @@ namespace InfinityMercsApp.Views.Common;
 public abstract class CompanySavedImprovedCaptainStatsBase
 {
     public bool IsEnabled { get; init; }
+    public bool IsLieutenant { get; init; }
     public string CaptainName { get; init; } = string.Empty;
     public int CcTier { get; init; }
     public int BsTier { get; init; }
@@ -29,4 +30,6 @@ public abstract class CompanySavedImprovedCaptainStatsBase
     public string EquipmentChoice3 { get; init; } = string.Empty;
     public int OptionFactionId { get; init; }
     public string OptionFactionName { get; init; } = string.Empty;
+    public int SpentExperience { get; init; }
 }
+

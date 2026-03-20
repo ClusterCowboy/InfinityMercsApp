@@ -221,6 +221,7 @@ public partial class StandardCompanySelectionPage
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);
+            await ShowInitialTagCompanyStateAsync(cancellationToken);
         }
         catch (Exception ex)
         {

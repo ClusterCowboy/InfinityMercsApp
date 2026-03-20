@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Maui.Devices;
 using SkiaSharp;
@@ -73,6 +73,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private readonly Label _upgradeOptionsHeaderLabel;
     private readonly Label _experienceRemainingLabel;
     private readonly Button _foundCompanyButton;
+    private readonly CheckBox _lieutenantCheckBox;
 
     // Parsed numeric base stats, used to compute deltas when a tier is selected.
     private readonly IReadOnlyDictionary<string, int> _baseStats;
@@ -107,11 +108,16 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     {
         _context = context;
         _baseStats = ParseBaseStats(context.Unit.Statline);
+        _captainNameCommitted = string.IsNullOrWhiteSpace(context.InitialName)
+            ? "Captain"
+            : context.InitialName.Trim();
 
         // Cap the popup height to 80 % of the physical screen height to leave room for the OS chrome.
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
         BackgroundColor = Color.FromRgba(0, 0, 0, 180);
-        Title = "Captain Configuration";
+        Title = string.IsNullOrWhiteSpace(context.PopupTitle)
+            ? "Captain Configuration"
+            : context.PopupTitle.Trim();
 
         _logoCanvas = new SKCanvasView
         {
@@ -155,17 +161,22 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         HookSelectionChanged(_equipment1Picker);
         HookSelectionChanged(_equipment2Picker);
         HookSelectionChanged(_equipment3Picker);
+        _lieutenantCheckBox = new CheckBox
+        {
+            IsChecked = context.InitialIsLieutenant,
+            VerticalOptions = LayoutOptions.Center
+        };
 
         var cancelButton = new Button
         {
-            Text = "BACK",
+            Text = string.IsNullOrWhiteSpace(context.CancelButtonText) ? "BACK" : context.CancelButtonText.Trim(),
             BackgroundColor = Color.FromArgb("#374151"),
             TextColor = Colors.White,
             Command = new Command(async () => await CloseAsync(false))
         };
         _foundCompanyButton = new Button
         {
-            Text = "FOUND COMPANY",
+            Text = string.IsNullOrWhiteSpace(context.ConfirmButtonText) ? "FOUND COMPANY" : context.ConfirmButtonText.Trim(),
             BackgroundColor = Color.FromArgb("#7C3AED"),
             TextColor = Colors.Black,
             Command = new Command(async () => await CloseAsync(true))
@@ -194,6 +205,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _captainNameEntry = new Entry
         {
             Text = _captainNameCommitted,
+            Placeholder = string.IsNullOrWhiteSpace(context.NamePlaceholder) ? "Captain" : context.NamePlaceholder.Trim(),
             IsReadOnly = true,
             FontSize = 22,
             HorizontalOptions = LayoutOptions.Fill
@@ -203,6 +215,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             Text = _captainNameCommitted,
             FontAttributes = FontAttributes.Bold,
             FontSize = 22,
+            TextColor = Colors.White,
             LineBreakMode = LineBreakMode.WordWrap
         };
         _editCaptainNameCanvas = BuildCaptainNameIconCanvas(OnEditCaptainNameTapped);
@@ -212,6 +225,23 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _rejectCaptainNameCanvas = BuildCaptainNameIconCanvas(OnRejectCaptainNameTapped);
         _rejectCaptainNameCanvas.PaintSurface += OnRejectCaptainNameCanvasPaintSurface;
         SetCaptainNameEditMode(isEditing: false);
+
+        var lieutenantToggleRow = new HorizontalStackLayout
+        {
+            Spacing = 8,
+            VerticalOptions = LayoutOptions.Center,
+            IsVisible = context.ShowLieutenantOption,
+            Children =
+            {
+                _lieutenantCheckBox,
+                new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(context.LieutenantOptionLabel) ? "Lieutenant" : context.LieutenantOptionLabel.Trim(),
+                    TextColor = Colors.White,
+                    VerticalOptions = LayoutOptions.Center
+                }
+            }
+        };
 
         var captainNameRow = new Grid
         {
@@ -276,6 +306,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 BuildStatRowPair(("PH", _phPicker), ("WIP", _wipPicker)),
                 BuildStatRowPair(("ARM", _armPicker), ("BTS", _btsPicker)),
                 BuildStatRowPair(("VITA", _vitaPicker), null),
+                lieutenantToggleRow,
                 BuildCategorySection("Weapons", _weapon1Picker, _weapon2Picker, _weapon3Picker),
                 BuildCategorySection("Skills", _skill1Picker, _skill2Picker, _skill3Picker),
                 BuildCategorySection("Equipment", _equipment1Picker, _equipment2Picker, _equipment3Picker)
@@ -357,6 +388,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             Children = { card }
         };
 
+        ApplyStatUpgradeRestrictions();
         UpdateProfilePreviewFromSelections();
         _ = LoadLogoAsync();
         _ = LoadCaptainNameActionIconsAsync();
@@ -485,6 +517,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var stats = new SavedImprovedCaptainStats
         {
             IsEnabled = true,
+            IsLieutenant = _context.ShowLieutenantOption ? _lieutenantCheckBox.IsChecked : _context.InitialIsLieutenant,
             CaptainName = _captainNameCommitted,
             CcTier = ReadStatTier(_ccPicker),
             BsTier = ReadStatTier(_bsPicker),
@@ -510,7 +543,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             EquipmentChoice2 = ReadChoice(_equipment2Picker),
             EquipmentChoice3 = ReadChoice(_equipment3Picker),
             OptionFactionId = _context.OptionFactionId,
-            OptionFactionName = _context.OptionFactionName
+            OptionFactionName = _context.OptionFactionName,
+            SpentExperience = ComputeSelectedExperience()
         };
 
         _resultSource.TrySetResult(stats);
@@ -753,34 +787,42 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     /// </summary>
     private void UpdateUpgradeOptionsHeader()
     {
-        // Units cost at most 28 pts; the remainder becomes the starting experience budget.
-        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
-        var selectedCost =
-            ReadStatPoints(_ccPicker) +
-            ReadStatPoints(_bsPicker) +
-            ReadStatPoints(_phPicker) +
-            ReadStatPoints(_wipPicker) +
-            ReadStatPoints(_armPicker) +
-            ReadStatPoints(_btsPicker) +
-            ReadStatPoints(_vitaPicker) +
-            ReadChoicePoints(_weapon1Picker) +
-            ReadChoicePoints(_weapon2Picker) +
-            ReadChoicePoints(_weapon3Picker) +
-            ReadChoicePoints(_skill1Picker) +
-            ReadChoicePoints(_skill2Picker) +
-            ReadChoicePoints(_skill3Picker) +
-            ReadChoicePoints(_equipment1Picker) +
-            ReadChoicePoints(_equipment2Picker) +
-            ReadChoicePoints(_equipment3Picker);
+        var baseExperience = _context.ExperienceBudget > 0
+            ? _context.ExperienceBudget
+            : Math.Max(0, 28 - _context.Unit.Cost);
+        var selectedCost = ComputeSelectedExperience();
         var experienceRemaining = baseExperience - selectedCost;
 
         _upgradeOptionsHeaderLabel.Text = $"Upgrade Options ({_context.OptionFactionName})";
-        _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
+        var experienceLabel = string.IsNullOrWhiteSpace(_context.ExperienceLabel)
+            ? "Exp Remaining"
+            : _context.ExperienceLabel.Trim();
+        _experienceRemainingLabel.Text = $"{experienceLabel}: {experienceRemaining}";
 
         // Turn the remaining exp label red and disable the confirm button when overspent.
         _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
         _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
+    }
+
+    private int ComputeSelectedExperience()
+    {
+        return ReadStatPoints(_ccPicker) +
+               ReadStatPoints(_bsPicker) +
+               ReadStatPoints(_phPicker) +
+               ReadStatPoints(_wipPicker) +
+               ReadStatPoints(_armPicker) +
+               ReadStatPoints(_btsPicker) +
+               ReadStatPoints(_vitaPicker) +
+               ReadChoicePoints(_weapon1Picker) +
+               ReadChoicePoints(_weapon2Picker) +
+               ReadChoicePoints(_weapon3Picker) +
+               ReadChoicePoints(_skill1Picker) +
+               ReadChoicePoints(_skill2Picker) +
+               ReadChoicePoints(_skill3Picker) +
+               ReadChoicePoints(_equipment1Picker) +
+               ReadChoicePoints(_equipment2Picker) +
+               ReadChoicePoints(_equipment3Picker);
     }
 
     // Thin wrapper kept for consistency; may expand to include additional preview logic later.
@@ -1070,15 +1112,21 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     /// </summary>
     private void SetCaptainNameEditMode(bool isEditing)
     {
-        _captainNameEntry.IsEnabled = isEditing;
-        _captainNameEntry.IsReadOnly = !isEditing;
-        _editCaptainNameCanvas.IsVisible = !isEditing;
-        _saveCaptainNameCanvas.IsVisible = isEditing;
-        _rejectCaptainNameCanvas.IsVisible = isEditing;
+        var allowNameEdit = _context.AllowNameEdit;
+        _captainNameEntry.IsEnabled = allowNameEdit && isEditing;
+        _captainNameEntry.IsReadOnly = !allowNameEdit || !isEditing;
+        _editCaptainNameCanvas.IsVisible = allowNameEdit && !isEditing;
+        _saveCaptainNameCanvas.IsVisible = allowNameEdit && isEditing;
+        _rejectCaptainNameCanvas.IsVisible = allowNameEdit && isEditing;
     }
 
     private void OnEditCaptainNameTapped(object? sender, TappedEventArgs e)
     {
+        if (!_context.AllowNameEdit)
+        {
+            return;
+        }
+
         SetCaptainNameEditMode(isEditing: true);
         _captainNameEntry.Focus();
     }
@@ -1103,11 +1151,33 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     /// </summary>
     private void CommitCaptainNameFromEntry()
     {
-        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? "Captain" : _captainNameEntry.Text.Trim();
+        var fallbackName = string.IsNullOrWhiteSpace(_context.NamePlaceholder)
+            ? "Captain"
+            : _context.NamePlaceholder.Trim();
+        var normalized = string.IsNullOrWhiteSpace(_captainNameEntry.Text) ? fallbackName : _captainNameEntry.Text.Trim();
         _captainNameCommitted = normalized;
         _captainNameEntry.Text = _captainNameCommitted;
         _captainNameHeadingLabel.Text = _captainNameCommitted;
         SetCaptainNameEditMode(isEditing: false);
+    }
+
+    private void ApplyStatUpgradeRestrictions()
+    {
+        ApplyStatPickerRestriction(_armPicker, _context.AllowArmUpgrade);
+        ApplyStatPickerRestriction(_btsPicker, _context.AllowBtsUpgrade);
+        ApplyStatPickerRestriction(_vitaPicker, _context.AllowVitalityUpgrade);
+    }
+
+    private static void ApplyStatPickerRestriction(Picker picker, bool isAllowed)
+    {
+        if (isAllowed)
+        {
+            return;
+        }
+
+        picker.SelectedIndex = 0;
+        picker.IsEnabled = false;
+        picker.Opacity = 0.75;
     }
 
     /// <summary>

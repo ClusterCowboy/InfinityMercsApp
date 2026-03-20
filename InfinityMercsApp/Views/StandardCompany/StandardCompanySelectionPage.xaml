@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <templates:CompanySelectionPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
@@ -75,7 +75,7 @@
                     </Border>
 
                     <Border Grid.Row="1" StrokeThickness="1" Padding="10">
-                        <Grid ColumnDefinitions="*" ColumnSpacing="10" VerticalOptions="Center">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
                             <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderInactive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnUnitSelectionHeaderTapped" />
@@ -166,7 +166,7 @@
 
                     <Border Grid.Row="1" StrokeThickness="1" Padding="10">
                         <Grid RowDefinitions="Auto,*" RowSpacing="8">
-                            <Grid Grid.Row="0" ColumnDefinitions="*" ColumnSpacing="10" VerticalOptions="Center">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
                                 <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderActive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnUnitSelectionHeaderTapped" />
@@ -220,6 +220,16 @@
                                         </Border>
                                     </Grid>
                                 </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+        <CheckBox IsChecked="{Binding LieutenantOnlyUnits}" VerticalOptions="Center" />
+        <Label Text="Lieutenant Only Units" VerticalOptions="Center" />
+    </HorizontalStackLayout>
+    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+        <CheckBox IsChecked="{Binding TeamsView}" VerticalOptions="Center" />
+        <Label Text="Duo Teams View" VerticalOptions="Center" />
+    </HorizontalStackLayout>
+</VerticalStackLayout>
                             </Grid>
 
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowUnitsList}">
@@ -286,27 +296,48 @@
 
         <Border Grid.Row="1" StrokeThickness="1" Padding="10">
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                <HorizontalStackLayout Grid.Row="0" Spacing="8" VerticalOptions="Center">
-                    <Label
-                        Text="Mercs Company"
-                        FontSize="20"
-                        FontAttributes="Bold"
-                        VerticalOptions="Center" />
-                    <Label Text="-" VerticalOptions="Center" />
-                    <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
-                        <Entry
-                            WidthRequest="220"
-                            Text="{Binding CompanyName}"
-                            Placeholder="Company Name"
-                            ClearButtonVisibility="WhileEditing"
+                <VerticalStackLayout Grid.Row="0" Spacing="8">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Label
+                            Text="Mercs Company"
+                            FontSize="20"
+                            FontAttributes="Bold"
                             VerticalOptions="Center" />
-                    </Border>
-                    <Label
-                        Text="Enter Company Name"
-                        TextColor="#EF4444"
-                        VerticalOptions="Center"
-                        IsVisible="{Binding ShowCompanyNameValidationError}" />
-                </HorizontalStackLayout>
+                        <Label Text="-" VerticalOptions="Center" />
+                        <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                            <Entry
+                                WidthRequest="220"
+                                Text="{Binding CompanyName}"
+                                Placeholder="Company Name"
+                                ClearButtonVisibility="WhileEditing"
+                                VerticalOptions="Center" />
+                        </Border>
+                        <Label
+                            Text="Enter Company Name"
+                            TextColor="#EF4444"
+                            VerticalOptions="Center"
+                            IsVisible="{Binding ShowCompanyNameValidationError}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center" IsVisible="{Binding ShowTagCompanyCustomTagControls}">
+                        <Label
+                            Text="TAG"
+                            FontAttributes="Bold"
+                            VerticalOptions="Center" />
+                        <Border Stroke="#9CA3AF" StrokeThickness="1" Padding="6,0" BackgroundColor="#FFFFFF">
+                            <Entry
+                                WidthRequest="240"
+                                Text="{Binding TagCompanyCustomTagNameInput}"
+                                Placeholder="TAG Name"
+                                ClearButtonVisibility="WhileEditing"
+                                VerticalOptions="Center" />
+                        </Border>
+                        <Button
+                            Text="Configure TAG (Spec Ops)"
+                            Clicked="OnConfigureTagSpecOpsClicked"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
                 <CollectionView
                     Grid.Row="1"
                     ItemsSource="{Binding MercsCompanyEntries}"
@@ -325,8 +356,7 @@
                                     </DataTrigger>
                                     <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
                                         <Setter Property="BackgroundColor" Value="Transparent" />
-                                    </DataTrigger>
-                                </Border.Triggers>
+                                    </DataTrigger>                                </Border.Triggers>
                                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
                                     <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding NameFormatted}" />
                                     <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
@@ -339,6 +369,7 @@
                                             FontAttributes="Bold"
                                             VerticalOptions="Start"
                                             HorizontalOptions="End"
+                                            IsVisible="{Binding CanRemove}"
                                             Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
                                             CommandParameter="{Binding .}" />
                                     </HorizontalStackLayout>
@@ -408,6 +439,5 @@
         </Grid>
     </Grid>
 </templates:CompanySelectionPageBase>
-
 
 

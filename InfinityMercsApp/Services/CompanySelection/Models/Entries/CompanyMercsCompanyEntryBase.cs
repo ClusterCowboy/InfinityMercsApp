@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.ViewModels;
 
 namespace InfinityMercsApp.Views.Common;
 
@@ -39,6 +39,7 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public bool CanRemove { get; init; } = true;
     public int? UnitMoveFirstCm { get; init; }
     public int? UnitMoveSecondCm { get; init; }
     public string UnitMoveDisplay { get; set; } = "-";

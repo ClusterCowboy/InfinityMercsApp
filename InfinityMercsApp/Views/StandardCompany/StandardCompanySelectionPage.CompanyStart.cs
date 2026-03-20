@@ -1,4 +1,4 @@
-﻿using InfinityMercsApp.Views.Common;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -11,7 +11,10 @@ public partial class StandardCompanySelectionPage
     {
         ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
         ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
-        _ => "Unknown Company Type"
+        ArmySourceSelectionMode.TagSingleSource => "TAG Company",
+        ArmySourceSelectionMode.TagVanillaFactions => "TAG Company - Vanilla",
+        ArmySourceSelectionMode.TagSectorials => "TAG Company - Sectorial",
+        _ => _mode.GetCompanyTypeLabel()
     };
 
     /// <summary>
@@ -31,7 +34,8 @@ public partial class StandardCompanySelectionPage
             SelectedStartSeasonPoints,
             SeasonPointsCapText,
             factionId => _armyDataService.GetMetadataFactionById(factionId)?.Name,
-            stats => stats.CaptainName);
+            stats => stats.CaptainName,
+            TryBuildPreconfiguredCaptainStats);
     }
 
     /// <summary>

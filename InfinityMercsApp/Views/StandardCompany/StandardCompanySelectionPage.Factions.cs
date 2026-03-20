@@ -75,9 +75,13 @@ public partial class StandardCompanySelectionPage
 
     private void ResetMercsCompany()
     {
-        ResetMercsCompanyCore(
-            MercsCompanyEntries,
-            UpdateMercsCompanyTotal);
+        if (MercsCompanyEntries.Count > 0)
+        {
+            MercsCompanyEntries.Clear();
+        }
+
+        EnsureTagCompanyCustomTagEntry();
+        UpdateMercsCompanyTotal();
     }
 
     private void AutoSelectEmptySlot()

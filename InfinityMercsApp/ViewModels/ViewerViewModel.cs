@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using InfinityMercsApp.Domain.Utilities;
+using InfinityMercsApp.Infrastructure.Models.App;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
@@ -738,6 +739,40 @@ public class ViewerViewModel : BaseViewModel
         UnitArm = ApplyNumericBonus(UnitArm, armBonus);
         UnitBts = ApplyNumericBonus(UnitBts, btsBonus);
         UnitVitality = ApplyNumericBonus(UnitVitality, vitalityBonus);
+    }
+
+    public void ApplySavedStatline(string? statline)
+    {
+        var segments = UnitStatline.ParseSegments(statline);
+        if (segments.Count == 0)
+        {
+            return;
+        }
+
+        if (segments.TryGetValue("MOV", out var mov) && !string.IsNullOrWhiteSpace(mov))
+        {
+            _unitMoveFirstCm = null;
+            _unitMoveSecondCm = null;
+            UnitMov = mov;
+        }
+
+        UnitCc = UnitStatline.ReadValue(segments, "CC", UnitCc);
+        UnitBs = UnitStatline.ReadValue(segments, "BS", UnitBs);
+        UnitPh = UnitStatline.ReadValue(segments, "PH", UnitPh);
+        UnitWip = UnitStatline.ReadValue(segments, "WIP", UnitWip);
+        UnitArm = UnitStatline.ReadValue(segments, "ARM", UnitArm);
+        UnitBts = UnitStatline.ReadValue(segments, "BTS", UnitBts);
+        UnitS = UnitStatline.ReadValue(segments, "S", UnitS);
+        UnitAva = UnitStatline.ReadValue(segments, "AVA", UnitAva);
+
+        var vitalityHeader = UnitStatline.ResolveVitalityHeader(segments);
+        if (!string.IsNullOrWhiteSpace(vitalityHeader) &&
+            segments.TryGetValue(vitalityHeader, out var vitality) &&
+            !string.IsNullOrWhiteSpace(vitality))
+        {
+            UnitVitalityHeader = vitalityHeader;
+            UnitVitality = vitality;
+        }
     }
 
     private static string MergeSummaryAndUnique(string summaryLine, string uniqueValues)
@@ -1747,37 +1782,6 @@ public class ViewerViewModel : BaseViewModel
         }
 
         return null;
-    }
-
-    private static string BuildOptionConfigurationSummary(
-        JsonElement option,
-        IReadOnlyDictionary<int, string> weaponsLookup,
-        IReadOnlyDictionary<int, string> equipLookup,
-        IReadOnlyDictionary<int, string> skillsLookup)
-    {
-        var weapons = GetOrderedNames(option, "weapons", weaponsLookup);
-        var equip = GetOrderedNames(option, "equip", equipLookup);
-        var skills = GetOrderedNames(option, "skills", skillsLookup);
-
-        var primary = weapons.Count > 0 ? string.Join(", ", weapons) : string.Empty;
-        var extras = equip.Concat(skills).ToList();
-
-        if (string.IsNullOrWhiteSpace(primary) && extras.Count == 0)
-        {
-            return "-";
-        }
-
-        if (string.IsNullOrWhiteSpace(primary))
-        {
-            return string.Join(", ", extras);
-        }
-
-        if (extras.Count == 0)
-        {
-            return primary;
-        }
-
-        return $"{primary} + {string.Join(", ", extras)}";
     }
 
     private static bool IsMeleeWeaponName(string weaponName) =>

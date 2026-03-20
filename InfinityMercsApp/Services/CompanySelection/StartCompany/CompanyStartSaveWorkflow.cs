@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Infrastructure.Providers;
@@ -27,6 +27,7 @@ internal sealed class CompanyStartSaveRequest<TFaction, TEntry, TCaptainStats>
     public required string SeasonPointsCapText { get; init; }
     public required Func<int, string?> TryGetMetadataFactionName { get; init; }
     public required Func<TCaptainStats, string?> ReadCaptainName { get; init; }
+    public Func<TEntry, TCaptainStats?>? TryGetPreconfiguredCaptainStats { get; init; }
     public required Func<string, string, string, Task> DisplayAlertAsync { get; init; }
     public required Func<string, Task> NavigateToCompanyViewerAsync { get; init; }
 }
@@ -54,28 +55,32 @@ internal static class CompanyStartSaveWorkflow
             faction => faction.Id);
         var firstSourceFactionId = sourceFactions.FirstOrDefault()?.Id;
 
-        var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<TCaptainStats>(
-            new CompanyCaptainWorkflowRequest
-            {
-                Navigation = request.Navigation,
-                FallbackSourceFactionId = captainEntry.SourceFactionId,
-                FirstSourceFactionId = firstSourceFactionId,
-                UnitName = captainEntry.Name,
-                UnitCost = captainEntry.CostValue,
-                UnitStatline = captainEntry.Subtitle ?? "-",
-                UnitRangedWeapons = captainEntry.SavedRangedWeapons,
-                UnitCcWeapons = captainEntry.SavedCcWeapons,
-                UnitSkills = captainEntry.SavedSkills,
-                UnitEquipment = captainEntry.SavedEquipment,
-                UnitCachedLogoPath = captainEntry.CachedLogoPath,
-                UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
-                TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
-                TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
-                TryGetMetadataFactionName = request.TryGetMetadataFactionName,
-                ArmyDataService = request.ArmyDataService,
-                SpecOpsProvider = request.SpecOpsProvider,
-                ShowUnitsInInches = request.ShowUnitsInInches
-            });
+        var improvedCaptainStats = request.TryGetPreconfiguredCaptainStats?.Invoke(captainEntry);
+        if (improvedCaptainStats is null)
+        {
+            improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<TCaptainStats>(
+                new CompanyCaptainWorkflowRequest
+                {
+                    Navigation = request.Navigation,
+                    FallbackSourceFactionId = captainEntry.SourceFactionId,
+                    FirstSourceFactionId = firstSourceFactionId,
+                    UnitName = captainEntry.Name,
+                    UnitCost = captainEntry.CostValue,
+                    UnitStatline = captainEntry.Subtitle ?? "-",
+                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
+                    UnitCcWeapons = captainEntry.SavedCcWeapons,
+                    UnitSkills = captainEntry.SavedSkills,
+                    UnitEquipment = captainEntry.SavedEquipment,
+                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
+                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
+                    TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
+                    TryGetMetadataFactionName = request.TryGetMetadataFactionName,
+                    ArmyDataService = request.ArmyDataService,
+                    SpecOpsProvider = request.SpecOpsProvider,
+                    ShowUnitsInInches = request.ShowUnitsInInches
+                });
+        }
         if (improvedCaptainStats is null)
         {
             return;
@@ -136,6 +141,9 @@ internal static class CompanyStartSaveWorkflow
                     SavedSkills = entry.SavedSkills,
                     SavedRangedWeapons = entry.SavedRangedWeapons,
                     SavedCcWeapons = entry.SavedCcWeapons,
+                    Subtitle = entry.Subtitle,
+                    CachedLogoPath = entry.CachedLogoPath,
+                    PackagedLogoPath = entry.PackagedLogoPath,
                     HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
                     PeripheralNameHeading = entry.PeripheralNameHeading,
                     PeripheralMov = entry.PeripheralMov,

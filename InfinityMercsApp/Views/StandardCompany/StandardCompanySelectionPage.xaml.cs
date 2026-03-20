@@ -63,12 +63,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
         WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
+        Title = _mode.GetFactionSelectionHeading();
+        PageHeading = _mode.GetFactionSelectionHeading();
 
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
@@ -93,6 +89,12 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         StartCompanyCommand = _startCompanyCommand;
 
         FinalizePageInitialization(() => SetActiveSlot(0));
+
+        if (ShowTagCompanyCustomTagControls)
+        {
+            EnsureTagCompanyCustomTagEntry();
+            UpdateMercsCompanyTotal();
+        }
     }
 
     public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
@@ -109,7 +111,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
-    public bool ShowRightSelectionBox => _mode == ArmySourceSelectionMode.Sectorials;
+    public bool ShowRightSelectionBox => _mode.ShowsRightSelectionBox();
     public string PageHeading
     {
         get => _pageHeading;
@@ -250,6 +252,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
 
         _loaded = true;
         await LoadFactionsAsync();
+        await ShowInitialTagCompanyStateAsync();
     }
 
     protected override Task LoadFactionsAsync()

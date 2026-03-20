@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.Views;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 
 namespace InfinityMercsApp.Views.Common;
@@ -22,11 +23,11 @@ internal static class CompanySelectionFactionsWorkflow
         }
 
         IEnumerable<FactionRecord> filtered = factions;
-        if (mode == ArmySourceSelectionMode.VanillaFactions)
+        if (!mode.IsTagSingleSourceMode() && mode.IsVanillaFactionMode())
         {
             filtered = filtered.Where(x => x.Id == x.ParentId);
         }
-        else
+        else if (!mode.IsTagSingleSourceMode())
         {
             filtered = filtered.Where(x => x.Id != x.ParentId);
         }

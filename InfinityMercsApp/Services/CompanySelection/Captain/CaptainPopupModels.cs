@@ -1,8 +1,9 @@
-﻿namespace InfinityMercsApp.Views.Common.Captain;
+namespace InfinityMercsApp.Views.Common.Captain;
 
 public sealed class SavedImprovedCaptainStats
 {
     public bool IsEnabled { get; init; }
+    public bool IsLieutenant { get; init; }
     public string CaptainName { get; init; } = string.Empty;
     public int CcTier { get; init; }
     public int BsTier { get; init; }
@@ -29,6 +30,7 @@ public sealed class SavedImprovedCaptainStats
     public string EquipmentChoice3 { get; init; } = string.Empty;
     public int OptionFactionId { get; init; }
     public string OptionFactionName { get; init; } = string.Empty;
+    public int SpentExperience { get; init; }
 }
 
 public sealed class CaptainUpgradeOptionSet
@@ -61,6 +63,20 @@ public sealed class CaptainUpgradePopupContext
     public List<string> WeaponOptions { get; init; } = [];
     public List<string> SkillOptions { get; init; } = [];
     public List<string> EquipmentOptions { get; init; } = [];
+    public int ExperienceBudget { get; init; }
+    public string ExperienceLabel { get; init; } = "Exp Remaining";
+    public string PopupTitle { get; init; } = "Captain Configuration";
+    public string ConfirmButtonText { get; init; } = "FOUND COMPANY";
+    public string CancelButtonText { get; init; } = "BACK";
+    public string InitialName { get; init; } = "Captain";
+    public string NamePlaceholder { get; init; } = "Captain";
+    public bool AllowNameEdit { get; init; } = true;
+    public bool AllowArmUpgrade { get; init; } = true;
+    public bool AllowBtsUpgrade { get; init; } = true;
+    public bool AllowVitalityUpgrade { get; init; } = true;
+    public bool ShowLieutenantOption { get; init; }
+    public bool InitialIsLieutenant { get; init; }
+    public string LieutenantOptionLabel { get; init; } = "Lieutenant";
 }
 
 public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)

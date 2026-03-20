@@ -1,0 +1,5 @@
+# Enforce consistent line endings for this Windows-first MAUI project.
+* text=auto eol=crlf
+
+# Shell scripts should remain LF for POSIX environments.
+*.sh text eol=lf

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
 using InfinityMercsApp.Views;
@@ -42,7 +42,7 @@ public partial class CreateNewCompanyPageViewModel(
     [RelayCommand]
     private async Task OpenTAGCompanyPageAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] TAG Company selected.");
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateStandard(ArmySourceSelectionMode.TagSingleSource));
     }
 
     [RelayCommand]

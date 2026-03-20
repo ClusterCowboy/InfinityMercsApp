@@ -16,6 +16,9 @@ public abstract class CompanySavedCompanyEntryBase
     public string SavedSkills { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public string? Subtitle { get; init; }
+    public string? CachedLogoPath { get; init; }
+    public string? PackagedLogoPath { get; init; }
     public bool HasPeripheralStatBlock { get; init; }
     public string PeripheralNameHeading { get; init; } = string.Empty;
     public string PeripheralMov { get; init; } = "-";

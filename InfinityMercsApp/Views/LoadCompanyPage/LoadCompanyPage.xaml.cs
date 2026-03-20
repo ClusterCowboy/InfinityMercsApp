@@ -352,11 +352,15 @@ public partial class LoadCompanyPage : ContentPage
     {
         return companyType switch
         {
-            "Cohesive Company" => "SVGCache/MercsIcons/noun-team-7662436.svg",
-            "Inspiring Leader" => "SVGCache/MercsIcons/noun-leadership-7195245.svg",
-            "Airborne Company" => "SVGCache/MercsIcons/noun-airborne-8005870.svg",
-            "TAG Company" => "SVGCache/MercsIcons/noun-battle-mech-1731140.svg",
-            "Proxy Pack" => "SVGCache/MercsIcons/noun-assassin-5981200.svg",
+            "Standard Company - Vanilla" => "SVGCache/MercsIcons/standard_company.svg",
+            "Standard Company - Sectorial" => "SVGCache/MercsIcons/standard_company.svg",
+            "Cohesive Company" => "SVGCache/MercsIcons/cohesive_company.svg",
+            "Inspiring Leader" => "SVGCache/MercsIcons/inspiring_leadership.svg",
+            "Airborne Company" => "SVGCache/MercsIcons/airborne_company.svg",
+            "TAG Company" => "SVGCache/MercsIcons/tag_company.svg",
+            "TAG Company - Vanilla" => "SVGCache/MercsIcons/tag_company.svg",
+            "TAG Company - Sectorial" => "SVGCache/MercsIcons/tag_company.svg",
+            "Proxy Pack" => "SVGCache/MercsIcons/proxy_pack.svg",
             _ => "SVGCache/MercsIcons/noun-hack-2277937.svg"
         };
     }

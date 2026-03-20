@@ -74,6 +74,11 @@ public partial class StandardCompanySelectionPage
 
     private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
     {
+        if (entry is null || !entry.CanRemove)
+        {
+            return;
+        }
+
         RemoveMercsCompanyEntryCore(
             entry,
             MercsCompanyEntries,
@@ -84,6 +89,13 @@ public partial class StandardCompanySelectionPage
 
     private async Task SelectMercsCompanyEntryAsync(MercsCompanyEntry? entry, CancellationToken cancellationToken = default)
     {
+        if (entry is not null && _tagCompanyCustomTagModel.IsCustomTagProfile(entry.ProfileKey))
+        {
+            await ShowTagCompanyCustomTagDetailsAsync(entry);
+            IsFactionSelectionActive = false;
+            return;
+        }
+
         await SelectMercsCompanyEntryAsyncCore(
             entry,
             Units,
