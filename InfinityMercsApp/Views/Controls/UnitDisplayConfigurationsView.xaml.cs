@@ -590,6 +590,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
                 state.UnitHeadingMaxFontSize,
                 state.UnitHeadingMinFontSize,
                 state.UnitHeadingFontStep);
+            UnitNameHeadingSizeChanged?.Invoke(this, EventArgs.Empty);
             return;
         }
 
@@ -597,6 +598,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
             DefaultUnitHeadingMaxFontSize,
             DefaultUnitHeadingMinFontSize,
             DefaultUnitHeadingFontStep);
+        UnitNameHeadingSizeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

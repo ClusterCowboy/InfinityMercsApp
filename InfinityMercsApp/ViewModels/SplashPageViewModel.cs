@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
 using InfinityMercsApp.Messages;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
@@ -8,9 +7,17 @@ using InfinityMercsApp.Views;
 namespace InfinityMercsApp.ViewModels;
 
 public partial class SplashPageViewModel(
-    IImportService importService, 
+    IImportService importService,
     INavigationService navigationService) : ViewModelBase(navigationService)
 {
+    private string _updateProgressMessage = string.Empty;
+
+    public string UpdateProgressMessage
+    {
+        get => _updateProgressMessage;
+        set => SetProperty(ref _updateProgressMessage, value);
+    }
+
     public async override Task InitializeAsync()
     {
         var updated = await UpdateAllDataAsync();
@@ -21,12 +28,9 @@ public partial class SplashPageViewModel(
         if (updated)
         {
             WeakReferenceMessenger.Default.Send(new SplashCompletedMessage());
-            await navigationService.NavigateToAsync("//ModeSelectionPage");
+            await NavigationService.NavigateToAsync("//ModeSelectionPage");
         }
     }
-
-    [ObservableProperty]
-    private string updateProgressMessage;
 
     private async Task<bool> UpdateAllDataAsync()
     {

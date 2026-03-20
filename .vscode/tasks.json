@@ -23,7 +23,8 @@
         "${workspaceFolder}/InfinityMercsApp/InfinityMercsApp.csproj",
         "-f",
         "net9.0-windows10.0.19041.0",
-        "--no-restore"
+        "--no-restore",
+        "--no-incremental"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -48,7 +49,8 @@
         "-f",
         "net9.0-windows10.0.19041.0",
         "-p:SimulateTablet=true",
-        "--no-restore"
+        "--no-restore",
+        "--no-incremental"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

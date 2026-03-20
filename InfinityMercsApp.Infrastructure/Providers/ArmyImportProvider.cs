@@ -192,17 +192,17 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
         }
     }
 
-    private async Task<JsonElement> TryGetFactionSpecopsRootAsync(int factionId, CancellationToken cancellationToken)
+    private Task<JsonElement> TryGetFactionSpecopsRootAsync(int factionId, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var snapshot = sqliteRepository.GetById<Faction>(factionId);
         if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.SpecopsJson))
         {
-            return default;
+            return Task.FromResult(default(JsonElement));
         }
 
         using var doc = JsonDocument.Parse(snapshot.SpecopsJson);
-        return doc.RootElement.Clone();
+        return Task.FromResult(doc.RootElement.Clone());
     }
 
     private static JsonElement TryGetFactionSpecopsRootFromSnapshots(IEnumerable<Faction> snapshots, int factionId)
