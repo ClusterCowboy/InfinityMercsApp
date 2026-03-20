@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--
+        DESIGN TOKEN PROFILES
+        OnIdiom selects the value for the active device profile:
+            Phone   = Android handset
+            Tablet  = Android tablet  (also SimulateTablet mode)
+            Desktop = Windows desktop
+
+        FontAutoScalingEnabled="True" on every text control then
+        multiplies the chosen base size by the OS DPI / accessibility
+        scale factor, giving two independent scaling axes.
+    -->
+
+    <!-- FONT SIZES -->
+
+    <!-- Captions, badges, secondary metadata -->
+    <OnIdiom x:Key="FontSizeCaption" x:TypeArguments="x:Double" Phone="11" Tablet="13" Desktop="12" />
+
+    <!-- Default body / control text (Label, Button, Entry, etc.) -->
+    <OnIdiom x:Key="FontSizeBody" x:TypeArguments="x:Double" Phone="13" Tablet="15" Desktop="14" />
+
+    <!-- Emphasis labels inside cards / sections -->
+    <OnIdiom x:Key="FontSizeSectionHeader" x:TypeArguments="x:Double" Phone="16" Tablet="20" Desktop="18" />
+
+    <!-- Sub-headline (SubHeadline named style) -->
+    <OnIdiom x:Key="FontSizeSubHeadline" x:TypeArguments="x:Double" Phone="18" Tablet="22" Desktop="24" />
+
+    <!-- Top-level page title (Headline named style) -->
+    <OnIdiom x:Key="FontSizeHeadline" x:TypeArguments="x:Double" Phone="24" Tablet="28" Desktop="32" />
+
+    <!-- Large display numbers / hero values (e.g. unit stat totals) -->
+    <OnIdiom x:Key="FontSizeDisplay" x:TypeArguments="x:Double" Phone="28" Tablet="34" Desktop="36" />
+
+
+    <!-- SPACING (doubles - Grid row/column spacing, Stack spacing) -->
+
+    <!-- Micro gap between tightly-coupled elements -->
+    <OnIdiom x:Key="SpacingXS" x:TypeArguments="x:Double" Phone="2" Tablet="3" Desktop="4" />
+
+    <!-- Gap between sibling items in a dense list row -->
+    <OnIdiom x:Key="SpacingSmall" x:TypeArguments="x:Double" Phone="4" Tablet="6" Desktop="6" />
+
+    <!-- Default gap between controls in a form or card -->
+    <OnIdiom x:Key="SpacingMedium" x:TypeArguments="x:Double" Phone="8" Tablet="10" Desktop="10" />
+
+    <!-- Gap between logical groups within a section -->
+    <OnIdiom x:Key="SpacingLarge" x:TypeArguments="x:Double" Phone="12" Tablet="14" Desktop="16" />
+
+    <!-- Gap between major sections on a page -->
+    <OnIdiom x:Key="SpacingXL" x:TypeArguments="x:Double" Phone="16" Tablet="20" Desktop="24" />
+
+
+    <!-- PADDING (Thickness - applied to pages, cards, controls) -->
+
+    <!-- Outer inset for content pages -->
+    <OnIdiom x:Key="PaddingPage" x:TypeArguments="Thickness" Phone="16" Tablet="20" Desktop="24" />
+
+    <!-- Internal padding for cards / Border / Frame -->
+    <OnIdiom x:Key="PaddingSection" x:TypeArguments="Thickness" Phone="10" Tablet="12" Desktop="12" />
+
+    <!-- Internal padding for interactive controls (Button, picker rows) -->
+    <OnIdiom x:Key="PaddingControl" x:TypeArguments="Thickness" Phone="10,8" Tablet="12,9" Desktop="14,10" />
+
+    <!-- Compact padding for chip / badge / tag elements -->
+    <OnIdiom x:Key="PaddingChip" x:TypeArguments="Thickness" Phone="6,3" Tablet="8,4" Desktop="8,4" />
+
+
+    <!-- ICON SIZES (doubles - WidthRequest / HeightRequest) -->
+
+    <!-- Inline text-level icons (next to labels) -->
+    <OnIdiom x:Key="IconSizeSmall" x:TypeArguments="x:Double" Phone="16" Tablet="18" Desktop="18" />
+
+    <!-- Standard control-level icons (buttons, list rows) -->
+    <OnIdiom x:Key="IconSizeMedium" x:TypeArguments="x:Double" Phone="24" Tablet="28" Desktop="28" />
+
+    <!-- Feature / section-header icons -->
+    <OnIdiom x:Key="IconSizeLarge" x:TypeArguments="x:Double" Phone="36" Tablet="44" Desktop="50" />
+
+    <!-- Avatar / logo canvas (faction logo, unit portrait) -->
+    <OnIdiom x:Key="IconSizeAvatar" x:TypeArguments="x:Double" Phone="50" Tablet="70" Desktop="80" />
+
+
+    <!-- LAYOUT CONSTRAINTS -->
+
+    <!-- Maximum width for centred content columns on wide screens -->
+    <OnIdiom x:Key="MaxContentWidth" x:TypeArguments="x:Double" Phone="480" Tablet="700" Desktop="700" />
+
+    <!-- Width for inline picker / dropdown controls -->
+    <OnIdiom x:Key="PickerControlWidth" x:TypeArguments="x:Double" Phone="200" Tablet="260" Desktop="280" />
+
+    <!-- Minimum tappable height (accessibility) -->
+    <OnIdiom x:Key="MinTouchTarget" x:TypeArguments="x:Double" Phone="44" Tablet="48" Desktop="44" />
+
+    <!-- Corner radius for cards, buttons, borders -->
+    <OnIdiom x:Key="CornerRadiusDefault" x:TypeArguments="x:Double" Phone="6" Tablet="8" Desktop="8" />
+
+</ResourceDictionary>

@@ -28,26 +28,30 @@ public partial class CreateNewCompanyPageViewModel(
     }
 
     [RelayCommand]
-    private async Task OpenInspiringLeadershipPageAsync()
+    private Task OpenInspiringLeadershipPageAsync()
     {
         Console.WriteLine("[CreateNewCompanyPage] Inspiring Leader selected.");
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
-    private async Task OpenAirborneCompanyPage()
+    private Task OpenAirborneCompanyPage()
     {
         Console.WriteLine("[CreateNewCompanyPage] Airborne Company selected.");
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
-    private async Task OpenTAGCompanyPageAsync()
+    private Task OpenTAGCompanyPageAsync()
     {
         Console.WriteLine("[CreateNewCompanyPage] TAG Company selected.");
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
-    private async Task OpenProxyPackPageAsync()
+    private Task OpenProxyPackPageAsync()
     {
         Console.WriteLine("[CreateNewCompanyPage] Proxy Pack selected.");
+        return Task.CompletedTask;
     }
 }

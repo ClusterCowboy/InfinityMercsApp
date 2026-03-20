@@ -129,7 +129,7 @@ public partial class CohesiveCompanySelectionPage
         }
     }
 
-    private static string NormalizeCohesiveDisplayedMinimum(string min)
+    private static string NormalizeCohesiveDisplayedMinimum(string? min)
     {
         if (string.Equals(min?.Trim(), "*", StringComparison.Ordinal))
         {
@@ -141,6 +141,6 @@ public partial class CohesiveCompanySelectionPage
             return "0";
         }
 
-        return min;
+        return min ?? "0";
     }
 }
