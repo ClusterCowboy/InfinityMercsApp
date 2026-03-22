@@ -10,6 +10,8 @@ public abstract class CompanySavedCompanyEntryBase
     public string ProfileKey { get; init; } = string.Empty;
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
+    public int? LogoSourceFactionId { get; init; }
+    public int? LogoSourceUnitId { get; init; }
     public int Cost { get; init; }
     public bool IsLieutenant { get; init; }
     public string SavedEquipment { get; init; } = "-";

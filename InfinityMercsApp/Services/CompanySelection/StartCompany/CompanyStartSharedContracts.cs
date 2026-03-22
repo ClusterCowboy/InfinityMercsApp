@@ -16,6 +16,8 @@ public interface ICompanyMercsEntry
     string ProfileKey { get; }
     int SourceFactionId { get; }
     int SourceUnitId { get; }
+    int? LogoSourceFactionId { get; }
+    int? LogoSourceUnitId { get; }
     string SavedEquipment { get; }
     string SavedSkills { get; }
     string SavedRangedWeapons { get; }

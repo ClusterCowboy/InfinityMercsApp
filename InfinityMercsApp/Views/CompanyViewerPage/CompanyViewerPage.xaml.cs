@@ -375,9 +375,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId),
-                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
-                        ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(
+                        entry.LogoSourceFactionId ?? entry.SourceFactionId,
+                        entry.LogoSourceUnitId ?? entry.SourceUnitId),
+                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(
+                        entry.LogoSourceFactionId ?? entry.SourceFactionId,
+                        entry.LogoSourceUnitId ?? entry.SourceUnitId)
+                        ?? $"SVGCache/units/{entry.LogoSourceFactionId ?? entry.SourceFactionId}-{entry.LogoSourceUnitId ?? entry.SourceUnitId}.svg"
                 });
             }
 

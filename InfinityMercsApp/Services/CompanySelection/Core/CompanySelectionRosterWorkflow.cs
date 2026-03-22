@@ -133,6 +133,8 @@ internal static class CompanySelectionRosterWorkflow
             ProfileKey = profile.ProfileKey,
             SourceUnitId = selectedUnit.Id,
             SourceFactionId = selectedUnit.SourceFactionId,
+            LogoSourceFactionId = selectedUnit.LogoSourceFactionId,
+            LogoSourceUnitId = selectedUnit.LogoSourceUnitId,
             CachedLogoPath = selectedUnit.CachedLogoPath,
             PackagedLogoPath = selectedUnit.PackagedLogoPath,
             SavedEquipment = combinedEquipmentText,

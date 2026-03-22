@@ -150,6 +150,8 @@ public partial class AirborneCompanySelectionPage
                     {
                         Id = unit.UnitId,
                         SourceFactionId = factionId,
+                        LogoSourceFactionId = logoFactionId,
+                        LogoSourceUnitId = logoUnitId,
                         Slug = unit.Slug,
                         Name = unit.Name,
                         Type = unit.Type,
@@ -173,6 +175,8 @@ public partial class AirborneCompanySelectionPage
                     {
                         Id = specopsUnit.UnitId,
                         SourceFactionId = factionId,
+                        LogoSourceFactionId = logoFactionId,
+                        LogoSourceUnitId = logoUnitId,
                         Slug = specopsUnit.Slug,
                         Name = key,
                         Type = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var resumeUnit) ? resumeUnit.Type : null,

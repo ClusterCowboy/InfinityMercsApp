@@ -21,6 +21,9 @@ public partial class AirborneCompanySelectionPage
             });
     }
 
+    private const string ParachutistSkillName = "Parachutist";
+    private const string NetworkSupportSkillName = "Network Support (Controlled Jump)";
+
     private void AddProfileToMercsCompany(ViewerProfileItem? profile)
     {
         if (profile is null || _selectedUnit is null)
@@ -38,12 +41,18 @@ public partial class AirborneCompanySelectionPage
             return;
         }
 
+        var commonSkills = UnitDisplayConfigurationsView.SelectedUnitCommonSkills;
+        if (IsLeftSlotUnit(_selectedUnit))
+        {
+            commonSkills = BuildCaptainSkills(commonSkills, profile.UniqueSkills);
+        }
+
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,
-            UnitDisplayConfigurationsView.SelectedUnitCommonSkills,
+            commonSkills,
             UnitMov,
             UnitCc,
             UnitBs,
@@ -150,6 +159,36 @@ public partial class AirborneCompanySelectionPage
 
         UpdatePeripheralStatBlockFromVisibleProfiles();
         UpdateSeasonValidationState();
+    }
+
+    private static List<string> BuildCaptainSkills(IReadOnlyCollection<string> commonSkills, string? uniqueSkills)
+    {
+        var allExisting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var skill in commonSkills)
+        {
+            allExisting.Add(skill);
+        }
+
+        if (!string.IsNullOrWhiteSpace(uniqueSkills))
+        {
+            foreach (var part in uniqueSkills.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                allExisting.Add(part);
+            }
+        }
+
+        var result = new List<string>(commonSkills);
+        if (!allExisting.Contains(ParachutistSkillName))
+        {
+            result.Add(ParachutistSkillName);
+        }
+
+        if (!allExisting.Contains(NetworkSupportSkillName))
+        {
+            result.Add(NetworkSupportSkillName);
+        }
+
+        return result;
     }
 
     private static bool IsLeftSlotUnit(ArmyUnitSelectionItem? unit)
