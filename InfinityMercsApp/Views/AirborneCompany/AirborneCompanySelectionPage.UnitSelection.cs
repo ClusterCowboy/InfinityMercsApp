@@ -42,7 +42,8 @@ public partial class AirborneCompanySelectionPage
             OnUnitFilterPopupCloseRequested,
             UnitFilterPopupHost,
             UnitFilterOverlay,
-            message => Console.Error.WriteLine(message));
+            message => Console.Error.WriteLine(message),
+            teamsViewEnabled: false);
     }
 
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)

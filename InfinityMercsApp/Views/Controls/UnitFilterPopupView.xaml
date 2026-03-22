@@ -130,8 +130,14 @@
                     <Label Grid.Row="1" Grid.Column="0" Text="Lieutenant Only Units" VerticalTextAlignment="Center" TextColor="White" />
                     <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding SelectedLieutenantOnlyUnits}" HorizontalOptions="Start" />
 
-                    <Label Grid.Row="2" Grid.Column="0" Text="Fireteam View" VerticalTextAlignment="Center" TextColor="White" />
-                    <CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding SelectedTeamsView}" HorizontalOptions="Start" />
+                    <Label Grid.Row="2" Grid.Column="0" Text="Fireteam View" VerticalTextAlignment="Center" TextColor="White">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding TeamsViewEnabled}" Value="False">
+                                <Setter Property="TextColor" Value="#6B7280" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding SelectedTeamsView}" IsEnabled="{Binding TeamsViewEnabled}" HorizontalOptions="Start" />
                 </Grid>
 
                 <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" Margin="0,8,0,0">

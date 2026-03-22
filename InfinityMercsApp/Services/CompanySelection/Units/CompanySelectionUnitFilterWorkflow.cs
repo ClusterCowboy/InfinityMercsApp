@@ -15,7 +15,8 @@ internal static class CompanySelectionUnitFilterWorkflow
         EventHandler onCloseRequested,
         ContentView popupHost,
         VisualElement popupOverlay,
-        Action<string>? logError = null)
+        Action<string>? logError = null,
+        bool teamsViewEnabled = true)
     {
         try
         {
@@ -23,7 +24,8 @@ internal static class CompanySelectionUnitFilterWorkflow
                 options,
                 activeUnitFilter,
                 lieutenantOnlyUnits: lieutenantOnlyUnits,
-                teamsView: teamsView);
+                teamsView: teamsView,
+                teamsViewEnabled: teamsViewEnabled);
             popup.HeightRequest = popupHeight;
             popup.FilterArmyApplied += onFilterArmyApplied;
             popup.CloseRequested += onCloseRequested;
