@@ -13,6 +13,8 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public bool IsLieutenant { get; init; }
     public int SourceUnitId { get; init; }
     public int SourceFactionId { get; init; }
+    public int LogoSourceFactionId { get; init; }
+    public int LogoSourceUnitId { get; init; }
 
     public string? CachedLogoPath { get; init; }
 

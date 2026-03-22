@@ -13,7 +13,9 @@ internal class ImportService(
     IMetadataProvider metadataProvider,
     IArmyImportProvider armyImportProvider,
     IAppSettingsProvider appSettingsProvider,
-    FactionLogoCacheService factionLogoCacheService) : IImportService
+    FactionLogoCacheService factionLogoCacheService,
+    IInspiringCompanyFactionGenerator inspiringCompanyFactionGenerator,
+    IAirborneCompanyFactionGenerator airborneCompanyFactionGenerator) : IImportService
 {
     private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
 
@@ -219,6 +221,25 @@ internal class ImportService(
             {
                 errorCount++;
             }
+        }
+
+        yield return new(true, "Generating synthetic company factions...");
+        try
+        {
+            await airborneCompanyFactionGenerator.GenerateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync Airborne Company generation failed: {ex.Message}");
+        }
+
+        try
+        {
+            await inspiringCompanyFactionGenerator.GenerateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync Inspiring Company generation failed: {ex.Message}");
         }
 
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");

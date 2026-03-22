@@ -17,7 +17,9 @@ public static class ServiceRegistryExtensions
                 .AddSingleton<IFactionProvider, FactionProvider>()
                 .AddSingleton<IMetadataProvider, MetadataProvider>()
                 .AddSingleton<ICohesiveCompanyFactionQueryProvider, CohesiveCompanyFactionQueryProvider>()
-                .AddSingleton<ISpecOpsProvider, SpecOpsProvider>();
+                .AddSingleton<ISpecOpsProvider, SpecOpsProvider>()
+                .AddSingleton<IInspiringCompanyFactionGenerator, InspiringCompanyFactionGenerator>()
+                .AddSingleton<IAirborneCompanyFactionGenerator, AirborneCompanyFactionGenerator>();
         return services;
     }
 }
