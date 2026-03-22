@@ -6,6 +6,8 @@ namespace InfinityMercsApp.Views.InspiringCompany;
 
 public partial class InspiringCompanySelectionPage
 {
+    private const string InspiringLeadershipSkillName = "Inspiring Leadership";
+
     private void SetSelectedUnit(ArmyUnitSelectionItem item)
     {
         _selectedUnit = SetSelectedUnitCore(
@@ -39,13 +41,16 @@ public partial class InspiringCompanySelectionPage
         }
 
         var commonSkills = UnitDisplayConfigurationsView.SelectedUnitCommonSkills;
+        var captainSkills = profile.IsLieutenant
+            ? EnsureInspiringLeadershipSkill(commonSkills)
+            : commonSkills;
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,
-            commonSkills,
+            captainSkills,
             UnitMov,
             UnitCc,
             UnitBs,
@@ -162,5 +167,20 @@ public partial class InspiringCompanySelectionPage
     private bool HasLeftSlotEntry()
     {
         return MercsCompanyEntries.Any(e => e.SourceFactionId != InspiringGen.InspiringCompanyFactionId);
+    }
+
+    private static IReadOnlyCollection<string> EnsureInspiringLeadershipSkill(IReadOnlyCollection<string> skills)
+    {
+        if (skills.Any(x => string.Equals(x?.Trim(), InspiringLeadershipSkillName, StringComparison.OrdinalIgnoreCase)))
+        {
+            return skills;
+        }
+
+        var merged = skills
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToList();
+        merged.Add(InspiringLeadershipSkillName);
+        return merged;
     }
 }
