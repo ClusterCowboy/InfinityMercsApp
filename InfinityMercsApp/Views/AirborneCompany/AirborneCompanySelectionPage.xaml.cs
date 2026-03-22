@@ -320,6 +320,12 @@ public partial class AirborneCompanySelectionPage : CompanySelectionPageBase, IC
         LieutenantOnlyUnits = isLeftSlot;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
 
+        // The Airborne Company slot (right) is locked — always show units, never the faction picker.
+        if (!isLeftSlot)
+        {
+            IsFactionSelectionActive = false;
+        }
+
         if (previousSlot != _activeSlotIndex && _loaded)
         {
             _ = LoadUnitsForActiveSlotAsync();

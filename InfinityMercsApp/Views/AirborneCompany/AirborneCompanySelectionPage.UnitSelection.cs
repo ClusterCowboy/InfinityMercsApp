@@ -15,6 +15,13 @@ public partial class AirborneCompanySelectionPage
 {
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
+        // Always switch to the left slot when entering faction selection,
+        // because the right slot (Airborne Company) is locked and cannot be changed.
+        if (_activeSlotIndex != 0)
+        {
+            SetActiveSlot(0);
+        }
+
         CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(value => IsFactionSelectionActive = value);
     }
 

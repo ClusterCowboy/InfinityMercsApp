@@ -17,7 +17,7 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     /// <inheritdoc/>
     public bool HasFactionArmy(int factionId)
     {
-        return sqliteRepository.GetAll<DbFaction>(x => x.FactionId == factionId).Count() > 0;
+        return sqliteRepository.Exists<DbFaction>(x => x.FactionId == factionId);
     }
 
     /// <inheritdoc/>
@@ -46,13 +46,10 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     /// <inheritdoc/>
     public Unit? GetUnit(int factionId, int unitId)
     {
-        var row = sqliteRepository
-            .GetAll<DbUnit>(
-                x => x.FactionId == factionId
-                     && x.UnitId == unitId
-                     && (x.Slug == null || !x.Slug.StartsWith(MercSlugPrefix)),
-                null)
-            .FirstOrDefault();
+        var row = sqliteRepository.FirstOrDefault<DbUnit>(
+            x => x.FactionId == factionId
+                 && x.UnitId == unitId
+                 && (x.Slug == null || !x.Slug.StartsWith(MercSlugPrefix)));
         return row is null ? null : MapUnit(row);
     }
 
@@ -68,8 +65,7 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
             }
 
             return sqliteRepository
-                .GetAll<DbUnit>(x => x.Slug == null || !x.Slug.StartsWith(MercSlugPrefix))
-                .Take(250)
+                .GetAll<DbUnit>(x => x.Slug == null || !x.Slug.StartsWith(MercSlugPrefix), null, 250)
                 .Select(MapUnit)
                 .ToList();
         }

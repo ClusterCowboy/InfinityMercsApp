@@ -8,6 +8,7 @@ using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
 using static InfinityMercsApp.Views.Common.CompanyUnitDetailsShared;
 using Svg.Skia;
+using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
 using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
 
@@ -199,7 +200,11 @@ public partial class AirborneCompanySelectionPage
             _factionSelectionState.LeftSlotFaction?.Id,
             null,
             _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetCachedUnitLogoPath(factionId, unitId),
-            _factionLogoCacheService is null ? null : factionId => _factionLogoCacheService.GetCachedLogoPath(factionId));
+            _factionLogoCacheService is null
+                ? null
+                : factionId => factionId == AirborneGen.AirborneCompanyFactionId
+                    ? null
+                    : _factionLogoCacheService.GetCachedLogoPath(factionId));
     }
 
     private IEnumerable<string?> BuildUnitPackagedPathCandidates(ArmyUnitSelectionItem item)
@@ -209,7 +214,11 @@ public partial class AirborneCompanySelectionPage
             _factionSelectionState.LeftSlotFaction?.Id,
             null,
             _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetPackagedUnitLogoPath(factionId, unitId),
-            _factionLogoCacheService is null ? null : factionId => _factionLogoCacheService.GetPackagedFactionLogoPath(factionId));
+            _factionLogoCacheService is null
+                ? null
+                : factionId => factionId == AirborneGen.AirborneCompanyFactionId
+                    ? AirborneCompanyLogoPath
+                    : _factionLogoCacheService.GetPackagedFactionLogoPath(factionId));
     }
 
     private static void MergeFireteamEntries(

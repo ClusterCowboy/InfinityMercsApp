@@ -51,14 +51,53 @@ public sealed class SQLiteRepository : ISQLiteRepository
     {
         _connection.CreateTable<T>();
 
-        var query = _connection.Table<T>();
+        var query = _connection.Table<T>().Where(filter);
 
         if (orderBy is not null)
         {
-            return query.Where(filter).OrderBy(orderBy).ToList();
+            return query.OrderBy(orderBy).ToList();
         }
 
-        return query.Where(filter).ToList();
+        return query.ToList();
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, object>>? orderBy, int limit) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        var query = _connection.Table<T>().Where(filter);
+
+        if (orderBy is not null)
+        {
+            query = query.OrderBy(orderBy);
+        }
+
+        return query.Take(limit).ToList();
+    }
+
+    /// <inheritdoc/>
+    public T? FirstOrDefault<T>(Expression<Func<T, bool>> filter) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        return _connection.Table<T>().Where(filter).FirstOrDefault();
+    }
+
+    /// <inheritdoc/>
+    public int Count<T>(Expression<Func<T, bool>> filter) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        return _connection.Table<T>().Where(filter).Count();
+    }
+
+    /// <inheritdoc/>
+    public bool Exists<T>(Expression<Func<T, bool>> filter) where T : new()
+    {
+        _connection.CreateTable<T>();
+
+        return _connection.Table<T>().Where(filter).Take(1).Count() > 0;
     }
 
     /// <inheritdoc/>

@@ -131,15 +131,15 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     /// <inheritdoc/>
     public bool HasMetadata()
     {
-        return sqliteRepository.GetAll<DbFaction>(x => true).Count() > 0;
+        return sqliteRepository.Exists<DbFaction>(x => true);
     }
 
     /// <inheritdoc/>
     public IReadOnlyList<DomainFaction> GetFactions(bool includeDiscontinued = false)
     {
         var records = includeDiscontinued
-            ? sqliteRepository.GetAll<DbFaction>(x => true, x => x.Name).ToList()
-            : sqliteRepository.GetAll<DbFaction>(x => !x.Discontinued).OrderBy(x => x.Name).ToList();
+            ? sqliteRepository.GetAll<DbFaction>(x => true, x => x.Name)
+            : sqliteRepository.GetAll<DbFaction>(x => !x.Discontinued, x => x.Name);
 
         return records.Select(MapFaction).ToList();
     }
@@ -155,8 +155,8 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     public IReadOnlyList<DomainWeapon> SearchWeaponsByName(string searchTerm)
     {
         var records = string.IsNullOrWhiteSpace(searchTerm)
-            ? sqliteRepository.GetAll<DbWeapon>(x => true, x => x.Name).Take(100).ToList()
-            : sqliteRepository.GetAll<DbWeapon>(x => x.Name.Contains(searchTerm), x => x.Name).Take(100).ToList();
+            ? sqliteRepository.GetAll<DbWeapon>(x => true, x => x.Name, 100)
+            : sqliteRepository.GetAll<DbWeapon>(x => x.Name.Contains(searchTerm), x => x.Name, 100);
         return records.Select(MapWeapon).ToList();
     }
 

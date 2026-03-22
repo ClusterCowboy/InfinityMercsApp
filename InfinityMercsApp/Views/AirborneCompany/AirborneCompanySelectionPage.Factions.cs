@@ -87,7 +87,11 @@ public partial class AirborneCompanySelectionPage
             factionChanged,
             () => { },
             ResetMercsCompany,
-            () => LoadUnitsForActiveSlotAsync());
+            () => LoadUnitsForActiveSlotAsync(),
+            onAssignmentCompleted: () =>
+            {
+                IsFactionSelectionActive = false;
+            });
     }
 
     private void ResetMercsCompany()

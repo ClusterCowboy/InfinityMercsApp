@@ -67,12 +67,18 @@ public sealed class SpecOpsProvider(ISQLiteRepository sqliteRepository) : ISpecO
             return Task.FromResult<IReadOnlyList<CCFactionFireteamValidityRecord>>([]);
         }
 
-        var ids = factionIds.ToHashSet();
-        var rows = sqliteRepository
-            .GetAll<DbCCFireteamValidity>(x => x.FilterKey == filterKey)
-            .Where(x => ids.Contains(x.FactionId))
-            .Select(MapFireteamValidity)
-            .ToList();
+        var rows = new List<CCFactionFireteamValidityRecord>();
+        foreach (var factionId in factionIds)
+        {
+            var fid = factionId;
+            var record = sqliteRepository.FirstOrDefault<DbCCFireteamValidity>(
+                x => x.FilterKey == filterKey && x.FactionId == fid);
+            if (record is not null)
+            {
+                rows.Add(MapFireteamValidity(record));
+            }
+        }
+
         return Task.FromResult<IReadOnlyList<CCFactionFireteamValidityRecord>>(rows);
     }
 

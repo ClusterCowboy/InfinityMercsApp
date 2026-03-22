@@ -39,11 +39,11 @@ public sealed class AirborneCompanyFactionGenerator(
 
         Console.WriteLine($"[AirborneGen] Found {factionIds.Count} source factions to scan.");
 
-        // Find all "Combat Jump" skill IDs across all factions.
+        // Find all airborne deployment skill IDs (Combat Jump, Parachutist) across all factions.
         var airborneSkillIds = FindAirborneSkillIds(factionIds);
         if (airborneSkillIds.Count == 0)
         {
-            Console.WriteLine("[AirborneGen] No Combat Jump skill IDs found in any faction.");
+            Console.WriteLine("[AirborneGen] No airborne deployment skill IDs found in any faction.");
             return;
         }
 
@@ -65,7 +65,7 @@ public sealed class AirborneCompanyFactionGenerator(
 
         if (mergedUnits.Count == 0)
         {
-            Console.WriteLine("[AirborneGen] No qualifying Combat Jump units found across all factions.");
+            Console.WriteLine("[AirborneGen] No qualifying airborne deployment units found across all factions.");
             return;
         }
 
@@ -119,7 +119,8 @@ public sealed class AirborneCompanyFactionGenerator(
             var skillsLookup = BuildIdNameLookup(snapshot.FiltersJson, "skills");
             foreach (var (id, name) in skillsLookup)
             {
-                if (name.Contains("combat jump", StringComparison.OrdinalIgnoreCase))
+                if (name.Contains("combat jump", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains("parachutist", StringComparison.OrdinalIgnoreCase))
                 {
                     airborneSkillIds.Add(id);
                 }
@@ -141,7 +142,7 @@ public sealed class AirborneCompanyFactionGenerator(
         var noNameCount = 0;
         var noUnitMatchCount = 0;
         var noProfileGroupsCount = 0;
-        var noCombatJumpCount = 0;
+        var noAirborneCount = 0;
         var qualifiedCount = 0;
 
         foreach (var resume in resumes)
@@ -168,7 +169,7 @@ public sealed class AirborneCompanyFactionGenerator(
             var filteredJson = FilterForAirborneDeployment(unit.ProfileGroupsJson, airborneSkillIds);
             if (filteredJson is null)
             {
-                noCombatJumpCount++;
+                noAirborneCount++;
                 continue;
             }
 
@@ -210,7 +211,7 @@ public sealed class AirborneCompanyFactionGenerator(
         {
             Console.WriteLine($"[AirborneGen]   Faction {factionId}: {resumes.Count} resumes, {units.Count} units | "
                 + $"noName={noNameCount}, noUnitMatch={noUnitMatchCount}, noProfileGroups={noProfileGroupsCount}, "
-                + $"noCombatJump={noCombatJumpCount}, qualified={qualifiedCount}");
+                + $"noAirborne={noAirborneCount}, qualified={qualifiedCount}");
         }
     }
 
@@ -241,7 +242,7 @@ public sealed class AirborneCompanyFactionGenerator(
 
             // Combat Jump is a profile-level skill, not an option-level skill.
             // Check if any profile in this group has the Combat Jump skill.
-            if (!ProfileGroupHasCombatJump(group, airborneSkillIds))
+            if (!ProfileGroupHasAirborneDeployment(group, airborneSkillIds))
             {
                 continue;
             }
@@ -289,7 +290,7 @@ public sealed class AirborneCompanyFactionGenerator(
         return result.Count > 0 ? result.ToJsonString() : null;
     }
 
-    private static bool ProfileGroupHasCombatJump(JsonObject group, HashSet<int> airborneSkillIds)
+    private static bool ProfileGroupHasAirborneDeployment(JsonObject group, HashSet<int> airborneSkillIds)
     {
         var profiles = group["profiles"] as JsonArray;
         if (profiles is null || profiles.Count == 0)
@@ -387,20 +388,21 @@ public sealed class AirborneCompanyFactionGenerator(
                     continue;
                 }
 
-                var options = group["options"] as JsonArray;
-                if (options is null)
+                // AVA is stored at the profile level, not the option level.
+                var profiles = group["profiles"] as JsonArray;
+                if (profiles is null)
                 {
                     continue;
                 }
 
-                foreach (var optNode in options)
+                foreach (var profileNode in profiles)
                 {
-                    if (optNode is not JsonObject option)
+                    if (profileNode is not JsonObject profile)
                     {
                         continue;
                     }
 
-                    var avaNode = option["ava"];
+                    var avaNode = profile["ava"];
                     if (avaNode is null)
                     {
                         continue;
@@ -447,20 +449,21 @@ public sealed class AirborneCompanyFactionGenerator(
                     continue;
                 }
 
-                var options = group["options"] as JsonArray;
-                if (options is null)
+                // AVA is stored at the profile level, not the option level.
+                var profiles = group["profiles"] as JsonArray;
+                if (profiles is null)
                 {
                     continue;
                 }
 
-                foreach (var optNode in options)
+                foreach (var profileNode in profiles)
                 {
-                    if (optNode is not JsonObject option)
+                    if (profileNode is not JsonObject profile)
                     {
                         continue;
                     }
 
-                    option["ava"] = maxAva;
+                    profile["ava"] = maxAva;
                 }
             }
 

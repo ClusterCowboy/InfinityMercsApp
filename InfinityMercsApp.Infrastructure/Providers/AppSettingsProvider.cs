@@ -16,7 +16,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     /// <inheritdoc/>
     public bool GetShowUnitsInInches()
     {
-        var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == DisplayUnitsKey).FirstOrDefault();
+        var setting = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == DisplayUnitsKey);
 
         if (setting is null)
         {
@@ -30,7 +30,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     public void SetShowUnitsInInches(bool showUnitsInInches)
     {
         var value = showUnitsInInches ? DisplayUnitsInches : DisplayUnitsCentimeters;
-        var existing = sqliteRepository.GetAll<AppSetting>(x => x.Key == DisplayUnitsKey).FirstOrDefault();
+        var existing = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == DisplayUnitsKey);
 
         if (existing is null)
         {
@@ -49,7 +49,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     /// <inheritdoc/>
     public string GetFeedbackApiEndpoint()
     {
-        var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == FeedbackApiEndpointKey).FirstOrDefault();
+        var setting = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == FeedbackApiEndpointKey);
 
         return setting?.Value?.Trim() ?? string.Empty;
     }
@@ -58,7 +58,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     public void SetFeedbackApiEndpoint(string endpoint)
     {
         var sanitizedValue = endpoint?.Trim() ?? string.Empty;
-        var existing = sqliteRepository.GetAll<AppSetting>(x => x.Key == FeedbackApiEndpointKey).FirstOrDefault();
+        var existing = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == FeedbackApiEndpointKey);
 
         if (existing is null)
         {
@@ -77,7 +77,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     /// <inheritdoc/>
     public DateTimeOffset? GetStartupUpdateLastAttemptUtc()
     {
-        var setting = sqliteRepository.GetAll<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey).FirstOrDefault();
+        var setting = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey);
 
         if (setting is null || string.IsNullOrWhiteSpace(setting.Value))
         {
@@ -100,7 +100,7 @@ public sealed class AppSettingsProvider(ISQLiteRepository sqliteRepository) : IA
     public void SetStartupUpdateLastAttemptUtc(DateTimeOffset attemptedAtUtc)
     {
         var value = attemptedAtUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-        var existing = sqliteRepository.GetAll<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey).FirstOrDefault();
+        var existing = sqliteRepository.FirstOrDefault<AppSetting>(x => x.Key == StartupUpdateLastAttemptUtcKey);
 
         if (existing is null)
         {

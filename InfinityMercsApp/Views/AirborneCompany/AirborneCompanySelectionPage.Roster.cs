@@ -59,6 +59,8 @@ public partial class AirborneCompanySelectionPage
             FormatMoveValue,
             peripheralStats);
 
+        var isLeftSlotEntry = IsLeftSlotUnit(_selectedUnit);
+
         AddMercsCompanyEntryCore(
             entry,
             MercsCompanyEntries,
@@ -66,6 +68,11 @@ public partial class AirborneCompanySelectionPage
             UpdateMercsCompanyTotal,
             ApplyLieutenantVisualStates,
             () => _ = ApplyUnitVisibilityFiltersAsync());
+
+        if (isLeftSlotEntry)
+        {
+            SetActiveSlot(1);
+        }
     }
 
     private PeripheralMercsCompanyStats? BuildMercsCompanyPeripheralStats(ViewerProfileItem profile)

@@ -32,14 +32,30 @@ public interface ISQLiteRepository
     public T? GetById<T>(int id) where T: new();
 
     /// <summary>
-    /// Gets all recrds from a SQLite table, optionally applying a filter and orderBy.
+    /// Gets all records from a SQLite table, optionally applying a filter and orderBy.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="filter"></param>
-    /// <param name="orderBy"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
     public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, object>>? orderBy = null) where T: new();
+
+    /// <summary>
+    /// Gets up to <paramref name="limit"/> records from a SQLite table, applying a filter and optional orderBy.
+    /// The LIMIT is applied at the SQL level.
+    /// </summary>
+    public IReadOnlyList<T> GetAll<T>(Expression<Func<T, bool>> filter, Expression<Func<T, object>>? orderBy, int limit) where T : new();
+
+    /// <summary>
+    /// Gets the first record matching the filter, or null. Uses SQL LIMIT 1.
+    /// </summary>
+    public T? FirstOrDefault<T>(Expression<Func<T, bool>> filter) where T : new();
+
+    /// <summary>
+    /// Returns the count of records matching the filter. Uses SQL COUNT.
+    /// </summary>
+    public int Count<T>(Expression<Func<T, bool>> filter) where T : new();
+
+    /// <summary>
+    /// Returns true if any record matches the filter. Uses SQL COUNT with LIMIT.
+    /// </summary>
+    public bool Exists<T>(Expression<Func<T, bool>> filter) where T : new();
 
     /// <summary>
     /// Deletes all records from a SQLite table by filter.

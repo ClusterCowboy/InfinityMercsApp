@@ -148,34 +148,33 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
                     continue;
                 }
 
-                var existingSkills = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
-                var existingEquipment = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
-                var existingWeapons = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
-                var existingUnits = sqliteRepository.GetAll<SpecopsSkill>(x => true).Count();
-
-                var existingCount = existingSkills + existingEquipment + existingWeapons + existingUnits;
+                var fid = snapshot.FactionId;
+                var hasExistingData = sqliteRepository.Exists<SpecopsSkill>(x => x.FactionId == fid)
+                    || sqliteRepository.Exists<SpecopsEquipment>(x => x.FactionId == fid)
+                    || sqliteRepository.Exists<SpecopsWeapon>(x => x.FactionId == fid)
+                    || sqliteRepository.Exists<SpecopsUnit>(x => x.FactionId == fid);
 
                 var fallbackSpecops = snapshot.IsJsaFaction ? yuJingSpecops : default;
                 var shouldForceReindexForJsa = snapshot.IsJsaFaction && HasAnySpecopsArray(fallbackSpecops);
 
-                if (existingCount > 0 && !shouldForceReindexForJsa)
+                if (hasExistingData && !shouldForceReindexForJsa)
                 {
                     continue;
                 }
 
                 using var specopsDoc = JsonDocument.Parse(snapshot.SpecopsJson);
                 var specopsRoot = specopsDoc.RootElement;
-                var skillRows = BuildSpecopsSkillRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
-                var equipRows = BuildSpecopsEquipRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
-                var weaponRows = BuildSpecopsWeaponRecords(snapshot.FactionId, specopsRoot, fallbackSpecops);
-                var unitRows = BuildSpecopsUnitRecords(snapshot.FactionId, specopsRoot);
+                var skillRows = BuildSpecopsSkillRecords(fid, specopsRoot, fallbackSpecops);
+                var equipRows = BuildSpecopsEquipRecords(fid, specopsRoot, fallbackSpecops);
+                var weaponRows = BuildSpecopsWeaponRecords(fid, specopsRoot, fallbackSpecops);
+                var unitRows = BuildSpecopsUnitRecords(fid, specopsRoot);
 
-                if (existingCount > 0)
+                if (hasExistingData)
                 {
-                    sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == snapshot.FactionId);
-                    sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == snapshot.FactionId);
-                    sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == snapshot.FactionId);
-                    sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == snapshot.FactionId);
+                    sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == fid);
+                    sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == fid);
+                    sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == fid);
+                    sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == fid);
                 }
 
                 sqliteRepository.Insert(skillRows);

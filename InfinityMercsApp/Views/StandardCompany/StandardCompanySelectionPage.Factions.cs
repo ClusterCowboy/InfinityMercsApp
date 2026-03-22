@@ -70,7 +70,24 @@ public partial class StandardCompanySelectionPage
             factionChanged,
             AutoSelectEmptySlot,
             ResetMercsCompany,
-            () => LoadUnitsForActiveSlotAsync());
+            () => LoadUnitsForActiveSlotAsync(),
+            onAssignmentCompleted: () =>
+            {
+                if (AllFactionSlotsFilled())
+                {
+                    IsFactionSelectionActive = false;
+                }
+            });
+    }
+
+    private bool AllFactionSlotsFilled()
+    {
+        if (_factionSelectionState.LeftSlotFaction is null)
+        {
+            return false;
+        }
+
+        return !ShowRightSelectionBox || _factionSelectionState.RightSlotFaction is not null;
     }
 
     private void ResetMercsCompany()
