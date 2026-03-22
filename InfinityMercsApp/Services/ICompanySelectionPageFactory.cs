@@ -1,4 +1,5 @@
 ﻿using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.AirborneCompany;
 using InfinityMercsApp.Views.CohesiveCompany;
 using InfinityMercsApp.Views.StandardCompany;
 
@@ -8,5 +9,6 @@ public interface ICompanySelectionPageFactory
 {
     StandardCompanySelectionPage CreateStandard(ArmySourceSelectionMode mode);
     CohesiveCompanySelectionPage CreateCohesive(ArmySourceSelectionMode mode);
+    AirborneCompanySelectionPage CreateAirborne();
 }
 

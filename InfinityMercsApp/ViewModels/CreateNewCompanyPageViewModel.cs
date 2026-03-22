@@ -35,10 +35,9 @@ public partial class CreateNewCompanyPageViewModel(
     }
 
     [RelayCommand]
-    private Task OpenAirborneCompanyPage()
+    private async Task OpenAirborneCompanyPageAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] Airborne Company selected.");
-        return Task.CompletedTask;
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateAirborne());
     }
 
     [RelayCommand]

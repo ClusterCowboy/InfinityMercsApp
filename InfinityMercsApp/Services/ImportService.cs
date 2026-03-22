@@ -13,7 +13,8 @@ internal class ImportService(
     IMetadataProvider metadataProvider,
     IArmyImportProvider armyImportProvider,
     IAppSettingsProvider appSettingsProvider,
-    FactionLogoCacheService factionLogoCacheService) : IImportService
+    FactionLogoCacheService factionLogoCacheService,
+    IAirborneCompanyFactionGenerator airborneCompanyFactionGenerator) : IImportService
 {
     private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
 
@@ -221,6 +222,16 @@ internal class ImportService(
             }
         }
 
+        yield return new(true, "Generating synthetic Airborne Company faction...");
+        try
+        {
+            await airborneCompanyFactionGenerator.GenerateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync Airborne Company generation failed: {ex.Message}");
+        }
+
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");
     }
 
@@ -266,8 +277,15 @@ internal class ImportService(
         appSettingsProvider.SetStartupUpdateLastAttemptUtc(DateTimeOffset.UtcNow);
     }
 
+    private static readonly HashSet<int> SuppressedFactionIds = [901];
+
     private async Task<FactionDownloadResult> DownloadFactionAsync(FactionTarget faction)
     {
+        if (SuppressedFactionIds.Contains(faction.Id))
+        {
+            return new FactionDownloadResult(faction, null, null, DownloadStatus.NoData);
+        }
+
         try
         {
             var latestArmy = await infinityArmyAPI.GetArmyDataAsync(faction.Id);
