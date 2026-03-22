@@ -356,6 +356,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     savedEquipment = AppendChoices(savedEquipment, captainEquipmentChoices);
                 }
 
+                var logoSourceFactionId = ResolveLogoSourceFactionId(entry);
+                var logoSourceUnitId = ResolveLogoSourceUnitId(entry);
+
                 CompanyUnits.Add(new CompanyViewerUnitListItem
                 {
                     Name = displayName,
@@ -375,9 +378,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId),
-                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(entry.SourceFactionId, entry.SourceUnitId)
-                        ?? $"SVGCache/units/{entry.SourceFactionId}-{entry.SourceUnitId}.svg"
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
+                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
+                        ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg"
                 });
             }
 
@@ -504,6 +507,16 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private static bool IsDashOrEmpty(string? text)
     {
         return string.IsNullOrWhiteSpace(text) || text.Trim() == "-";
+    }
+
+    private static int ResolveLogoSourceFactionId(SavedCompanyEntry entry)
+    {
+        return entry.LogoSourceFactionId > 0 ? entry.LogoSourceFactionId : entry.SourceFactionId;
+    }
+
+    private static int ResolveLogoSourceUnitId(SavedCompanyEntry entry)
+    {
+        return entry.LogoSourceUnitId > 0 ? entry.LogoSourceUnitId : entry.SourceUnitId;
     }
 
     private static FormattedString BuildSimpleFormatted(string? text, Color color)

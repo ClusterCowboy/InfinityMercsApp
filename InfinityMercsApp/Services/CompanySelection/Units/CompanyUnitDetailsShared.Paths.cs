@@ -95,4 +95,27 @@ internal static partial class CompanyUnitDetailsShared
 
         return list;
     }
+
+    /// <summary>
+    /// Returns only the faction assigned to the currently active slot.
+    /// When <paramref name="activeSlotIndex"/> is 0, the left slot faction is returned;
+    /// when 1, the right slot faction is returned.
+    /// This is used by company types where each slot displays its own independent unit list
+    /// (e.g. Airborne Company, Inspiring Company), as opposed to company types that merge both slots' units together.
+    /// </summary>
+    internal static List<TFaction> BuildUnitSourceFactionsForActiveSlot<TFaction>(
+        int activeSlotIndex,
+        TFaction? leftSlotFaction,
+        TFaction? rightSlotFaction)
+        where TFaction : class
+    {
+        var faction = activeSlotIndex switch
+        {
+            0 => leftSlotFaction,
+            1 => rightSlotFaction,
+            _ => leftSlotFaction
+        };
+
+        return faction is null ? [] : [faction];
+    }
 }

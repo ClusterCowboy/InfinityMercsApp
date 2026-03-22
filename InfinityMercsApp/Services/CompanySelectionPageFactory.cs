@@ -1,6 +1,7 @@
 ﻿using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.CohesiveCompany;
+using InfinityMercsApp.Views.InspiringCompany;
 using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.Services;
@@ -50,6 +51,18 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
     {
         return new CohesiveCompanySelectionPage(
             mode,
+            _metadataProvider,
+            _factionProvider,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
+            _factionLogoCacheService,
+            _appSettingsProvider,
+            _armyDataService);
+    }
+
+    public InspiringCompanySelectionPage CreateInspiring()
+    {
+        return new InspiringCompanySelectionPage(
             _metadataProvider,
             _factionProvider,
             _specOpsProvider,

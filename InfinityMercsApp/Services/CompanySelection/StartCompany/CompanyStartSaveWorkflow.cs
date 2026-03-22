@@ -130,6 +130,8 @@ internal static class CompanyStartSaveWorkflow
                     ProfileKey = entry.ProfileKey,
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
+                    LogoSourceFactionId = entry.LogoSourceFactionId,
+                    LogoSourceUnitId = entry.LogoSourceUnitId,
                     Cost = entry.CostValue,
                     IsLieutenant = entry.IsLieutenant,
                     SavedEquipment = entry.SavedEquipment,

@@ -6,6 +6,8 @@ public abstract class CompanyUnitSelectionItemBase : BaseViewModel, IViewerListI
 {
     public int Id { get; init; }
     public int SourceFactionId { get; init; }
+    public int LogoSourceFactionId { get; init; }
+    public int LogoSourceUnitId { get; init; }
     public string? Slug { get; init; }
 
     public int? Type { get; init; }
