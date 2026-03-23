@@ -220,12 +220,32 @@ public partial class StandardCompanySelectionPage
                 });
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            TryAutoSelectFirstVisibleUnitAfterFactionLoad();
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
         }
+    }
+
+    private void TryAutoSelectFirstVisibleUnitAfterFactionLoad()
+    {
+        if (!_autoSelectUnitAfterFactionLoad || _selectedUnit is not null)
+        {
+            return;
+        }
+
+        var firstVisibleUnit = Units.FirstOrDefault(x => x.IsVisible);
+        if (firstVisibleUnit is null)
+        {
+            _autoSelectUnitAfterFactionLoad = false;
+            return;
+        }
+
+        SetSelectedUnit(firstVisibleUnit);
+        IsFactionSelectionActive = false;
+        _autoSelectUnitAfterFactionLoad = false;
     }
 
     /// <summary>

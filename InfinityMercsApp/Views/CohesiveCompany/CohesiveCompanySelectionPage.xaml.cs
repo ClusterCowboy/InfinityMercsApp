@@ -47,6 +47,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
     private bool _restrictSelectedUnitProfilesToFto;
+    private bool _autoSelectUnitAfterFactionLoad;
     private bool _summaryHighlightLieutenant;
     private bool _areTeamEntriesReady;
     private readonly CompanySelectionFilterState _filterState = new();

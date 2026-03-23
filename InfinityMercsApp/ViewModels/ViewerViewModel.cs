@@ -684,8 +684,14 @@ public class ViewerViewModel : BaseViewModel
         matchedProfile ??= Profiles
             .FirstOrDefault(x => ProfileKeysMatch(x.ProfileKey, profileKey));
 
+        matchedProfile ??= FindFallbackProfileMatch(Profiles, profileKey, isLieutenant);
+
         if (matchedProfile is null)
         {
+            ResetUnitStats();
+            UnitNameHeading = unitName;
+            EquipmentSummary = "Equipment: -";
+            SpecialSkillsSummary = "Special Skills: -";
             Profiles.Clear();
             ProfilesStatus = "Saved configuration not found for this unit.";
             return;
@@ -720,6 +726,12 @@ public class ViewerViewModel : BaseViewModel
             _currentSkillsLookup,
             _currentSkillsLinks,
             Color.FromArgb("#F59E0B"));
+    }
+
+    public void SetOrderTypeIconState(bool showRegular, bool showIrregular)
+    {
+        ShowRegularOrderIcon = showRegular;
+        ShowIrregularOrderIcon = showIrregular;
     }
 
     public void ApplyCaptainStatBonuses(
@@ -804,6 +816,141 @@ public class ViewerViewModel : BaseViewModel
             BuildLegacyProfileKey(candidateKey),
             BuildLegacyProfileKey(requestedKey),
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static ViewerProfileItem? FindFallbackProfileMatch(
+        IEnumerable<ViewerProfileItem> profiles,
+        string requestedKey,
+        bool requestedIsLieutenant)
+    {
+        if (!TryParseProfileKey(requestedKey, out var requestedGroup, out _, out var requestedCost, out var requestedSwc, out var requestedLt))
+        {
+            return null;
+        }
+
+        var parsedProfiles = profiles
+            .Select(profile =>
+            {
+                var parsed = TryParseProfileKey(profile.ProfileKey, out var group, out _, out var cost, out var swc, out var lt);
+                return new
+                {
+                    Profile = profile,
+                    Parsed = parsed,
+                    Group = group,
+                    Cost = cost,
+                    Swc = swc,
+                    Lt = lt
+                };
+            })
+            .Where(x => x.Parsed)
+            .ToList();
+
+        if (parsedProfiles.Count == 0)
+        {
+            return null;
+        }
+
+        // Preferred fallback: stable key parts that are less likely to drift than the display option name.
+        var ltTarget = requestedLt.HasValue ? (requestedLt.Value ? 1 : 0) : (requestedIsLieutenant ? 1 : 0);
+
+        var strict = parsedProfiles
+            .Where(x =>
+                string.Equals(x.Group, requestedGroup, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Cost, requestedCost, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Swc, requestedSwc, StringComparison.OrdinalIgnoreCase) &&
+                x.Lt.HasValue &&
+                (x.Lt.Value ? 1 : 0) == ltTarget)
+            .Select(x => x.Profile)
+            .ToList();
+        if (strict.Count == 1)
+        {
+            return strict[0];
+        }
+
+        var byGroupCostSwc = parsedProfiles
+            .Where(x =>
+                string.Equals(x.Group, requestedGroup, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Cost, requestedCost, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Swc, requestedSwc, StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.Profile)
+            .ToList();
+        if (byGroupCostSwc.Count == 1)
+        {
+            return byGroupCostSwc[0];
+        }
+
+        var byCostSwcLt = parsedProfiles
+            .Where(x =>
+                string.Equals(x.Cost, requestedCost, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Swc, requestedSwc, StringComparison.OrdinalIgnoreCase) &&
+                x.Lt.HasValue &&
+                (x.Lt.Value ? 1 : 0) == ltTarget)
+            .Select(x => x.Profile)
+            .ToList();
+        if (byCostSwcLt.Count == 1)
+        {
+            return byCostSwcLt[0];
+        }
+
+        var byCostSwc = parsedProfiles
+            .Where(x =>
+                string.Equals(x.Cost, requestedCost, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.Swc, requestedSwc, StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.Profile)
+            .ToList();
+        return byCostSwc.Count == 1 ? byCostSwc[0] : null;
+    }
+
+    private static bool TryParseProfileKey(
+        string profileKey,
+        out string groupName,
+        out string optionName,
+        out string cost,
+        out string swc,
+        out bool? isLieutenant)
+    {
+        groupName = string.Empty;
+        optionName = string.Empty;
+        cost = string.Empty;
+        swc = string.Empty;
+        isLieutenant = null;
+
+        if (string.IsNullOrWhiteSpace(profileKey))
+        {
+            return false;
+        }
+
+        var parts = profileKey.Split('|');
+        if (parts.Length < 4)
+        {
+            return false;
+        }
+
+        groupName = parts[0].Trim();
+        optionName = parts[1].Trim();
+        cost = parts[2].Trim();
+        swc = parts[3].Trim();
+
+        if (parts.Length >= 5)
+        {
+            var ltPart = parts[4].Trim();
+            if (ltPart.StartsWith("lt:", StringComparison.OrdinalIgnoreCase))
+            {
+                var ltValue = ltPart[3..].Trim();
+                if (ltValue == "1")
+                {
+                    isLieutenant = true;
+                }
+                else if (ltValue == "0")
+                {
+                    isLieutenant = false;
+                }
+            }
+        }
+
+        return !string.IsNullOrWhiteSpace(groupName) &&
+               !string.IsNullOrWhiteSpace(cost) &&
+               !string.IsNullOrWhiteSpace(swc);
     }
 
     private static string BuildLegacyProfileKey(string profileKey)
@@ -4136,6 +4283,9 @@ public class ViewerProfileItem : BaseViewModel
     public bool HasPeripheralEquipmentLine { get; init; }
     public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
     public bool HasPeripheralSkillsLine { get; init; }
+    public bool PeripheralGrantsFtMaster { get; init; }
+    public bool PeripheralIsIrregular { get; init; }
+    public string PeripheralUnitName { get; init; } = string.Empty;
 
     public string Swc { get; init; } = "-";
 

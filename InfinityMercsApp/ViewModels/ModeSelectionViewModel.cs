@@ -16,6 +16,6 @@ public partial class ModeSelectionViewModel(INavigationService navigationService
     [RelayCommand]
     public async Task NavigateToLoadArmyAsync()
     {
-        await Shell.Current.GoToAsync(nameof(LoadCompanyPage));
+        await NavigationService.NavigateToAsync(nameof(LoadCompanyPage));
     }
 }

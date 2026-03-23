@@ -46,6 +46,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
     private bool _summaryHighlightLieutenant;
+    private bool _autoSelectUnitAfterFactionLoad;
     private readonly CompanySelectionFilterState _filterState = new();
 
     public StandardCompanySelectionPage(
