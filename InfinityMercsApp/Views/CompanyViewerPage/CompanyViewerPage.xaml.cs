@@ -341,11 +341,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
                     ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
                     : entry.BaseUnitName;
-                var defaultDisplayName = entry.IsLieutenant ? captainDisplayName : "Trooper";
+                var defaultDisplayName = entry.IsLieutenant ? captainDisplayName : baseUnitName;
                 var displayName = string.IsNullOrWhiteSpace(entry.CustomName)
                     ? defaultDisplayName
                     : entry.CustomName.Trim();
-                var subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty;
+                var subtitle = entry.IsPeripheralUnit
+                    ? "Peripheral"
+                    : (entry.IsLieutenant ? "Lieutenant" : string.Empty);
                 var savedRangedWeapons = entry.SavedRangedWeapons;
                 var savedSkills = entry.SavedSkills;
                 var savedEquipment = entry.SavedEquipment;
@@ -369,6 +371,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     ProfileKey = entry.ProfileKey,
+                    IsPeripheralUnit = entry.IsPeripheralUnit,
                     IsLieutenant = entry.IsLieutenant,
                     Cost = entry.Cost,
                     SavedEquipment = savedEquipment,
@@ -944,7 +947,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var fallback = string.IsNullOrWhiteSpace(SelectedCaptainNameHeading)
-            ? (_selectedCompanyUnit.IsLieutenant ? "Captain" : "Trooper")
+            ? (_selectedCompanyUnit.IsPeripheralUnit
+                ? (_selectedCompanyUnit.BaseUnitName ?? "Peripheral")
+                : (_selectedCompanyUnit.IsLieutenant ? "Captain" : (_selectedCompanyUnit.BaseUnitName ?? "Unit")))
             : SelectedCaptainNameHeading;
         var normalized = string.IsNullOrWhiteSpace(SelectedNameEntry.Text)
             ? fallback
@@ -1421,6 +1426,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
+    public bool IsPeripheralUnit { get; init; }
     public bool IsLieutenant { get; init; }
     public int Cost { get; init; }
     public string SavedEquipment { get; init; } = "-";

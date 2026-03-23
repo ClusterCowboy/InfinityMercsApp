@@ -12,6 +12,8 @@ public abstract class CompanySavedCompanyEntryBase
     public int SourceUnitId { get; init; }
     public int LogoSourceFactionId { get; init; }
     public int LogoSourceUnitId { get; init; }
+    public bool IsPeripheralUnit { get; init; }
+    public int? ParentEntryIndex { get; init; }
     public int Cost { get; init; }
     public bool IsLieutenant { get; init; }
     public string SavedEquipment { get; init; } = "-";

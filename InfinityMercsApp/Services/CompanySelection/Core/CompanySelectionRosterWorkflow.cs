@@ -116,6 +116,17 @@ internal static class CompanySelectionRosterWorkflow
         var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = CompanyProfileTextService.JoinOrDash(combinedEquipment);
         var combinedSkillsText = CompanyProfileTextService.JoinOrDash(combinedSkills);
+        var peripheralSkillsText = peripheralStats?.Skills ?? "-";
+        if (profile.PeripheralIsIrregular)
+        {
+            var peripheralSkillLines = CompanyProfileTextService.SplitDisplayLine(peripheralSkillsText).ToList();
+            if (!peripheralSkillLines.Any(x => string.Equals(x, "Irregular", StringComparison.OrdinalIgnoreCase)))
+            {
+                peripheralSkillLines.Add("Irregular");
+            }
+
+            peripheralSkillsText = CompanyProfileTextService.JoinOrDash(peripheralSkillLines);
+        }
         var currentUnitMove = formatMoveValue(unitMoveFirstCm, unitMoveSecondCm);
         var statline =
             $"MOV {unitMov} | CC {unitCc} | BS {unitBs} | PH {unitPh} | WIP {unitWip} | ARM {unitArm} | BTS {unitBts} | {unitVitalityHeader} {unitVitality} | S {unitS}";
@@ -162,15 +173,15 @@ internal static class CompanySelectionRosterWorkflow
             PeripheralS = peripheralStats?.S ?? "-",
             PeripheralAva = peripheralStats?.Ava ?? "-",
             SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
-            SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
+            SavedPeripheralSkills = peripheralSkillsText,
             PeripheralEquipmentLineFormatted =
                 CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine =
                 peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
             PeripheralSkillsLineFormatted =
-                CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralStats?.Skills, Color.FromArgb("#F59E0B")),
+                CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralSkillsText, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine =
-                peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Skills) && peripheralStats.Skills != "-",
+                peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralSkillsText) && peripheralSkillsText != "-",
             UnitMoveFirstCm = unitMoveFirstCm,
             UnitMoveSecondCm = unitMoveSecondCm,
             UnitMoveDisplay = currentUnitMove,

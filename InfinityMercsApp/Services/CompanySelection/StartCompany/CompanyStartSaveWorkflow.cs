@@ -117,45 +117,7 @@ internal static class CompanyStartSaveWorkflow
                     FactionName = faction.Name
                 })
                 .ToList(),
-            Entries = entries
-                .Select((entry, entryIndex) => new
-                {
-                    EntryIndex = entryIndex,
-                    Name = entry.Name,
-                    BaseUnitName = entry.Name,
-                    CustomName = entry.IsLieutenant ? normalizedCaptainName : "Trooper",
-                    UnitTypeCode = string.IsNullOrWhiteSpace(entry.UnitTypeCode)
-                        ? string.Empty
-                        : entry.UnitTypeCode.Trim().ToUpperInvariant(),
-                    ProfileKey = entry.ProfileKey,
-                    SourceFactionId = entry.SourceFactionId,
-                    SourceUnitId = entry.SourceUnitId,
-                    LogoSourceFactionId = entry.LogoSourceFactionId,
-                    LogoSourceUnitId = entry.LogoSourceUnitId,
-                    Cost = entry.CostValue,
-                    IsLieutenant = entry.IsLieutenant,
-                    SavedEquipment = entry.SavedEquipment,
-                    SavedSkills = entry.SavedSkills,
-                    SavedRangedWeapons = entry.SavedRangedWeapons,
-                    SavedCcWeapons = entry.SavedCcWeapons,
-                    HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
-                    PeripheralNameHeading = entry.PeripheralNameHeading,
-                    PeripheralMov = entry.PeripheralMov,
-                    PeripheralCc = entry.PeripheralCc,
-                    PeripheralBs = entry.PeripheralBs,
-                    PeripheralPh = entry.PeripheralPh,
-                    PeripheralWip = entry.PeripheralWip,
-                    PeripheralArm = entry.PeripheralArm,
-                    PeripheralBts = entry.PeripheralBts,
-                    PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
-                    PeripheralVitality = entry.PeripheralVitality,
-                    PeripheralS = entry.PeripheralS,
-                    PeripheralAva = entry.PeripheralAva,
-                    SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
-                    SavedPeripheralSkills = entry.SavedPeripheralSkills,
-                    ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
-                })
-                .ToList()
+            Entries = BuildSerializedEntries(entries, normalizedCaptainName)
         };
 
         var filePath = Path.Combine(saveDir, fileName);
@@ -164,6 +126,181 @@ internal static class CompanyStartSaveWorkflow
             JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
 
         await request.NavigateToCompanyViewerAsync(filePath);
+    }
+
+    private static List<SerializedCompanyEntry> BuildSerializedEntries<TEntry>(
+        IList<TEntry> entries,
+        string normalizedCaptainName)
+        where TEntry : class, ICompanyMercsEntry
+    {
+        var result = new List<SerializedCompanyEntry>(entries.Count * 2);
+        var entryIndex = 0;
+
+        foreach (var entry in entries)
+        {
+            var primaryEntryIndex = entryIndex++;
+            result.Add(CreatePrimaryEntry(entry, primaryEntryIndex, normalizedCaptainName));
+
+            if (!entry.HasPeripheralStatBlock)
+            {
+                continue;
+            }
+
+            result.Add(CreatePeripheralEntry(entry, entryIndex++, primaryEntryIndex));
+        }
+
+        return result;
+    }
+
+    private static SerializedCompanyEntry CreatePrimaryEntry<TEntry>(
+        TEntry entry,
+        int entryIndex,
+        string normalizedCaptainName)
+        where TEntry : class, ICompanyMercsEntry
+    {
+        return new SerializedCompanyEntry
+        {
+            EntryIndex = entryIndex,
+            Name = entry.Name,
+            BaseUnitName = entry.Name,
+            CustomName = entry.IsLieutenant ? normalizedCaptainName : entry.Name,
+            UnitTypeCode = string.IsNullOrWhiteSpace(entry.UnitTypeCode)
+                ? string.Empty
+                : entry.UnitTypeCode.Trim().ToUpperInvariant(),
+            ProfileKey = entry.ProfileKey,
+            SourceFactionId = entry.SourceFactionId,
+            SourceUnitId = entry.SourceUnitId,
+            LogoSourceFactionId = entry.LogoSourceFactionId,
+            LogoSourceUnitId = entry.LogoSourceUnitId,
+            IsPeripheralUnit = false,
+            ParentEntryIndex = null,
+            Cost = entry.CostValue,
+            IsLieutenant = entry.IsLieutenant,
+            SavedEquipment = entry.SavedEquipment,
+            SavedSkills = entry.SavedSkills,
+            SavedRangedWeapons = entry.SavedRangedWeapons,
+            SavedCcWeapons = entry.SavedCcWeapons,
+            HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
+            PeripheralNameHeading = entry.PeripheralNameHeading,
+            PeripheralMov = entry.PeripheralMov,
+            PeripheralCc = entry.PeripheralCc,
+            PeripheralBs = entry.PeripheralBs,
+            PeripheralPh = entry.PeripheralPh,
+            PeripheralWip = entry.PeripheralWip,
+            PeripheralArm = entry.PeripheralArm,
+            PeripheralBts = entry.PeripheralBts,
+            PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
+            PeripheralVitality = entry.PeripheralVitality,
+            PeripheralS = entry.PeripheralS,
+            PeripheralAva = entry.PeripheralAva,
+            SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
+            SavedPeripheralSkills = entry.SavedPeripheralSkills,
+            ExperiencePoints = Math.Max(0, entry.ExperiencePoints)
+        };
+    }
+
+    private static SerializedCompanyEntry CreatePeripheralEntry<TEntry>(
+        TEntry entry,
+        int entryIndex,
+        int parentEntryIndex)
+        where TEntry : class, ICompanyMercsEntry
+    {
+        var peripheralName = ResolvePeripheralEntryName(entry.PeripheralNameHeading, entry.Name);
+        return new SerializedCompanyEntry
+        {
+            EntryIndex = entryIndex,
+            Name = peripheralName,
+            BaseUnitName = peripheralName,
+            CustomName = peripheralName,
+            UnitTypeCode = "PERIPHERAL",
+            ProfileKey = $"{entry.ProfileKey}|peripheral",
+            SourceFactionId = entry.SourceFactionId,
+            SourceUnitId = entry.SourceUnitId,
+            LogoSourceFactionId = entry.LogoSourceFactionId,
+            LogoSourceUnitId = entry.LogoSourceUnitId,
+            IsPeripheralUnit = true,
+            ParentEntryIndex = parentEntryIndex,
+            Cost = 0,
+            IsLieutenant = false,
+            SavedEquipment = entry.SavedPeripheralEquipment,
+            SavedSkills = entry.SavedPeripheralSkills,
+            SavedRangedWeapons = "-",
+            SavedCcWeapons = "-",
+            HasPeripheralStatBlock = false,
+            PeripheralNameHeading = string.Empty,
+            PeripheralMov = "-",
+            PeripheralCc = "-",
+            PeripheralBs = "-",
+            PeripheralPh = "-",
+            PeripheralWip = "-",
+            PeripheralArm = "-",
+            PeripheralBts = "-",
+            PeripheralVitalityHeader = "VITA",
+            PeripheralVitality = "-",
+            PeripheralS = "-",
+            PeripheralAva = "-",
+            SavedPeripheralEquipment = "-",
+            SavedPeripheralSkills = "-",
+            ExperiencePoints = 0
+        };
+    }
+
+    private static string ResolvePeripheralEntryName(string? peripheralHeading, string fallbackUnitName)
+    {
+        if (!string.IsNullOrWhiteSpace(peripheralHeading))
+        {
+            var heading = peripheralHeading.Trim();
+            const string prefix = "Peripheral:";
+            if (heading.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                heading = heading[prefix.Length..].Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(heading))
+            {
+                return heading;
+            }
+        }
+
+        return $"{fallbackUnitName} Peripheral";
+    }
+
+    private sealed class SerializedCompanyEntry
+    {
+        public int EntryIndex { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public string BaseUnitName { get; init; } = string.Empty;
+        public string CustomName { get; init; } = string.Empty;
+        public string UnitTypeCode { get; init; } = string.Empty;
+        public string ProfileKey { get; init; } = string.Empty;
+        public int SourceFactionId { get; init; }
+        public int SourceUnitId { get; init; }
+        public int LogoSourceFactionId { get; init; }
+        public int LogoSourceUnitId { get; init; }
+        public bool IsPeripheralUnit { get; init; }
+        public int? ParentEntryIndex { get; init; }
+        public int Cost { get; init; }
+        public bool IsLieutenant { get; init; }
+        public string SavedEquipment { get; init; } = "-";
+        public string SavedSkills { get; init; } = "-";
+        public string SavedRangedWeapons { get; init; } = "-";
+        public string SavedCcWeapons { get; init; } = "-";
+        public bool HasPeripheralStatBlock { get; init; }
+        public string PeripheralNameHeading { get; init; } = string.Empty;
+        public string PeripheralMov { get; init; } = "-";
+        public string PeripheralCc { get; init; } = "-";
+        public string PeripheralBs { get; init; } = "-";
+        public string PeripheralPh { get; init; } = "-";
+        public string PeripheralWip { get; init; } = "-";
+        public string PeripheralArm { get; init; } = "-";
+        public string PeripheralBts { get; init; } = "-";
+        public string PeripheralVitalityHeader { get; init; } = "VITA";
+        public string PeripheralVitality { get; init; } = "-";
+        public string PeripheralS { get; init; } = "-";
+        public string PeripheralAva { get; init; } = "-";
+        public string SavedPeripheralEquipment { get; init; } = "-";
+        public string SavedPeripheralSkills { get; init; } = "-";
+        public int ExperiencePoints { get; init; }
     }
 }
 

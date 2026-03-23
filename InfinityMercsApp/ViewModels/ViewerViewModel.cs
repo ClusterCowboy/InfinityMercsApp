@@ -686,6 +686,10 @@ public class ViewerViewModel : BaseViewModel
 
         if (matchedProfile is null)
         {
+            ResetUnitStats();
+            UnitNameHeading = unitName;
+            EquipmentSummary = "Equipment: -";
+            SpecialSkillsSummary = "Special Skills: -";
             Profiles.Clear();
             ProfilesStatus = "Saved configuration not found for this unit.";
             return;
@@ -4136,6 +4140,9 @@ public class ViewerProfileItem : BaseViewModel
     public bool HasPeripheralEquipmentLine { get; init; }
     public FormattedString PeripheralSkillsLineFormatted { get; init; } = new();
     public bool HasPeripheralSkillsLine { get; init; }
+    public bool PeripheralGrantsFtMaster { get; init; }
+    public bool PeripheralIsIrregular { get; init; }
+    public string PeripheralUnitName { get; init; } = string.Empty;
 
     public string Swc { get; init; } = "-";
 
