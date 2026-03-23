@@ -101,7 +101,7 @@ internal static partial class CompanyUnitDetailsShared
     /// When <paramref name="activeSlotIndex"/> is 0, the left slot faction is returned;
     /// when 1, the right slot faction is returned.
     /// This is used by company types where each slot displays its own independent unit list
-    /// (e.g. Airborne Company), as opposed to company types that merge both slots' units together.
+    /// (e.g. Airborne Company, Inspiring Company), as opposed to company types that merge both slots' units together.
     /// </summary>
     internal static List<TFaction> BuildUnitSourceFactionsForActiveSlot<TFaction>(
         int activeSlotIndex,

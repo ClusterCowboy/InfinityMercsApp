@@ -95,7 +95,7 @@ public abstract partial class CompanySelectionPageBase
         Func<TCaptainStats, string?> readCaptainName)
         where TFaction : class, ICompanySourceFaction
         where TEntry : class, ICompanyMercsEntry
-        where TCaptainStats : class
+        where TCaptainStats : CompanySavedImprovedCaptainStatsBase
     {
         await CompanyStartExecutionWorkflow.ExecuteAsync<TFaction, TEntry, TCaptainStats>(
             new CompanyStartExecutionRequest<TFaction, TEntry, TCaptainStats>

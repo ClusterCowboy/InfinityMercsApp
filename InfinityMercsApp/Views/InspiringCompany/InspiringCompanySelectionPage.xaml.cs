@@ -1,64 +1,41 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Windows.Input;
-using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.Common.UICommon;
-using Microsoft.Maui.Devices;
-using SkiaSharp;
+using InfinityMercsApp.Views.Common;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
-using Svg.Skia;
-using InfinityMercsApp.Views;
-using InfinityMercsApp.Views.Common;
 using ArmyFactionRecord = InfinityMercsApp.Domain.Models.Army.Faction;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
-using ArmySpecopsEquipRecord = InfinityMercsApp.Domain.Models.Army.SpecopsEquipment;
-using ArmySpecopsSkillRecord = InfinityMercsApp.Domain.Models.Army.SpecopsSkill;
-using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
-using ArmySpecopsWeaponRecord = InfinityMercsApp.Domain.Models.Army.SpecopsWeapon;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
-using CCFactionFireteamValidityRecord = InfinityMercsApp.Domain.Models.Army.CCFactionFireteamValidityRecord;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
+using InfinityMercsApp.Views.Common.UICommon;
 
-namespace InfinityMercsApp.Views.CohesiveCompany;
+namespace InfinityMercsApp.Views.InspiringCompany;
 
-public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, ICompanySelectionVisibilityState
+public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, ICompanySelectionVisibilityState
 {
-    private readonly ArmySourceSelectionMode _mode;
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly CompanyProfileCoordinator _profileCoordinator;
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
     private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
-    private int _activeSlotIndex;
     private bool _loaded;
-    private string _pageHeading = string.Empty;
     private ArmyUnitSelectionItem? _selectedUnit;
-    private bool _restrictSelectedUnitProfilesToFto;
-    private bool _autoSelectUnitAfterFactionLoad;
     private bool _summaryHighlightLieutenant;
-    private bool _areTeamEntriesReady;
+    private int _activeSlotIndex;
     private readonly CompanySelectionFilterState _filterState = new();
-    private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
-    private string _trackedFireteamName = string.Empty;
-    private int _trackedFireteamLevel;
-    private SKPicture? _trackedFireteamLevelPicture;
-    private bool _isUpdatingTrackedTeamSelection;
 
-    public CohesiveCompanySelectionPage(
-        ArmySourceSelectionMode mode,
+    public InspiringCompanySelectionPage(
         IMetadataProvider? metadataProvider,
         IFactionProvider? factionProvider,
         ISpecOpsProvider specOpsProvider,
@@ -66,23 +43,23 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider,
         IArmyDataService armyDataService)
-        : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
+        : base(ArmySourceSelectionMode.Sectorials, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
         SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
         SetIsUnitFilterActive(true);
-        WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
-        _mode = Mode;
-        Title = "Choose your sectorial:";
-        PageHeading = "Choose your sectorial:";
+        _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = true };
+        WireFactionSlotTapHandlers(SetActiveSlot, () => true);
+        Title = "Choose your sectorial";
 
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
+        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = CreateSelectFactionCommand<ArmyFactionSelectionItem>(SetSelectedFaction);
         SelectUnitCommand = CreateSelectUnitCommand<ArmyUnitSelectionItem>(
-            item => SetSelectedUnit(item),
+            SetSelectedUnit,
             item => item.Id,
             item => item.SourceFactionId,
             item => item.Name);
@@ -93,11 +70,11 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             HandleTeamAllowedProfileSelected(
                 teamItem,
                 Units,
-                (resolved, restrictProfiles) => SetSelectedUnit(resolved, restrictProfiles),
-                item => IsFtoLabel(item.Name)));
+                (resolved, _) => SetSelectedUnit(resolved)));
         _startCompanyCommand = CreateStartCompanyCommand(StartCompanyAsync, () => IsCompanyValid);
         StartCompanyCommand = _startCompanyCommand;
 
+        LieutenantOnlyUnits = true;
         FinalizePageInitialization(() => SetActiveSlot(0));
     }
 
@@ -114,22 +91,6 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     public ICommand SelectMercsCompanyEntryCommand { get; }
     public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
-
-    public bool ShowRightSelectionBox => false;
-    public string PageHeading
-    {
-        get => _pageHeading;
-        private set
-        {
-            if (_pageHeading == value)
-            {
-                return;
-            }
-
-            _pageHeading = value;
-            OnPropertyChanged();
-        }
-    }
 
     public string SelectedStartSeasonPoints
     {
@@ -165,6 +126,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             SeasonStartPointsView.SeasonPointsCapText = value;
             OnPropertyChanged();
             UpdateSeasonValidationState();
+            ApplyLieutenantVisualStates();
             _ = ApplyUnitVisibilityFiltersAsync();
         }
     }
@@ -233,34 +195,6 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
             OnPropertyChanged();
         }
     }
-    public string TrackedFireteamNameDisplay =>
-        string.IsNullOrWhiteSpace(_trackedFireteamName) ? "Select fireteam" : _trackedFireteamName;
-
-    public string? TrackedFireteamLevelBonusText =>
-        CohesiveCompanyFireteamLevelWorkflow.GetBonusText(_trackedFireteamLevel);
-
-    public bool HasTrackedFireteamLevelBonus =>
-        !string.IsNullOrEmpty(TrackedFireteamLevelBonusText);
-
-    public bool AreTeamEntriesReady
-    {
-        get => _areTeamEntriesReady;
-        private set
-        {
-            if (_areTeamEntriesReady == value)
-            {
-                return;
-            }
-
-            _areTeamEntriesReady = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(ShowTeamsList));
-        }
-    }
-
-    protected override bool DefaultTeamsView => true;
-    protected override bool RequireTeamEntriesReadyForTeamsList => true;
-    protected override bool AreTeamEntriesReadyForTeamsList => AreTeamEntriesReady;
 
     protected override void ApplyLieutenantVisualStatesFromBase()
     {
@@ -282,8 +216,53 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         }
 
         _loaded = true;
+        DiagnoseInspiringCompanyFaction();
+        PopulateInspiringCompanySlot();
         await LoadFactionsAsync();
     }
+
+    private void DiagnoseInspiringCompanyFaction()
+    {
+        var factionId = InspiringGen.InspiringCompanyFactionId;
+        var snapshot = _armyDataService.GetFactionSnapshot(factionId);
+        if (snapshot is null)
+        {
+            Console.WriteLine($"[InspiringCompanyDiag] Faction {factionId} NOT FOUND in database. Has data been imported since the Inspiring generator was added?");
+            return;
+        }
+
+        Console.WriteLine($"[InspiringCompanyDiag] Faction {factionId} found. Version={snapshot.Version}");
+
+        var resumes = _armyDataService.GetResumeByFactionMercsOnly(factionId);
+        Console.WriteLine($"[InspiringCompanyDiag] Resumes (mercs-only) for faction {factionId}: {resumes.Count}");
+        foreach (var r in resumes.Take(5))
+        {
+            Console.WriteLine($"[InspiringCompanyDiag]   - UnitId={r.UnitId} Name={r.Name} Slug={r.Slug} Type={r.Type} Category={r.Category}");
+        }
+
+        if (resumes.Count > 5)
+        {
+            Console.WriteLine($"[InspiringCompanyDiag]   ... and {resumes.Count - 5} more");
+        }
+    }
+
+    private void PopulateInspiringCompanySlot()
+    {
+        var inspiringItem = new ArmyFactionSelectionItem
+        {
+            Id = InspiringGen.InspiringCompanyFactionId,
+            ParentId = InspiringGen.InspiringCompanyFactionId,
+            Name = "Inspiring Company",
+            CachedLogoPath = null,
+            PackagedLogoPath = InspiringCompanyLogoPath
+        };
+
+        _factionSelectionState.RightSlotFaction = inspiringItem;
+        FactionSlotSelectorView.RightSlotText = inspiringItem.Name;
+        _ = LoadSlotIconAsync(1, null, InspiringCompanyLogoPath);
+    }
+
+    private const string InspiringCompanyLogoPath = "SVGCache/MercsIcons/noun-leadership-7195245.svg";
 
     protected override Task LoadFactionsAsync()
     {
@@ -297,17 +276,9 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
     private async Task RefreshSeasonPointsDependentUnitStateAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            _filterState.PreparedUnitFilterPopupOptions = null;
-            await LoadFactionsAsync(cancellationToken);
-            await LoadUnitsForActiveSlotAsync(cancellationToken);
-            await ApplyUnitVisibilityFiltersAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"CompanySelectionPage RefreshSeasonPointsDependentUnitStateAsync failed: {ex.Message}");
-        }
+        _filterState.PreparedUnitFilterPopupOptions = null;
+        await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+        await BuildUnitFilterPopupOptionsAsync(cancellationToken);
     }
 
     protected override Task LoadSelectedUnitDetailsAsync()
@@ -317,21 +288,35 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
     UnitFilterCriteria ICompanySelectionVisibilityState.ActiveUnitFilter => _filterState.ActiveUnitFilter;
 
-    private static bool IsFtoLabel(string? value)
+    private void SwitchToLeftSlot()
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        return Regex.IsMatch(value, @"\bFTO\b", RegexOptions.IgnoreCase);
+        _activeSlotIndex = 0;
+        FactionSlotSelectorView.ApplyActiveSlotBorders(0);
+        _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = true };
+        LieutenantOnlyUnits = true;
+        SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
     }
 
+    private void SetActiveSlot(int index)
+    {
+        var previousSlot = _activeSlotIndex;
+        _activeSlotIndex = ResolveActiveSlotIndexCore(index, true);
+        FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
+
+        var isLeftSlot = _activeSlotIndex == 0;
+        _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = isLeftSlot };
+        LieutenantOnlyUnits = isLeftSlot;
+        SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
+
+        // The Inspiring Company slot (right) is locked — always show units, never the faction picker.
+        if (!isLeftSlot)
+        {
+            IsFactionSelectionActive = false;
+        }
+
+        if (previousSlot != _activeSlotIndex && _loaded)
+        {
+            _ = LoadUnitsForActiveSlotAsync();
+        }
+    }
 }
-
-
-
-
-
-
-

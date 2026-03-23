@@ -1,35 +1,32 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
+using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
 
-namespace InfinityMercsApp.Views.StandardCompany;
+namespace InfinityMercsApp.Views.InspiringCompany;
 
-/// <summary>
-/// UI-level unit/faction selection flow: tab switching, filter popup, and source-unit list assembly.
-/// </summary>
-public partial class StandardCompanySelectionPage
+public partial class InspiringCompanySelectionPage
 {
-    /// <summary>
-    /// Handles on faction selection header tapped.
-    /// </summary>
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
+        // Always switch to the left slot when entering faction selection,
+        // because the right slot (Inspiring Company) is locked and cannot be changed.
+        if (_activeSlotIndex != 0)
+        {
+            SetActiveSlot(0);
+        }
+
         CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(value => IsFactionSelectionActive = value);
     }
 
-    /// <summary>
-    /// Handles on unit selection header tapped.
-    /// </summary>
     private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(value => IsFactionSelectionActive = value);
     }
 
-    /// <summary>
-    /// Handles on unit selection filter button tapped.
-    /// </summary>
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
@@ -45,9 +42,6 @@ public partial class StandardCompanySelectionPage
             message => Console.Error.WriteLine(message));
     }
 
-    /// <summary>
-    /// Handles on filter army applied.
-    /// </summary>
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
@@ -59,17 +53,11 @@ public partial class StandardCompanySelectionPage
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
-    /// <summary>
-    /// Handles on unit filter popup close requested.
-    /// </summary>
     private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
     }
 
-    /// <summary>
-    /// Handles close unit filter popup.
-    /// </summary>
     private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
@@ -81,17 +69,11 @@ public partial class StandardCompanySelectionPage
             UnitFilterOverlay);
     }
 
-    /// <summary>
-    /// Handles resolve unit filter popup height.
-    /// </summary>
     private double ResolveUnitFilterPopupHeight()
     {
         return CompanySelectionUnitFilterWorkflow.ResolveUnitFilterPopupHeight(this);
     }
 
-    /// <summary>
-    /// Handles on unit selection header border size changed.
-    /// </summary>
     private void OnUnitSelectionHeaderBorderSizeChanged(object? sender, EventArgs e)
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
@@ -103,15 +85,15 @@ public partial class StandardCompanySelectionPage
             ApplyFilterButtonSize);
     }
 
-    /// <summary>
-    /// Handles build unit filter popup options async.
-    /// </summary>
     private async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
     {
+        var activeSlotFaction = _activeSlotIndex == 0
+            ? _factionSelectionState.LeftSlotFaction
+            : _factionSelectionState.RightSlotFaction;
         return await CompanySelectionUnitFilterWorkflow.BuildUnitFilterPopupOptionsAsync(
-            ShowRightSelectionBox,
-            _factionSelectionState.LeftSlotFaction,
-            _factionSelectionState.RightSlotFaction,
+            false,
+            activeSlotFaction,
+            null,
             faction => faction.Id,
             (factionId, ct) => _armyDataService.GetFactionSnapshot(factionId, ct)?.FiltersJson,
             (factionIds, ct) => _armyDataService.GetMergedMercsArmyListAsync(factionIds, ct),
@@ -121,9 +103,6 @@ public partial class StandardCompanySelectionPage
             cancellationToken);
     }
 
-    /// <summary>
-    /// Handles load units for active slot async.
-    /// </summary>
     private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         _filterState.PreparedUnitFilterPopupOptions = null;
@@ -132,11 +111,10 @@ public partial class StandardCompanySelectionPage
         _selectedUnit = null;
         ResetUnitDetails();
 
-        var factions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
-            ShowRightSelectionBox,
+        var factions = CompanyUnitDetailsShared.BuildUnitSourceFactionsForActiveSlot(
+            _activeSlotIndex,
             _factionSelectionState.LeftSlotFaction,
-            _factionSelectionState.RightSlotFaction,
-            faction => faction.Id);
+            _factionSelectionState.RightSlotFaction);
         if (factions.Count == 0)
         {
             return;
@@ -152,7 +130,8 @@ public partial class StandardCompanySelectionPage
                 _armyDataService.GetFactionSnapshot,
                 async (factionId, units, ct) =>
                 {
-                    if (_factionLogoCacheService is not null)
+                    // Skip logo caching for Inspiring Company — logos are resolved via source metadata.
+                    if (_factionLogoCacheService is not null && factionId != InspiringGen.InspiringCompanyFactionId)
                     {
                         await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(factionId, units, ct);
                     }
@@ -160,19 +139,25 @@ public partial class StandardCompanySelectionPage
                 MergeFireteamEntries,
                 IsCharacterCategory,
                 BuildUnitSubtitle,
-                (factionId, unit, typeLookup, categoryLookup) => new ArmyUnitSelectionItem
+                (factionId, unit, typeLookup, categoryLookup) =>
                 {
-                    Id = unit.UnitId,
-                    SourceFactionId = factionId,
-                    Slug = unit.Slug,
-                    Name = unit.Name,
-                    Type = unit.Type,
-                    IsCharacter = IsCharacterCategory(unit, categoryLookup),
-                    Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
-                    IsSpecOps = false,
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(factionId, unit.UnitId),
-                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(factionId, unit.UnitId)
-                        ?? $"SVGCache/units/{factionId}-{unit.UnitId}.svg"
+                    ResolveUnitLogoIds(factionId, unit.UnitId, unit.Logo, out var logoFactionId, out var logoUnitId);
+                    return new ArmyUnitSelectionItem
+                    {
+                        Id = unit.UnitId,
+                        SourceFactionId = factionId,
+                        LogoSourceFactionId = logoFactionId,
+                        LogoSourceUnitId = logoUnitId,
+                        Slug = unit.Slug,
+                        Name = unit.Name,
+                        Type = unit.Type,
+                        IsCharacter = IsCharacterCategory(unit, categoryLookup),
+                        Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
+                        IsSpecOps = false,
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
+                            ?? $"SVGCache/units/{logoFactionId}-{logoUnitId}.svg"
+                    };
                 },
                 (factionId, specopsUnit, resumeByUnitId, units, typeLookup, categoryLookup) =>
                 {
@@ -180,10 +165,14 @@ public partial class StandardCompanySelectionPage
                         ? units.FirstOrDefault(x => x.UnitId == specopsUnit.UnitId)?.Name ?? $"Unit {specopsUnit.UnitId}"
                         : specopsUnit.Name.Trim();
                     var key = $"{baseName} - Spec Ops";
+                    var logoField = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var logoResume) ? logoResume.Logo : null;
+                    ResolveUnitLogoIds(factionId, specopsUnit.UnitId, logoField, out var logoFactionId, out var logoUnitId);
                     return new ArmyUnitSelectionItem
                     {
                         Id = specopsUnit.UnitId,
                         SourceFactionId = factionId,
+                        LogoSourceFactionId = logoFactionId,
+                        LogoSourceUnitId = logoUnitId,
                         Slug = specopsUnit.Slug,
                         Name = key,
                         Type = resumeByUnitId.TryGetValue(specopsUnit.UnitId, out var resumeUnit) ? resumeUnit.Type : null,
@@ -193,9 +182,9 @@ public partial class StandardCompanySelectionPage
                             ? BuildUnitSubtitle(subtitleUnit, typeLookup, categoryLookup)
                             : "Spec Ops",
                         IsSpecOps = true,
-                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(factionId, specopsUnit.UnitId),
-                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(factionId, specopsUnit.UnitId)
-                            ?? $"SVGCache/units/{factionId}-{specopsUnit.UnitId}.svg"
+                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
+                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
+                            ?? $"SVGCache/units/{logoFactionId}-{logoUnitId}.svg"
                     };
                 },
                 cancellationToken);
@@ -220,53 +209,19 @@ public partial class StandardCompanySelectionPage
                 });
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
-            TryAutoSelectFirstVisibleUnitAfterFactionLoad();
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"CompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"InspiringCompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
         }
     }
 
-    private void TryAutoSelectFirstVisibleUnitAfterFactionLoad()
-    {
-        if (!_autoSelectUnitAfterFactionLoad || _selectedUnit is not null)
-        {
-            return;
-        }
-
-        var firstVisibleUnit = Units.FirstOrDefault(x => x.IsVisible);
-        if (firstVisibleUnit is null)
-        {
-            _autoSelectUnitAfterFactionLoad = false;
-            return;
-        }
-
-        SetSelectedUnit(firstVisibleUnit);
-        IsFactionSelectionActive = false;
-        _autoSelectUnitAfterFactionLoad = false;
-    }
-
-    /// <summary>
-    /// Handles resolve filter popup max points.
-    /// </summary>
     private int ResolveFilterPopupMaxPoints()
     {
         return CompanySelectionUnitFilterWorkflow.ResolveFilterPopupMaxPoints(SelectedStartSeasonPoints);
     }
 
-    /// <summary>
-    /// Handles clone popup options for current points.
-    /// </summary>
-    private UnitFilterPopupOptions ClonePopupOptionsForCurrentPoints(UnitFilterPopupOptions source)
-    {
-        return CompanySelectionUnitFilterWorkflow.ClonePopupOptionsForCurrentPoints(source, ResolveFilterPopupMaxPoints());
-    }
-
-    /// <summary>
-    /// Handles get prepared popup options for current points.
-    /// </summary>
     private UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
     {
         return CompanySelectionUnitFilterWorkflow.GetPreparedPopupOptionsForCurrentPoints(
@@ -274,8 +229,32 @@ public partial class StandardCompanySelectionPage
             ResolveFilterPopupMaxPoints());
     }
 
+    /// <summary>
+    /// For Inspiring Company synthetic units, the Resume's Logo field stores
+    /// the original source IDs as "{sourceFactionId}-{sourceUnitId}".
+    /// Parse these to resolve the correct cached logo path.
+    /// </summary>
+    private static void ResolveUnitLogoIds(int factionId, int unitId, string? logoField, out int logoFactionId, out int logoUnitId)
+    {
+        logoFactionId = factionId;
+        logoUnitId = unitId;
+
+        if (factionId != InspiringGen.InspiringCompanyFactionId || string.IsNullOrWhiteSpace(logoField))
+        {
+            return;
+        }
+
+        var dashIndex = logoField.IndexOf('-');
+        if (dashIndex <= 0 || dashIndex >= logoField.Length - 1)
+        {
+            return;
+        }
+
+        if (int.TryParse(logoField.AsSpan(0, dashIndex), NumberStyles.Integer, CultureInfo.InvariantCulture, out var srcFaction)
+            && int.TryParse(logoField.AsSpan(dashIndex + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out var srcUnit))
+        {
+            logoFactionId = srcFaction;
+            logoUnitId = srcUnit;
+        }
+    }
 }
-
-
-
-

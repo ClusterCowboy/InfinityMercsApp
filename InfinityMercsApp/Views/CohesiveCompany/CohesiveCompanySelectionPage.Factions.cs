@@ -130,6 +130,10 @@ public partial class CohesiveCompanySelectionPage
             return;
         }
 
+        _autoSelectUnitAfterFactionLoad = factionChanged &&
+                                          _factionSelectionState.LeftSlotFaction is not null &&
+                                          (!ShowRightSelectionBox || _factionSelectionState.RightSlotFaction is not null);
+
         HandleFactionAssignmentSideEffectsCore(
             factionChanged,
             AutoSelectEmptySlot,

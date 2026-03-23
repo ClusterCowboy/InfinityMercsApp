@@ -28,6 +28,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private readonly ViewerViewModel _viewerViewModel;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly IArmyDataService? _armyDataService;
 
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
@@ -228,11 +229,15 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    public CompanyViewerPage(ViewerViewModel viewModel, FactionLogoCacheService? factionLogoCacheService = null)
+    public CompanyViewerPage(
+        ViewerViewModel viewModel,
+        FactionLogoCacheService? factionLogoCacheService = null,
+        IArmyDataService? armyDataService = null)
     {
         InitializeComponent();
         _viewerViewModel = viewModel;
         _factionLogoCacheService = factionLogoCacheService;
+        _armyDataService = armyDataService;
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;
@@ -320,7 +325,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
             CompanyNameHeading = companyName;
             CompanySubtitle = string.Empty;
-            var captainStats = payload.ImprovedCaptainStats;
+            var captainStats = payload.ImprovedCaptainStats ?? new SavedImprovedCaptainStats();
             _loadedCaptainStats = captainStats;
             var captainDisplayName = string.IsNullOrWhiteSpace(captainStats.CaptainName)
                 ? "Captain"
@@ -341,20 +346,25 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
                     ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
                     : entry.BaseUnitName;
-                var defaultDisplayName = entry.IsLieutenant ? captainDisplayName : "Trooper";
+                var defaultDisplayName = entry.IsLieutenant ? captainDisplayName : baseUnitName;
                 var displayName = string.IsNullOrWhiteSpace(entry.CustomName)
                     ? defaultDisplayName
                     : entry.CustomName.Trim();
-                var subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty;
-                var savedRangedWeapons = entry.SavedRangedWeapons;
-                var savedSkills = entry.SavedSkills;
-                var savedEquipment = entry.SavedEquipment;
+                var subtitle = entry.IsPeripheralUnit
+                    ? "Peripheral"
+                    : (entry.IsLieutenant ? "Lieutenant" : string.Empty);
+                var (savedRangedWeapons, savedCcWeapons) = ResolveSavedWeapons(entry.SourceFactionId, entry);
+                var savedSkills = ResolveSavedSkills(entry.SourceFactionId, entry);
+                var savedEquipment = ResolveSavedEquipment(entry.SourceFactionId, entry);
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
                     savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
                     savedSkills = AppendChoices(savedSkills, captainSkillChoices);
                     savedEquipment = AppendChoices(savedEquipment, captainEquipmentChoices);
                 }
+
+                var logoSourceFactionId = ResolveLogoSourceFactionId(entry);
+                var logoSourceUnitId = ResolveLogoSourceUnitId(entry);
 
                 CompanyUnits.Add(new CompanyViewerUnitListItem
                 {
@@ -366,22 +376,19 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     SourceFactionId = entry.SourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     ProfileKey = entry.ProfileKey,
+                    IsPeripheralUnit = entry.IsPeripheralUnit,
                     IsLieutenant = entry.IsLieutenant,
                     Cost = entry.Cost,
                     SavedEquipment = savedEquipment,
                     SavedSkills = savedSkills,
                     SavedRangedWeapons = savedRangedWeapons,
-                    SavedCcWeapons = entry.SavedCcWeapons,
+                    SavedCcWeapons = savedCcWeapons,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
-                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(
-                        entry.LogoSourceFactionId ?? entry.SourceFactionId,
-                        entry.LogoSourceUnitId ?? entry.SourceUnitId),
-                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(
-                        entry.LogoSourceFactionId ?? entry.SourceFactionId,
-                        entry.LogoSourceUnitId ?? entry.SourceUnitId)
-                        ?? $"SVGCache/units/{entry.LogoSourceFactionId ?? entry.SourceFactionId}-{entry.LogoSourceUnitId ?? entry.SourceUnitId}.svg"
+                    CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
+                    PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
+                        ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg"
                 });
             }
 
@@ -428,6 +435,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.IsLieutenant,
             item.CachedLogoPath,
             item.PackagedLogoPath);
+
+        ApplySavedOrderIconOverrides(item);
 
         if (item.IsLieutenant && _loadedCaptainStats.IsEnabled)
         {
@@ -508,6 +517,148 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private static bool IsDashOrEmpty(string? text)
     {
         return string.IsNullOrWhiteSpace(text) || text.Trim() == "-";
+    }
+
+    private static int ResolveLogoSourceFactionId(SavedCompanyEntry entry)
+    {
+        return entry.LogoSourceFactionId > 0 ? entry.LogoSourceFactionId : entry.SourceFactionId;
+    }
+
+    private static int ResolveLogoSourceUnitId(SavedCompanyEntry entry)
+    {
+        return entry.LogoSourceUnitId > 0 ? entry.LogoSourceUnitId : entry.SourceUnitId;
+    }
+
+    private string ResolveSavedSkills(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentSkillCodes, "skills");
+        names.AddRange(entry.CustomSkills ?? []);
+        return JoinCodesOrDash(names);
+    }
+
+    private string ResolveSavedEquipment(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentEquipmentCodes, "equip");
+        names.AddRange(entry.CustomEquipment ?? []);
+        return JoinCodesOrDash(names);
+    }
+
+    private (string SavedRangedWeapons, string SavedCcWeapons) ResolveSavedWeapons(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var currentWeapons = ResolveCodeNames(sourceFactionId, entry.CurrentWeaponCodes, "weapons")
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim() != "-")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        currentWeapons.AddRange((entry.CustomWeapons ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim() != "-"));
+
+        currentWeapons = currentWeapons
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (currentWeapons.Count == 0)
+        {
+            return ("-", "-");
+        }
+
+        var rangedWeapons = currentWeapons
+            .Where(x => !CompanyProfileTextService.IsMeleeWeaponName(x))
+            .ToList();
+        var ccWeapons = currentWeapons
+            .Where(CompanyProfileTextService.IsMeleeWeaponName)
+            .ToList();
+
+        return (JoinCodesOrDash(rangedWeapons), JoinCodesOrDash(ccWeapons));
+    }
+
+    private void ApplySavedOrderIconOverrides(CompanyViewerUnitListItem item)
+    {
+        if (!item.IsPeripheralUnit)
+        {
+            return;
+        }
+
+        var savedSkillLines = SplitProfileText(item.SavedSkills);
+        var hasIrregular = savedSkillLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase));
+        if (!hasIrregular)
+        {
+            return;
+        }
+
+        _viewerViewModel.SetOrderTypeIconState(showRegular: false, showIrregular: true);
+    }
+
+    private List<string> ResolveCodeNames(int sourceFactionId, IEnumerable<CompanySavedCodeRef> codes, string sectionName)
+    {
+        var codeList = (codes ?? [])
+            .Where(x => x is not null && x.Id > 0)
+            .ToList();
+        if (codeList.Count == 0)
+        {
+            return [];
+        }
+
+        var lookup = BuildCodeNameLookup(sourceFactionId, sectionName);
+        var extrasLookup = BuildExtraNameLookup(sourceFactionId);
+        var resolved = new List<string>();
+        foreach (var code in codeList)
+        {
+            if (!lookup.TryGetValue(code.Id, out var name) || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var display = name.Trim();
+            var extras = (code.Extra ?? [])
+                .Distinct()
+                .Select(extraId => extrasLookup.TryGetValue(extraId, out var extraName) ? extraName?.Trim() : null)
+                .Where(extraName => !string.IsNullOrWhiteSpace(extraName))
+                .Cast<string>()
+                .ToList();
+
+            if (extras.Count > 0)
+            {
+                display = $"{display} ({string.Join(", ", extras)})";
+            }
+
+            resolved.Add(display);
+        }
+
+        return resolved;
+    }
+
+    private Dictionary<int, string> BuildCodeNameLookup(int sourceFactionId, string sectionName)
+    {
+        if (_armyDataService is null || sourceFactionId <= 0)
+        {
+            return [];
+        }
+
+        var snapshot = _armyDataService.GetFactionSnapshot(sourceFactionId);
+        return CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, sectionName);
+    }
+
+    private Dictionary<int, string> BuildExtraNameLookup(int sourceFactionId)
+    {
+        if (_armyDataService is null || sourceFactionId <= 0)
+        {
+            return [];
+        }
+
+        var snapshot = _armyDataService.GetFactionSnapshot(sourceFactionId);
+        return CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "extras");
+    }
+
+    private static string JoinCodesOrDash(IEnumerable<string> values)
+    {
+        var lines = values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Where(x => x != "-")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
     }
 
     private static FormattedString BuildSimpleFormatted(string? text, Color color)
@@ -935,7 +1086,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var fallback = string.IsNullOrWhiteSpace(SelectedCaptainNameHeading)
-            ? (_selectedCompanyUnit.IsLieutenant ? "Captain" : "Trooper")
+            ? (_selectedCompanyUnit.IsPeripheralUnit
+                ? (_selectedCompanyUnit.BaseUnitName ?? "Peripheral")
+                : (_selectedCompanyUnit.IsLieutenant ? "Captain" : (_selectedCompanyUnit.BaseUnitName ?? "Unit")))
             : SelectedCaptainNameHeading;
         var normalized = string.IsNullOrWhiteSpace(SelectedNameEntry.Text)
             ? fallback
@@ -1412,6 +1565,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public int SourceFactionId { get; init; }
     public int SourceUnitId { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
+    public bool IsPeripheralUnit { get; init; }
     public bool IsLieutenant { get; init; }
     public int Cost { get; init; }
     public string SavedEquipment { get; init; } = "-";

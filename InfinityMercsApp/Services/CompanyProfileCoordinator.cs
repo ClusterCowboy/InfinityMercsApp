@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
 
@@ -185,6 +186,7 @@ internal sealed class CompanyProfileCoordinator
                     request.GetDisplayPeripheralEntriesForOption(group, option),
                     request.PeripheralLookup);
                 var firstPeripheralName = peripheralNames.FirstOrDefault();
+                var peripheralUnitName = request.ExtractFirstPeripheralName(firstPeripheralName);
 
                 TPeripheralStats? peripheralStats = default;
                 JsonElement peripheralProfile = default;
@@ -200,6 +202,14 @@ internal sealed class CompanyProfileCoordinator
                         peripheralProfile = foundPeripheralProfile.Value;
                         peripheralStats = request.BuildPeripheralStatBlock(extractedPeripheralName, peripheralProfile);
                     }
+                }
+
+                var peripheralSkills = request.ReadPeripheralSkills(peripheralStats);
+                var peripheralHasControlModifier = HasPeripheralControlModifier(peripheralNames, peripheralSkills);
+                var ftMasterPeripheralName = ResolveFtMasterPeripheralName(peripheralUnitName);
+                if (peripheralHasControlModifier && !string.IsNullOrWhiteSpace(ftMasterPeripheralName))
+                {
+                    EnsureSkill(uniqueSkillsNames, $"FT Master ({ftMasterPeripheralName})");
                 }
 
                 var cost = request.ReadAdjustedOptionCost(group, option);
@@ -241,7 +251,10 @@ internal sealed class CompanyProfileCoordinator
                 var isLieutenant = request.ForceLieutenant || request.IsLieutenantOption(option);
                 var profileKey = $"{groupName}|{optionName}|{displayCost}|{swc}|lt:{(isLieutenant ? 1 : 0)}";
                 var peripheralEquipment = request.ReadPeripheralEquipment(peripheralStats);
-                var peripheralSkills = request.ReadPeripheralSkills(peripheralStats);
+                if (peripheralHasControlModifier)
+                {
+                    peripheralSkills = EnsureSkillLine(peripheralSkills, "Irregular");
+                }
                 var hasPeripheralStats = peripheralStats is not null;
                 var profileItem = new ViewerProfileItem
                 {
@@ -283,6 +296,9 @@ internal sealed class CompanyProfileCoordinator
                     HasPeripheralEquipmentLine = hasPeripheralStats && !string.IsNullOrWhiteSpace(peripheralEquipment) && peripheralEquipment != "-",
                     PeripheralSkillsLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralSkills, Color.FromArgb("#F59E0B")),
                     HasPeripheralSkillsLine = hasPeripheralStats && !string.IsNullOrWhiteSpace(peripheralSkills) && peripheralSkills != "-",
+                    PeripheralGrantsFtMaster = peripheralHasControlModifier && !string.IsNullOrWhiteSpace(ftMasterPeripheralName),
+                    PeripheralIsIrregular = peripheralHasControlModifier,
+                    PeripheralUnitName = ftMasterPeripheralName,
                     Swc = swc,
                     SwcDisplay = $"SWC {swc}",
                     Cost = displayCost,
@@ -416,6 +432,68 @@ internal sealed class CompanyProfileCoordinator
                value.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
                value.Contains("nco", StringComparison.OrdinalIgnoreCase) ||
                value.Contains("chain of command", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasPeripheralControlModifier(IEnumerable<string> peripheralNames, string? peripheralSkills)
+    {
+        foreach (var peripheralName in peripheralNames)
+        {
+            if (string.IsNullOrWhiteSpace(peripheralName))
+            {
+                continue;
+            }
+
+            if (peripheralName.Contains("synchronized", StringComparison.OrdinalIgnoreCase) ||
+                peripheralName.Contains("control", StringComparison.OrdinalIgnoreCase) ||
+                peripheralName.Contains("cyberplug", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(peripheralSkills) &&
+            (peripheralSkills.Contains("synchronized", StringComparison.OrdinalIgnoreCase) ||
+             peripheralSkills.Contains("control", StringComparison.OrdinalIgnoreCase) ||
+             peripheralSkills.Contains("cyberplug", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string ResolveFtMasterPeripheralName(string? peripheralUnitName)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralUnitName))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = peripheralUnitName.Trim();
+        trimmed = Regex.Replace(trimmed, @"\s*\(\d+\)\s*$", string.Empty);
+        trimmed = Regex.Replace(trimmed, @"\s*\((?:synchronized|control|cyberplug)\)\s*$", string.Empty, RegexOptions.IgnoreCase);
+        return trimmed.Trim();
+    }
+
+    private static void EnsureSkill(List<string> skills, string skill)
+    {
+        if (skills.Any(x => string.Equals(x, skill, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        skills.Add(skill);
+    }
+
+    private static string EnsureSkillLine(string? skillsLine, string skill)
+    {
+        var lines = CompanyProfileTextService.SplitDisplayLine(skillsLine).ToList();
+        if (!lines.Any(x => string.Equals(x, skill, StringComparison.OrdinalIgnoreCase)))
+        {
+            lines.Add(skill);
+        }
+
+        return CompanyProfileTextService.JoinOrDash(lines);
     }
 
     /// <summary>

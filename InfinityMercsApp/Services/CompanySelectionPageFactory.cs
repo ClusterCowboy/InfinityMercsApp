@@ -2,6 +2,7 @@
 using InfinityMercsApp.Views;
 using InfinityMercsApp.Views.AirborneCompany;
 using InfinityMercsApp.Views.CohesiveCompany;
+using InfinityMercsApp.Views.InspiringCompany;
 using InfinityMercsApp.Views.StandardCompany;
 
 namespace InfinityMercsApp.Services;
@@ -60,9 +61,9 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _armyDataService);
     }
 
-    public AirborneCompanySelectionPage CreateAirborne()
+    public InspiringCompanySelectionPage CreateInspiring()
     {
-        return new AirborneCompanySelectionPage(
+        return new InspiringCompanySelectionPage(
             _metadataProvider,
             _factionProvider,
             _specOpsProvider,

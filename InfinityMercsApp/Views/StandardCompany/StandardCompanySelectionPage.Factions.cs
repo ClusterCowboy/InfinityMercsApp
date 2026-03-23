@@ -1,5 +1,7 @@
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
+using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
+using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -10,6 +12,10 @@ public partial class StandardCompanySelectionPage
         try
         {
             var filteredFactions = await LoadFilteredFactionRecordsAsync(cancellationToken);
+            filteredFactions = filteredFactions
+                .Where(x => x.Id != AirborneGen.AirborneCompanyFactionId &&
+                            x.Id != InspiringGen.InspiringCompanyFactionId)
+                .ToList();
             var items = BuildFactionSelectionItems(
                 filteredFactions,
                 (id, parentId, name, cachedLogoPath, packagedLogoPath) => new ArmyFactionSelectionItem
@@ -65,6 +71,10 @@ public partial class StandardCompanySelectionPage
             Console.WriteLine($"[CompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
             return;
         }
+
+        _autoSelectUnitAfterFactionLoad = factionChanged &&
+                                          _factionSelectionState.LeftSlotFaction is not null &&
+                                          (!ShowRightSelectionBox || _factionSelectionState.RightSlotFaction is not null);
 
         HandleFactionAssignmentSideEffectsCore(
             factionChanged,

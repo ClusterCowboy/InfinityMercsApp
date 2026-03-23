@@ -28,10 +28,9 @@ public partial class CreateNewCompanyPageViewModel(
     }
 
     [RelayCommand]
-    private Task OpenInspiringLeadershipPageAsync()
+    private async Task OpenInspiringLeadershipPageAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] Inspiring Leader selected.");
-        return Task.CompletedTask;
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateInspiring());
     }
 
     [RelayCommand]
