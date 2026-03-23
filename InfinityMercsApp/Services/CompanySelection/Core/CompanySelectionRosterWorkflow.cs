@@ -116,6 +116,29 @@ internal static class CompanySelectionRosterWorkflow
         var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonSkills, profile.UniqueSkills);
         var combinedEquipmentText = CompanyProfileTextService.JoinOrDash(combinedEquipment);
         var combinedSkillsText = CompanyProfileTextService.JoinOrDash(combinedSkills);
+        var inferredPeripheralName = CompanyUnitDetailsShared.ExtractFirstPeripheralName(profile.Peripherals);
+        var hasInferredPeripheral = !string.IsNullOrWhiteSpace(inferredPeripheralName);
+        var hasPeripheralData = peripheralStats is not null || hasInferredPeripheral;
+        var peripheralNameHeading = peripheralStats?.NameHeading;
+        if (string.IsNullOrWhiteSpace(peripheralNameHeading) && hasInferredPeripheral)
+        {
+            peripheralNameHeading = $"Peripheral: {inferredPeripheralName}";
+        }
+
+        var peripheralMov = peripheralStats is null
+            ? (profile.HasPeripheralStatBlock ? profile.PeripheralMov : "-")
+            : formatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm);
+        var peripheralCc = peripheralStats?.Cc ?? (profile.HasPeripheralStatBlock ? profile.PeripheralCc : "-");
+        var peripheralBs = peripheralStats?.Bs ?? (profile.HasPeripheralStatBlock ? profile.PeripheralBs : "-");
+        var peripheralPh = peripheralStats?.Ph ?? (profile.HasPeripheralStatBlock ? profile.PeripheralPh : "-");
+        var peripheralWip = peripheralStats?.Wip ?? (profile.HasPeripheralStatBlock ? profile.PeripheralWip : "-");
+        var peripheralArm = peripheralStats?.Arm ?? (profile.HasPeripheralStatBlock ? profile.PeripheralArm : "-");
+        var peripheralBts = peripheralStats?.Bts ?? (profile.HasPeripheralStatBlock ? profile.PeripheralBts : "-");
+        var peripheralVitalityHeader = peripheralStats?.VitalityHeader ?? (profile.HasPeripheralStatBlock ? profile.PeripheralVitalityHeader : "VITA");
+        var peripheralVitality = peripheralStats?.Vitality ?? (profile.HasPeripheralStatBlock ? profile.PeripheralVitality : "-");
+        var peripheralS = peripheralStats?.S ?? (profile.HasPeripheralStatBlock ? profile.PeripheralS : "-");
+        var peripheralAva = peripheralStats?.Ava ?? (profile.HasPeripheralStatBlock ? profile.PeripheralAva : "-");
+        var peripheralEquipment = peripheralStats?.Equipment ?? "-";
         var peripheralSkillsText = peripheralStats?.Skills ?? "-";
         if (profile.PeripheralIsIrregular)
         {
@@ -159,29 +182,29 @@ internal static class CompanySelectionRosterWorkflow
             HasSkillsLine = combinedSkills.Count > 0,
             RangedLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("Ranged Weapons", profile.RangedWeapons, Color.FromArgb("#EF4444")),
             CcLineFormatted = CompanyProfileTextService.BuildMercsCompanyLineFormatted("CC Weapons", profile.MeleeWeapons, Color.FromArgb("#22C55E")),
-            HasPeripheralStatBlock = peripheralStats is not null,
-            PeripheralNameHeading = peripheralStats?.NameHeading ?? string.Empty,
-            PeripheralMov = peripheralStats is null ? "-" : formatMoveValue(peripheralStats.MoveFirstCm, peripheralStats.MoveSecondCm),
-            PeripheralCc = peripheralStats?.Cc ?? "-",
-            PeripheralBs = peripheralStats?.Bs ?? "-",
-            PeripheralPh = peripheralStats?.Ph ?? "-",
-            PeripheralWip = peripheralStats?.Wip ?? "-",
-            PeripheralArm = peripheralStats?.Arm ?? "-",
-            PeripheralBts = peripheralStats?.Bts ?? "-",
-            PeripheralVitalityHeader = peripheralStats?.VitalityHeader ?? "VITA",
-            PeripheralVitality = peripheralStats?.Vitality ?? "-",
-            PeripheralS = peripheralStats?.S ?? "-",
-            PeripheralAva = peripheralStats?.Ava ?? "-",
-            SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
+            HasPeripheralStatBlock = hasPeripheralData,
+            PeripheralNameHeading = peripheralNameHeading ?? string.Empty,
+            PeripheralMov = peripheralMov,
+            PeripheralCc = peripheralCc,
+            PeripheralBs = peripheralBs,
+            PeripheralPh = peripheralPh,
+            PeripheralWip = peripheralWip,
+            PeripheralArm = peripheralArm,
+            PeripheralBts = peripheralBts,
+            PeripheralVitalityHeader = peripheralVitalityHeader,
+            PeripheralVitality = peripheralVitality,
+            PeripheralS = peripheralS,
+            PeripheralAva = peripheralAva,
+            SavedPeripheralEquipment = peripheralEquipment,
             SavedPeripheralSkills = peripheralSkillsText,
             PeripheralEquipmentLineFormatted =
-                CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralStats?.Equipment, Color.FromArgb("#06B6D4")),
+                CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralEquipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine =
-                peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralStats.Equipment) && peripheralStats.Equipment != "-",
+                hasPeripheralData && !string.IsNullOrWhiteSpace(peripheralEquipment) && peripheralEquipment != "-",
             PeripheralSkillsLineFormatted =
                 CompanyProfileTextService.BuildMercsCompanyLineFormatted("Skills", peripheralSkillsText, Color.FromArgb("#F59E0B")),
             HasPeripheralSkillsLine =
-                peripheralStats is not null && !string.IsNullOrWhiteSpace(peripheralSkillsText) && peripheralSkillsText != "-",
+                hasPeripheralData && !string.IsNullOrWhiteSpace(peripheralSkillsText) && peripheralSkillsText != "-",
             UnitMoveFirstCm = unitMoveFirstCm,
             UnitMoveSecondCm = unitMoveSecondCm,
             UnitMoveDisplay = currentUnitMove,

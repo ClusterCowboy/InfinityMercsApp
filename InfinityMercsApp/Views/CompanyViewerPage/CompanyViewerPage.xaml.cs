@@ -292,6 +292,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
         {
             CompanyNameHeading = "Company Viewer";
+            Title = CompanyNameHeading;
             CompanySubtitle = "Saved company file was not found.";
             CompanyUnitsStatus = "Saved company file was not found.";
             SelectedCaptainNameHeading = string.Empty;
@@ -309,6 +310,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             if (payload is null)
             {
                 CompanyNameHeading = "Company Viewer";
+                Title = CompanyNameHeading;
                 CompanySubtitle = "Unable to read saved company data.";
                 CompanyUnitsStatus = "Unable to read saved company data.";
                 SelectedCaptainNameHeading = string.Empty;
@@ -323,7 +325,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 ? Path.GetFileNameWithoutExtension(filePath)
                 : payload.CompanyName;
 
-            CompanyNameHeading = companyName;
+            CompanyNameHeading = BuildCompanyViewerHeading(companyName);
+            Title = CompanyNameHeading;
             CompanySubtitle = string.Empty;
             var captainStats = payload.ImprovedCaptainStats ?? new SavedImprovedCaptainStats();
             _loadedCaptainStats = captainStats;
@@ -340,9 +343,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 ? CollectCaptainChoices(captainStats.EquipmentChoice1, captainStats.EquipmentChoice2, captainStats.EquipmentChoice3)
                 : [];
 
-            for (var i = 0; i < payload.Entries.Count; i++)
+            var orderedEntries = payload.Entries
+                .OrderByDescending(x => x.IsLieutenant)
+                .ThenBy(x => x.EntryIndex)
+                .ToList();
+            for (var i = 0; i < orderedEntries.Count; i++)
             {
-                var entry = payload.Entries[i];
+                var entry = orderedEntries[i];
                 var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
                     ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
                     : entry.BaseUnitName;
@@ -371,6 +378,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     Name = displayName,
                     EntryIndex = entry.EntryIndex,
                     BaseUnitName = baseUnitName,
+                    BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     UnitTypeCode = NormalizeUnitTypeCode(entry.UnitTypeCode),
                     Subtitle = subtitle,
                     SourceFactionId = entry.SourceFactionId,
@@ -404,6 +412,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             CompanyNameHeading = "Company Viewer";
+            Title = CompanyNameHeading;
             CompanySubtitle = $"Failed to load company: {ex.Message}";
             CompanyUnitsStatus = $"Failed to load company: {ex.Message}";
             SelectedCaptainNameHeading = string.Empty;
@@ -532,6 +541,26 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private static int ResolveLogoSourceFactionId(SavedCompanyEntry entry)
     {
         return entry.LogoSourceFactionId > 0 ? entry.LogoSourceFactionId : entry.SourceFactionId;
+    }
+
+    private static string BuildCompanyViewerHeading(string? companyName)
+    {
+        var trimmed = companyName?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed)
+            ? "Company Viewer"
+            : $"Company Viewer: {trimmed}";
+    }
+
+    private static string BuildUnitBaseDisplayName(string? baseUnitName)
+    {
+        if (string.IsNullOrWhiteSpace(baseUnitName))
+        {
+            return "Unit";
+        }
+
+        var withoutParens = Regex.Replace(baseUnitName, @"\s*\([^)]*\)\s*", " ").Trim();
+        var collapsed = Regex.Replace(withoutParens, @"\s{2,}", " ").Trim();
+        return string.IsNullOrWhiteSpace(collapsed) ? "Unit" : collapsed;
     }
 
     private static int ResolveLogoSourceUnitId(SavedCompanyEntry entry)
@@ -1666,6 +1695,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
         }
     }
     public string BaseUnitName { get; init; } = string.Empty;
+    public string BaseUnitDisplayName { get; init; } = string.Empty;
     public string UnitTypeCode { get; init; } = string.Empty;
     public string? CachedLogoPath { get; init; }
     public string? PackagedLogoPath { get; init; }

@@ -7,50 +7,28 @@
              x:Name="CompanyViewerRoot"
              Title="Company Viewer">
 
-    <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="10">
-        <Label Grid.Row="0"
-               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyNameHeading}"
-               FontSize="26"
-               FontAttributes="Bold" />
-        <Label Grid.Row="1"
-               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanySubtitle}"
-               FontSize="12"
-               TextColor="#9CA3AF" />
+    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="6">
+        <Border Grid.Row="0" StrokeThickness="0" Padding="0">
+            <Grid RowDefinitions="*" RowSpacing="0">
+                <ScrollView Grid.Row="0"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
+                                           Spacing="8"
+                                           Padding="0,0,2,0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:CompanyViewerUnitTileView
+                                    ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
+                                    ItemTappedCommandParameter="{Binding .}" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Border>
 
-        <Grid Grid.Row="2" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="3*" />
-            </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0" StrokeThickness="1" Padding="10">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                    <Label Text="Company Units"
-                           FontSize="20"
-                           FontAttributes="Bold" />
-                    <Label Grid.Row="1"
-                           Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnitsStatus}"
-                           TextColor="#6B7280" />
-                    <ScrollView Grid.Row="2">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
-                                             Spacing="0">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:FactionListItemView
-                                        ShowRightPrimaryIconSlot="{Binding IsLieutenant}"
-                                        ShowRightSecondaryIconSlot="True"
-                                        RightPrimaryIconPackagedPath="{Binding CaptainIconPackagedPath}"
-                                        RightSecondaryIconPackagedPath="{Binding ExperienceIconPackagedPath}"
-                                        ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
-                                        ItemTappedCommandParameter="{Binding .}" />
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </ScrollView>
-                </Grid>
-            </Border>
-
-            <Border Grid.Column="1" StrokeThickness="1" Padding="12">
+        <Border Grid.Row="1" StrokeThickness="1" Padding="12">
                 <Border.Resources>
                     <Style TargetType="Label">
                         <Setter Property="FontSize" Value="24" />
@@ -139,8 +117,7 @@
                             PaintSurface="OnBottomIconRowCanvasPaintSurface" />
                     </Grid>
                 </Grid>
-            </Border>
-        </Grid>
+        </Border>
     </Grid>
 
 </ContentPage>

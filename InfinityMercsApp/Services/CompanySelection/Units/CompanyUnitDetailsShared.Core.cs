@@ -126,7 +126,7 @@ internal static partial class CompanyUnitDetailsShared
             return false;
         }
 
-        peripheralName = match.Groups[1].Value.Trim();
+        peripheralName = ExtractFirstPeripheralName(match.Groups[1].Value);
         if (string.IsNullOrWhiteSpace(peripheralName))
         {
             return false;
