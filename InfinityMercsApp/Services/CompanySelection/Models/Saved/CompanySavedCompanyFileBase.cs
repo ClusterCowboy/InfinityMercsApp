@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanySavedCompanyFileBase<TCaptainStats, TFaction, TEntry>
@@ -13,7 +15,8 @@ public abstract class CompanySavedCompanyFileBase<TCaptainStats, TFaction, TEntr
     public int StartSeasonPoints { get; init; }
     public int PointsLimit { get; init; }
     public int CurrentPoints { get; init; }
-    public TCaptainStats ImprovedCaptainStats { get; init; } = new();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TCaptainStats? ImprovedCaptainStats { get; init; }
     public List<TFaction> SourceFactions { get; init; } = [];
     public List<TEntry> Entries { get; init; } = [];
 }

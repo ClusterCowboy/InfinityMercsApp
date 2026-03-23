@@ -119,6 +119,7 @@ public partial class CohesiveCompanySelectionPage
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);
             RestoreTrackedFireteamSelection(trackedFireteamNameToRestore);
+            TryAutoSelectFirstVisibleUnitAfterFactionLoad();
             AreTeamEntriesReady = true;
         }
         catch (Exception ex)
@@ -127,6 +128,25 @@ public partial class CohesiveCompanySelectionPage
             RestoreTrackedFireteamSelection(string.Empty);
             AreTeamEntriesReady = false;
         }
+    }
+
+    private void TryAutoSelectFirstVisibleUnitAfterFactionLoad()
+    {
+        if (!_autoSelectUnitAfterFactionLoad || _selectedUnit is not null)
+        {
+            return;
+        }
+
+        var firstVisibleUnit = Units.FirstOrDefault(x => x.IsVisible);
+        if (firstVisibleUnit is null)
+        {
+            _autoSelectUnitAfterFactionLoad = false;
+            return;
+        }
+
+        SetSelectedUnit(firstVisibleUnit);
+        IsFactionSelectionActive = false;
+        _autoSelectUnitAfterFactionLoad = false;
     }
 
     private static string NormalizeCohesiveDisplayedMinimum(string? min)

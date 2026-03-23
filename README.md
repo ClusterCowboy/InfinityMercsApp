@@ -59,14 +59,14 @@ This is an app in C# which will allow for the easy creation and managment of a c
 - [X] Change fireteam options to ignore Min trooper restriction
 - [X] Have a 3 point discount on any trooper with Tactical Awareness and remove the skill from them
 #### Implement Inspiring Leader
-- [ ] Prompt Selection of Lieutenant from Sectorial
-- [ ] Give Lieutenant Inspiring Leadership
-- [ ] Allow for selection of any irregular trooper from any list
-	- [ ] Ensure AVA is highest possible
+- [X] Prompt Selection of Lieutenant from Sectorial
+- [X] Give Lieutenant Inspiring Leadership
+- [X] Allow for selection of any irregular trooper from any list
+	- [X] Ensure AVA is highest possible
 #### Airborne Company
-- [ ] Prompt Selection of Lieutenant from Sectorial
-- [ ] Give Lieutenant Parachutist and Network Support (Controlled Jump)
-- [ ] Allow for selection of only troopers with the airborne deployment from any list
+- [X] Prompt Selection of Lieutenant from Sectorial
+- [X] Give Lieutenant Parachutist and Network Support (Controlled Jump)
+- [X] Allow for selection of only troopers with the airborne deployment from any list
 - [ ] Denote the use of one speedball per contract
 #### TAG Company
 - [ ] Allow purchase of a standard TAG

@@ -3,7 +3,7 @@
 internal sealed class CompanyStartExecutionRequest<TFaction, TEntry, TCaptainStats>
     where TFaction : class, ICompanySourceFaction
     where TEntry : class, ICompanyMercsEntry
-    where TCaptainStats : class
+    where TCaptainStats : CompanySavedImprovedCaptainStatsBase
 {
     public required string? CompanyName { get; init; }
     public required Action<bool> SetCompanyNameValidationError { get; init; }
@@ -16,7 +16,7 @@ internal static class CompanyStartExecutionWorkflow
     internal static async Task ExecuteAsync<TFaction, TEntry, TCaptainStats>(CompanyStartExecutionRequest<TFaction, TEntry, TCaptainStats> request)
         where TFaction : class, ICompanySourceFaction
         where TEntry : class, ICompanyMercsEntry
-        where TCaptainStats : class
+        where TCaptainStats : CompanySavedImprovedCaptainStatsBase
     {
         if (!CompanyStartSharedState.IsCompanyNameValid(request.CompanyName))
         {

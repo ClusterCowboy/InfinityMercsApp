@@ -49,11 +49,29 @@ internal sealed class MauiNavigationService(IServiceProvider serviceProvider) : 
     {
         var shell = GetActiveShell()
             ?? throw new InvalidOperationException("No active Shell is available for navigation.");
-        var shellNavigation = new ShellNavigationState(route);
+        var normalizedRoute = NormalizeRoute(route);
+        var shellNavigation = new ShellNavigationState(normalizedRoute);
 
         return routeParameters != null
             ? shell.GoToAsync(shellNavigation, routeParameters)
             : shell.GoToAsync(shellNavigation);
+    }
+
+    private static string NormalizeRoute(string route)
+    {
+        if (string.IsNullOrWhiteSpace(route))
+        {
+            return route;
+        }
+
+        var trimmed = route.Trim();
+        if (trimmed.StartsWith("/", StringComparison.Ordinal) ||
+            trimmed.StartsWith(".", StringComparison.Ordinal))
+        {
+            return trimmed;
+        }
+
+        return $"///{trimmed}";
     }
 
     /// <inheritdoc/>

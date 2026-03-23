@@ -6,13 +6,8 @@ public partial class AppShell : Shell
     {
         InitializeComponent();
         Routing.RegisterRoute(nameof(Views.SplashPage), typeof(Views.SplashPage));
-        Routing.RegisterRoute(nameof(Views.CreateNewCompanyPage), typeof(Views.CreateNewCompanyPage));
-        Routing.RegisterRoute(nameof(Views.StandardCompanySourcePopupPage), typeof(Views.StandardCompanySourcePopupPage));
-        Routing.RegisterRoute(nameof(Views.ModeSelectionPage), typeof(Views.ModeSelectionPage));
-        Routing.RegisterRoute(nameof(Views.LoadCompanyPage), typeof(Views.LoadCompanyPage));
-        Routing.RegisterRoute(nameof(Views.CompanyViewerPage), typeof(Views.CompanyViewerPage));
-        Routing.RegisterRoute(nameof(Views.MercsGlossaryPage), typeof(Views.MercsGlossaryPage));
-        Routing.RegisterRoute(nameof(Views.UnitEncyclopedia.UnitEncyclopediaPage), typeof(Views.UnitEncyclopedia.UnitEncyclopediaPage));
+        // Routes declared in AppShell.xaml ShellContent entries must not be registered here,
+        // otherwise Shell can throw ambiguous-route exceptions.
         Routing.RegisterRoute(nameof(Views.FeedbackBugsPage), typeof(Views.FeedbackBugsPage));
     }
 }

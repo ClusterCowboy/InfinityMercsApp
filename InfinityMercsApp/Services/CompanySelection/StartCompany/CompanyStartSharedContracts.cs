@@ -10,6 +10,7 @@ public interface ICompanySourceFaction
 public interface ICompanyMercsEntry
 {
     string Name { get; }
+    string BaseUnitName { get; }
     int CostValue { get; }
     bool IsLieutenant { get; }
     string UnitTypeCode { get; }
