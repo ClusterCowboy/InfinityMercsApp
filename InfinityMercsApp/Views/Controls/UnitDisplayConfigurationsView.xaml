@@ -8,7 +8,7 @@
     <!-- Shared UI shell for the selected-unit stat header and its configurations list. -->
     <Border StrokeThickness="1" Padding="10">
         <Grid RowDefinitions="*" RowSpacing="8">
-            <Grid ColumnDefinitions="32,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="0" ColumnSpacing="2">
+            <Grid ColumnDefinitions="58,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="0" ColumnSpacing="2">
                 <Border
                     Grid.Row="0"
                     Grid.RowSpan="3"
@@ -28,7 +28,7 @@
                     Grid.Column="0"
                     Grid.Row="0"
                     Grid.RowSpan="3"
-                    WidthRequest="24"
+                    WidthRequest="50"
                     HeightRequest="72"
                     VerticalOptions="Center"
                     HorizontalOptions="Center"

@@ -761,7 +761,7 @@ internal static class CompanyStartSaveWorkflow
         }
 
         var trimmed = value.Trim();
-        var openParenIndex = trimmed.LastIndexOf(" (", StringComparison.Ordinal);
+        var openParenIndex = trimmed.IndexOf(" (", StringComparison.Ordinal);
         if (openParenIndex <= 0 || !trimmed.EndsWith(')'))
         {
             return null;
@@ -774,16 +774,61 @@ internal static class CompanyStartSaveWorkflow
             return null;
         }
 
-        var extras = inside
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .ToList();
+        var extras = SplitTopLevelExtras(inside);
         if (extras.Count == 0)
         {
             return null;
         }
 
         return (baseName, extras);
+    }
+
+    private static List<string> SplitTopLevelExtras(string value)
+    {
+        var result = new List<string>();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return result;
+        }
+
+        var depth = 0;
+        var tokenStart = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            switch (c)
+            {
+                case '(':
+                    depth++;
+                    break;
+                case ')':
+                    if (depth > 0)
+                    {
+                        depth--;
+                    }
+
+                    break;
+                case ',' when depth == 0:
+                {
+                    var token = value[tokenStart..i].Trim();
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        result.Add(token);
+                    }
+
+                    tokenStart = i + 1;
+                    break;
+                }
+            }
+        }
+
+        var last = value[tokenStart..].Trim();
+        if (!string.IsNullOrWhiteSpace(last))
+        {
+            result.Add(last);
+        }
+
+        return result;
     }
 
     private static string BuildCodeRefKey(CompanySavedCodeRef value)

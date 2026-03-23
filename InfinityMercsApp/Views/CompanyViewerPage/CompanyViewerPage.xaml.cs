@@ -433,6 +433,10 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.Name,
             item.ProfileKey,
             item.IsLieutenant,
+            item.SavedSkills,
+            item.SavedEquipment,
+            item.SavedRangedWeapons,
+            item.SavedCcWeapons,
             item.CachedLogoPath,
             item.PackagedLogoPath);
 
@@ -455,6 +459,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var mergedProfile = BuildMergedProfileItem(item, loadedProfile);
         _viewerViewModel.Profiles.Add(mergedProfile);
         _viewerViewModel.ApplySelectedProfileTopSummaries(mergedProfile);
+        _viewerViewModel.ApplyHackableOverrideFromCurrentConfiguration(
+            mergedProfile.UniqueEquipment,
+            mergedProfile.UniqueSkills);
         SelectedCaptainNameHeading = item.Name;
         var baseHeading = string.IsNullOrWhiteSpace(item.BaseUnitName)
             ? (string.IsNullOrWhiteSpace(mergedProfile.Name) ? item.Name : mergedProfile.Name)
@@ -471,6 +478,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         SelectedUnitTypeHeading = item.UnitTypeCode;
         HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
+        var lieutenantIconCount = (mergedProfile.IsLieutenant ? 1 : 0) + CountBonusLieutenantOrders(mergedProfile.UniqueSkills);
+        UnitDisplayConfigurationsView.ShowLieutenantIcon = mergedProfile.IsLieutenant;
+        UnitDisplayConfigurationsView.LieutenantIconCount = lieutenantIconCount;
         SetSelectedNameEditMode(false);
         SelectedNameEntry.Text = item.Name;
 
@@ -863,6 +873,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         BottomIconRowCanvas.InvalidateSurface();
         UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
         UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
+        UnitDisplayConfigurationsView.LieutenantIconPicture = _lieutenantOrderIconPicture;
         UnitDisplayConfigurationsView.ImpetuousIconPicture = _impetuousIconPicture;
         UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = _tacticalAwarenessIconPicture;
         UnitDisplayConfigurationsView.CubeIconPicture = _cubeIconPicture;
@@ -1159,13 +1170,15 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
     {
         var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-        var orderTypePicture = _viewerViewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if (_viewerViewModel.HasOrderTypeIcon && orderTypePicture is not null)
+        var profile = _viewerViewModel.Profiles.FirstOrDefault();
+        var profileIsIrregular = !IsDashOrEmpty(profile?.UniqueSkills) &&
+                                 profile!.UniqueSkills.Contains("irregular", StringComparison.OrdinalIgnoreCase);
+        var orderTypePicture = profileIsIrregular ? _irregularOrderIconPicture : _regularOrderIconPicture;
+        if (orderTypePicture is not null)
         {
             entries.Add((orderTypePicture, null));
         }
 
-        var profile = _viewerViewModel.Profiles.FirstOrDefault();
         var isLieutenantProfile = profile?.IsLieutenant == true;
         if (isLieutenantProfile && _lieutenantOrderIconPicture is not null)
         {
@@ -1450,8 +1463,49 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 RegexOptions.IgnoreCase);
         }
 
-        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+        var detailedLtOrderValues = new HashSet<int>();
+        foreach (var line in lines)
+        {
+            var detailMatches = Regex.Matches(
+                line,
+                @"\blieutenant\b[^\n\r]*\(\s*\+(\d+)\s*(?:lt|lieutenant)?\s*orders?\s*\)",
+                RegexOptions.IgnoreCase);
+            foreach (Match match in detailMatches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                detailedLtOrderValues.Add(Math.Max(0, value));
+            }
+        }
+
+        var deduped = new List<string>(lines.Count);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in lines)
+        {
+            var standaloneLtOrderMatch = Regex.Match(
+                line,
+                @"^\+(\d+)\s*(?:lt|lieutenant)\s*orders?\s*$",
+                RegexOptions.IgnoreCase);
+            if (standaloneLtOrderMatch.Success &&
+                standaloneLtOrderMatch.Groups.Count >= 2 &&
+                int.TryParse(standaloneLtOrderMatch.Groups[1].Value, out var standaloneValue) &&
+                detailedLtOrderValues.Contains(Math.Max(0, standaloneValue)))
+            {
+                continue;
+            }
+
+            if (seen.Add(line))
+            {
+                deduped.Add(line);
+            }
+        }
+
+        return deduped.Count == 0 ? "-" : string.Join(Environment.NewLine, deduped);
     }
+
 
     private static List<string> SplitProfileText(string? text)
     {
@@ -1538,13 +1592,32 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         foreach (var line in SplitProfileText(uniqueSkills))
         {
             if (!line.Contains("lt order", StringComparison.OrdinalIgnoreCase) &&
-                !line.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase))
+                !line.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase) &&
+                !line.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            var matches = Regex.Matches(line, @"\+(\d+)\s*(?:lt|lieutenant)\s*orders?\b", RegexOptions.IgnoreCase);
+            var matches = Regex.Matches(
+                line,
+                @"^\s*\+(\d+)\s*(?:lt|lieutenant)\s*orders?\s*$",
+                RegexOptions.IgnoreCase);
             foreach (Match match in matches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                total += Math.Max(0, value);
+            }
+
+            // Also support skills rendered as "Lieutenant (+1 Order)".
+            var lieutenantDetailMatches = Regex.Matches(
+                line,
+                @"\blieutenant\b[^\n\r]*\(\s*\+(\d+)\s*(?:(?:lt|lieutenant)\s*)?orders?\s*\)",
+                RegexOptions.IgnoreCase);
+            foreach (Match match in lieutenantDetailMatches)
             {
                 if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
                 {

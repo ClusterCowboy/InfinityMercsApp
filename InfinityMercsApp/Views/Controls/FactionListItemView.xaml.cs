@@ -13,6 +13,7 @@ public partial class FactionListItemView : ContentView
     private SKPicture? _svgPicture;
     private SKPicture? _rightPrimaryPicture;
     private SKPicture? _rightSecondaryPicture;
+    private int _logoLoadVersion;
     public event EventHandler? ItemTapped;
     public static readonly BindableProperty ItemTappedCommandProperty =
         BindableProperty.Create(
@@ -154,6 +155,7 @@ public partial class FactionListItemView : ContentView
 
     private async Task LoadSvgFromCacheAsync()
     {
+        var loadVersion = ++_logoLoadVersion;
         _svgPicture?.Dispose();
         _svgPicture = null;
 
@@ -170,15 +172,30 @@ public partial class FactionListItemView : ContentView
 
             if (stream is null)
             {
+                if (loadVersion != _logoLoadVersion)
+                {
+                    return;
+                }
+
                 LogoCanvas.InvalidateSurface();
                 return;
             }
 
+            SKPicture? loadedPicture = null;
             await using (stream)
             {
-            var svg = new SKSvg();
-                _svgPicture = svg.Load(stream);
+                var svg = new SKSvg();
+                loadedPicture = svg.Load(stream);
             }
+
+            if (loadVersion != _logoLoadVersion)
+            {
+                loadedPicture?.Dispose();
+                return;
+            }
+
+            _svgPicture?.Dispose();
+            _svgPicture = loadedPicture;
         }
         catch (Exception ex)
         {
