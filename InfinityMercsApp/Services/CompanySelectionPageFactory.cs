@@ -72,5 +72,17 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _appSettingsProvider,
             _armyDataService);
     }
+
+    public AirborneCompanySelectionPage CreateAirborne()
+    {
+        return new AirborneCompanySelectionPage(
+            _metadataProvider,
+            _factionProvider,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
+            _factionLogoCacheService,
+            _appSettingsProvider,
+            _armyDataService);
+    }
 }
 

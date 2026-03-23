@@ -246,6 +246,7 @@ internal static class CompanyStartSaveWorkflow
         var currentEquipmentResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, currentEquipmentNames, "equip", currentLookupFactions);
         var baseWeaponResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, baseWeaponNames, "weapons", baseLookupFactions);
         var currentWeaponResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, currentWeaponNames, "weapons", currentLookupFactions);
+        var resolvedUnitTypeCode = ResolveUnitTypeCode(entry, armyDataService);
 
         var customSkills = baseSkillResolution.CustomNames
             .Concat(currentSkillResolution.CustomNames)
@@ -266,9 +267,7 @@ internal static class CompanyStartSaveWorkflow
             Name = entry.Name,
             BaseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName) ? entry.Name : entry.BaseUnitName,
             CustomName = entry.IsLieutenant ? normalizedCaptainName : entry.Name,
-            UnitTypeCode = string.IsNullOrWhiteSpace(entry.UnitTypeCode)
-                ? string.Empty
-                : entry.UnitTypeCode.Trim().ToUpperInvariant(),
+            UnitTypeCode = resolvedUnitTypeCode,
             ProfileKey = entry.ProfileKey,
             SourceFactionId = entry.SourceFactionId,
             SourceUnitId = entry.SourceUnitId,
@@ -804,6 +803,43 @@ internal static class CompanyStartSaveWorkflow
 
         var normalized = Regex.Replace(value.Trim(), @"\s+", " ");
         return normalized.ToLowerInvariant();
+    }
+
+    private static string ResolveUnitTypeCode<TEntry>(TEntry entry, IArmyDataService armyDataService)
+        where TEntry : class, ICompanyMercsEntry
+    {
+        if (!string.IsNullOrWhiteSpace(entry.UnitTypeCode))
+        {
+            return entry.UnitTypeCode.Trim().ToUpperInvariant();
+        }
+
+        var fromSubtitle = CompanyStartSharedState.ExtractUnitTypeCode(entry.Subtitle);
+        if (!string.IsNullOrWhiteSpace(fromSubtitle))
+        {
+            return fromSubtitle.Trim().ToUpperInvariant();
+        }
+
+        if (entry.SourceFactionId <= 0 || entry.SourceUnitId <= 0)
+        {
+            return string.Empty;
+        }
+
+        var resume = armyDataService
+            .GetResumeByFactionMercsOnly(entry.SourceFactionId)
+            .FirstOrDefault(x => x.UnitId == entry.SourceUnitId);
+        if (resume?.Type is not int resumeType)
+        {
+            return string.Empty;
+        }
+
+        var snapshot = armyDataService.GetFactionSnapshot(entry.SourceFactionId);
+        var typeLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "type");
+        if (!typeLookup.TryGetValue(resumeType, out var typeName) || string.IsNullOrWhiteSpace(typeName))
+        {
+            return string.Empty;
+        }
+
+        return typeName.Trim().ToUpperInvariant();
     }
 
     private sealed class SerializedCompanyEntry
