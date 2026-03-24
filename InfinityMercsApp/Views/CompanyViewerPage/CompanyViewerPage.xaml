@@ -67,8 +67,21 @@
                                 VerticalOptions="Center"
                                 PaintSurface="OnSelectedNameRejectCanvasPaintSurface" />
                         </Grid>
-                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}" FontSize="28" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
-                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}" FontSize="24" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label Grid.Column="0"
+                                   Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}"
+                                   FontSize="28"
+                                   TextColor="#9CA3AF"
+                                   HorizontalOptions="Start"
+                                   IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}"
+                                   FontSize="24"
+                                   TextColor="#9CA3AF"
+                                   HorizontalTextAlignment="End"
+                                   HorizontalOptions="End"
+                                   IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
+                        </Grid>
                     </VerticalStackLayout>
 
                     <controls:UnitDisplayConfigurationsView

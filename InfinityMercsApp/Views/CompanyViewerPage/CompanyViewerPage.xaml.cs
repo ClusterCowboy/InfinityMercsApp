@@ -384,6 +384,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     UnitTypeCode = NormalizeUnitTypeCode(entry.UnitTypeCode),
                     Subtitle = subtitle,
                     SourceFactionId = entry.SourceFactionId,
+                    VisualFactionId = logoSourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     ProfileKey = entry.ProfileKey,
                     IsPeripheralUnit = entry.IsPeripheralUnit,
@@ -397,7 +398,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
-                    SelectionAccentColor = ResolveSelectionAccentColor(entry.SourceFactionId),
+                    SelectionAccentColor = ResolveSelectionAccentColor(logoSourceFactionId),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
                         ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg"
@@ -491,7 +492,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         SelectedUnitTypeHeading = item.UnitTypeCode;
         HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
-        ApplyUnitHeaderThemeForFaction(item.SourceFactionId);
+        ApplyUnitHeaderThemeForFaction(item.VisualFactionId > 0 ? item.VisualFactionId : item.SourceFactionId);
         ApplyProfileTraitIconOverrides(item, mergedProfile);
         var lieutenantIconCount = (mergedProfile.IsLieutenant ? 1 : 0) + CountBonusLieutenantOrders(mergedProfile.UniqueSkills);
         UnitDisplayConfigurationsView.ShowLieutenantIcon = mergedProfile.IsLieutenant;
@@ -726,7 +727,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return formatted;
     }
 
-    private static ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
+    private ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
     {
         var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
         var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
@@ -738,6 +739,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         {
             uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
         }
+        uniqueSkills = NormalizeSkillsForDisplay(uniqueSkills);
         var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -772,6 +774,68 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             IsLieutenant = isLieutenant,
             ProfileKey = loadedProfile?.ProfileKey ?? item.ProfileKey
         };
+    }
+
+    private string NormalizeSkillsForDisplay(string? skillsText)
+    {
+        var showUnitsInInches = _viewerViewModel.ShowUnitsInInches;
+        var result = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var dodgeExtras = new List<string>();
+        var dodgeExtrasSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var hasPlainDodge = false;
+
+        foreach (var rawLine in SplitProfileText(skillsText))
+        {
+            var line = rawLine.Trim();
+            var dodgeMatch = Regex.Match(line, @"^\s*dodge(?:\s*\((?<extra>.+)\))?\s*$", RegexOptions.IgnoreCase);
+            if (dodgeMatch.Success)
+            {
+                var extra = dodgeMatch.Groups["extra"].Value.Trim();
+                if (string.IsNullOrWhiteSpace(extra))
+                {
+                    hasPlainDodge = true;
+                }
+                else
+                {
+                    extra = CompanySelectionSharedUtilities.ConvertDistanceText(extra, showUnitsInInches);
+                    extra = Regex.Replace(extra, @"\s+", " ").Trim();
+                    if (dodgeExtrasSeen.Add(extra))
+                    {
+                        dodgeExtras.Add(extra);
+                    }
+                }
+
+                continue;
+            }
+
+            if (seen.Add(line))
+            {
+                result.Add(line);
+            }
+        }
+
+        if (dodgeExtras.Count > 0)
+        {
+            foreach (var extra in dodgeExtras)
+            {
+                var dodgeLine = $"Dodge ({extra})";
+                if (seen.Add(dodgeLine))
+                {
+                    result.Add(dodgeLine);
+                }
+            }
+        }
+        else if (hasPlainDodge)
+        {
+            const string dodgeLine = "Dodge";
+            if (seen.Add(dodgeLine))
+            {
+                result.Add(dodgeLine);
+            }
+        }
+
+        return result.Count == 0 ? "-" : string.Join(Environment.NewLine, result);
     }
 
     private void UpdateCurrentWeaponsDisplay()
@@ -1700,6 +1764,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         var hasRegular = ContainsWholeWord(combined, "regular");
         var hasIrregular = ContainsWholeWord(combined, "irregular");
+        var hasTacticalAwareness = Regex.IsMatch(combined, @"\btactical\s*awareness\b", RegexOptions.IgnoreCase);
         var hasCube2 = Regex.IsMatch(combined, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
         var hasNegativeCube = Regex.IsMatch(combined, @"\b(no[\s-]*cube|without[\s-]*cube|cube[\s-]*none)\b", RegexOptions.IgnoreCase);
         var hasCube = !hasCube2 && !hasNegativeCube && ContainsWholeWord(combined, "cube");
@@ -1709,6 +1774,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                             Regex.IsMatch(combined, @"\bancillary\b", RegexOptions.IgnoreCase);
 
         _viewerViewModel.SetOrderTypeIconState(showRegular: hasRegular, showIrregular: hasIrregular);
+        _viewerViewModel.ApplyTacticalAwarenessOverride(hasTacticalAwareness);
         _viewerViewModel.SetTechTraitIconState(showCube: hasCube, showCube2: hasCube2, showHackable: hasHackable);
         UnitDisplayConfigurationsView.ShowPeripheralIcon = hasPeripheral;
     }
@@ -1778,7 +1844,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var metadataFactionName = _armyDataService?.GetMetadataFactionById(sourceFactionId)?.Name;
-        if (!string.IsNullOrWhiteSpace(metadataFactionName))
+        if (!string.IsNullOrWhiteSpace(metadataFactionName) &&
+            CompanySelectionSharedUtilities.IsThemeFactionName(metadataFactionName))
         {
             return metadataFactionName;
         }
@@ -1791,6 +1858,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 {
     public int EntryIndex { get; init; }
     public int SourceFactionId { get; init; }
+    public int VisualFactionId { get; init; }
     public int SourceUnitId { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
     public bool IsPeripheralUnit { get; init; }

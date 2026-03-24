@@ -752,6 +752,11 @@ public class ViewerViewModel : BaseViewModel
         ShowHackableIcon = showHackable;
     }
 
+    public void ApplyTacticalAwarenessOverride(bool hasTacticalAwareness)
+    {
+        ShowTacticalAwarenessIcon = ShowTacticalAwarenessIcon || hasTacticalAwareness;
+    }
+
     public void ApplyHackableOverrideFromCurrentConfiguration(string? currentEquipment, string? currentSkills)
     {
         var hasHackableFromCurrentState = ContainsHackableFromCurrentState(currentEquipment, currentSkills);
@@ -3785,7 +3790,8 @@ public class ViewerViewModel : BaseViewModel
         var hasRegular = false;
         var hasIrregular = false;
         var hasImpetuous = false;
-        var hasTacticalAwareness = false;
+        var optionsSeen = 0;
+        var tacticalOptions = 0;
 
         if (profileGroupsArray.ValueKind != JsonValueKind.Array)
         {
@@ -3801,6 +3807,8 @@ public class ViewerViewModel : BaseViewModel
 
             foreach (var option in optionsElement.EnumerateArray())
             {
+                optionsSeen++;
+                var optionHasTactical = false;
                 if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
                 {
                     continue;
@@ -3833,13 +3841,19 @@ public class ViewerViewModel : BaseViewModel
                     }
                     else if (string.Equals(type, "TACTICAL", StringComparison.OrdinalIgnoreCase))
                     {
-                        hasTacticalAwareness = true;
+                        optionHasTactical = true;
                     }
+                }
+
+                if (optionHasTactical)
+                {
+                    tacticalOptions++;
                 }
             }
         }
 
-        return (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness);
+        var hasUnitWideTacticalAwareness = optionsSeen > 0 && tacticalOptions == optionsSeen;
+        return (hasRegular, hasIrregular, hasImpetuous, hasUnitWideTacticalAwareness);
     }
 
     private static (bool HasCube, bool HasCube2, bool HasHackable) ParseUnitTechTraits(

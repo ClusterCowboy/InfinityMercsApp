@@ -729,7 +729,7 @@ internal static class CompanyStartSaveWorkflow
                         var resolvedExtraId = TryResolveExtraId(
                             armyDataService,
                             extrasIdLookupCache,
-                            NormalizeLookupKey(extraName),
+                            extraName,
                             distinctFactionIds);
                         if (!resolvedExtraId.HasValue)
                         {
@@ -792,10 +792,16 @@ internal static class CompanyStartSaveWorkflow
     private static int? TryResolveExtraId(
         IArmyDataService armyDataService,
         Dictionary<int, Dictionary<string, int>> extrasIdLookupCache,
-        string normalizedName,
+        string rawName,
         IReadOnlyList<int> factionIds)
     {
-        if (string.IsNullOrWhiteSpace(normalizedName))
+        if (string.IsNullOrWhiteSpace(rawName))
+        {
+            return null;
+        }
+
+        var normalizedCandidates = BuildExtraLookupCandidates(rawName);
+        if (normalizedCandidates.Count == 0)
         {
             return null;
         }
@@ -803,9 +809,12 @@ internal static class CompanyStartSaveWorkflow
         foreach (var factionId in factionIds)
         {
             var lookup = GetExtraIdLookupForFaction(armyDataService, extrasIdLookupCache, factionId);
-            if (lookup.TryGetValue(normalizedName, out var id))
+            foreach (var normalizedName in normalizedCandidates)
             {
-                return id;
+                if (lookup.TryGetValue(normalizedName, out var id))
+                {
+                    return id;
+                }
             }
         }
 
@@ -965,6 +974,29 @@ internal static class CompanyStartSaveWorkflow
 
         var normalized = Regex.Replace(value.Trim(), @"\s+", " ");
         return normalized.ToLowerInvariant();
+    }
+
+    private static List<string> BuildExtraLookupCandidates(string rawValue)
+    {
+        var candidates = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void Add(string? value)
+        {
+            var normalized = NormalizeLookupKey(value);
+            if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+            {
+                return;
+            }
+
+            candidates.Add(normalized);
+        }
+
+        Add(rawValue);
+        Add(CompanySelectionSharedUtilities.ConvertDistanceText(rawValue, showUnitsInInches: true));
+        Add(CompanySelectionSharedUtilities.ConvertDistanceText(rawValue, showUnitsInInches: false));
+
+        return candidates;
     }
 
     private static string ResolveUnitTypeCode<TEntry>(TEntry entry, IArmyDataService armyDataService)

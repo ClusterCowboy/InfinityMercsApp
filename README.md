@@ -9,25 +9,25 @@ This is an app in C# which will allow for the easy creation and managment of a c
 #### Baseline
  - [X] Peripherals should be split off into separate profiles in Mercs
        Only display mode, with points adjusted
-	 - [ ] Give list of valid profiles in army list to link peripherals to
-	 - [ ] Have the peripheral show up as equipment in the linked to unit
+	 - [X] Give list of valid profiles in army list to link peripherals to
+	 - [X] Have the peripheral show up as equipment in the linked to unit
 	 - [X] Only allow one peripheral, subtract cost of additional peripherals       
 
  - [X] Hyperlinking to weapons, ammo types, equipment, and gear (hyperlinks are part of the data downloaded)
 	- [ ]  Weapons, ammo types
  - [X] Show the unit as having Tac orders, Regular Orders, Irregular orders
-	- [ ] Show the unit, after being selected as having Lt orders (including multiple)
+	- [X] Show the unit, after being selected as having Lt orders (including multiple)
  - [X] Filter units by stats
  - [X] Filter units by equipment
  - [X] Filter units by skills
  - [X] Filter units by weapons
  - [X] Show the unit as having a cube
  - [X] Show the unit as being hackable
- - [ ] Show the unit as being a peripheral
- - [ ] Show Fireteam options
+ - [X] Show the unit as being a peripheral
+ - [X] Show Fireteam options
 	 - [X] Show Duo teams
-	 - [ ] Highlight options when selecting a type of fireteam
-	 - [ ] Show bonuses from fireteams in the statline
+	 - [X] Highlight options when selecting a type of fireteam
+	 - [X] Show bonuses from fireteams in the statline
 #### Mercs Features
 
  - [X] Spec Ops Implementation
@@ -118,6 +118,3 @@ This is an app in C# which will allow for the easy creation and managment of a c
 And more
 
 ## Known Defects
-- [] Create an indicator (yellow circle?) to indicate filter is on
-- [] Background Colors not populating correctly based on faction
-- [] Evaulation of Fireteam level is not correct
