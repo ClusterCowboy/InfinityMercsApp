@@ -1020,8 +1020,15 @@ public partial class UnitDisplayConfigurationsView : ContentView
             return;
         }
 
-        var rowHeight = ShowConfigurationsSection ? GridLength.Auto : new GridLength(0);
-        ConfigurationsRootGrid.RowDefinitions[6].Height = rowHeight;
-        ConfigurationsRootGrid.RowDefinitions[7].Height = rowHeight;
+        if (ShowConfigurationsSection)
+        {
+            ConfigurationsRootGrid.RowDefinitions[6].Height = GridLength.Auto;
+            ConfigurationsRootGrid.RowDefinitions[7].Height = new GridLength(1, GridUnitType.Star);
+            return;
+        }
+
+        var hiddenHeight = new GridLength(0);
+        ConfigurationsRootGrid.RowDefinitions[6].Height = hiddenHeight;
+        ConfigurationsRootGrid.RowDefinitions[7].Height = hiddenHeight;
     }
 }

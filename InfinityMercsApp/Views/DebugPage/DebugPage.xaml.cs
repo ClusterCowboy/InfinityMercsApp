@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
 using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
 
@@ -13,16 +15,7 @@ public partial class DebugPage : ContentPage
     {
         PropertyNameCaseInsensitive = true
     };
-
-    private static readonly string[] ReformTestCompanyFiles =
-    [
-        "combinedaaa-0001.json",
-        "ehruah-0001.json",
-        "heather-the-feather-0001.json",
-        "skots-0001.json",
-        "the-road-crew-0001.json",
-        "ziggity-0001.json"
-    ];
+    private const string DebugManifestFileName = "DebugTestCompanyManifest.json";
 
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
@@ -51,29 +44,34 @@ public partial class DebugPage : ContentPage
 
         try
         {
+            var manifest = await LoadManifestAsync();
+            if (manifest?.Companies is null || manifest.Companies.Count == 0)
+            {
+                await DisplayAlert(
+                    "Reform Test Companies",
+                    $"No companies found in manifest '{DebugManifestFileName}'.",
+                    "OK");
+                return;
+            }
+
             var saveDir = Path.Combine(FileSystem.Current.AppDataDirectory, "MercenaryRecords");
             Directory.CreateDirectory(saveDir);
             var summaryLines = new List<string>();
 
-            foreach (var fileName in ReformTestCompanyFiles)
+            foreach (var manifestCompany in manifest.Companies)
             {
-                var filePath = Path.Combine(saveDir, fileName);
-                if (!File.Exists(filePath))
+                var fileName = manifestCompany.FileName?.Trim();
+                var source = manifestCompany.CompanyData;
+                if (string.IsNullOrWhiteSpace(fileName) || source is null)
                 {
-                    summaryLines.Add($"{fileName}: missing");
+                    summaryLines.Add("manifest entry: skipped (missing file name or company data)");
                     continue;
                 }
 
+                var filePath = Path.Combine(saveDir, fileName);
+
                 try
                 {
-                    var json = await File.ReadAllTextAsync(filePath);
-                    var source = JsonSerializer.Deserialize<DebugSavedCompanyFile>(json, JsonOptions);
-                    if (source is null)
-                    {
-                        summaryLines.Add($"{fileName}: failed (unable to parse)");
-                        continue;
-                    }
-
                     var sourceFactions = BuildSourceFactions(source);
                     var reformEntries = BuildReformEntries(source);
                     if (reformEntries.Count == 0)
@@ -103,7 +101,10 @@ public partial class DebugPage : ContentPage
                         NavigateToCompanyViewerAsync = _ => Task.CompletedTask
                     };
 
-                    File.Delete(filePath);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
 
                     await CompanyStartSaveWorkflow.RunWithProvidedCaptainStatsAsync(
                         request,
@@ -233,6 +234,32 @@ public partial class DebugPage : ContentPage
         }
 
         return result;
+    }
+
+    private static async Task<DebugTestCompanyManifest?> LoadManifestAsync()
+    {
+        static async Task<string?> TryReadAssetAsync(string assetPath)
+        {
+            try
+            {
+                await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(assetPath);
+                using var reader = new StreamReader(stream);
+                return await reader.ReadToEndAsync();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        var rawJson = await TryReadAssetAsync(DebugManifestFileName)
+                      ?? await TryReadAssetAsync($"Resources/Raw/{DebugManifestFileName}");
+        if (string.IsNullOrWhiteSpace(rawJson))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<DebugTestCompanyManifest>(rawJson, JsonOptions);
     }
 
     private bool TryBuildDbDerivedProfilePayload(
@@ -367,6 +394,7 @@ public partial class DebugPage : ContentPage
         var selectedProfile = profiles.FirstOrDefault(x =>
             !string.IsNullOrWhiteSpace(savedProfileKey) &&
             string.Equals(x.ProfileKey, savedProfileKey, StringComparison.OrdinalIgnoreCase));
+        selectedProfile ??= TryFindProfileByLooseKeyMatch(profiles, savedProfileKey);
         selectedProfile ??= profiles.FirstOrDefault(x => x.IsLieutenant == isLieutenant);
         selectedProfile ??= profiles.FirstOrDefault();
         if (selectedProfile is null)
@@ -456,6 +484,67 @@ public partial class DebugPage : ContentPage
         return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
 
+    private static ViewerProfileItem? TryFindProfileByLooseKeyMatch(
+        IEnumerable<ViewerProfileItem> profiles,
+        string? savedProfileKey)
+    {
+        if (string.IsNullOrWhiteSpace(savedProfileKey))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(
+            savedProfileKey.Trim(),
+            @"^\s*(?:[^|]*\|)?(?<name>[^|]+)\|(?<cost>\d+)\|[^|]*\|lt:(?<lt>[01])\s*$",
+            RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var optionName = match.Groups["name"].Value.Trim();
+        if (string.IsNullOrWhiteSpace(optionName))
+        {
+            return null;
+        }
+
+        var hasCost = int.TryParse(match.Groups["cost"].Value, out var cost);
+        var hasLt = int.TryParse(match.Groups["lt"].Value, out var ltValue);
+        var isLieutenant = hasLt && ltValue > 0;
+
+        return profiles.FirstOrDefault(profile =>
+        {
+            if (!string.Equals(profile.Name?.Trim(), optionName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (hasLt && profile.IsLieutenant != isLieutenant)
+            {
+                return false;
+            }
+
+            if (!hasCost)
+            {
+                return true;
+            }
+
+            return TryParseFirstInteger(profile.Cost, out var parsedCost) && parsedCost == cost;
+        });
+    }
+
+    private static bool TryParseFirstInteger(string? value, out int parsed)
+    {
+        parsed = 0;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var match = Regex.Match(value, @"\d+");
+        return match.Success && int.TryParse(match.Value, out parsed);
+    }
+
     private sealed class DbDerivedProfilePayload
     {
         public string SavedEquipment { get; init; } = "-";
@@ -534,6 +623,27 @@ public partial class DebugPage : ContentPage
 
     private sealed class DebugSavedCompanyFile : CompanySavedCompanyFileBase<DebugCaptainStats, DebugSavedCompanyFaction, DebugSavedEntry>
     {
+    }
+
+    private sealed class DebugTestCompanyManifest
+    {
+        [JsonPropertyName("generatedUtc")]
+        public string? GeneratedUtc { get; init; }
+
+        [JsonPropertyName("source")]
+        public string? Source { get; init; }
+
+        [JsonPropertyName("companies")]
+        public List<DebugTestCompanyManifestEntry> Companies { get; init; } = [];
+    }
+
+    private sealed class DebugTestCompanyManifestEntry
+    {
+        [JsonPropertyName("fileName")]
+        public string? FileName { get; init; }
+
+        [JsonPropertyName("companyData")]
+        public DebugSavedCompanyFile? CompanyData { get; init; }
     }
 
     private sealed class DebugSavedCompanyFaction : CompanySavedCompanyFactionBase
