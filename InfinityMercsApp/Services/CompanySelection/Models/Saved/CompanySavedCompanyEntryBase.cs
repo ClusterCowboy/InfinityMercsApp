@@ -30,12 +30,16 @@ public abstract class CompanySavedCompanyEntryBase
 
     [JsonPropertyName("CurrentSkillCodes")]
     public List<CompanySavedCodeRef> CurrentSkillCodes { get; init; } = [];
+    [JsonPropertyName("CurrentCharacteristicCodes")]
+    public List<CompanySavedCodeRef> CurrentCharacteristicCodes { get; init; } = [];
     [JsonPropertyName("CurrentEquipmentCodes")]
     public List<CompanySavedCodeRef> CurrentEquipmentCodes { get; init; } = [];
     [JsonPropertyName("CurrentWeaponCodes")]
     public List<CompanySavedCodeRef> CurrentWeaponCodes { get; init; } = [];
     [JsonPropertyName("Custom Skills")]
     public List<string> CustomSkills { get; init; } = [];
+    [JsonPropertyName("Custom Characteristics")]
+    public List<string> CustomCharacteristics { get; init; } = [];
     [JsonPropertyName("Custom Equipment")]
     public List<string> CustomEquipment { get; init; } = [];
     [JsonPropertyName("Custom Weapons")]
@@ -56,6 +60,7 @@ public abstract class CompanySavedCompanyEntryBase
     public string PeripheralAva { get; init; } = "-";
     public string SavedPeripheralEquipment { get; init; } = "-";
     public string SavedPeripheralSkills { get; init; } = "-";
+    public string SavedPeripheralCharacteristics { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
 }

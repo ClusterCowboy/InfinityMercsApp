@@ -296,7 +296,13 @@ public static class CompanyProfileTextService
         }
 
         detail = detail.Trim('(', ')', '[', ']', '-', ':', ',', ';', ' ');
-        return string.IsNullOrWhiteSpace(detail) ? null : detail;
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return null;
+        }
+
+        // Preserve the base skill context so save conversion can persist id + extra.
+        return $"Lieutenant ({detail})";
     }
 }
 

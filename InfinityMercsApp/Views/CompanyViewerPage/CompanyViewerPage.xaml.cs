@@ -33,6 +33,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
     private SKPicture? _lieutenantOrderIconPicture;
+    private SKPicture? _peripheralIconPicture;
     private SKPicture? _commandTokenIconPicture;
     private SKPicture? _impetuousIconPicture;
     private SKPicture? _tacticalAwarenessIconPicture;
@@ -292,6 +293,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
         {
             CompanyNameHeading = "Company Viewer";
+            Title = CompanyNameHeading;
             CompanySubtitle = "Saved company file was not found.";
             CompanyUnitsStatus = "Saved company file was not found.";
             SelectedCaptainNameHeading = string.Empty;
@@ -309,6 +311,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             if (payload is null)
             {
                 CompanyNameHeading = "Company Viewer";
+                Title = CompanyNameHeading;
                 CompanySubtitle = "Unable to read saved company data.";
                 CompanyUnitsStatus = "Unable to read saved company data.";
                 SelectedCaptainNameHeading = string.Empty;
@@ -323,7 +326,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 ? Path.GetFileNameWithoutExtension(filePath)
                 : payload.CompanyName;
 
-            CompanyNameHeading = companyName;
+            CompanyNameHeading = BuildCompanyViewerHeading(companyName);
+            Title = CompanyNameHeading;
             CompanySubtitle = string.Empty;
             var captainStats = payload.ImprovedCaptainStats ?? new SavedImprovedCaptainStats();
             _loadedCaptainStats = captainStats;
@@ -340,9 +344,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 ? CollectCaptainChoices(captainStats.EquipmentChoice1, captainStats.EquipmentChoice2, captainStats.EquipmentChoice3)
                 : [];
 
-            for (var i = 0; i < payload.Entries.Count; i++)
+            var orderedEntries = payload.Entries
+                .OrderByDescending(x => x.IsLieutenant)
+                .ThenBy(x => x.EntryIndex)
+                .ToList();
+            for (var i = 0; i < orderedEntries.Count; i++)
             {
-                var entry = payload.Entries[i];
+                var entry = orderedEntries[i];
                 var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
                     ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
                     : entry.BaseUnitName;
@@ -356,6 +364,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var (savedRangedWeapons, savedCcWeapons) = ResolveSavedWeapons(entry.SourceFactionId, entry);
                 var savedSkills = ResolveSavedSkills(entry.SourceFactionId, entry);
                 var savedEquipment = ResolveSavedEquipment(entry.SourceFactionId, entry);
+                var savedCharacteristics = ResolveSavedCharacteristics(entry.SourceFactionId, entry);
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
                     savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
@@ -371,9 +380,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     Name = displayName,
                     EntryIndex = entry.EntryIndex,
                     BaseUnitName = baseUnitName,
+                    BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     UnitTypeCode = NormalizeUnitTypeCode(entry.UnitTypeCode),
                     Subtitle = subtitle,
                     SourceFactionId = entry.SourceFactionId,
+                    VisualFactionId = logoSourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     ProfileKey = entry.ProfileKey,
                     IsPeripheralUnit = entry.IsPeripheralUnit,
@@ -381,11 +392,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     Cost = entry.Cost,
                     SavedEquipment = savedEquipment,
                     SavedSkills = savedSkills,
+                    SavedCharacteristics = savedCharacteristics,
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = savedCcWeapons,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
+                    SelectionAccentColor = ResolveSelectionAccentColor(logoSourceFactionId),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
                         ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg"
@@ -404,6 +417,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             CompanyNameHeading = "Company Viewer";
+            Title = CompanyNameHeading;
             CompanySubtitle = $"Failed to load company: {ex.Message}";
             CompanyUnitsStatus = $"Failed to load company: {ex.Message}";
             SelectedCaptainNameHeading = string.Empty;
@@ -433,6 +447,10 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             item.Name,
             item.ProfileKey,
             item.IsLieutenant,
+            item.SavedSkills,
+            item.SavedEquipment,
+            item.SavedRangedWeapons,
+            item.SavedCcWeapons,
             item.CachedLogoPath,
             item.PackagedLogoPath);
 
@@ -455,6 +473,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var mergedProfile = BuildMergedProfileItem(item, loadedProfile);
         _viewerViewModel.Profiles.Add(mergedProfile);
         _viewerViewModel.ApplySelectedProfileTopSummaries(mergedProfile);
+        _viewerViewModel.ApplyHackableOverrideFromCurrentConfiguration(
+            mergedProfile.UniqueEquipment,
+            mergedProfile.UniqueSkills);
         SelectedCaptainNameHeading = item.Name;
         var baseHeading = string.IsNullOrWhiteSpace(item.BaseUnitName)
             ? (string.IsNullOrWhiteSpace(mergedProfile.Name) ? item.Name : mergedProfile.Name)
@@ -471,6 +492,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         SelectedUnitTypeHeading = item.UnitTypeCode;
         HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
+        ApplyUnitHeaderThemeForFaction(item.VisualFactionId > 0 ? item.VisualFactionId : item.SourceFactionId);
+        ApplyProfileTraitIconOverrides(item, mergedProfile);
+        var lieutenantIconCount = (mergedProfile.IsLieutenant ? 1 : 0) + CountBonusLieutenantOrders(mergedProfile.UniqueSkills);
+        UnitDisplayConfigurationsView.ShowLieutenantIcon = mergedProfile.IsLieutenant;
+        UnitDisplayConfigurationsView.LieutenantIconCount = lieutenantIconCount;
         SetSelectedNameEditMode(false);
         SelectedNameEntry.Text = item.Name;
 
@@ -524,6 +550,26 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return entry.LogoSourceFactionId > 0 ? entry.LogoSourceFactionId : entry.SourceFactionId;
     }
 
+    private static string BuildCompanyViewerHeading(string? companyName)
+    {
+        var trimmed = companyName?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed)
+            ? "Company Viewer"
+            : $"Company Viewer: {trimmed}";
+    }
+
+    private static string BuildUnitBaseDisplayName(string? baseUnitName)
+    {
+        if (string.IsNullOrWhiteSpace(baseUnitName))
+        {
+            return "Unit";
+        }
+
+        var withoutParens = Regex.Replace(baseUnitName, @"\s*\([^)]*\)\s*", " ").Trim();
+        var collapsed = Regex.Replace(withoutParens, @"\s{2,}", " ").Trim();
+        return string.IsNullOrWhiteSpace(collapsed) ? "Unit" : collapsed;
+    }
+
     private static int ResolveLogoSourceUnitId(SavedCompanyEntry entry)
     {
         return entry.LogoSourceUnitId > 0 ? entry.LogoSourceUnitId : entry.SourceUnitId;
@@ -540,6 +586,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     {
         var names = ResolveCodeNames(sourceFactionId, entry.CurrentEquipmentCodes, "equip");
         names.AddRange(entry.CustomEquipment ?? []);
+        return JoinCodesOrDash(names);
+    }
+
+    private string ResolveSavedCharacteristics(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentCharacteristicCodes, "chars");
+        names.AddRange(entry.CustomCharacteristics ?? []);
         return JoinCodesOrDash(names);
     }
 
@@ -579,7 +632,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var savedSkillLines = SplitProfileText(item.SavedSkills);
-        var hasIrregular = savedSkillLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase));
+        var savedCharacteristicLines = SplitProfileText(item.SavedCharacteristics);
+        var hasIrregular = savedSkillLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase)) ||
+                           savedCharacteristicLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase));
         if (!hasIrregular)
         {
             return;
@@ -672,17 +727,19 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return formatted;
     }
 
-    private static ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
+    private ViewerProfileItem BuildMergedProfileItem(CompanyViewerUnitListItem item, ViewerProfileItem? loadedProfile)
     {
         var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
         var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
         var uniqueEquipment = MergeProfileSectionText(loadedProfile?.UniqueEquipment, item.SavedEquipment);
-        var isLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant;
+        var isLieutenant = item.IsLieutenant || loadedProfile?.IsLieutenant == true;
         var uniqueSkills = MergeProfileSectionText(loadedProfile?.UniqueSkills, item.SavedSkills);
+        var characteristics = MergeProfileSectionText(loadedProfile?.Characteristics, item.SavedCharacteristics);
         if (isLieutenant)
         {
             uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
         }
+        uniqueSkills = NormalizeSkillsForDisplay(uniqueSkills);
         var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -708,6 +765,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             UniqueSkillsFormatted = keepLoadedSkillsFormatting && loadedProfile?.UniqueSkillsFormatted is not null
                 ? loadedProfile.UniqueSkillsFormatted
                 : BuildSimpleFormatted(uniqueSkills, Color.FromArgb("#F59E0B")),
+            Characteristics = characteristics,
             Peripherals = loadedProfile?.Peripherals ?? "-",
             PeripheralsFormatted = loadedProfile?.PeripheralsFormatted,
             Cost = loadedProfile?.Cost ?? item.Cost.ToString(),
@@ -716,6 +774,68 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             IsLieutenant = isLieutenant,
             ProfileKey = loadedProfile?.ProfileKey ?? item.ProfileKey
         };
+    }
+
+    private string NormalizeSkillsForDisplay(string? skillsText)
+    {
+        var showUnitsInInches = _viewerViewModel.ShowUnitsInInches;
+        var result = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var dodgeExtras = new List<string>();
+        var dodgeExtrasSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var hasPlainDodge = false;
+
+        foreach (var rawLine in SplitProfileText(skillsText))
+        {
+            var line = rawLine.Trim();
+            var dodgeMatch = Regex.Match(line, @"^\s*dodge(?:\s*\((?<extra>.+)\))?\s*$", RegexOptions.IgnoreCase);
+            if (dodgeMatch.Success)
+            {
+                var extra = dodgeMatch.Groups["extra"].Value.Trim();
+                if (string.IsNullOrWhiteSpace(extra))
+                {
+                    hasPlainDodge = true;
+                }
+                else
+                {
+                    extra = CompanySelectionSharedUtilities.ConvertDistanceText(extra, showUnitsInInches);
+                    extra = Regex.Replace(extra, @"\s+", " ").Trim();
+                    if (dodgeExtrasSeen.Add(extra))
+                    {
+                        dodgeExtras.Add(extra);
+                    }
+                }
+
+                continue;
+            }
+
+            if (seen.Add(line))
+            {
+                result.Add(line);
+            }
+        }
+
+        if (dodgeExtras.Count > 0)
+        {
+            foreach (var extra in dodgeExtras)
+            {
+                var dodgeLine = $"Dodge ({extra})";
+                if (seen.Add(dodgeLine))
+                {
+                    result.Add(dodgeLine);
+                }
+            }
+        }
+        else if (hasPlainDodge)
+        {
+            const string dodgeLine = "Dodge";
+            if (seen.Add(dodgeLine))
+            {
+                result.Add(dodgeLine);
+            }
+        }
+
+        return result.Count == 0 ? "-" : string.Join(Environment.NewLine, result);
     }
 
     private void UpdateCurrentWeaponsDisplay()
@@ -747,6 +867,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _irregularOrderIconPicture = null;
         _lieutenantOrderIconPicture?.Dispose();
         _lieutenantOrderIconPicture = null;
+        _peripheralIconPicture?.Dispose();
+        _peripheralIconPicture = null;
         _commandTokenIconPicture?.Dispose();
         _commandTokenIconPicture = null;
         _impetuousIconPicture?.Dispose();
@@ -791,6 +913,17 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanyViewerPage lieutenant order icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
+            var peripheralSvg = new SKSvg();
+            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage peripheral icon load failed: {ex.Message}");
         }
 
         try
@@ -863,6 +996,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         BottomIconRowCanvas.InvalidateSurface();
         UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
         UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
+        UnitDisplayConfigurationsView.LieutenantIconPicture = _lieutenantOrderIconPicture;
+        UnitDisplayConfigurationsView.PeripheralIconPicture = _peripheralIconPicture;
         UnitDisplayConfigurationsView.ImpetuousIconPicture = _impetuousIconPicture;
         UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = _tacticalAwarenessIconPicture;
         UnitDisplayConfigurationsView.CubeIconPicture = _cubeIconPicture;
@@ -1159,13 +1294,15 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
     {
         var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-        var orderTypePicture = _viewerViewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if (_viewerViewModel.HasOrderTypeIcon && orderTypePicture is not null)
+        var profile = _viewerViewModel.Profiles.FirstOrDefault();
+        var profileIsIrregular = !IsDashOrEmpty(profile?.UniqueSkills) &&
+                                 profile!.UniqueSkills.Contains("irregular", StringComparison.OrdinalIgnoreCase);
+        var orderTypePicture = profileIsIrregular ? _irregularOrderIconPicture : _regularOrderIconPicture;
+        if (orderTypePicture is not null)
         {
             entries.Add((orderTypePicture, null));
         }
 
-        var profile = _viewerViewModel.Profiles.FirstOrDefault();
         var isLieutenantProfile = profile?.IsLieutenant == true;
         if (isLieutenantProfile && _lieutenantOrderIconPicture is not null)
         {
@@ -1450,8 +1587,49 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 RegexOptions.IgnoreCase);
         }
 
-        return lines.Count == 0 ? "-" : string.Join(Environment.NewLine, lines);
+        var detailedLtOrderValues = new HashSet<int>();
+        foreach (var line in lines)
+        {
+            var detailMatches = Regex.Matches(
+                line,
+                @"\blieutenant\b[^\n\r]*\(\s*\+(\d+)\s*(?:lt|lieutenant)?\s*orders?\s*\)",
+                RegexOptions.IgnoreCase);
+            foreach (Match match in detailMatches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                detailedLtOrderValues.Add(Math.Max(0, value));
+            }
+        }
+
+        var deduped = new List<string>(lines.Count);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in lines)
+        {
+            var standaloneLtOrderMatch = Regex.Match(
+                line,
+                @"^\+(\d+)\s*(?:lt|lieutenant)\s*orders?\s*$",
+                RegexOptions.IgnoreCase);
+            if (standaloneLtOrderMatch.Success &&
+                standaloneLtOrderMatch.Groups.Count >= 2 &&
+                int.TryParse(standaloneLtOrderMatch.Groups[1].Value, out var standaloneValue) &&
+                detailedLtOrderValues.Contains(Math.Max(0, standaloneValue)))
+            {
+                continue;
+            }
+
+            if (seen.Add(line))
+            {
+                deduped.Add(line);
+            }
+        }
+
+        return deduped.Count == 0 ? "-" : string.Join(Environment.NewLine, deduped);
     }
+
 
     private static List<string> SplitProfileText(string? text)
     {
@@ -1538,13 +1716,32 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         foreach (var line in SplitProfileText(uniqueSkills))
         {
             if (!line.Contains("lt order", StringComparison.OrdinalIgnoreCase) &&
-                !line.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase))
+                !line.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase) &&
+                !line.Contains("lieutenant", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            var matches = Regex.Matches(line, @"\+(\d+)\s*(?:lt|lieutenant)\s*orders?\b", RegexOptions.IgnoreCase);
+            var matches = Regex.Matches(
+                line,
+                @"^\s*\+(\d+)\s*(?:lt|lieutenant)\s*orders?\s*$",
+                RegexOptions.IgnoreCase);
             foreach (Match match in matches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
+                {
+                    continue;
+                }
+
+                total += Math.Max(0, value);
+            }
+
+            // Also support skills rendered as "Lieutenant (+1 Order)".
+            var lieutenantDetailMatches = Regex.Matches(
+                line,
+                @"\blieutenant\b[^\n\r]*\(\s*\+(\d+)\s*(?:(?:lt|lieutenant)\s*)?orders?\s*\)",
+                RegexOptions.IgnoreCase);
+            foreach (Match match in lieutenantDetailMatches)
             {
                 if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var value))
                 {
@@ -1557,12 +1754,111 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         return total;
     }
+
+    private void ApplyProfileTraitIconOverrides(CompanyViewerUnitListItem item, ViewerProfileItem mergedProfile)
+    {
+        var characteristicsText = mergedProfile.Characteristics ?? string.Empty;
+        var skillsText = mergedProfile.UniqueSkills ?? string.Empty;
+        var equipmentText = mergedProfile.UniqueEquipment ?? string.Empty;
+        var combined = NormalizeTraitText(string.Join(" ", characteristicsText, skillsText, equipmentText));
+
+        var hasRegular = ContainsWholeWord(combined, "regular");
+        var hasIrregular = ContainsWholeWord(combined, "irregular");
+        var hasTacticalAwareness = Regex.IsMatch(combined, @"\btactical\s*awareness\b", RegexOptions.IgnoreCase);
+        var hasCube2 = Regex.IsMatch(combined, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
+        var hasNegativeCube = Regex.IsMatch(combined, @"\b(no[\s-]*cube|without[\s-]*cube|cube[\s-]*none)\b", RegexOptions.IgnoreCase);
+        var hasCube = !hasCube2 && !hasNegativeCube && ContainsWholeWord(combined, "cube");
+        var hasHackable = IsHackableFromTraitText(combined);
+        var hasPeripheral = item.IsPeripheralUnit ||
+                            Regex.IsMatch(combined, @"\bservant\b", RegexOptions.IgnoreCase) ||
+                            Regex.IsMatch(combined, @"\bancillary\b", RegexOptions.IgnoreCase);
+
+        _viewerViewModel.SetOrderTypeIconState(showRegular: hasRegular, showIrregular: hasIrregular);
+        _viewerViewModel.ApplyTacticalAwarenessOverride(hasTacticalAwareness);
+        _viewerViewModel.SetTechTraitIconState(showCube: hasCube, showCube2: hasCube2, showHackable: hasHackable);
+        UnitDisplayConfigurationsView.ShowPeripheralIcon = hasPeripheral;
+    }
+
+    private static bool IsHackableFromTraitText(string normalizedText)
+    {
+        return Regex.IsMatch(normalizedText, @"\bhackable\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bhacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bkiller\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bevo\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bhacking\s*device\s*plus\b|\bhd\s*\+\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bkhd\b|\bevo\s*hd\b", RegexOptions.IgnoreCase);
+    }
+
+    private static bool ContainsWholeWord(string text, string word)
+    {
+        return Regex.IsMatch(text, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase);
+    }
+
+    private static string NormalizeTraitText(string value)
+    {
+        var lowered = value.ToLowerInvariant();
+        var sb = new System.Text.StringBuilder(lowered.Length);
+        foreach (var c in lowered)
+        {
+            if (char.IsLetterOrDigit(c) || c == '.')
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append(' ');
+            }
+        }
+
+        return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
+    }
+
+    private void ApplyUnitHeaderThemeForFaction(int sourceFactionId)
+    {
+        var defaultPrimary = Controls.UnitDisplayConfigurationsView.DefaultHeaderPrimaryColor;
+        var defaultSecondary = Controls.UnitDisplayConfigurationsView.DefaultHeaderSecondaryColor;
+        var factionName = ResolveFactionThemeName(sourceFactionId);
+        var colors = CompanySelectionVisualThemeWorkflow.GetHeaderColors(factionName, defaultPrimary, defaultSecondary);
+        UnitDisplayConfigurationsView.UnitHeaderPrimaryColor = colors.Primary;
+        UnitDisplayConfigurationsView.UnitHeaderSecondaryColor = colors.Secondary;
+        UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor = colors.PrimaryText;
+        UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor = colors.SecondaryText;
+    }
+
+    private Color ResolveSelectionAccentColor(int sourceFactionId)
+    {
+        var defaultAccent = Color.FromArgb("#93C5FD");
+        var factionName = ResolveFactionThemeName(sourceFactionId);
+        var (primary, _) = CompanySelectionVisualThemeWorkflow.GetFactionTheme(
+            factionName,
+            defaultAccent,
+            Color.FromArgb("#4B5563"));
+        return primary;
+    }
+
+    private string? ResolveFactionThemeName(int sourceFactionId)
+    {
+        if (sourceFactionId <= 0)
+        {
+            return null;
+        }
+
+        var metadataFactionName = _armyDataService?.GetMetadataFactionById(sourceFactionId)?.Name;
+        if (!string.IsNullOrWhiteSpace(metadataFactionName) &&
+            CompanySelectionSharedUtilities.IsThemeFactionName(metadataFactionName))
+        {
+            return metadataFactionName;
+        }
+
+        return CompanySelectionVisualThemeWorkflow.InferThemeFactionNameFromFactionId(sourceFactionId);
+    }
 }
 
 public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 {
     public int EntryIndex { get; init; }
     public int SourceFactionId { get; init; }
+    public int VisualFactionId { get; init; }
     public int SourceUnitId { get; init; }
     public string ProfileKey { get; init; } = string.Empty;
     public bool IsPeripheralUnit { get; init; }
@@ -1570,8 +1866,12 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public int Cost { get; init; }
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
+    public string SavedCharacteristics { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public Color SelectionAccentColor { get; init; } = Color.FromArgb("#93C5FD");
+    public Color TileStroke => IsSelected ? SelectionAccentColor : Color.FromArgb("#4B5563");
+    public double TileStrokeThickness => IsSelected ? 2d : 1d;
     public int ExperiencePoints { get; init; }
     public int ExperienceLevel => CompanyUnitExperienceRanks.GetRankLevel(ExperiencePoints);
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
@@ -1593,6 +1893,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
         }
     }
     public string BaseUnitName { get; init; } = string.Empty;
+    public string BaseUnitDisplayName { get; init; } = string.Empty;
     public string UnitTypeCode { get; init; } = string.Empty;
     public string? CachedLogoPath { get; init; }
     public string? PackagedLogoPath { get; init; }
@@ -1612,6 +1913,8 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 
             _isSelected = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(TileStroke));
+            OnPropertyChanged(nameof(TileStrokeThickness));
         }
     }
 }

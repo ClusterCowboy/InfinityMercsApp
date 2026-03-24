@@ -27,6 +27,7 @@ public static class ServiceRegistryExtensions
                 .AddTransient<StandardCompanySourcePopupPage>()
                 .AddTransient<SplashPage>()
                 .AddTransient<SettingsPage>()
+                .AddTransient<DebugPage>()
                 .AddTransient<CompanyViewerPage>()
                 .AddTransient<UnitEncyclopediaPage>()
                 .AddTransient<FeedbackBugsPage>();

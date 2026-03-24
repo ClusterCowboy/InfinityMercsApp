@@ -35,6 +35,17 @@ public partial class AirborneCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
+            if (HasLeftSlotEntry())
+            {
+                foreach (var unit in Units)
+                {
+                    if (IsLeftSlotUnit(unit))
+                    {
+                        unit.IsVisible = false;
+                    }
+                }
+            }
+
             _selectedUnit = RefreshSelectedUnitVisibilityCore(
                 _selectedUnit,
                 () => ResetUnitDetails(),

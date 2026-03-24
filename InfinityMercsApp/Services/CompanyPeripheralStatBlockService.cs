@@ -37,6 +37,7 @@ internal sealed class CompanyPeripheralStatBlockResult
     public string Ava { get; init; } = "-";
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
+    public string Characteristics { get; init; } = "-";
 }
 
 internal static class CompanyPeripheralStatBlockService
@@ -54,6 +55,7 @@ internal static class CompanyPeripheralStatBlockService
         var equipLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "equip");
         var skillsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "skills");
         var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(request.FiltersJson, request.ShowUnitsInInches, request.TryParseId);
+        var charsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "chars");
 
         var equipmentNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(
             CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "equip"),
@@ -62,6 +64,9 @@ internal static class CompanyPeripheralStatBlockService
             displayNameContext.GetOrderedIdDisplayNamesFromEntries(
                 CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "skills"),
                 skillsLookup));
+        var characteristicNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(
+            CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "chars"),
+            charsLookup);
         var (vitalityHeader, vitalityValue) = request.ReadVitality(request.PeripheralProfile);
 
         return new CompanyPeripheralStatBlockResult
@@ -81,7 +86,8 @@ internal static class CompanyPeripheralStatBlockService
             S = request.ReadIntAsString(request.PeripheralProfile, "s"),
             Ava = request.ReadAvaAsString(request.PeripheralProfile),
             Equipment = CompanyProfileTextService.JoinOrDash(equipmentNames),
-            Skills = CompanyProfileTextService.JoinOrDash(skillNames)
+            Skills = CompanyProfileTextService.JoinOrDash(skillNames),
+            Characteristics = CompanyProfileTextService.JoinOrDash(characteristicNames)
         };
     }
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.Controls.CompanyViewerUnitTileView">
+
+    <Border x:Name="TileBorder"
+            Padding="6"
+            Stroke="{Binding TileStroke}"
+            StrokeThickness="{Binding TileStrokeThickness}"
+            MinimumWidthRequest="126"
+            MinimumHeightRequest="142">
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnTileTapped" />
+        </Border.GestureRecognizers>
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
+                <Setter Property="BackgroundColor" Value="#1F2937" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="True">
+                <Setter Property="BackgroundColor" Value="#803A8E3A" />
+            </DataTrigger>
+        </Border.Triggers>
+
+        <VerticalStackLayout Spacing="4" HorizontalOptions="Center" VerticalOptions="Center">
+            <Label Text="{Binding Name}"
+                   HorizontalTextAlignment="Center"
+                   FontAttributes="Bold"
+                   FontSize="14"
+                   MaxLines="2"
+                   WidthRequest="112"
+                   LineBreakMode="WordWrap" />
+            <skia:SKCanvasView
+                x:Name="LogoCanvas"
+                WidthRequest="46"
+                HeightRequest="46"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                PaintSurface="OnLogoCanvasPaintSurface" />
+            <Label Text="{Binding BaseUnitDisplayName}"
+                   HorizontalTextAlignment="Center"
+                   FontSize="12"
+                   TextColor="#D1D5DB"
+                   MaxLines="3"
+                   WidthRequest="112"
+                   LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+    </Border>
+
+</ContentView>

@@ -7,56 +7,34 @@
              x:Name="CompanyViewerRoot"
              Title="Company Viewer">
 
-    <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="10">
-        <Label Grid.Row="0"
-               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyNameHeading}"
-               FontSize="26"
-               FontAttributes="Bold" />
-        <Label Grid.Row="1"
-               Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanySubtitle}"
-               FontSize="12"
-               TextColor="#9CA3AF" />
+    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="6">
+        <Border Grid.Row="0" StrokeThickness="0" Padding="0">
+            <Grid RowDefinitions="*" RowSpacing="0">
+                <ScrollView Grid.Row="0"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
+                                           Spacing="8"
+                                           Padding="0,0,2,0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:CompanyViewerUnitTileView
+                                    ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
+                                    ItemTappedCommandParameter="{Binding .}" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Border>
 
-        <Grid Grid.Row="2" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="3*" />
-            </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0" StrokeThickness="1" Padding="10">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                    <Label Text="Company Units"
-                           FontSize="20"
-                           FontAttributes="Bold" />
-                    <Label Grid.Row="1"
-                           Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnitsStatus}"
-                           TextColor="#6B7280" />
-                    <ScrollView Grid.Row="2">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
-                                             Spacing="0">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:FactionListItemView
-                                        ShowRightPrimaryIconSlot="{Binding IsLieutenant}"
-                                        ShowRightSecondaryIconSlot="True"
-                                        RightPrimaryIconPackagedPath="{Binding CaptainIconPackagedPath}"
-                                        RightSecondaryIconPackagedPath="{Binding ExperienceIconPackagedPath}"
-                                        ItemTappedCommand="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectCompanyUnitCommand}"
-                                        ItemTappedCommandParameter="{Binding .}" />
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </ScrollView>
-                </Grid>
-            </Border>
-
-            <Border Grid.Column="1" StrokeThickness="1" Padding="12">
+        <Border Grid.Row="1" StrokeThickness="0" Padding="12">
                 <Border.Resources>
                     <Style TargetType="Label">
                         <Setter Property="FontSize" Value="24" />
                     </Style>
                 </Border.Resources>
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                     <VerticalStackLayout Grid.Row="0" Spacing="2" VerticalOptions="Center">
                         <Grid x:Name="SelectedNameDisplayRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="34" FontAttributes="Bold">
@@ -89,8 +67,21 @@
                                 VerticalOptions="Center"
                                 PaintSurface="OnSelectedNameRejectCanvasPaintSurface" />
                         </Grid>
-                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}" FontSize="28" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
-                        <Label Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}" FontSize="24" TextColor="#9CA3AF" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label Grid.Column="0"
+                                   Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}"
+                                   FontSize="28"
+                                   TextColor="#9CA3AF"
+                                   HorizontalOptions="Start"
+                                   IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}"
+                                   FontSize="24"
+                                   TextColor="#9CA3AF"
+                                   HorizontalTextAlignment="End"
+                                   HorizontalOptions="End"
+                                   IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedUnitTypeHeading}" />
+                        </Grid>
                     </VerticalStackLayout>
 
                     <controls:UnitDisplayConfigurationsView
@@ -115,6 +106,7 @@
                         UnitVitality="{Binding UnitVitality}"
                         UnitS="{Binding UnitS}"
                         UnitAva="{Binding UnitAva}"
+                        ShowConfigurationsSection="False"
                         EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                         SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 
@@ -139,8 +131,7 @@
                             PaintSurface="OnBottomIconRowCanvasPaintSurface" />
                     </Grid>
                 </Grid>
-            </Border>
-        </Grid>
+        </Border>
     </Grid>
 
 </ContentPage>

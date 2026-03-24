@@ -85,7 +85,7 @@ internal static partial class CompanySelectionSharedUtilities
             return string.Empty;
         }
 
-        return Regex.Replace(firstEntry, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+        return NormalizePeripheralBaseName(firstEntry);
     }
 
     internal static string NormalizePeripheralNameForDedupe(string? value)
@@ -95,7 +95,29 @@ internal static partial class CompanySelectionSharedUtilities
             return string.Empty;
         }
 
-        return Regex.Replace(value, @"\s*\(\d+\)\s*$", string.Empty).Trim();
+        return NormalizePeripheralBaseName(value);
+    }
+
+    private static string NormalizePeripheralBaseName(string value)
+    {
+        var result = value.Trim();
+        const string prefix = "Peripheral:";
+        if (result.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            result = result[prefix.Length..].Trim();
+        }
+        while (true)
+        {
+            var updated = Regex.Replace(result, @"\s*\([^)]*\)\s*$", string.Empty).Trim();
+            if (updated == result)
+            {
+                break;
+            }
+
+            result = updated;
+        }
+
+        return result;
     }
 
     internal static int GetPeripheralTotalCount(IEnumerable<string> peripheralNames)

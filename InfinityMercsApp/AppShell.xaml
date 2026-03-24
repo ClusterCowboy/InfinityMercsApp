@@ -49,6 +49,11 @@
         Route="MercsGlossaryPage" />
 
     <ShellContent
+        Title="Debug"
+        ContentTemplate="{DataTemplate views:DebugPage}"
+        Route="DebugPage" />
+
+    <ShellContent
         Title="About"
         ContentTemplate="{DataTemplate views:AboutPage}"
         Route="AboutPage" />

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.DebugPage"
+             Title="Debug">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12">
+            <Label
+                Text="Debug"
+                FontSize="32"
+                FontAttributes="Bold" />
+            <Label
+                Text="Use this page for diagnostics, tooling, and temporary debug controls."
+                LineBreakMode="WordWrap" />
+            <Button
+                Text="Reform Test Companies"
+                Clicked="OnReformTestCompaniesClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -56,6 +56,7 @@ internal static class CompanyProfilePopulationWorkflowService
         var weaponsLookup = request.BuildIdNameLookup(request.FiltersJson, "weapons");
         var equipLookup = request.BuildIdNameLookup(request.FiltersJson, "equip");
         var skillsLookup = request.BuildIdNameLookup(request.FiltersJson, "skills");
+        var charsLookup = request.BuildIdNameLookup(request.FiltersJson, "chars");
         var peripheralLookup = request.BuildIdNameLookup(request.FiltersJson, "peripheral");
         var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(request.FiltersJson, request.ShowUnitsInInches, request.TryParseId);
 
@@ -67,6 +68,7 @@ internal static class CompanyProfilePopulationWorkflowService
             WeaponsLookup = weaponsLookup,
             EquipLookup = equipLookup,
             SkillsLookup = skillsLookup,
+            CharsLookup = charsLookup,
             PeripheralLookup = peripheralLookup,
             IsControllerGroup = group => CompanyProfileOptionService.IsControllerGroup(request.ProfileGroupsRoot, group),
             ShouldIncludeOption = request.ShouldIncludeOption,

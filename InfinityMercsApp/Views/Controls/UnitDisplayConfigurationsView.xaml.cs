@@ -14,6 +14,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private const int MaxHeaderIcons = 6;
     private const float IconSize = 24f;
     private const float IconVerticalGap = 5f;
+    private const float IconHorizontalGap = 6f;
     private const double DefaultUnitHeadingMaxFontSize = 24d;
     private const double DefaultUnitHeadingMinFontSize = 11d;
     private const double DefaultUnitHeadingFontStep = 0.5d;
@@ -84,6 +85,8 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(RegularOrderIconPicture), typeof(SKPicture), typeof(UnitDisplayConfigurationsView), null);
     public static readonly BindableProperty IrregularOrderIconPictureProperty =
         BindableProperty.Create(nameof(IrregularOrderIconPicture), typeof(SKPicture), typeof(UnitDisplayConfigurationsView), null);
+    public static readonly BindableProperty LieutenantIconPictureProperty =
+        BindableProperty.Create(nameof(LieutenantIconPicture), typeof(SKPicture), typeof(UnitDisplayConfigurationsView), null);
     public static readonly BindableProperty ImpetuousIconPictureProperty =
         BindableProperty.Create(nameof(ImpetuousIconPicture), typeof(SKPicture), typeof(UnitDisplayConfigurationsView), null);
     public static readonly BindableProperty TacticalAwarenessIconPictureProperty =
@@ -100,6 +103,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(ShowRegularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowIrregularOrderIconProperty =
         BindableProperty.Create(nameof(ShowIrregularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
+    public static readonly BindableProperty ShowLieutenantIconProperty =
+        BindableProperty.Create(nameof(ShowLieutenantIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
+    public static readonly BindableProperty ShowPeripheralIconProperty =
+        BindableProperty.Create(nameof(ShowPeripheralIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
+    public static readonly BindableProperty LieutenantIconCountProperty =
+        BindableProperty.Create(nameof(LieutenantIconCount), typeof(int), typeof(UnitDisplayConfigurationsView), 0, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowImpetuousIconProperty =
         BindableProperty.Create(nameof(ShowImpetuousIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowTacticalAwarenessIconProperty =
@@ -170,6 +179,13 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(PeripheralEquipmentFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
     public static readonly BindableProperty PeripheralSkillsFormattedProperty =
         BindableProperty.Create(nameof(PeripheralSkillsFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
+    public static readonly BindableProperty ShowConfigurationsSectionProperty =
+        BindableProperty.Create(
+            nameof(ShowConfigurationsSection),
+            typeof(bool),
+            typeof(UnitDisplayConfigurationsView),
+            true,
+            propertyChanged: OnShowConfigurationsSectionChanged);
 
     public string UnitMov
     {
@@ -333,6 +349,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(IrregularOrderIconPictureProperty, value);
     }
 
+    public SKPicture? LieutenantIconPicture
+    {
+        get => (SKPicture?)GetValue(LieutenantIconPictureProperty);
+        set => SetValue(LieutenantIconPictureProperty, value);
+    }
+
     public SKPicture? ImpetuousIconPicture
     {
         get => (SKPicture?)GetValue(ImpetuousIconPictureProperty);
@@ -379,6 +401,24 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         get => (bool)GetValue(ShowIrregularOrderIconProperty);
         set => SetValue(ShowIrregularOrderIconProperty, value);
+    }
+
+    public bool ShowLieutenantIcon
+    {
+        get => (bool)GetValue(ShowLieutenantIconProperty);
+        set => SetValue(ShowLieutenantIconProperty, value);
+    }
+
+    public bool ShowPeripheralIcon
+    {
+        get => (bool)GetValue(ShowPeripheralIconProperty);
+        set => SetValue(ShowPeripheralIconProperty, value);
+    }
+
+    public int LieutenantIconCount
+    {
+        get => (int)GetValue(LieutenantIconCountProperty);
+        set => SetValue(LieutenantIconCountProperty, Math.Max(0, value));
     }
 
     public bool ShowImpetuousIcon
@@ -525,9 +565,15 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(PeripheralSkillsFormattedProperty, value);
     }
 
+    public bool ShowConfigurationsSection
+    {
+        get => (bool)GetValue(ShowConfigurationsSectionProperty);
+        set => SetValue(ShowConfigurationsSectionProperty, value);
+    }
+
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
-    public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
+    public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowPeripheralIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
@@ -560,6 +606,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public UnitDisplayConfigurationsView()
     {
         InitializeComponent();
+        UpdateConfigurationRows();
     }
 
     public Label UnitNameHeadingElement => UnitNameHeadingLabel;
@@ -711,6 +758,22 @@ public partial class UnitDisplayConfigurationsView : ContentView
             pictures.Add(new HeaderIconRenderItem(orderTypePicture));
         }
 
+        var lieutenantIconCount = Math.Max(ShowLieutenantIcon ? 1 : 0, LieutenantIconCount);
+        for (var i = 0; i < lieutenantIconCount; i++)
+        {
+            if (LieutenantIconPicture is null)
+            {
+                break;
+            }
+
+            pictures.Add(new HeaderIconRenderItem(LieutenantIconPicture));
+        }
+
+        if (ShowPeripheralIcon && PeripheralIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(PeripheralIconPicture));
+        }
+
         if (state.ShowImpetuousIcon && ImpetuousIconPicture is not null)
         {
             pictures.Add(new HeaderIconRenderItem(ImpetuousIconPicture));
@@ -751,6 +814,22 @@ public partial class UnitDisplayConfigurationsView : ContentView
         if ((ShowRegularOrderIcon || ShowIrregularOrderIcon) && orderTypePicture is not null)
         {
             pictures.Add(new HeaderIconRenderItem(orderTypePicture));
+        }
+
+        var lieutenantIconCount = Math.Max(ShowLieutenantIcon ? 1 : 0, LieutenantIconCount);
+        for (var i = 0; i < lieutenantIconCount; i++)
+        {
+            if (LieutenantIconPicture is null)
+            {
+                break;
+            }
+
+            pictures.Add(new HeaderIconRenderItem(LieutenantIconPicture));
+        }
+
+        if (ShowPeripheralIcon && PeripheralIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(PeripheralIconPicture));
         }
 
         if (ShowImpetuousIcon && ImpetuousIconPicture is not null)
@@ -794,18 +873,62 @@ public partial class UnitDisplayConfigurationsView : ContentView
         }
 
         var drawCount = pictures.Count;
-        var totalGap = (drawCount - 1) * IconVerticalGap;
-        var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
-        var iconSize = Math.Max(1f, Math.Min(IconSize, maxIconSizeFromHeight));
-        var totalHeight = (drawCount * iconSize) + totalGap;
-        var startY = Math.Max(0f, (info.Height - totalHeight) / 2f);
-
-        for (var i = 0; i < drawCount; i++)
+        if (drawCount <= 3)
         {
-            var x = (info.Width - iconSize) / 2f;
-            var y = startY + (i * (iconSize + IconVerticalGap));
-            var destination = new SKRect(x, y, x + iconSize, y + iconSize);
+            var totalGap = (drawCount - 1) * IconVerticalGap;
+            var maxIconSizeFromHeight = (info.Height - totalGap) / drawCount;
+            var maxIconSizeFromWidth = info.Width;
+            var iconSize = Math.Max(1f, Math.Min(IconSize, Math.Min(maxIconSizeFromHeight, maxIconSizeFromWidth)));
+            var totalHeight = (drawCount * iconSize) + totalGap;
+            var startY = Math.Max(0f, (info.Height - totalHeight) / 2f);
+
+            for (var i = 0; i < drawCount; i++)
+            {
+                var x = (info.Width - iconSize) / 2f;
+                var y = startY + (i * (iconSize + IconVerticalGap));
+                var destination = new SKRect(x, y, x + iconSize, y + iconSize);
+                DrawPictureInRect(canvas, pictures[i].Picture, destination);
+            }
+
+            return;
+        }
+
+        var leftCount = Math.Min(3, drawCount);
+        var rightCount = Math.Max(0, drawCount - leftCount);
+        var rowsInTallerColumn = Math.Max(leftCount, rightCount);
+        var totalVerticalGap = (rowsInTallerColumn - 1) * IconVerticalGap;
+        var maxIconSizeFromTallestColumnHeight = (info.Height - totalVerticalGap) / rowsInTallerColumn;
+        var maxIconSizeFromWidthForTwoColumns = (info.Width - IconHorizontalGap) / 2f;
+        var twoColumnIconSize = Math.Max(
+            1f,
+            Math.Min(IconSize, Math.Min(maxIconSizeFromTallestColumnHeight, maxIconSizeFromWidthForTwoColumns)));
+
+        var totalWidth = (twoColumnIconSize * 2f) + IconHorizontalGap;
+        var leftX = Math.Max(0f, (info.Width - totalWidth) / 2f);
+        var rightX = leftX + twoColumnIconSize + IconHorizontalGap;
+
+        var leftTotalHeight = (leftCount * twoColumnIconSize) + ((leftCount - 1) * IconVerticalGap);
+        var leftStartY = Math.Max(0f, (info.Height - leftTotalHeight) / 2f);
+        for (var i = 0; i < leftCount; i++)
+        {
+            var y = leftStartY + (i * (twoColumnIconSize + IconVerticalGap));
+            var destination = new SKRect(leftX, y, leftX + twoColumnIconSize, y + twoColumnIconSize);
             DrawPictureInRect(canvas, pictures[i].Picture, destination);
+        }
+
+        if (rightCount == 0)
+        {
+            return;
+        }
+
+        var rightTotalHeight = (rightCount * twoColumnIconSize) + ((rightCount - 1) * IconVerticalGap);
+        var rightStartY = Math.Max(0f, (info.Height - rightTotalHeight) / 2f);
+        for (var i = 0; i < rightCount; i++)
+        {
+            var pictureIndex = leftCount + i;
+            var y = rightStartY + (i * (twoColumnIconSize + IconVerticalGap));
+            var destination = new SKRect(rightX, y, rightX + twoColumnIconSize, y + twoColumnIconSize);
+            DrawPictureInRect(canvas, pictures[pictureIndex].Picture, destination);
         }
     }
 
@@ -878,5 +1001,34 @@ public partial class UnitDisplayConfigurationsView : ContentView
         view.OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
         view.OnPropertyChanged(nameof(HasAnyHeaderIcons));
         view.InvalidateHeaderIconsCanvas();
+    }
+
+    private static void OnShowConfigurationsSectionChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not UnitDisplayConfigurationsView view)
+        {
+            return;
+        }
+
+        view.UpdateConfigurationRows();
+    }
+
+    private void UpdateConfigurationRows()
+    {
+        if (ConfigurationsRootGrid.RowDefinitions.Count < 8)
+        {
+            return;
+        }
+
+        if (ShowConfigurationsSection)
+        {
+            ConfigurationsRootGrid.RowDefinitions[6].Height = GridLength.Auto;
+            ConfigurationsRootGrid.RowDefinitions[7].Height = new GridLength(1, GridUnitType.Star);
+            return;
+        }
+
+        var hiddenHeight = new GridLength(0);
+        ConfigurationsRootGrid.RowDefinitions[6].Height = hiddenHeight;
+        ConfigurationsRootGrid.RowDefinitions[7].Height = hiddenHeight;
     }
 }

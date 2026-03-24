@@ -659,6 +659,10 @@ public class ViewerViewModel : BaseViewModel
         string unitName,
         string profileKey,
         bool isLieutenant,
+        string? savedSkills = null,
+        string? savedEquipment = null,
+        string? savedRangedWeapons = null,
+        string? savedCcWeapons = null,
         string? cachedLogoPath = null,
         string? packagedLogoPath = null,
         CancellationToken cancellationToken = default)
@@ -684,7 +688,14 @@ public class ViewerViewModel : BaseViewModel
         matchedProfile ??= Profiles
             .FirstOrDefault(x => ProfileKeysMatch(x.ProfileKey, profileKey));
 
-        matchedProfile ??= FindFallbackProfileMatch(Profiles, profileKey, isLieutenant);
+        matchedProfile ??= FindFallbackProfileMatch(
+            Profiles,
+            profileKey,
+            isLieutenant,
+            savedSkills,
+            savedEquipment,
+            savedRangedWeapons,
+            savedCcWeapons);
 
         if (matchedProfile is null)
         {
@@ -734,6 +745,24 @@ public class ViewerViewModel : BaseViewModel
         ShowIrregularOrderIcon = showIrregular;
     }
 
+    public void SetTechTraitIconState(bool showCube, bool showCube2, bool showHackable)
+    {
+        ShowCubeIcon = showCube;
+        ShowCube2Icon = showCube2;
+        ShowHackableIcon = showHackable;
+    }
+
+    public void ApplyTacticalAwarenessOverride(bool hasTacticalAwareness)
+    {
+        ShowTacticalAwarenessIcon = ShowTacticalAwarenessIcon || hasTacticalAwareness;
+    }
+
+    public void ApplyHackableOverrideFromCurrentConfiguration(string? currentEquipment, string? currentSkills)
+    {
+        var hasHackableFromCurrentState = ContainsHackableFromCurrentState(currentEquipment, currentSkills);
+        ShowHackableIcon = ShowHackableIcon || hasHackableFromCurrentState;
+    }
+
     public void ApplyCaptainStatBonuses(
         int ccBonus,
         int bsBonus,
@@ -771,7 +800,76 @@ public class ViewerViewModel : BaseViewModel
             return "-";
         }
 
-        return string.Join(", ", merged.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+        var normalized = NormalizeLtOrderSummaryEntries(merged);
+        return string.Join(", ", normalized.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static IReadOnlyCollection<string> NormalizeLtOrderSummaryEntries(IEnumerable<string> values)
+    {
+        var normalized = values
+            .Select(x => Regex.Replace(
+                x,
+                @"\blieutenant\b([^\n\r]*\(\s*\+(\d+)\s*)orders?(\s*\))",
+                "Lieutenant$1Lt Order$3",
+                RegexOptions.IgnoreCase))
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
+            .ToList();
+
+        var hasLieutenantContext = normalized.Any(x =>
+            x.Contains("lt order", StringComparison.OrdinalIgnoreCase) ||
+            x.Contains("lieutenant order", StringComparison.OrdinalIgnoreCase) ||
+            x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase));
+
+        if (hasLieutenantContext)
+        {
+            for (var i = 0; i < normalized.Count; i++)
+            {
+                normalized[i] = Regex.Replace(
+                    normalized[i],
+                    @"\+(\d+)\s*(?:regular\s*)?orders?\b",
+                    "+$1 Lt Order",
+                    RegexOptions.IgnoreCase);
+            }
+        }
+
+        var detailedLtBonuses = new HashSet<int>();
+        foreach (var value in normalized)
+        {
+            var detailMatches = Regex.Matches(
+                value,
+                @"\blieutenant\b[^\n\r]*\(\s*\+(\d+)\s*(?:lt|lieutenant)?\s*orders?\s*\)",
+                RegexOptions.IgnoreCase);
+            foreach (Match match in detailMatches)
+            {
+                if (match.Groups.Count < 2 || !int.TryParse(match.Groups[1].Value, out var parsed))
+                {
+                    continue;
+                }
+
+                detailedLtBonuses.Add(Math.Max(0, parsed));
+            }
+        }
+
+        var deduped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var value in normalized)
+        {
+            var standaloneMatch = Regex.Match(
+                value,
+                @"^\+(\d+)\s*(?:lt|lieutenant)\s*orders?\s*$",
+                RegexOptions.IgnoreCase);
+            if (standaloneMatch.Success &&
+                standaloneMatch.Groups.Count >= 2 &&
+                int.TryParse(standaloneMatch.Groups[1].Value, out var standaloneBonus) &&
+                detailedLtBonuses.Contains(Math.Max(0, standaloneBonus)))
+            {
+                continue;
+            }
+
+            deduped.Add(value);
+        }
+
+        return deduped;
     }
 
     private static IEnumerable<string> ExtractSummaryValues(string? summaryText)
@@ -805,6 +903,37 @@ public class ViewerViewModel : BaseViewModel
             : value;
     }
 
+    private static bool ContainsHackableFromCurrentState(string? equipmentText, string? skillsText)
+    {
+        static IEnumerable<string> SplitLines(string? value) =>
+            string.IsNullOrWhiteSpace(value)
+                ? []
+                : value
+                    .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-");
+
+        foreach (var line in SplitLines(equipmentText).Concat(SplitLines(skillsText)))
+        {
+            var normalized = NormalizeTokenText(line);
+            if (Regex.IsMatch(normalized, @"\bhacking\s*device\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(normalized, @"\bkiller\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(normalized, @"\bevo\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(normalized, @"\bhacking\s*device\s*plus\b|\bhd\s*\+\b", RegexOptions.IgnoreCase) ||
+                Regex.IsMatch(normalized, @"\bkhd\b|\bevo\s*hd\b", RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+
+            if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase) &&
+                !Regex.IsMatch(normalized, @"\b(non[\s-]*hackable|not[\s-]*hackable)\b", RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool ProfileKeysMatch(string candidateKey, string requestedKey)
     {
         if (string.Equals(candidateKey, requestedKey, StringComparison.OrdinalIgnoreCase))
@@ -821,7 +950,11 @@ public class ViewerViewModel : BaseViewModel
     private static ViewerProfileItem? FindFallbackProfileMatch(
         IEnumerable<ViewerProfileItem> profiles,
         string requestedKey,
-        bool requestedIsLieutenant)
+        bool requestedIsLieutenant,
+        string? savedSkills = null,
+        string? savedEquipment = null,
+        string? savedRangedWeapons = null,
+        string? savedCcWeapons = null)
     {
         if (!TryParseProfileKey(requestedKey, out var requestedGroup, out _, out var requestedCost, out var requestedSwc, out var requestedLt))
         {
@@ -898,7 +1031,123 @@ public class ViewerViewModel : BaseViewModel
                 string.Equals(x.Swc, requestedSwc, StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Profile)
             .ToList();
-        return byCostSwc.Count == 1 ? byCostSwc[0] : null;
+        if (byCostSwc.Count == 1)
+        {
+            return byCostSwc[0];
+        }
+
+        var ambiguousCandidates = byGroupCostSwc.Count > 1
+            ? byGroupCostSwc
+            : byCostSwc;
+        if (ambiguousCandidates.Count <= 1)
+        {
+            return null;
+        }
+
+        return FindBestCandidateBySavedLines(
+            ambiguousCandidates,
+            savedSkills,
+            savedEquipment,
+            savedRangedWeapons,
+            savedCcWeapons);
+    }
+
+    private static ViewerProfileItem? FindBestCandidateBySavedLines(
+        IReadOnlyList<ViewerProfileItem> candidates,
+        string? savedSkills,
+        string? savedEquipment,
+        string? savedRangedWeapons,
+        string? savedCcWeapons)
+    {
+        var savedSkillSet = SplitSavedLines(savedSkills);
+        var savedEquipmentSet = SplitSavedLines(savedEquipment);
+        var savedRangedSet = SplitSavedLines(savedRangedWeapons);
+        var savedCcSet = SplitSavedLines(savedCcWeapons);
+
+        var ranked = candidates
+            .Select(profile => new
+            {
+                Profile = profile,
+                Score = ComputeCandidateScore(profile, savedSkillSet, savedEquipmentSet, savedRangedSet, savedCcSet)
+            })
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+        if (ranked.Count == 0)
+        {
+            return null;
+        }
+
+        if (ranked[0].Score <= 0)
+        {
+            return null;
+        }
+
+        if (ranked.Count > 1 && ranked[0].Score == ranked[1].Score)
+        {
+            return null;
+        }
+
+        return ranked[0].Profile;
+    }
+
+    private static int ComputeCandidateScore(
+        ViewerProfileItem profile,
+        HashSet<string> savedSkillSet,
+        HashSet<string> savedEquipmentSet,
+        HashSet<string> savedRangedSet,
+        HashSet<string> savedCcSet)
+    {
+        var score = 0;
+        score += CountMatches(savedSkillSet, SplitSavedLines(profile.UniqueSkills));
+        score += CountMatches(savedEquipmentSet, SplitSavedLines(profile.UniqueEquipment));
+        score += CountMatches(savedRangedSet, SplitSavedLines(profile.RangedWeapons));
+        score += CountMatches(savedCcSet, SplitSavedLines(profile.MeleeWeapons));
+        return score;
+    }
+
+    private static int CountMatches(HashSet<string> left, HashSet<string> right)
+    {
+        if (left.Count == 0 || right.Count == 0)
+        {
+            return 0;
+        }
+
+        var matches = 0;
+        foreach (var item in left)
+        {
+            if (right.Contains(item))
+            {
+                matches++;
+            }
+        }
+
+        return matches;
+    }
+
+    private static HashSet<string> SplitSavedLines(string? text)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return set;
+        }
+
+        var normalized = text
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Replace(", ", "\n", StringComparison.Ordinal);
+        foreach (var line in normalized.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line == "-")
+            {
+                continue;
+            }
+
+            set.Add(line.Trim());
+        }
+
+        return set;
     }
 
     private static bool TryParseProfileKey(
@@ -3541,7 +3790,8 @@ public class ViewerViewModel : BaseViewModel
         var hasRegular = false;
         var hasIrregular = false;
         var hasImpetuous = false;
-        var hasTacticalAwareness = false;
+        var optionsSeen = 0;
+        var tacticalOptions = 0;
 
         if (profileGroupsArray.ValueKind != JsonValueKind.Array)
         {
@@ -3557,6 +3807,8 @@ public class ViewerViewModel : BaseViewModel
 
             foreach (var option in optionsElement.EnumerateArray())
             {
+                optionsSeen++;
+                var optionHasTactical = false;
                 if (!option.TryGetProperty("orders", out var ordersElement) || ordersElement.ValueKind != JsonValueKind.Array)
                 {
                     continue;
@@ -3589,13 +3841,19 @@ public class ViewerViewModel : BaseViewModel
                     }
                     else if (string.Equals(type, "TACTICAL", StringComparison.OrdinalIgnoreCase))
                     {
-                        hasTacticalAwareness = true;
+                        optionHasTactical = true;
                     }
+                }
+
+                if (optionHasTactical)
+                {
+                    tacticalOptions++;
                 }
             }
         }
 
-        return (hasRegular, hasIrregular, hasImpetuous, hasTacticalAwareness);
+        var hasUnitWideTacticalAwareness = optionsSeen > 0 && tacticalOptions == optionsSeen;
+        return (hasRegular, hasIrregular, hasImpetuous, hasUnitWideTacticalAwareness);
     }
 
     private static (bool HasCube, bool HasCube2, bool HasHackable) ParseUnitTechTraits(
@@ -3670,8 +3928,7 @@ public class ViewerViewModel : BaseViewModel
 
         var normalized = NormalizeTokenText(name);
 
-        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase) &&
-            !Regex.IsMatch(normalized, @"\b(non[\s-]*hackable|not[\s-]*hackable)\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase))
         {
             hasHackable = true;
         }
@@ -4260,6 +4517,8 @@ public class ViewerProfileItem : BaseViewModel
 
     public string UniqueSkills { get; init; } = "-";
     public FormattedString? UniqueSkillsFormatted { get; init; }
+
+    public string Characteristics { get; init; } = "-";
 
     public string Peripherals { get; init; } = "-";
     public FormattedString? PeripheralsFormatted { get; init; }
