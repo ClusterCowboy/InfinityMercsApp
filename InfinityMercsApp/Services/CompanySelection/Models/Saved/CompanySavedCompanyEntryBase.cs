@@ -60,6 +60,7 @@ public abstract class CompanySavedCompanyEntryBase
     public string PeripheralAva { get; init; } = "-";
     public string SavedPeripheralEquipment { get; init; } = "-";
     public string SavedPeripheralSkills { get; init; } = "-";
+    public string SavedPeripheralCharacteristics { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
 }

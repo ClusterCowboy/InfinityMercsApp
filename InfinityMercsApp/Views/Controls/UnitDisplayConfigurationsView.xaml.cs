@@ -179,6 +179,13 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(PeripheralEquipmentFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
     public static readonly BindableProperty PeripheralSkillsFormattedProperty =
         BindableProperty.Create(nameof(PeripheralSkillsFormatted), typeof(FormattedString), typeof(UnitDisplayConfigurationsView), new FormattedString());
+    public static readonly BindableProperty ShowConfigurationsSectionProperty =
+        BindableProperty.Create(
+            nameof(ShowConfigurationsSection),
+            typeof(bool),
+            typeof(UnitDisplayConfigurationsView),
+            true,
+            propertyChanged: OnShowConfigurationsSectionChanged);
 
     public string UnitMov
     {
@@ -558,6 +565,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(PeripheralSkillsFormattedProperty, value);
     }
 
+    public bool ShowConfigurationsSection
+    {
+        get => (bool)GetValue(ShowConfigurationsSectionProperty);
+        set => SetValue(ShowConfigurationsSectionProperty, value);
+    }
+
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowPeripheralIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
@@ -593,6 +606,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public UnitDisplayConfigurationsView()
     {
         InitializeComponent();
+        UpdateConfigurationRows();
     }
 
     public Label UnitNameHeadingElement => UnitNameHeadingLabel;
@@ -987,5 +1001,27 @@ public partial class UnitDisplayConfigurationsView : ContentView
         view.OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
         view.OnPropertyChanged(nameof(HasAnyHeaderIcons));
         view.InvalidateHeaderIconsCanvas();
+    }
+
+    private static void OnShowConfigurationsSectionChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not UnitDisplayConfigurationsView view)
+        {
+            return;
+        }
+
+        view.UpdateConfigurationRows();
+    }
+
+    private void UpdateConfigurationRows()
+    {
+        if (ConfigurationsRootGrid.RowDefinitions.Count < 8)
+        {
+            return;
+        }
+
+        var rowHeight = ShowConfigurationsSection ? GridLength.Auto : new GridLength(0);
+        ConfigurationsRootGrid.RowDefinitions[6].Height = rowHeight;
+        ConfigurationsRootGrid.RowDefinitions[7].Height = rowHeight;
     }
 }

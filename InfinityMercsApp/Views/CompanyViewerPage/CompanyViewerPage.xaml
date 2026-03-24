@@ -28,13 +28,13 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" StrokeThickness="1" Padding="12">
+        <Border Grid.Row="1" StrokeThickness="0" Padding="12">
                 <Border.Resources>
                     <Style TargetType="Label">
                         <Setter Property="FontSize" Value="24" />
                     </Style>
                 </Border.Resources>
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                     <VerticalStackLayout Grid.Row="0" Spacing="2" VerticalOptions="Center">
                         <Grid x:Name="SelectedNameDisplayRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="34" FontAttributes="Bold">
@@ -93,6 +93,7 @@
                         UnitVitality="{Binding UnitVitality}"
                         UnitS="{Binding UnitS}"
                         UnitAva="{Binding UnitAva}"
+                        ShowConfigurationsSection="False"
                         EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                         SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 

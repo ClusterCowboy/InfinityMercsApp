@@ -4,7 +4,12 @@
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Controls.CompanyViewerUnitTileView">
 
-    <Border x:Name="TileBorder" Padding="6" StrokeThickness="1" MinimumWidthRequest="126" MinimumHeightRequest="142">
+    <Border x:Name="TileBorder"
+            Padding="6"
+            Stroke="{Binding TileStroke}"
+            StrokeThickness="{Binding TileStrokeThickness}"
+            MinimumWidthRequest="126"
+            MinimumHeightRequest="142">
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTileTapped" />
         </Border.GestureRecognizers>
@@ -16,15 +21,7 @@
                 <Setter Property="BackgroundColor" Value="#1F2937" />
             </DataTrigger>
             <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="True">
-                <Setter Property="BackgroundColor" Value="#1F2937" />
-            </DataTrigger>
-            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                <Setter Property="Stroke" Value="#93C5FD" />
-                <Setter Property="StrokeThickness" Value="2" />
-            </DataTrigger>
-            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
-                <Setter Property="Stroke" Value="#4B5563" />
-                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="BackgroundColor" Value="#803A8E3A" />
             </DataTrigger>
         </Border.Triggers>
 

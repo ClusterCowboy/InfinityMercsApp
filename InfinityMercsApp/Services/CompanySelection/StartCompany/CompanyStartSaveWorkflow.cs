@@ -132,6 +132,102 @@ internal static class CompanyStartSaveWorkflow
         await request.NavigateToCompanyViewerAsync(filePath);
     }
 
+    internal static async Task<string> RunWithProvidedCaptainStatsAsync<TFaction, TEntry, TCaptainStats>(
+        CompanyStartSaveRequest<TFaction, TEntry, TCaptainStats> request,
+        TCaptainStats improvedCaptainStats,
+        string? outputFilePath = null,
+        bool navigateToViewer = false)
+        where TFaction : class, ICompanySourceFaction
+        where TEntry : class, ICompanyMercsEntry
+        where TCaptainStats : CompanySavedImprovedCaptainStatsBase
+    {
+        var entries = request.MercsCompanyEntries as IList<TEntry> ?? request.MercsCompanyEntries.ToList();
+        var factions = request.Factions as IList<TFaction> ?? request.Factions.ToList();
+        var captainEntry = entries.FirstOrDefault(x => x.IsLieutenant) ?? entries.FirstOrDefault();
+        if (captainEntry is null)
+        {
+            throw new InvalidOperationException("Add at least one unit before starting a company.");
+        }
+
+        var sourceFactions = CompanyUnitDetailsShared.BuildUnitSourceFactions(
+            request.ShowRightSelectionBox,
+            request.LeftSlotFaction,
+            request.RightSlotFaction,
+            faction => faction.Id);
+        var now = DateTimeOffset.UtcNow;
+        var companyName = request.CompanyName.Trim();
+        var safeFileName = Regex.Replace(companyName.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+        if (string.IsNullOrWhiteSpace(safeFileName))
+        {
+            safeFileName = "company";
+        }
+
+        var saveDir = Path.Combine(FileSystem.Current.AppDataDirectory, "MercenaryRecords");
+        Directory.CreateDirectory(saveDir);
+
+        string filePath;
+        string fileName;
+        int companyIndex;
+        if (!string.IsNullOrWhiteSpace(outputFilePath))
+        {
+            filePath = outputFilePath;
+            var outputDir = Path.GetDirectoryName(outputFilePath);
+            if (!string.IsNullOrWhiteSpace(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+
+            fileName = Path.GetFileName(outputFilePath);
+            companyIndex = ParseCompanyIndexFromFileName(outputFilePath);
+        }
+        else
+        {
+            companyIndex = CompanySelectionSharedUtilities.GetNextCompanyIndex(saveDir, companyName, safeFileName);
+            fileName = $"{safeFileName}-{companyIndex:D4}.json";
+            filePath = Path.Combine(saveDir, fileName);
+        }
+
+        var captainName = request.ReadCaptainName(improvedCaptainStats);
+        var normalizedCaptainName = string.IsNullOrWhiteSpace(captainName) ? "Captain" : captainName.Trim();
+        var startSeasonPoints = int.TryParse(request.SelectedStartSeasonPoints, out var parsedStartSeasonPoints)
+            ? parsedStartSeasonPoints
+            : 0;
+        var payload = new
+        {
+            CompanyName = companyName,
+            CompanyType = request.CompanyType,
+            CompanyIdentifier = CompanySelectionSharedUtilities.ComputeCompanyIdentifier(fileName),
+            CompanyIndex = companyIndex,
+            CreatedUtc = now.ToString("O", CultureInfo.InvariantCulture),
+            StartSeasonPoints = startSeasonPoints,
+            PointsLimit = startSeasonPoints,
+            CurrentPoints = int.TryParse(request.SeasonPointsCapText, out var currentPoints) ? currentPoints : 0,
+            SourceFactions = sourceFactions
+                .Select(faction => new
+                {
+                    FactionId = faction.Id,
+                    FactionName = faction.Name
+                })
+                .ToList(),
+            Entries = BuildSerializedEntries(entries, normalizedCaptainName, improvedCaptainStats, request.ArmyDataService)
+        };
+
+        await File.WriteAllTextAsync(
+            filePath,
+            JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            }));
+
+        if (navigateToViewer)
+        {
+            await request.NavigateToCompanyViewerAsync(filePath);
+        }
+
+        return filePath;
+    }
+
     private static List<SerializedCompanyEntry> BuildSerializedEntries<TEntry>(
         IList<TEntry> entries,
         string normalizedCaptainName,
@@ -906,6 +1002,20 @@ internal static class CompanyStartSaveWorkflow
         }
 
         return typeName.Trim().ToUpperInvariant();
+    }
+
+    private static int ParseCompanyIndexFromFileName(string filePath)
+    {
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+        if (string.IsNullOrWhiteSpace(fileNameWithoutExtension))
+        {
+            return 1;
+        }
+
+        var match = Regex.Match(fileNameWithoutExtension, @"-(\d+)$");
+        return match.Success && int.TryParse(match.Groups[1].Value, out var parsed) && parsed > 0
+            ? parsed
+            : 1;
     }
 
     private sealed class SerializedCompanyEntry

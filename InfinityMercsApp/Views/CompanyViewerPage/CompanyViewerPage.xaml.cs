@@ -364,6 +364,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var (savedRangedWeapons, savedCcWeapons) = ResolveSavedWeapons(entry.SourceFactionId, entry);
                 var savedSkills = ResolveSavedSkills(entry.SourceFactionId, entry);
                 var savedEquipment = ResolveSavedEquipment(entry.SourceFactionId, entry);
+                var savedCharacteristics = ResolveSavedCharacteristics(entry.SourceFactionId, entry);
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
                     savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
@@ -390,11 +391,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     Cost = entry.Cost,
                     SavedEquipment = savedEquipment,
                     SavedSkills = savedSkills,
+                    SavedCharacteristics = savedCharacteristics,
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = savedCcWeapons,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
+                    SelectionAccentColor = ResolveSelectionAccentColor(entry.SourceFactionId),
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
                         ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg"
@@ -488,6 +491,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         SelectedUnitTypeHeading = item.UnitTypeCode;
         HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
+        ApplyUnitHeaderThemeForFaction(item.SourceFactionId);
         ApplyProfileTraitIconOverrides(item, mergedProfile);
         var lieutenantIconCount = (mergedProfile.IsLieutenant ? 1 : 0) + CountBonusLieutenantOrders(mergedProfile.UniqueSkills);
         UnitDisplayConfigurationsView.ShowLieutenantIcon = mergedProfile.IsLieutenant;
@@ -584,6 +588,13 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         return JoinCodesOrDash(names);
     }
 
+    private string ResolveSavedCharacteristics(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentCharacteristicCodes, "chars");
+        names.AddRange(entry.CustomCharacteristics ?? []);
+        return JoinCodesOrDash(names);
+    }
+
     private (string SavedRangedWeapons, string SavedCcWeapons) ResolveSavedWeapons(int sourceFactionId, SavedCompanyEntry entry)
     {
         var currentWeapons = ResolveCodeNames(sourceFactionId, entry.CurrentWeaponCodes, "weapons")
@@ -620,7 +631,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         var savedSkillLines = SplitProfileText(item.SavedSkills);
-        var hasIrregular = savedSkillLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase));
+        var savedCharacteristicLines = SplitProfileText(item.SavedCharacteristics);
+        var hasIrregular = savedSkillLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase)) ||
+                           savedCharacteristicLines.Any(x => x.Contains("irregular", StringComparison.OrdinalIgnoreCase));
         if (!hasIrregular)
         {
             return;
@@ -718,8 +731,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         var rangedWeapons = MergeProfileSectionText(loadedProfile?.RangedWeapons, item.SavedRangedWeapons);
         var meleeWeapons = MergeProfileSectionText(loadedProfile?.MeleeWeapons, item.SavedCcWeapons);
         var uniqueEquipment = MergeProfileSectionText(loadedProfile?.UniqueEquipment, item.SavedEquipment);
-        var isLieutenant = loadedProfile?.IsLieutenant ?? item.IsLieutenant;
+        var isLieutenant = item.IsLieutenant || loadedProfile?.IsLieutenant == true;
         var uniqueSkills = MergeProfileSectionText(loadedProfile?.UniqueSkills, item.SavedSkills);
+        var characteristics = MergeProfileSectionText(loadedProfile?.Characteristics, item.SavedCharacteristics);
         if (isLieutenant)
         {
             uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
@@ -749,6 +763,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             UniqueSkillsFormatted = keepLoadedSkillsFormatting && loadedProfile?.UniqueSkillsFormatted is not null
                 ? loadedProfile.UniqueSkillsFormatted
                 : BuildSimpleFormatted(uniqueSkills, Color.FromArgb("#F59E0B")),
+            Characteristics = characteristics,
             Peripherals = loadedProfile?.Peripherals ?? "-",
             PeripheralsFormatted = loadedProfile?.PeripheralsFormatted,
             Cost = loadedProfile?.Cost ?? item.Cost.ToString(),
@@ -1678,9 +1693,10 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private void ApplyProfileTraitIconOverrides(CompanyViewerUnitListItem item, ViewerProfileItem mergedProfile)
     {
+        var characteristicsText = mergedProfile.Characteristics ?? string.Empty;
         var skillsText = mergedProfile.UniqueSkills ?? string.Empty;
         var equipmentText = mergedProfile.UniqueEquipment ?? string.Empty;
-        var combined = NormalizeTraitText(string.Join(" ", skillsText, equipmentText));
+        var combined = NormalizeTraitText(string.Join(" ", characteristicsText, skillsText, equipmentText));
 
         var hasRegular = ContainsWholeWord(combined, "regular");
         var hasIrregular = ContainsWholeWord(combined, "irregular");
@@ -1730,6 +1746,45 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
+
+    private void ApplyUnitHeaderThemeForFaction(int sourceFactionId)
+    {
+        var defaultPrimary = Controls.UnitDisplayConfigurationsView.DefaultHeaderPrimaryColor;
+        var defaultSecondary = Controls.UnitDisplayConfigurationsView.DefaultHeaderSecondaryColor;
+        var factionName = ResolveFactionThemeName(sourceFactionId);
+        var colors = CompanySelectionVisualThemeWorkflow.GetHeaderColors(factionName, defaultPrimary, defaultSecondary);
+        UnitDisplayConfigurationsView.UnitHeaderPrimaryColor = colors.Primary;
+        UnitDisplayConfigurationsView.UnitHeaderSecondaryColor = colors.Secondary;
+        UnitDisplayConfigurationsView.UnitHeaderPrimaryTextColor = colors.PrimaryText;
+        UnitDisplayConfigurationsView.UnitHeaderSecondaryTextColor = colors.SecondaryText;
+    }
+
+    private Color ResolveSelectionAccentColor(int sourceFactionId)
+    {
+        var defaultAccent = Color.FromArgb("#93C5FD");
+        var factionName = ResolveFactionThemeName(sourceFactionId);
+        var (primary, _) = CompanySelectionVisualThemeWorkflow.GetFactionTheme(
+            factionName,
+            defaultAccent,
+            Color.FromArgb("#4B5563"));
+        return primary;
+    }
+
+    private string? ResolveFactionThemeName(int sourceFactionId)
+    {
+        if (sourceFactionId <= 0)
+        {
+            return null;
+        }
+
+        var metadataFactionName = _armyDataService?.GetMetadataFactionById(sourceFactionId)?.Name;
+        if (!string.IsNullOrWhiteSpace(metadataFactionName))
+        {
+            return metadataFactionName;
+        }
+
+        return CompanySelectionVisualThemeWorkflow.InferThemeFactionNameFromFactionId(sourceFactionId);
+    }
 }
 
 public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
@@ -1743,8 +1798,12 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public int Cost { get; init; }
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
+    public string SavedCharacteristics { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public Color SelectionAccentColor { get; init; } = Color.FromArgb("#93C5FD");
+    public Color TileStroke => IsSelected ? SelectionAccentColor : Color.FromArgb("#4B5563");
+    public double TileStrokeThickness => IsSelected ? 2d : 1d;
     public int ExperiencePoints { get; init; }
     public int ExperienceLevel => CompanyUnitExperienceRanks.GetRankLevel(ExperiencePoints);
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
@@ -1786,6 +1845,8 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
 
             _isSelected = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(TileStroke));
+            OnPropertyChanged(nameof(TileStrokeThickness));
         }
     }
 }
