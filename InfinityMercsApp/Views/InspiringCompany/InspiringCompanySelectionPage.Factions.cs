@@ -90,6 +90,7 @@ public partial class InspiringCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
+                TeamsView = false;
                 IsFactionSelectionActive = false;
                 ShowFactionStrip = false;
             });
@@ -102,3 +103,4 @@ public partial class InspiringCompanySelectionPage
             UpdateMercsCompanyTotal);
     }
 }
+

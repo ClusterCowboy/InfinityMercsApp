@@ -17,23 +17,6 @@ public partial class InspiringCompanySelectionPage
             : !ShowFactionStrip;
     }
 
-    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        // Always switch to the left slot when entering faction selection,
-        // because the right slot (Inspiring Company) is locked and cannot be changed.
-        if (_activeSlotIndex != 0)
-        {
-            SetActiveSlot(0);
-        }
-
-        CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(value => IsFactionSelectionActive = value);
-    }
-
-    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(value => IsFactionSelectionActive = value);
-    }
-
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(

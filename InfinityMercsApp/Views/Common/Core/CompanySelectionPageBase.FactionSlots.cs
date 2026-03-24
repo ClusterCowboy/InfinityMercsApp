@@ -109,7 +109,7 @@ public abstract partial class CompanySelectionPageBase
     /// <summary>
     /// Triggers the appropriate side effects after a faction slot assignment:
     /// auto-selects the next empty slot, resets the roster if the faction changed,
-    /// and initiates a unit load for the newly active slot.
+    /// and reloads units for the newly active slot.
     /// </summary>
     protected static void HandleFactionAssignmentSideEffectsCore(
         bool factionChanged,

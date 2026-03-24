@@ -13,28 +13,6 @@ public partial class CohesiveCompanySelectionPage
             : !ShowFactionStrip;
     }
 
-    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(
-            value => IsFactionSelectionActive = value,
-            () => AreTeamEntriesReady = false);
-    }
-
-    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(
-            value => IsFactionSelectionActive = value,
-            () =>
-            {
-                if (_factionSelectionState.SelectedFaction is not null ||
-                    _factionSelectionState.LeftSlotFaction is not null ||
-                    _factionSelectionState.RightSlotFaction is not null)
-                {
-                    _ = LoadUnitsForActiveSlotAsync();
-                }
-            });
-    }
-
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(

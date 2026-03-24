@@ -146,8 +146,8 @@ internal static class CompanySelectionFactionSlotsWorkflow
         if (factionChanged)
         {
             resetMercsCompany();
-            _ = loadUnitsForActiveSlotAsync();
         }
+        _ = loadUnitsForActiveSlotAsync();
 
         onAssignmentCompleted?.Invoke();
     }

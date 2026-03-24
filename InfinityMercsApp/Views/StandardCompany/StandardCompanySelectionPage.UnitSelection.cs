@@ -19,22 +19,6 @@ public partial class StandardCompanySelectionPage
     }
 
     /// <summary>
-    /// Handles on faction selection header tapped.
-    /// </summary>
-    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(value => IsFactionSelectionActive = value);
-    }
-
-    /// <summary>
-    /// Handles on unit selection header tapped.
-    /// </summary>
-    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(value => IsFactionSelectionActive = value);
-    }
-
-    /// <summary>
     /// Handles on unit selection filter button tapped.
     /// </summary>
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)

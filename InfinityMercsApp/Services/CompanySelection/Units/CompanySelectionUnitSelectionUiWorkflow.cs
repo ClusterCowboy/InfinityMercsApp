@@ -4,22 +4,6 @@ namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionUnitSelectionUiWorkflow
 {
-    internal static void ActivateFactionSelection(
-        Action<bool> setIsFactionSelectionActive,
-        Action? beforeActivate = null)
-    {
-        beforeActivate?.Invoke();
-        setIsFactionSelectionActive(true);
-    }
-
-    internal static void ActivateUnitSelection(
-        Action<bool> setIsFactionSelectionActive,
-        Action? afterActivate = null)
-    {
-        setIsFactionSelectionActive(false);
-        afterActivate?.Invoke();
-    }
-
     internal static void ApplyHeaderFilterButtonSizes(
         object? sender,
         Border? inactiveButtonBorder,

@@ -15,7 +15,15 @@ internal static class CompanySelectionUnitFilterOptionsService
         if (criteria is not null)
         {
             setLieutenantOnlyUnits(criteria.LieutenantOnlyUnits);
-            setTeamsView(criteria.TeamsView);
+            setTeamsView(false);
+            resolved = new UnitFilterCriteria
+            {
+                Terms = criteria.Terms,
+                MinPoints = criteria.MinPoints,
+                MaxPoints = criteria.MaxPoints,
+                LieutenantOnlyUnits = criteria.LieutenantOnlyUnits,
+                TeamsView = false
+            };
         }
 
         return resolved;

@@ -4,9 +4,10 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Controls.UnitDisplayConfigurationsView"
-             x:Name="UnitDisplayConfigurationsRoot">
+             x:Name="UnitDisplayConfigurationsRoot"
+             HorizontalOptions="FillAndExpand">
     <!-- Shared UI shell for the selected-unit stat header and its configurations list. -->
-    <Border StrokeThickness="0" Padding="10">
+    <Border StrokeThickness="0" Padding="0" HorizontalOptions="FillAndExpand">
         <Grid RowDefinitions="*" RowSpacing="8">
             <Grid x:Name="ConfigurationsRootGrid" ColumnDefinitions="58,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="2">
                 <Border

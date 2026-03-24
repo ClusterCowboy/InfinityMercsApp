@@ -83,6 +83,7 @@ public partial class StandardCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
+                TeamsView = false;
                 if (AllFactionSlotsFilled())
                 {
                     IsFactionSelectionActive = false;
@@ -123,3 +124,4 @@ public partial class StandardCompanySelectionPage
         FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 }
+

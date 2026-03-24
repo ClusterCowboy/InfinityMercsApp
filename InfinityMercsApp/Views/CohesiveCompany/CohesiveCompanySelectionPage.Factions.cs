@@ -141,6 +141,7 @@ public partial class CohesiveCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
+                TeamsView = false;
                 if (AllFactionSlotsFilled())
                 {
                     IsFactionSelectionActive = false;
@@ -192,3 +193,4 @@ public partial class CohesiveCompanySelectionPage
         FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 }
+

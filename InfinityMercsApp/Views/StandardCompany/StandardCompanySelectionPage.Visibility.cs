@@ -36,6 +36,18 @@ public partial class StandardCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
+            // Guard against a blank unit list when no explicit filter is active.
+            if (!_filterState.ActiveUnitFilter.IsActive &&
+                !LieutenantOnlyUnits &&
+                pointsRemaining > 0 &&
+                !Units.Any(x => x.IsVisible))
+            {
+                foreach (var unit in Units)
+                {
+                    unit.IsVisible = true;
+                }
+            }
+
             _selectedUnit = RefreshSelectedUnitVisibilityCore(
                 _selectedUnit,
                 () => ResetUnitDetails(),

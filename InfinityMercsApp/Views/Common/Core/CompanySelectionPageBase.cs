@@ -25,8 +25,9 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     // True when the unit search/filter is active; drives which filter icon canvas is shown.
     private bool _isUnitFilterActive;
 
-    // Controls whether the faction picker or the unit list / detail panel is visible.
-    private bool _isFactionSelectionActive = true;
+    // Legacy compatibility flag retained for existing bindings.
+    // Unit selection is now always active, so this stays false.
+    private bool _isFactionSelectionActive;
     private bool _showFactionStrip = true;
 
     // When true, only lieutenant-eligible units are shown in the unit list.
@@ -57,7 +58,8 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         CohesiveCompanyFactionQueryProvider = cohesiveCompanyFactionQueryProvider;
         FactionLogoCacheService = factionLogoCacheService;
         AppSettingsProvider = appSettingsProvider;
-        _showFireteams = DefaultTeamsView;
+        // Unit list is always the active selection surface.
+        _showFireteams = false;
     }
 
     /// <summary>Gets the mode (standard vs cohesive) that controls which factions and rules apply.</summary>
@@ -127,21 +129,21 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     }
 
     /// <summary>
-    /// Controls whether the faction picker panel is the active view.
-    /// Changing this property notifies <see cref="IsUnitSelectionActive"/>,
-    /// <see cref="ShowUnitsList"/>, and <see cref="ShowTeamsList"/> so bindings update atomically.
+    /// Legacy flag from the old faction/unit toggle flow.
+    /// Faction-selection mode is retired, so this is normalized to <c>false</c>.
     /// </summary>
     public bool IsFactionSelectionActive
     {
         get => _isFactionSelectionActive;
         set
         {
-            if (_isFactionSelectionActive == value)
+            const bool normalizedValue = false;
+            if (_isFactionSelectionActive == normalizedValue)
             {
                 return;
             }
 
-            _isFactionSelectionActive = value;
+            _isFactionSelectionActive = normalizedValue;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsUnitSelectionActive));
             OnPropertyChanged(nameof(ShowUnitsList));
@@ -149,8 +151,8 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
-    /// <summary>Inverse of <see cref="IsFactionSelectionActive"/>; bound to the unit detail / list area visibility.</summary>
-    public bool IsUnitSelectionActive => !_isFactionSelectionActive;
+    /// <summary>Always <c>true</c>; unit selection remains visible at all times.</summary>
+    public bool IsUnitSelectionActive => true;
 
     /// <summary>Controls visibility of the top horizontal faction strip.</summary>
     public bool ShowFactionStrip
@@ -198,30 +200,29 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         get => _showFireteams;
         set
         {
-            if (_showFireteams == value)
+            // Team-selection mode is retired; keep unit list active.
+            const bool normalizedValue = false;
+            if (_showFireteams == normalizedValue)
             {
                 return;
             }
 
-            _showFireteams = value;
+            _showFireteams = normalizedValue;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowUnitsList));
             OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
 
-    /// <summary><c>true</c> when the flat unit list should be shown (i.e. fireteam view is off).</summary>
-    public bool ShowUnitsList => !TeamsView;
+    /// <summary><c>true</c> because unit selection is always visible.</summary>
+    public bool ShowUnitsList => true;
 
     /// <summary>
     /// <c>true</c> when the fireteam list should be visible.
     /// Guards against showing the list before team entries are populated when
     /// <see cref="RequireTeamEntriesReadyForTeamsList"/> is active.
     /// </summary>
-    public bool ShowTeamsList =>
-        TeamsView &&
-        (!RequireTeamEntriesReadyForTeamsList ||
-         (IsUnitSelectionActive && AreTeamEntriesReadyForTeamsList));
+    public bool ShowTeamsList => false;
 
     /// <summary>
     /// Status text displayed beneath the profile list (e.g. "Select a unit." or profile load errors).
