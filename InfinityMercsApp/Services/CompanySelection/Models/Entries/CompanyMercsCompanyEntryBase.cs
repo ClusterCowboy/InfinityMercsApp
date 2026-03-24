@@ -39,6 +39,7 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public string UnitTypeCode { get; init; } = string.Empty;
     public string SavedEquipment { get; init; } = "-";
     public string SavedSkills { get; init; } = "-";
+    public string SavedCharacteristics { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
     public int? UnitMoveFirstCm { get; init; }
@@ -76,6 +77,7 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public int? PeripheralMoveSecondCm { get; init; }
     public string SavedPeripheralEquipment { get; init; } = "-";
     public string SavedPeripheralSkills { get; init; } = "-";
+    public string SavedPeripheralCharacteristics { get; init; } = "-";
     public string PeripheralSubtitle => $"MOV {PeripheralMov} | CC {PeripheralCc} | BS {PeripheralBs} | PH {PeripheralPh} | WIP {PeripheralWip} | ARM {PeripheralArm} | BTS {PeripheralBts} | {PeripheralVitalityHeader} {PeripheralVitality} | S {PeripheralS} | AVA {PeripheralAva}";
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);

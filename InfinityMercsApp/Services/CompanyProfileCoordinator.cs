@@ -13,6 +13,7 @@ internal sealed class CompanyProfileBuildRequest<TPeripheralStats>
     public required IReadOnlyDictionary<int, string> WeaponsLookup { get; init; }
     public required IReadOnlyDictionary<int, string> EquipLookup { get; init; }
     public required IReadOnlyDictionary<int, string> SkillsLookup { get; init; }
+    public required IReadOnlyDictionary<int, string> CharsLookup { get; init; }
     public required IReadOnlyDictionary<int, string> PeripheralLookup { get; init; }
     public required Func<JsonElement, bool> IsControllerGroup { get; init; }
     public required Func<JsonElement, JsonElement, string, bool> ShouldIncludeOption { get; init; }
@@ -171,6 +172,10 @@ internal sealed class CompanyProfileCoordinator
                     request.GetOrderedDisplayNames(
                         request.GetOptionEntriesWithIncludes(option, "skills"),
                         request.SkillsLookup));
+                var optionCharacteristicNames = request.GetOrderedDisplayNames(
+                        request.GetOptionEntriesWithIncludes(option, "chars"),
+                        request.CharsLookup)
+                    .ToList();
                 var uniqueSkillsNames = optionSkillNames
                     .Where(x => skillUsageCounts.TryGetValue(x, out var c) && c == 1)
                     .ToList();
@@ -274,6 +279,7 @@ internal sealed class CompanyProfileCoordinator
                         uniqueSkillsNames,
                         Color.FromArgb("#F59E0B"),
                         highlightLieutenantPurple: request.ForceLieutenant),
+                    Characteristics = CompanyProfileTextService.JoinOrDash(optionCharacteristicNames),
                     Peripherals = CompanyProfileTextService.JoinOrDash(displayPeripheralNames),
                     PeripheralsFormatted = CompanyProfileTextService.BuildListFormattedString(displayPeripheralNames, Color.FromArgb("#FACC15")),
                     HasPeripheralStatBlock = hasPeripheralStats,

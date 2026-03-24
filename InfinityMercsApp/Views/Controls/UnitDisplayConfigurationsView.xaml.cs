@@ -105,6 +105,8 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(ShowIrregularOrderIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowLieutenantIconProperty =
         BindableProperty.Create(nameof(ShowLieutenantIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
+    public static readonly BindableProperty ShowPeripheralIconProperty =
+        BindableProperty.Create(nameof(ShowPeripheralIcon), typeof(bool), typeof(UnitDisplayConfigurationsView), false, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty LieutenantIconCountProperty =
         BindableProperty.Create(nameof(LieutenantIconCount), typeof(int), typeof(UnitDisplayConfigurationsView), 0, propertyChanged: OnHeaderIconVisibilityChanged);
     public static readonly BindableProperty ShowImpetuousIconProperty =
@@ -400,6 +402,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(ShowLieutenantIconProperty, value);
     }
 
+    public bool ShowPeripheralIcon
+    {
+        get => (bool)GetValue(ShowPeripheralIconProperty);
+        set => SetValue(ShowPeripheralIconProperty, value);
+    }
+
     public int LieutenantIconCount
     {
         get => (int)GetValue(LieutenantIconCountProperty);
@@ -552,7 +560,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
-    public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
+    public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowPeripheralIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
     public bool HasAnyBottomHeaderIcons => ShowCubeIcon || ShowCube2Icon || ShowHackableIcon;
     public bool HasAnyHeaderIcons => HasAnyTopHeaderIcons || HasAnyBottomHeaderIcons;
 
@@ -747,6 +755,11 @@ public partial class UnitDisplayConfigurationsView : ContentView
             pictures.Add(new HeaderIconRenderItem(LieutenantIconPicture));
         }
 
+        if (ShowPeripheralIcon && PeripheralIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(PeripheralIconPicture));
+        }
+
         if (state.ShowImpetuousIcon && ImpetuousIconPicture is not null)
         {
             pictures.Add(new HeaderIconRenderItem(ImpetuousIconPicture));
@@ -798,6 +811,11 @@ public partial class UnitDisplayConfigurationsView : ContentView
             }
 
             pictures.Add(new HeaderIconRenderItem(LieutenantIconPicture));
+        }
+
+        if (ShowPeripheralIcon && PeripheralIconPicture is not null)
+        {
+            pictures.Add(new HeaderIconRenderItem(PeripheralIconPicture));
         }
 
         if (ShowImpetuousIcon && ImpetuousIconPicture is not null)

@@ -745,6 +745,13 @@ public class ViewerViewModel : BaseViewModel
         ShowIrregularOrderIcon = showIrregular;
     }
 
+    public void SetTechTraitIconState(bool showCube, bool showCube2, bool showHackable)
+    {
+        ShowCubeIcon = showCube;
+        ShowCube2Icon = showCube2;
+        ShowHackableIcon = showHackable;
+    }
+
     public void ApplyHackableOverrideFromCurrentConfiguration(string? currentEquipment, string? currentSkills)
     {
         var hasHackableFromCurrentState = ContainsHackableFromCurrentState(currentEquipment, currentSkills);
@@ -3907,8 +3914,7 @@ public class ViewerViewModel : BaseViewModel
 
         var normalized = NormalizeTokenText(name);
 
-        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase) &&
-            !Regex.IsMatch(normalized, @"\b(non[\s-]*hackable|not[\s-]*hackable)\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase))
         {
             hasHackable = true;
         }
@@ -4497,6 +4503,8 @@ public class ViewerProfileItem : BaseViewModel
 
     public string UniqueSkills { get; init; } = "-";
     public FormattedString? UniqueSkillsFormatted { get; init; }
+
+    public string Characteristics { get; init; } = "-";
 
     public string Peripherals { get; init; } = "-";
     public FormattedString? PeripheralsFormatted { get; init; }

@@ -151,8 +151,7 @@ public static class CompanyUnitTraitService
 
         var normalized = NormalizeTokenText(name);
 
-        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase) &&
-            !Regex.IsMatch(normalized, @"\b(non[\s-]*hackable|not[\s-]*hackable)\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(normalized, @"\bhackable\b", RegexOptions.IgnoreCase))
         {
             hasHackable = true;
         }

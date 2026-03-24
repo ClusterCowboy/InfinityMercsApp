@@ -203,6 +203,8 @@ internal static class CompanyStartSaveWorkflow
 
         var baseSkillNames = SplitCodes(entry.SavedSkills);
         var currentSkillNames = SplitCodes(entry.SavedSkills);
+        var baseCharacteristicNames = SplitCodes(entry.SavedCharacteristics);
+        var currentCharacteristicNames = SplitCodes(entry.SavedCharacteristics);
         var baseEquipmentNames = SplitCodes(entry.SavedEquipment);
         var currentEquipmentNames = SplitCodes(entry.SavedEquipment);
         var baseWeaponNames = SplitCodes(string.Join(Environment.NewLine, [entry.SavedRangedWeapons, entry.SavedCcWeapons]));
@@ -242,6 +244,8 @@ internal static class CompanyStartSaveWorkflow
 
         var baseSkillResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, baseSkillNames, "skills", baseLookupFactions);
         var currentSkillResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, currentSkillNames, "skills", currentLookupFactions);
+        var baseCharacteristicResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, baseCharacteristicNames, "chars", baseLookupFactions);
+        var currentCharacteristicResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, currentCharacteristicNames, "chars", currentLookupFactions);
         var baseEquipmentResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, baseEquipmentNames, "equip", baseLookupFactions);
         var currentEquipmentResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, currentEquipmentNames, "equip", currentLookupFactions);
         var baseWeaponResolution = ResolveCodes(armyDataService, codeIdLookupCache, extrasIdLookupCache, baseWeaponNames, "weapons", baseLookupFactions);
@@ -250,6 +254,10 @@ internal static class CompanyStartSaveWorkflow
 
         var customSkills = baseSkillResolution.CustomNames
             .Concat(currentSkillResolution.CustomNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var customCharacteristics = baseCharacteristicResolution.CustomNames
+            .Concat(currentCharacteristicResolution.CustomNames)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         var customEquipment = baseEquipmentResolution.CustomNames
@@ -321,11 +329,14 @@ internal static class CompanyStartSaveWorkflow
             Xp = Math.Max(0, entry.ExperiencePoints),
             BaseSkillCodes = baseSkillResolution.Codes,
             CurrentSkillCodes = currentSkillResolution.Codes,
+            BaseCharacteristicCodes = baseCharacteristicResolution.Codes,
+            CurrentCharacteristicCodes = currentCharacteristicResolution.Codes,
             BaseEquipmentCodes = baseEquipmentResolution.Codes,
             CurrentEquipmentCodes = currentEquipmentResolution.Codes,
             BaseWeaponCodes = baseWeaponResolution.Codes,
             CurrentWeaponCodes = currentWeaponResolution.Codes,
             CustomSkills = customSkills,
+            CustomCharacteristics = customCharacteristics,
             CustomEquipment = customEquipment,
             CustomWeapons = customWeapons
         };
@@ -354,6 +365,13 @@ internal static class CompanyStartSaveWorkflow
             extrasIdLookupCache,
             SplitCodes(entry.SavedPeripheralEquipment),
             "equip",
+            [entry.SourceFactionId]);
+        var peripheralCharacteristicResolution = ResolveCodes(
+            armyDataService,
+            codeIdLookupCache,
+            extrasIdLookupCache,
+            SplitCodes(entry.SavedPeripheralCharacteristics),
+            "chars",
             [entry.SourceFactionId]);
         return new SerializedCompanyEntry
         {
@@ -415,11 +433,14 @@ internal static class CompanyStartSaveWorkflow
             Xp = 0,
             BaseSkillCodes = peripheralSkillResolution.Codes,
             CurrentSkillCodes = peripheralSkillResolution.Codes,
+            BaseCharacteristicCodes = peripheralCharacteristicResolution.Codes,
+            CurrentCharacteristicCodes = peripheralCharacteristicResolution.Codes,
             BaseEquipmentCodes = peripheralEquipmentResolution.Codes,
             CurrentEquipmentCodes = peripheralEquipmentResolution.Codes,
             BaseWeaponCodes = [],
             CurrentWeaponCodes = [],
             CustomSkills = peripheralSkillResolution.CustomNames,
+            CustomCharacteristics = peripheralCharacteristicResolution.CustomNames,
             CustomEquipment = peripheralEquipmentResolution.CustomNames,
             CustomWeapons = []
         };
@@ -948,6 +969,10 @@ internal static class CompanyStartSaveWorkflow
         public List<CompanySavedCodeRef> BaseSkillCodes { get; init; } = [];
         [JsonPropertyName("CurrentSkillCodes")]
         public List<CompanySavedCodeRef> CurrentSkillCodes { get; init; } = [];
+        [JsonPropertyName("BaseCharacteristicCodes")]
+        public List<CompanySavedCodeRef> BaseCharacteristicCodes { get; init; } = [];
+        [JsonPropertyName("CurrentCharacteristicCodes")]
+        public List<CompanySavedCodeRef> CurrentCharacteristicCodes { get; init; } = [];
         [JsonPropertyName("BaseEquipmentCodes")]
         public List<CompanySavedCodeRef> BaseEquipmentCodes { get; init; } = [];
         [JsonPropertyName("CurrentEquipmentCodes")]
@@ -960,6 +985,8 @@ internal static class CompanyStartSaveWorkflow
         public List<string> CustomWeapons { get; init; } = [];
         [JsonPropertyName("Custom Skills")]
         public List<string> CustomSkills { get; init; } = [];
+        [JsonPropertyName("Custom Characteristics")]
+        public List<string> CustomCharacteristics { get; init; } = [];
         [JsonPropertyName("Custom Equipment")]
         public List<string> CustomEquipment { get; init; } = [];
         [JsonPropertyName("Rank1Skill")]

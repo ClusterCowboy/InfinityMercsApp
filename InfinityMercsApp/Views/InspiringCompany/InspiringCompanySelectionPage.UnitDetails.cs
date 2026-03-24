@@ -402,7 +402,8 @@ public partial class InspiringCompanySelectionPage
                 S = commonResult.S,
                 Ava = commonResult.Ava,
                 Equipment = commonResult.Equipment,
-                Skills = commonResult.Skills
+                Skills = commonResult.Skills,
+                Characteristics = commonResult.Characteristics
             });
     }
 

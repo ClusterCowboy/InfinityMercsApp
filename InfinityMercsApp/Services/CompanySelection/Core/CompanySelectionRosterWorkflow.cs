@@ -114,9 +114,16 @@ internal static class CompanySelectionRosterWorkflow
     {
         var combinedEquipment = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonEquipment, profile.UniqueEquipment);
         var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonSkills, profile.UniqueSkills);
+        var combinedCharacteristics = CompanyProfileTextService.SplitDisplayLine(profile.Characteristics).ToList();
+        var inferredPeripheralName = CompanyUnitDetailsShared.ExtractFirstPeripheralName(profile.Peripherals);
+        var peripheralHasControlModifier = ProfileHasPeripheralControlModifier(profile, inferredPeripheralName);
+        if (peripheralHasControlModifier && !string.IsNullOrWhiteSpace(inferredPeripheralName))
+        {
+            EnsureSkill(combinedSkills, $"FT Master ({inferredPeripheralName})");
+        }
         var combinedEquipmentText = CompanyProfileTextService.JoinOrDash(combinedEquipment);
         var combinedSkillsText = CompanyProfileTextService.JoinOrDash(combinedSkills);
-        var inferredPeripheralName = CompanyUnitDetailsShared.ExtractFirstPeripheralName(profile.Peripherals);
+        var combinedCharacteristicsText = CompanyProfileTextService.JoinOrDash(combinedCharacteristics);
         var hasInferredPeripheral = !string.IsNullOrWhiteSpace(inferredPeripheralName);
         var hasPeripheralData = peripheralStats is not null || hasInferredPeripheral;
         var peripheralNameHeading = peripheralStats?.NameHeading;
@@ -140,7 +147,8 @@ internal static class CompanySelectionRosterWorkflow
         var peripheralAva = peripheralStats?.Ava ?? (profile.HasPeripheralStatBlock ? profile.PeripheralAva : "-");
         var peripheralEquipment = peripheralStats?.Equipment ?? "-";
         var peripheralSkillsText = peripheralStats?.Skills ?? "-";
-        if (profile.PeripheralIsIrregular)
+        var peripheralCharacteristicsText = peripheralStats?.Characteristics ?? "-";
+        if (profile.PeripheralIsIrregular || peripheralHasControlModifier)
         {
             var peripheralSkillLines = CompanyProfileTextService.SplitDisplayLine(peripheralSkillsText).ToList();
             if (!peripheralSkillLines.Any(x => string.Equals(x, "Irregular", StringComparison.OrdinalIgnoreCase)))
@@ -149,6 +157,14 @@ internal static class CompanySelectionRosterWorkflow
             }
 
             peripheralSkillsText = CompanyProfileTextService.JoinOrDash(peripheralSkillLines);
+
+            var peripheralCharacteristicLines = CompanyProfileTextService.SplitDisplayLine(peripheralCharacteristicsText).ToList();
+            if (!peripheralCharacteristicLines.Any(x => string.Equals(x, "Irregular", StringComparison.OrdinalIgnoreCase)))
+            {
+                peripheralCharacteristicLines.Add("Irregular");
+            }
+
+            peripheralCharacteristicsText = CompanyProfileTextService.JoinOrDash(peripheralCharacteristicLines);
         }
         var currentUnitMove = formatMoveValue(unitMoveFirstCm, unitMoveSecondCm);
         var statline =
@@ -173,6 +189,7 @@ internal static class CompanySelectionRosterWorkflow
             PackagedLogoPath = selectedUnit.PackagedLogoPath,
             SavedEquipment = combinedEquipmentText,
             SavedSkills = combinedSkillsText,
+            SavedCharacteristics = combinedCharacteristicsText,
             SavedRangedWeapons = profile.RangedWeapons,
             SavedCcWeapons = profile.MeleeWeapons,
             ExperiencePoints = 0,
@@ -197,6 +214,7 @@ internal static class CompanySelectionRosterWorkflow
             PeripheralAva = peripheralAva,
             SavedPeripheralEquipment = peripheralEquipment,
             SavedPeripheralSkills = peripheralSkillsText,
+            SavedPeripheralCharacteristics = peripheralCharacteristicsText,
             PeripheralEquipmentLineFormatted =
                 CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralEquipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine =
@@ -211,6 +229,41 @@ internal static class CompanySelectionRosterWorkflow
             PeripheralMoveFirstCm = peripheralStats?.MoveFirstCm,
             PeripheralMoveSecondCm = peripheralStats?.MoveSecondCm
         };
+    }
+
+    private static void EnsureSkill(ICollection<string> skills, string skill)
+    {
+        if (string.IsNullOrWhiteSpace(skill))
+        {
+            return;
+        }
+
+        if (skills.Any(x => string.Equals(x?.Trim(), skill, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        skills.Add(skill);
+    }
+
+    private static bool ProfileHasPeripheralControlModifier(ViewerProfileItem profile, string? peripheralName)
+    {
+        if (profile.PeripheralIsIrregular)
+        {
+            return true;
+        }
+
+        var text = string.Join(" ", new[]
+        {
+            profile.Peripherals ?? string.Empty,
+            profile.PeripheralNameHeading ?? string.Empty,
+            profile.PeripheralSubtitle ?? string.Empty,
+            peripheralName ?? string.Empty
+        });
+
+        return text.Contains("synchronized", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("control", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("cyberplug", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static TUnit SetSelectedUnit<TUnit>(

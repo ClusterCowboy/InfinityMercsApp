@@ -33,6 +33,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
     private SKPicture? _lieutenantOrderIconPicture;
+    private SKPicture? _peripheralIconPicture;
     private SKPicture? _commandTokenIconPicture;
     private SKPicture? _impetuousIconPicture;
     private SKPicture? _tacticalAwarenessIconPicture;
@@ -487,6 +488,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         SelectedUnitTypeHeading = item.UnitTypeCode;
         HasSelectedUnitTypeHeading = !string.IsNullOrWhiteSpace(item.UnitTypeCode);
+        ApplyProfileTraitIconOverrides(item, mergedProfile);
         var lieutenantIconCount = (mergedProfile.IsLieutenant ? 1 : 0) + CountBonusLieutenantOrders(mergedProfile.UniqueSkills);
         UnitDisplayConfigurationsView.ShowLieutenantIcon = mergedProfile.IsLieutenant;
         UnitDisplayConfigurationsView.LieutenantIconCount = lieutenantIconCount;
@@ -786,6 +788,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         _irregularOrderIconPicture = null;
         _lieutenantOrderIconPicture?.Dispose();
         _lieutenantOrderIconPicture = null;
+        _peripheralIconPicture?.Dispose();
+        _peripheralIconPicture = null;
         _commandTokenIconPicture?.Dispose();
         _commandTokenIconPicture = null;
         _impetuousIconPicture?.Dispose();
@@ -830,6 +834,17 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanyViewerPage lieutenant order icon load failed: {ex.Message}");
+        }
+
+        try
+        {
+            await using var peripheralStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/CBIcons/peripheral.svg");
+            var peripheralSvg = new SKSvg();
+            _peripheralIconPicture = peripheralSvg.Load(peripheralStream);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CompanyViewerPage peripheral icon load failed: {ex.Message}");
         }
 
         try
@@ -903,6 +918,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
         UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
         UnitDisplayConfigurationsView.LieutenantIconPicture = _lieutenantOrderIconPicture;
+        UnitDisplayConfigurationsView.PeripheralIconPicture = _peripheralIconPicture;
         UnitDisplayConfigurationsView.ImpetuousIconPicture = _impetuousIconPicture;
         UnitDisplayConfigurationsView.TacticalAwarenessIconPicture = _tacticalAwarenessIconPicture;
         UnitDisplayConfigurationsView.CubeIconPicture = _cubeIconPicture;
@@ -1658,6 +1674,61 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
 
         return total;
+    }
+
+    private void ApplyProfileTraitIconOverrides(CompanyViewerUnitListItem item, ViewerProfileItem mergedProfile)
+    {
+        var skillsText = mergedProfile.UniqueSkills ?? string.Empty;
+        var equipmentText = mergedProfile.UniqueEquipment ?? string.Empty;
+        var combined = NormalizeTraitText(string.Join(" ", skillsText, equipmentText));
+
+        var hasRegular = ContainsWholeWord(combined, "regular");
+        var hasIrregular = ContainsWholeWord(combined, "irregular");
+        var hasCube2 = Regex.IsMatch(combined, @"\bcube\s*2(?:\.0)?\b|\bcube2(?:\.0)?\b", RegexOptions.IgnoreCase);
+        var hasNegativeCube = Regex.IsMatch(combined, @"\b(no[\s-]*cube|without[\s-]*cube|cube[\s-]*none)\b", RegexOptions.IgnoreCase);
+        var hasCube = !hasCube2 && !hasNegativeCube && ContainsWholeWord(combined, "cube");
+        var hasHackable = IsHackableFromTraitText(combined);
+        var hasPeripheral = item.IsPeripheralUnit ||
+                            Regex.IsMatch(combined, @"\bservant\b", RegexOptions.IgnoreCase) ||
+                            Regex.IsMatch(combined, @"\bancillary\b", RegexOptions.IgnoreCase);
+
+        _viewerViewModel.SetOrderTypeIconState(showRegular: hasRegular, showIrregular: hasIrregular);
+        _viewerViewModel.SetTechTraitIconState(showCube: hasCube, showCube2: hasCube2, showHackable: hasHackable);
+        UnitDisplayConfigurationsView.ShowPeripheralIcon = hasPeripheral;
+    }
+
+    private static bool IsHackableFromTraitText(string normalizedText)
+    {
+        return Regex.IsMatch(normalizedText, @"\bhackable\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bhacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bkiller\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bevo\s*hacking\s*device\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bhacking\s*device\s*plus\b|\bhd\s*\+\b", RegexOptions.IgnoreCase) ||
+               Regex.IsMatch(normalizedText, @"\bkhd\b|\bevo\s*hd\b", RegexOptions.IgnoreCase);
+    }
+
+    private static bool ContainsWholeWord(string text, string word)
+    {
+        return Regex.IsMatch(text, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase);
+    }
+
+    private static string NormalizeTraitText(string value)
+    {
+        var lowered = value.ToLowerInvariant();
+        var sb = new System.Text.StringBuilder(lowered.Length);
+        foreach (var c in lowered)
+        {
+            if (char.IsLetterOrDigit(c) || c == '.')
+            {
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append(' ');
+            }
+        }
+
+        return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
 }
 

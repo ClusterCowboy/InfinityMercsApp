@@ -21,6 +21,7 @@ public interface ICompanyMercsEntry
     int LogoSourceUnitId { get; }
     string SavedEquipment { get; }
     string SavedSkills { get; }
+    string SavedCharacteristics { get; }
     string SavedRangedWeapons { get; }
     string SavedCcWeapons { get; }
     bool HasPeripheralStatBlock { get; }
@@ -38,6 +39,7 @@ public interface ICompanyMercsEntry
     string PeripheralAva { get; }
     string SavedPeripheralEquipment { get; }
     string SavedPeripheralSkills { get; }
+    string SavedPeripheralCharacteristics { get; }
     int ExperiencePoints { get; }
     int? UnitMoveFirstCm { get; }
     int? UnitMoveSecondCm { get; }

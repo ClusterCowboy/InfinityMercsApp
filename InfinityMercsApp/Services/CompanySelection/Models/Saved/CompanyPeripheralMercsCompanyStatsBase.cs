@@ -18,4 +18,5 @@ public abstract class CompanyPeripheralMercsCompanyStatsBase
     public string Ava { get; init; } = "-";
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
+    public string Characteristics { get; init; } = "-";
 }
