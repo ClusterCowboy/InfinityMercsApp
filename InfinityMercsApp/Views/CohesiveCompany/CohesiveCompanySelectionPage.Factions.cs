@@ -116,11 +116,11 @@ public partial class CohesiveCompanySelectionPage
                 {
                     if (slotIndex == 0)
                     {
-                        FactionSlotSelectorView.LeftSlotText = text;
+                        FactionSlotSelectorView.LeftSlotText = string.Empty;
                     }
                     else
                     {
-                        FactionSlotSelectorView.RightSlotText = text;
+                        FactionSlotSelectorView.RightSlotText = string.Empty;
                     }
                 },
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
@@ -141,8 +141,22 @@ public partial class CohesiveCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
-                IsFactionSelectionActive = false;
+                if (AllFactionSlotsFilled())
+                {
+                    IsFactionSelectionActive = false;
+                    ShowFactionStrip = false;
+                }
             });
+    }
+
+    private bool AllFactionSlotsFilled()
+    {
+        if (_factionSelectionState.LeftSlotFaction is null)
+        {
+            return false;
+        }
+
+        return !ShowRightSelectionBox || _factionSelectionState.RightSlotFaction is not null;
     }
 
     private string BuildCCFactionValidityFilterKey(int maxCost)

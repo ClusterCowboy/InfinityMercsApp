@@ -27,6 +27,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
 
     // Controls whether the faction picker or the unit list / detail panel is visible.
     private bool _isFactionSelectionActive = true;
+    private bool _showFactionStrip = true;
 
     // When true, only lieutenant-eligible units are shown in the unit list.
     private bool _lieutenantOnlyUnits;
@@ -150,6 +151,22 @@ public abstract partial class CompanySelectionPageBase : ContentPage
 
     /// <summary>Inverse of <see cref="IsFactionSelectionActive"/>; bound to the unit detail / list area visibility.</summary>
     public bool IsUnitSelectionActive => !_isFactionSelectionActive;
+
+    /// <summary>Controls visibility of the top horizontal faction strip.</summary>
+    public bool ShowFactionStrip
+    {
+        get => _showFactionStrip;
+        set
+        {
+            if (_showFactionStrip == value)
+            {
+                return;
+            }
+
+            _showFactionStrip = value;
+            OnPropertyChanged();
+        }
+    }
 
     /// <summary>
     /// When set to <c>true</c>, only lieutenant-eligible units are shown in the list

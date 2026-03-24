@@ -270,7 +270,7 @@ public partial class AirborneCompanySelectionPage : CompanySelectionPageBase, IC
         };
 
         _factionSelectionState.RightSlotFaction = airborneItem;
-        FactionSlotSelectorView.RightSlotText = airborneItem.Name;
+        FactionSlotSelectorView.RightSlotText = string.Empty;
         _ = LoadSlotIconAsync(1, null, AirborneCompanyLogoPath);
     }
 

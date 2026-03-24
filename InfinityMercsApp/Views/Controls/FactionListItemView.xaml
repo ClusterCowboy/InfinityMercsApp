@@ -24,7 +24,8 @@
             Padding="8,6"
             MinimumHeightRequest="50"
             ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-            ColumnSpacing="10">
+            ColumnSpacing="10"
+            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=IsHorizontalLayout}">
             <skia:SKCanvasView
                 x:Name="LogoCanvas"
                 WidthRequest="32"
@@ -61,6 +62,31 @@
                 FontAttributes="Bold"
                 VerticalOptions="Start"
                 IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=HasTrailingText}" />
+        </Grid>
+
+        <Grid
+            Padding="8,6"
+            MinimumHeightRequest="88"
+            RowDefinitions="Auto,Auto"
+            RowSpacing="6"
+            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=UseVerticalTileLayout}">
+            <skia:SKCanvasView
+                x:Name="LogoCanvasVertical"
+                Grid.Row="0"
+                WidthRequest="48"
+                HeightRequest="48"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                PaintSurface="OnLogoCanvasVerticalPaintSurface" />
+            <Label
+                Grid.Row="1"
+                Text="{Binding Name}"
+                FormattedText="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TitleFormatted}"
+                FontSize="14"
+                LineBreakMode="WordWrap"
+                MaxLines="3"
+                HorizontalTextAlignment="Center"
+                HorizontalOptions="Fill" />
         </Grid>
     </Border>
 

@@ -11,6 +11,13 @@ namespace InfinityMercsApp.Views.StandardCompany;
 /// </summary>
 public partial class StandardCompanySelectionPage
 {
+    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
+    {
+        ShowFactionStrip = sender is AddFactionButtonView button
+            ? button.IsExpanded
+            : !ShowFactionStrip;
+    }
+
     /// <summary>
     /// Handles on faction selection header tapped.
     /// </summary>

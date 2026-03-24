@@ -97,9 +97,17 @@
 
 	<ItemGroup>
 		<Compile Remove="_tempdiag\\**\\*.cs" />
+		<Compile Remove="_tempobj\\**\\*.cs" />
+		<Compile Remove="_tempbuild\\**\\*.cs" />
 		<Content Remove="_tempdiag\\**\\*" />
+		<Content Remove="_tempobj\\**\\*" />
+		<Content Remove="_tempbuild\\**\\*" />
 		<EmbeddedResource Remove="_tempdiag\\**\\*" />
+		<EmbeddedResource Remove="_tempobj\\**\\*" />
+		<EmbeddedResource Remove="_tempbuild\\**\\*" />
 		<None Remove="_tempdiag\\**\\*" />
+		<None Remove="_tempobj\\**\\*" />
+		<None Remove="_tempbuild\\**\\*" />
 	</ItemGroup>
 
 	<ItemGroup>

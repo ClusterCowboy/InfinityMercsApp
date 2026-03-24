@@ -73,7 +73,7 @@ public partial class AirborneCompanySelectionPage
                 0,
                 _factionSelectionState,
                 item,
-                (slotIndex, text) => FactionSlotSelectorView.LeftSlotText = text,
+                (slotIndex, text) => FactionSlotSelectorView.LeftSlotText = string.Empty,
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
                 out var factionChanged))
         {
@@ -91,6 +91,7 @@ public partial class AirborneCompanySelectionPage
             onAssignmentCompleted: () =>
             {
                 IsFactionSelectionActive = false;
+                ShowFactionStrip = false;
             });
     }
 

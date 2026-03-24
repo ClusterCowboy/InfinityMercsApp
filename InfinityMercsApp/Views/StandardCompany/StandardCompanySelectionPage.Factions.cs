@@ -58,11 +58,11 @@ public partial class StandardCompanySelectionPage
                 {
                     if (slotIndex == 0)
                     {
-                        FactionSlotSelectorView.LeftSlotText = text;
+                        FactionSlotSelectorView.LeftSlotText = string.Empty;
                     }
                     else
                     {
-                        FactionSlotSelectorView.RightSlotText = text;
+                        FactionSlotSelectorView.RightSlotText = string.Empty;
                     }
                 },
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
@@ -86,6 +86,7 @@ public partial class StandardCompanySelectionPage
                 if (AllFactionSlotsFilled())
                 {
                     IsFactionSelectionActive = false;
+                    ShowFactionStrip = false;
                 }
             });
     }

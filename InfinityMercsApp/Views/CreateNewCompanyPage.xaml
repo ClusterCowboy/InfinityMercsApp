@@ -7,13 +7,18 @@
     x:Class="InfinityMercsApp.Views.CreateNewCompanyPage"
     Title="Create New Company">
 
-    <Grid Padding="24" RowSpacing="20">
+    <Grid Padding="24" RowSpacing="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="3*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" RowSpacing="12" ColumnSpacing="12">
+        <Grid Grid.Row="0"
+              RowSpacing="12"
+              ColumnSpacing="12"
+              HorizontalOptions="Fill"
+              VerticalOptions="FillAndExpand"
+              MaximumWidthRequest="1500">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="*" />
@@ -25,180 +30,204 @@
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Row="0" Grid.Column="0">
-                <Button x:Name="StandardCompanyButton" Text="" Command="{Binding OpenStandardCompanyPopupCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="StandardCompanyButton"
+                        Text=""
+                        Command="{Binding OpenStandardCompanyPopupCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenStandardCompanyPopupCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="StandardCompanyIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="standard_company.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="Standard Company"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />
                 </Grid>
             </Grid>
             <Grid Grid.Row="0" Grid.Column="1">
-                <Button x:Name="CohesiveCompanyButton" Text="" Command="{Binding OpenCohesiveCompanyPageCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="CohesiveCompanyButton"
+                        Text=""
+                        Command="{Binding OpenCohesiveCompanyPageCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenCohesiveCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="CohesiveCompanyIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="cohesive_company.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="Cohesive Company"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />
                 </Grid>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="0">
-                <Button x:Name="InspiringLeaderButton" Text="" Command="{Binding OpenInspiringLeadershipPageCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="InspiringLeaderButton"
+                        Text=""
+                        Command="{Binding OpenInspiringLeadershipPageCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenInspiringLeadershipPageCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="InspiringLeaderIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="inspiring_leadership.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="Inspiring Leader"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />
                 </Grid>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="1">
-                <Button x:Name="AirborneCompanyButton" Text="" Command="{Binding OpenAirborneCompanyPageCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="AirborneCompanyButton"
+                        Text=""
+                        Command="{Binding OpenAirborneCompanyPageCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenAirborneCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="AirborneCompanyIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="airborne_company.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="Airborne Company"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />
                 </Grid>
             </Grid>
             <Grid Grid.Row="2" Grid.Column="0">
-                <Button x:Name="TagCompanyButton" Text="" Command="{Binding OpenTAGCompanyPageCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="TagCompanyButton"
+                        Text=""
+                        Command="{Binding OpenTAGCompanyPageCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenTAGCompanyPageCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="TagCompanyIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="tag_company.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="TAG Company"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />
                 </Grid>
             </Grid>
             <Grid Grid.Row="2" Grid.Column="1">
-                <Button x:Name="ProxyPackButton" Text="" Command="{Binding OpenProxyPackPageCommand}" />
-                <Grid ColumnSpacing="0" InputTransparent="False">
+                <Button x:Name="ProxyPackButton"
+                        Text=""
+                        Command="{Binding OpenProxyPackPageCommand}"
+                        BackgroundColor="Transparent"
+                        BorderColor="#22C55E"
+                        BorderWidth="2"
+                        CornerRadius="8"
+                        VerticalOptions="FillAndExpand" />
+                <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding OpenProxyPackPageCommand}" />
                     </Grid.GestureRecognizers>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
                     <Image
-                        Grid.Column="0"
+                        Grid.Row="0"
                         x:Name="ProxyPackIcon"
-                        Margin="0,5"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
                         InputTransparent="True"
                         Source="proxy_pack.png" />
 
                     <Label
-                        Grid.Column="1"
+                        Grid.Row="1"
                         Text="Proxy Pack"
-                        FontSize="36"
-                        VerticalOptions="Center"
+                        FontSize="32"
+                        VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
                         InputTransparent="True" />

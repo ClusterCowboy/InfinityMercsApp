@@ -10,15 +10,18 @@
              Title="">
 
     <shell:Shell.TitleView>
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+            <controls:AddFactionButtonView
+                Grid.Column="0"
+                Tapped="OnToggleFactionStripTapped" />
             <controls:FactionSlotSelectorView
                 x:Name="FactionSlotSelectorView"
-                Grid.Column="0"
+                Grid.Column="1"
                 VerticalOptions="Center"
                 ShowRightSelectionBox="True" />
             <controls:SeasonStartPointsView
                 x:Name="SeasonStartPointsView"
-                Grid.Column="1"
+                Grid.Column="2"
                 VerticalOptions="Center"
                 SeasonPointsCapText="{Binding SeasonPointsCapText}"
                 SelectedStartSeasonPoints="{Binding SelectedStartSeasonPoints}"
@@ -26,12 +29,19 @@
         </Grid>
     </shell:Shell.TitleView>
 
-    <Grid Padding="16" ColumnDefinitions="0.82*,1.18*" ColumnSpacing="12" RowSpacing="10">
+    <Grid Padding="16" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
 
-        <Grid Grid.Column="0">
+        <controls:FactionSelectionStripView
+            Grid.Row="0"
+            Grid.ColumnSpan="2"
+            IsVisible="{Binding ShowFactionStrip}"
+            ItemsSource="{Binding Factions}"
+            SelectFactionCommand="{Binding SelectFactionCommand}" />
+
+        <Grid Grid.Row="1" Grid.Column="0">
                 <Grid IsVisible="{Binding IsFactionSelectionActive}" RowDefinitions="*,Auto" RowSpacing="10">
-                    <Border Grid.Row="0" StrokeThickness="1" Padding="10">
-                        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                    <Border Grid.Row="0" StrokeThickness="1" Padding="10" IsVisible="False">
+                        <Grid RowDefinitions="Auto" RowSpacing="8">
                             <Border Grid.Row="0" Padding="12,8">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnFactionSelectionHeaderTapped" />
@@ -60,17 +70,6 @@
                                 </Label>
                             </Border>
 
-                            <ScrollView Grid.Row="1">
-                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Factions}" Spacing="0">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate>
-                                            <controls:FactionListItemView
-                                                ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectFactionCommand}"
-                                                ItemTappedCommandParameter="{Binding .}" />
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </VerticalStackLayout>
-                            </ScrollView>
                         </Grid>
                     </Border>
 
@@ -134,7 +133,7 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding IsUnitSelectionActive}" RowDefinitions="Auto,*" RowSpacing="10">
-                    <Border Grid.Row="0" StrokeThickness="1" Padding="10">
+                    <Border Grid.Row="0" StrokeThickness="1" Padding="10" IsVisible="False">
                         <Border Padding="12,8">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnFactionSelectionHeaderTapped" />
@@ -280,7 +279,7 @@
                 </Grid>
             </Grid>
 
-        <Grid Grid.Column="1" RowDefinitions="*,*" RowSpacing="10">
+        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,*" RowSpacing="10">
         <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" />
 
         <Border Grid.Row="1" StrokeThickness="1" Padding="10">
@@ -407,3 +406,5 @@
         </Grid>
     </Grid>
 </templates:CompanySelectionPageBase>
+
+

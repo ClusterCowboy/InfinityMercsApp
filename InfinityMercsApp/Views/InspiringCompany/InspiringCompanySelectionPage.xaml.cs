@@ -258,7 +258,7 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
         };
 
         _factionSelectionState.RightSlotFaction = inspiringItem;
-        FactionSlotSelectorView.RightSlotText = inspiringItem.Name;
+        FactionSlotSelectorView.RightSlotText = string.Empty;
         _ = LoadSlotIconAsync(1, null, InspiringCompanyLogoPath);
     }
 

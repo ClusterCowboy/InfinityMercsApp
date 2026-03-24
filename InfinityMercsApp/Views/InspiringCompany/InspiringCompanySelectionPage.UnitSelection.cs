@@ -10,6 +10,13 @@ namespace InfinityMercsApp.Views.InspiringCompany;
 
 public partial class InspiringCompanySelectionPage
 {
+    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
+    {
+        ShowFactionStrip = sender is AddFactionButtonView button
+            ? button.IsExpanded
+            : !ShowFactionStrip;
+    }
+
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         // Always switch to the left slot when entering faction selection,

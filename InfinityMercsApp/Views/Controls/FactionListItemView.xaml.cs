@@ -70,6 +70,19 @@ public partial class FactionListItemView : ContentView
             typeof(bool),
             typeof(FactionListItemView),
             false);
+    public static readonly BindableProperty UseVerticalTileLayoutProperty =
+        BindableProperty.Create(
+            nameof(UseVerticalTileLayout),
+            typeof(bool),
+            typeof(FactionListItemView),
+            false,
+            propertyChanged: OnLayoutModeChanged);
+    public static readonly BindableProperty IsHorizontalLayoutProperty =
+        BindableProperty.Create(
+            nameof(IsHorizontalLayout),
+            typeof(bool),
+            typeof(FactionListItemView),
+            true);
 
     public FactionListItemView()
     {
@@ -128,6 +141,29 @@ public partial class FactionListItemView : ContentView
     {
         get => (bool)GetValue(ShowRightSecondaryIconSlotProperty);
         set => SetValue(ShowRightSecondaryIconSlotProperty, value);
+    }
+
+    public bool UseVerticalTileLayout
+    {
+        get => (bool)GetValue(UseVerticalTileLayoutProperty);
+        set => SetValue(UseVerticalTileLayoutProperty, value);
+    }
+
+    public bool IsHorizontalLayout
+    {
+        get => (bool)GetValue(IsHorizontalLayoutProperty);
+        private set => SetValue(IsHorizontalLayoutProperty, value);
+    }
+
+    private static void OnLayoutModeChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not FactionListItemView view)
+        {
+            return;
+        }
+
+        var vertical = newValue is bool enabled && enabled;
+        view.IsHorizontalLayout = !vertical;
     }
 
     private static void OnTrailingTextChanged(BindableObject bindable, object oldValue, object newValue)
@@ -320,6 +356,11 @@ public partial class FactionListItemView : ContentView
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_svgPicture);
+    }
+
+    private void OnLogoCanvasVerticalPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        OnLogoCanvasPaintSurface(sender, e);
     }
 
     private void OnRightIconPrimaryCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

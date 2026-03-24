@@ -94,8 +94,6 @@
                                 <Button Grid.Column="1"
                                         Text="Clear"
                                         HorizontalOptions="Center"
-                                        TextColor="White"
-                                        BackgroundColor="#6B7280"
                                         Clicked="OnClearSelectionsClicked" />
                                 <Border Grid.Column="2"
                                         WidthRequest="56"

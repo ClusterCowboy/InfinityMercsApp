@@ -6,6 +6,13 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 
 public partial class CohesiveCompanySelectionPage
 {
+    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
+    {
+        ShowFactionStrip = sender is AddFactionButtonView button
+            ? button.IsExpanded
+            : !ShowFactionStrip;
+    }
+
     private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
     {
         CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(

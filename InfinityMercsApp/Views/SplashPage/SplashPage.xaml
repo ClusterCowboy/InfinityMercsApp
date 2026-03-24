@@ -2,6 +2,7 @@
 <views:ContentPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:InfinityMercsApp.Views"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.SplashPage"
              BackgroundColor="#111827">
 
@@ -11,10 +12,12 @@
             VerticalOptions="Center"
             Spacing="16">
 
-            <Image
-                Source="dotnet_bot.png"
+            <skia:SKCanvasView
+                x:Name="SplashLogoCanvas"
                 HeightRequest="120"
-                Aspect="AspectFit" />
+                WidthRequest="320"
+                HorizontalOptions="Center"
+                PaintSurface="OnSplashLogoPaintSurface" />
 
             <Label
                 Text="Infinity Mercs"
@@ -38,3 +41,4 @@
     </Grid>
 
 </views:ContentPageBase>
+
