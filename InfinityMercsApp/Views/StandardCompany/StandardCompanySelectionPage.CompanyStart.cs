@@ -7,12 +7,12 @@ namespace InfinityMercsApp.Views.StandardCompany;
 /// </summary>
 public partial class StandardCompanySelectionPage
 {
-    protected override string CompanyTypeLabel => _mode switch
+    protected override string CompanyTypeLabel => _companyTypeLabelOverride ?? (_mode switch
     {
         ArmySourceSelectionMode.VanillaFactions => "Standard Company - Vanilla",
         ArmySourceSelectionMode.Sectorials => "Standard Company - Sectorial",
         _ => "Unknown Company Type"
-    };
+    });
 
     /// <summary>
     /// Handles start company async.

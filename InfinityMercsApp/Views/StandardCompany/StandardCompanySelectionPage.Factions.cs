@@ -2,6 +2,7 @@ using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
 using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
 using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
+using TagGen = InfinityMercsApp.Infrastructure.Providers.TagCompanyFactionGenerator;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -14,7 +15,8 @@ public partial class StandardCompanySelectionPage
             var filteredFactions = await LoadFilteredFactionRecordsAsync(cancellationToken);
             filteredFactions = filteredFactions
                 .Where(x => x.Id != AirborneGen.AirborneCompanyFactionId &&
-                            x.Id != InspiringGen.InspiringCompanyFactionId)
+                            x.Id != InspiringGen.InspiringCompanyFactionId &&
+                            x.Id != TagGen.TagCompanyFactionId)
                 .ToList();
             var items = BuildFactionSelectionItems(
                 filteredFactions,

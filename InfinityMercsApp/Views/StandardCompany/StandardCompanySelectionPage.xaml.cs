@@ -39,6 +39,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
+    private readonly string? _companyTypeLabelOverride;
     private bool _showCompanyNameValidationError;
     private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
     private int _activeSlotIndex;
@@ -57,7 +58,8 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         ICohesiveCompanyFactionQueryProvider cohesiveCompanyFactionQueryProvider,
         FactionLogoCacheService? factionLogoCacheService,
         IAppSettingsProvider? appSettingsProvider,
-        IArmyDataService armyDataService)
+        IArmyDataService armyDataService,
+        string? companyTypeLabelOverride = null)
         : base(mode, metadataProvider, factionProvider, specOpsProvider, cohesiveCompanyFactionQueryProvider, factionLogoCacheService, appSettingsProvider)
     {
         InitializeComponent();
@@ -72,6 +74,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
             : "Choose your sectorials";
 
         _armyDataService = armyDataService;
+        _companyTypeLabelOverride = string.IsNullOrWhiteSpace(companyTypeLabelOverride)
+            ? null
+            : companyTypeLabelOverride.Trim();
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
         _profileCoordinator = new CompanyProfileCoordinator();

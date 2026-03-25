@@ -24,6 +24,11 @@
         Route="StandardCompanySourcePopupPage" />
 
     <ShellContent
+        Title="TAG Company"
+        ContentTemplate="{DataTemplate views:TagCompanySourcePopupPage}"
+        Route="TagCompanySourcePopupPage" />
+
+    <ShellContent
         Title="Load Company"
         ContentTemplate="{DataTemplate views:LoadCompanyPage}"
         Route="LoadCompanyPage" />
