@@ -134,6 +134,22 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
         }
     }
 
+    private bool _isDetailsExpanded = false;
+    public bool IsDetailsExpanded
+    {
+        get => _isDetailsExpanded;
+        set
+        {
+            if (_isDetailsExpanded == value)
+            {
+                return;
+            }
+
+            _isDetailsExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
     private bool _isIrregular;
     public bool IsIrregular
     {

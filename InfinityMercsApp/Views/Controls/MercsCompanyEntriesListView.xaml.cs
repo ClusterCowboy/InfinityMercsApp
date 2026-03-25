@@ -38,9 +38,18 @@ public partial class MercsCompanyEntriesListView : ContentView
             typeof(MercsCompanyEntriesListView),
             "No units added yet.");
 
+    public static readonly BindableProperty ViewportHeightRatioProperty =
+        BindableProperty.Create(
+            nameof(ViewportHeightRatio),
+            typeof(double),
+            typeof(MercsCompanyEntriesListView),
+            0.4d,
+            propertyChanged: OnViewportHeightRatioChanged);
+
     public MercsCompanyEntriesListView()
     {
         InitializeComponent();
+        SizeChanged += OnListViewSizeChanged;
     }
 
     public IEnumerable? ItemsSource
@@ -73,6 +82,12 @@ public partial class MercsCompanyEntriesListView : ContentView
         set => SetValue(EmptyTextProperty, value);
     }
 
+    public double ViewportHeightRatio
+    {
+        get => (double)GetValue(ViewportHeightRatioProperty);
+        set => SetValue(ViewportHeightRatioProperty, value);
+    }
+
     public event EventHandler<SKPaintSurfaceEventArgs>? PeripheralIconCanvasPaintSurface;
     public event EventHandler<SKPaintSurfaceEventArgs>? IrregularIconCanvasPaintSurface;
     public event EventHandler<SKPaintSurfaceEventArgs>? RegularModifierIconCanvasPaintSurface;
@@ -90,5 +105,64 @@ public partial class MercsCompanyEntriesListView : ContentView
     private void OnRegularModifierIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         RegularModifierIconCanvasPaintSurface?.Invoke(sender, e);
+    }
+
+    protected override void OnParentSet()
+    {
+        base.OnParentSet();
+        UpdateHeightFromViewport();
+    }
+
+    private void OnListViewSizeChanged(object? sender, EventArgs e)
+    {
+        UpdateHeightFromViewport();
+    }
+
+    private static void OnViewportHeightRatioChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MercsCompanyEntriesListView view)
+        {
+            view.UpdateHeightFromViewport();
+        }
+    }
+
+    private void UpdateHeightFromViewport()
+    {
+        var ratio = Math.Clamp(ViewportHeightRatio, 0.1d, 1d);
+        var viewportHeight = ResolveViewportHeight();
+        if (viewportHeight <= 0)
+        {
+            return;
+        }
+
+        var targetHeight = Math.Max(120d, Math.Round(viewportHeight * ratio));
+        if (Math.Abs(EntriesCollection.HeightRequest - targetHeight) > 0.5d)
+        {
+            EntriesCollection.HeightRequest = targetHeight;
+        }
+
+        if (Math.Abs(HeightRequest - targetHeight) > 0.5d)
+        {
+            HeightRequest = targetHeight;
+        }
+    }
+
+    private double ResolveViewportHeight()
+    {
+        var windowHeight = Window?.Height
+            ?? Application.Current?.Windows.FirstOrDefault()?.Height
+            ?? 0d;
+
+        if (windowHeight > 0)
+        {
+            return windowHeight;
+        }
+
+        if (Parent is VisualElement visualParent && visualParent.Height > 0)
+        {
+            return visualParent.Height;
+        }
+
+        return Height;
     }
 }

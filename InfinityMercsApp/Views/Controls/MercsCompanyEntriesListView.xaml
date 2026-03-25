@@ -6,8 +6,10 @@
              x:Name="MercsEntriesListRoot">
 
     <CollectionView
+        x:Name="EntriesCollection"
         ItemsSource="{Binding Source={x:Reference MercsEntriesListRoot}, Path=ItemsSource}"
-        SelectionMode="None">
+        SelectionMode="None"
+        VerticalOptions="FillAndExpand">
         <CollectionView.ItemTemplate>
             <DataTemplate>
                 <controls:MercsCompanyEntryCardView

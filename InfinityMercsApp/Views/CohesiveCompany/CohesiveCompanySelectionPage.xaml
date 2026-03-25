@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <templates:CompanySelectionPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
@@ -29,7 +29,7 @@
         </Grid>
     </shell:Shell.TitleView>
 
-    <Grid Padding="16" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
+    <Grid Padding="16,16,16,0" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
 
         <controls:FactionSelectionStripView
             Grid.Row="0"
@@ -126,87 +126,88 @@
                 </Grid>
             </Grid>
 
-        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="10">
-        <!-- Reusable unit header + configurations panel shared with vanilla faction selection page. -->
-        <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" />
+        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
+        <!-- Reusable unit header + profiles panel shared with vanilla faction selection page. -->
+            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" />
 
-        <Border Grid.Row="1" StrokeThickness="1" Padding="10">
-            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
-                    <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
-                        <HorizontalStackLayout Spacing="8">
-                            <Label
-                                Text="Mercs Company"
-                                FontSize="20"
-                                FontAttributes="Bold"
-                                VerticalOptions="Center" />
-                            <Label Text="-" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                    <HorizontalStackLayout Spacing="8">
                         <Label
-                            Text="Enter Company Name"
-                            TextColor="#EF4444"
-                            IsVisible="{Binding ShowCompanyNameValidationError}" />
-                    </VerticalStackLayout>
-                    <Border Grid.Column="1" Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
-                        <Entry
-                            WidthRequest="220"
-                            Text="{Binding CompanyName}"
-                            Placeholder="Company Name"
-                            ClearButtonVisibility="WhileEditing"
+                            Text="Mercs Company"
+                            FontSize="20"
+                            FontAttributes="Bold"
                             VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout
-                        Grid.Column="2"
-                        VerticalOptions="Center"
+                        <Label Text="-" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Label
+                        Text="Enter Company Name"
+                        TextColor="#EF4444"
+                        IsVisible="{Binding ShowCompanyNameValidationError}" />
+                </VerticalStackLayout>
+                <Border Grid.Column="1" Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                    <Entry
+                        WidthRequest="220"
+                        Text="{Binding CompanyName}"
+                        Placeholder="Company Name"
+                        ClearButtonVisibility="WhileEditing"
+                        VerticalOptions="Center" />
+                </Border>
+                <VerticalStackLayout
+                    Grid.Column="2"
+                    VerticalOptions="Center"
+                    HorizontalOptions="Fill"
+                    Spacing="2">
+                    <Label
+                        Text="{Binding TrackedFireteamNameDisplay}"
                         HorizontalOptions="Fill"
-                        Spacing="2">
-                        <Label
-                            Text="{Binding TrackedFireteamNameDisplay}"
-                            HorizontalOptions="Fill"
-                            HorizontalTextAlignment="Center"
-                            LineBreakMode="TailTruncation"
-                            MaxLines="1" />
-                        <Label
-                            Text="{Binding TrackedFireteamLevelBonusText}"
-                            HorizontalOptions="Fill"
-                            HorizontalTextAlignment="Center"
-                            FontSize="11"
-                            IsVisible="{Binding HasTrackedFireteamLevelBonus}"
-                            LineBreakMode="WordWrap"
-                            MaxLines="2" />
-                    </VerticalStackLayout>
-                    <Grid
-                        Grid.Column="3"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="1" />
+                    <Label
+                        Text="{Binding TrackedFireteamLevelBonusText}"
+                        HorizontalOptions="Fill"
+                        HorizontalTextAlignment="Center"
+                        FontSize="11"
+                        IsVisible="{Binding HasTrackedFireteamLevelBonus}"
+                        LineBreakMode="WordWrap"
+                        MaxLines="2" />
+                </VerticalStackLayout>
+                <Grid
+                    Grid.Column="3"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    Margin="0,0,4,0"
+                    VerticalOptions="Center"
+                    HorizontalOptions="End">
+                    <skia:SKCanvasView
+                        x:Name="TrackedFireteamLevelCanvas"
                         WidthRequest="50"
                         HeightRequest="50"
-                        Margin="0,0,4,0"
-                        VerticalOptions="Center"
-                        HorizontalOptions="End">
-                        <skia:SKCanvasView
-                            x:Name="TrackedFireteamLevelCanvas"
-                            WidthRequest="50"
-                            HeightRequest="50"
-                            PaintSurface="OnTrackedFireteamLevelCanvasPaintSurface" />
-                    </Grid>
+                        PaintSurface="OnTrackedFireteamLevelCanvasPaintSurface" />
                 </Grid>
-                <controls:MercsCompanyEntriesListView
-                    Grid.Row="1"
-                    ItemsSource="{Binding MercsCompanyEntries}"
-                    SelectEntryCommand="{Binding SelectMercsCompanyEntryCommand}"
-                    RemoveEntryCommand="{Binding RemoveMercsCompanyEntryCommand}"
-                    ShowOrderModifierBadges="True"
-                    PeripheralIconCanvasPaintSurface="OnPeripheralIconCanvasPaintSurface"
-                    IrregularIconCanvasPaintSurface="OnIrregularIconCanvasPaintSurface"
-                    RegularModifierIconCanvasPaintSurface="OnRegularModifierIconCanvasPaintSurface" />
-                <Button
-                    Grid.Row="2"
-                    Text="START COMPANY"
-                    HorizontalOptions="End"
-                    VerticalOptions="End"
-                    Command="{Binding StartCompanyCommand}"
-                    IsEnabled="{Binding IsCompanyValid}" />
             </Grid>
-        </Border>
+
+            <controls:MercsCompanyEntriesListView
+                Grid.Row="3"
+                VerticalOptions="FillAndExpand"
+                ViewportHeightRatio="0.4"
+                ItemsSource="{Binding MercsCompanyEntries}"
+                SelectEntryCommand="{Binding SelectMercsCompanyEntryCommand}"
+                RemoveEntryCommand="{Binding RemoveMercsCompanyEntryCommand}"
+                ShowOrderModifierBadges="True"
+                PeripheralIconCanvasPaintSurface="OnPeripheralIconCanvasPaintSurface"
+                IrregularIconCanvasPaintSurface="OnIrregularIconCanvasPaintSurface"
+                RegularModifierIconCanvasPaintSurface="OnRegularModifierIconCanvasPaintSurface" />
+            <Button
+                Grid.Row="3"
+                Text="START COMPANY"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="0,0,10,10"
+                ZIndex="1"
+                Command="{Binding StartCompanyCommand}"
+                IsEnabled="{Binding IsCompanyValid}" />
         </Grid>
 
         <Grid
@@ -226,3 +227,4 @@
         </Grid>
     </Grid>
 </templates:CompanySelectionPageBase>
+

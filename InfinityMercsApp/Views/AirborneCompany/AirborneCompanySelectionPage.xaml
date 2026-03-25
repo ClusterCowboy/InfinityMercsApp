@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <templates:CompanySelectionPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
@@ -29,7 +29,7 @@
         </Grid>
     </shell:Shell.TitleView>
 
-    <Grid Padding="16" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
+    <Grid Padding="16,16,16,0" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
 
         <controls:FactionSelectionStripView
             Grid.Row="0"
@@ -114,47 +114,48 @@
                 </Grid>
             </Grid>
 
-        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="10">
-        <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" />
+        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
+            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" />
 
-        <Border Grid.Row="1" StrokeThickness="1" Padding="10">
-            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                <HorizontalStackLayout Grid.Row="0" Spacing="8" VerticalOptions="Center">
-                    <Label
-                        Text="Mercs Company"
-                        FontSize="20"
-                        FontAttributes="Bold"
+            <HorizontalStackLayout Grid.Row="2" Spacing="8" VerticalOptions="Center">
+                <Label
+                    Text="Mercs Company"
+                    FontSize="20"
+                    FontAttributes="Bold"
+                    VerticalOptions="Center" />
+                <Label Text="-" VerticalOptions="Center" />
+                <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+                    <Entry
+                        WidthRequest="220"
+                        Text="{Binding CompanyName}"
+                        Placeholder="Company Name"
+                        ClearButtonVisibility="WhileEditing"
                         VerticalOptions="Center" />
-                    <Label Text="-" VerticalOptions="Center" />
-                    <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
-                        <Entry
-                            WidthRequest="220"
-                            Text="{Binding CompanyName}"
-                            Placeholder="Company Name"
-                            ClearButtonVisibility="WhileEditing"
-                            VerticalOptions="Center" />
-                    </Border>
-                    <Label
-                        Text="Enter Company Name"
-                        TextColor="#EF4444"
-                        VerticalOptions="Center"
-                        IsVisible="{Binding ShowCompanyNameValidationError}" />
-                </HorizontalStackLayout>
-                <controls:MercsCompanyEntriesListView
-                    Grid.Row="1"
-                    ItemsSource="{Binding MercsCompanyEntries}"
-                    SelectEntryCommand="{Binding SelectMercsCompanyEntryCommand}"
-                    RemoveEntryCommand="{Binding RemoveMercsCompanyEntryCommand}"
-                    PeripheralIconCanvasPaintSurface="OnPeripheralIconCanvasPaintSurface" />
-                <Button
-                    Grid.Row="2"
-                    Text="START COMPANY"
-                    HorizontalOptions="End"
-                    VerticalOptions="End"
-                    Command="{Binding StartCompanyCommand}"
-                    IsEnabled="{Binding IsCompanyValid}" />
-            </Grid>
-        </Border>
+                </Border>
+                <Label
+                    Text="Enter Company Name"
+                    TextColor="#EF4444"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding ShowCompanyNameValidationError}" />
+            </HorizontalStackLayout>
+
+            <controls:MercsCompanyEntriesListView
+                Grid.Row="3"
+                VerticalOptions="FillAndExpand"
+                ViewportHeightRatio="0.4"
+                ItemsSource="{Binding MercsCompanyEntries}"
+                SelectEntryCommand="{Binding SelectMercsCompanyEntryCommand}"
+                RemoveEntryCommand="{Binding RemoveMercsCompanyEntryCommand}"
+                PeripheralIconCanvasPaintSurface="OnPeripheralIconCanvasPaintSurface" />
+            <Button
+                Grid.Row="3"
+                Text="START COMPANY"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="0,0,10,10"
+                ZIndex="1"
+                Command="{Binding StartCompanyCommand}"
+                IsEnabled="{Binding IsCompanyValid}" />
         </Grid>
 
         <Grid
@@ -174,3 +175,4 @@
         </Grid>
     </Grid>
 </templates:CompanySelectionPageBase>
+

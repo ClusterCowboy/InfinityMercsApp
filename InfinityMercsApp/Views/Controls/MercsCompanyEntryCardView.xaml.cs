@@ -1,5 +1,6 @@
 using SkiaSharp.Views.Maui;
 using System.Windows.Input;
+using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.Controls;
 
@@ -54,6 +55,47 @@ public partial class MercsCompanyEntryCardView : ContentView
     private void OnCardTapped(object? sender, TappedEventArgs e)
     {
         ExecuteCommand(SelectEntryCommand);
+    }
+
+    protected override void OnBindingContextChanged()
+    {
+        base.OnBindingContextChanged();
+        SyncChevronRotation(animated: false);
+    }
+
+    private async void OnToggleDetailsButtonClicked(object? sender, EventArgs e)
+    {
+        if (BindingContext is not CompanyMercsCompanyEntryBase entry)
+        {
+            return;
+        }
+
+        entry.IsDetailsExpanded = !entry.IsDetailsExpanded;
+        await SyncChevronRotationAsync(animated: true);
+    }
+
+    private void SyncChevronRotation(bool animated)
+    {
+        _ = SyncChevronRotationAsync(animated);
+    }
+
+    private async Task SyncChevronRotationAsync(bool animated)
+    {
+        if (BindingContext is not CompanyMercsCompanyEntryBase entry)
+        {
+            return;
+        }
+
+        var targetRotation = entry.IsDetailsExpanded ? 90d : 0d;
+        DetailsToggleButton.CancelAnimations();
+
+        if (animated)
+        {
+            await DetailsToggleButton.RotateTo(targetRotation, 140, Easing.CubicOut);
+            return;
+        }
+
+        DetailsToggleButton.Rotation = targetRotation;
     }
 
     private void OnRemoveButtonClicked(object? sender, EventArgs e)
