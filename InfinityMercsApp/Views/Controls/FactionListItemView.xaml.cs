@@ -30,7 +30,8 @@ public partial class FactionListItemView : ContentView
         BindableProperty.Create(
             nameof(TitleFormatted),
             typeof(FormattedString),
-            typeof(FactionListItemView));
+            typeof(FactionListItemView),
+            propertyChanged: OnTitleFormattedChanged);
     public static readonly BindableProperty TrailingTextProperty =
         BindableProperty.Create(
             nameof(TrailingText),
@@ -87,6 +88,9 @@ public partial class FactionListItemView : ContentView
     public FactionListItemView()
     {
         InitializeComponent();
+        UpdateTitleFormattingState(TitleFormatted);
+        RefreshLayoutModeVisibility();
+        RefreshTitlePresentation();
     }
 
     public ICommand? ItemTappedCommand
@@ -106,6 +110,8 @@ public partial class FactionListItemView : ContentView
         get => (FormattedString?)GetValue(TitleFormattedProperty);
         set => SetValue(TitleFormattedProperty, value);
     }
+
+    public bool HasTitleFormatted { get; private set; }
 
     public string TrailingText
     {
@@ -164,6 +170,18 @@ public partial class FactionListItemView : ContentView
 
         var vertical = newValue is bool enabled && enabled;
         view.IsHorizontalLayout = !vertical;
+        view.RefreshLayoutModeVisibility();
+    }
+
+    private static void OnTitleFormattedChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not FactionListItemView view)
+        {
+            return;
+        }
+
+        view.UpdateTitleFormattingState(newValue as FormattedString);
+        view.RefreshTitlePresentation();
     }
 
     private static void OnTrailingTextChanged(BindableObject bindable, object oldValue, object newValue)
@@ -172,6 +190,32 @@ public partial class FactionListItemView : ContentView
         {
             view.HasTrailingText = !string.IsNullOrWhiteSpace(newValue as string);
         }
+    }
+
+    private void UpdateTitleFormattingState(FormattedString? formattedTitle)
+    {
+        var hasFormattedTitle = formattedTitle?.Spans is { Count: > 0 };
+        if (HasTitleFormatted == hasFormattedTitle)
+        {
+            return;
+        }
+
+        HasTitleFormatted = hasFormattedTitle;
+        OnPropertyChanged(nameof(HasTitleFormatted));
+    }
+
+    private void RefreshLayoutModeVisibility()
+    {
+        HorizontalLayoutRoot.IsVisible = IsHorizontalLayout;
+        VerticalLayoutRoot.IsVisible = !IsHorizontalLayout;
+    }
+
+    private void RefreshTitlePresentation()
+    {
+        HorizontalFormattedNameLabel.IsVisible = HasTitleFormatted;
+        HorizontalNameLabel.IsVisible = !HasTitleFormatted;
+        VerticalFormattedNameLabel.IsVisible = HasTitleFormatted;
+        VerticalNameLabel.IsVisible = !HasTitleFormatted;
     }
 
     private static void OnRightIconPathChanged(BindableObject bindable, object oldValue, object newValue)
@@ -199,6 +243,7 @@ public partial class FactionListItemView : ContentView
         if (item is null)
         {
             LogoCanvas.InvalidateSurface();
+            LogoCanvasVertical.InvalidateSurface();
             return;
         }
 
@@ -214,6 +259,7 @@ public partial class FactionListItemView : ContentView
                 }
 
                 LogoCanvas.InvalidateSurface();
+                LogoCanvasVertical.InvalidateSurface();
                 return;
             }
 
@@ -240,6 +286,7 @@ public partial class FactionListItemView : ContentView
         }
 
         LogoCanvas.InvalidateSurface();
+        LogoCanvasVertical.InvalidateSurface();
     }
 
     private async Task LoadRightIconsAsync()
@@ -309,6 +356,17 @@ public partial class FactionListItemView : ContentView
     {
         yield return item.CachedLogoPath;
 
+        if (item is ICompanyMercsEntry mercEntry &&
+            mercEntry.LogoSourceFactionId > 0 &&
+            mercEntry.LogoSourceUnitId > 0)
+        {
+            yield return Path.Combine(
+                FileSystem.Current.AppDataDirectory,
+                "svg-cache",
+                "units",
+                $"{mercEntry.LogoSourceFactionId}-{mercEntry.LogoSourceUnitId}.svg");
+        }
+
         if (item is ArmyUnitSelectionItem unit)
         {
             yield return Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache", "units", $"{unit.SourceFactionId}-{unit.Id}.svg");
@@ -322,6 +380,13 @@ public partial class FactionListItemView : ContentView
     private static IEnumerable<string?> BuildPackagedCandidates(IViewerListItem item)
     {
         yield return item.PackagedLogoPath;
+
+        if (item is ICompanyMercsEntry mercEntry &&
+            mercEntry.LogoSourceFactionId > 0 &&
+            mercEntry.LogoSourceUnitId > 0)
+        {
+            yield return $"SVGCache/units/{mercEntry.LogoSourceFactionId}-{mercEntry.LogoSourceUnitId}.svg";
+        }
 
         if (item is ArmyUnitSelectionItem unit)
         {

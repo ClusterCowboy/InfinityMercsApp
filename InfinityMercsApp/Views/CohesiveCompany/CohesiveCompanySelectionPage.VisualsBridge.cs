@@ -9,8 +9,8 @@ public partial class CohesiveCompanySelectionPage
     protected override IArmyDataService ArmyDataService => _armyDataService;
     protected override FactionSlotSelectorView FactionSlotSelectorViewForVisuals => FactionSlotSelectorView;
     protected override UnitDisplayConfigurationsView UnitDisplayConfigurationsViewForVisuals => UnitDisplayConfigurationsView;
-    protected override SKCanvasView UnitSelectionFilterCanvasInactiveForVisuals => UnitSelectionFilterCanvasInactive;
-    protected override SKCanvasView UnitSelectionFilterCanvasActiveForVisuals => UnitSelectionFilterCanvasActive;
+    protected override SKCanvasView UnitSelectionFilterCanvasInactiveForVisuals => UnitSelectionPanel.FilterCanvas;
+    protected override SKCanvasView UnitSelectionFilterCanvasActiveForVisuals => UnitSelectionPanel.FilterCanvas;
     protected override bool SummaryHighlightLieutenantForVisuals => _summaryHighlightLieutenant;
     protected override Color UnitHeaderSecondaryColorForVisuals => UnitHeaderSecondaryColor;
     protected override void SetUnitHeaderPrimaryColorForVisuals(Color value) => UnitHeaderPrimaryColor = value;

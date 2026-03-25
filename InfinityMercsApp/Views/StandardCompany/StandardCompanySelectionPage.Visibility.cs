@@ -36,12 +36,15 @@ public partial class StandardCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
-            // Guard against a blank unit list when no explicit filter is active.
-            if (!_filterState.ActiveUnitFilter.IsActive &&
-                !LieutenantOnlyUnits &&
-                pointsRemaining > 0 &&
-                !Units.Any(x => x.IsVisible))
+            var visibleCount = Units.Count(x => x.IsVisible);
+            Console.WriteLine(
+                $"[StandardCompanySelectionPage] Visibility result: {visibleCount}/{Units.Count} visible " +
+                $"(pointsRemaining={pointsRemaining}, filterActive={_filterState.ActiveUnitFilter.IsActive}, lieutenantOnly={LieutenantOnlyUnits}).");
+
+            // Safety fallback: never leave the list blank when units are loaded.
+            if (visibleCount == 0 && Units.Count > 0)
             {
+                Console.WriteLine("[StandardCompanySelectionPage] No visible units after filtering. Forcing loaded units visible.");
                 foreach (var unit in Units)
                 {
                     unit.IsVisible = true;

@@ -64,10 +64,10 @@ public partial class CohesiveCompanySelectionPage
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionFilterButtonInactive,
-            UnitSelectionFilterCanvasInactive,
-            UnitSelectionFilterButtonActive,
-            UnitSelectionFilterCanvasActive,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
             ApplyFilterButtonSize);
     }
 

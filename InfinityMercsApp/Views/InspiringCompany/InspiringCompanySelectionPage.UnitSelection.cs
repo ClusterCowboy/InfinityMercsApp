@@ -68,10 +68,10 @@ public partial class InspiringCompanySelectionPage
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionFilterButtonInactive,
-            UnitSelectionFilterCanvasInactive,
-            UnitSelectionFilterButtonActive,
-            UnitSelectionFilterCanvasActive,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
             ApplyFilterButtonSize);
     }
 
@@ -180,6 +180,18 @@ public partial class InspiringCompanySelectionPage
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
+            Console.WriteLine($"[InspiringCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}.");
+            if (Units.Count == 0 &&
+                _activeSlotIndex == 1 &&
+                _factionSelectionState.LeftSlotFaction is not null)
+            {
+                // Synthetic slot can be empty if generated faction data is unavailable.
+                // Fall back to the selected left slot so the unit list never appears blank.
+                SwitchToLeftSlot();
+                await LoadUnitsForActiveSlotAsync(cancellationToken);
+                return;
+            }
+
             BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
                 merged,
                 TeamEntries,
@@ -247,4 +259,5 @@ public partial class InspiringCompanySelectionPage
             logoUnitId = srcUnit;
         }
     }
+
 }

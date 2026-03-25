@@ -2,7 +2,8 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
-             x:Class="InfinityMercsApp.Views.Controls.FactionListItemView">
+             x:Class="InfinityMercsApp.Views.Controls.FactionListItemView"
+             x:Name="FactionListItemRoot">
 
     <Border x:Name="ItemBorder" Padding="0" StrokeThickness="0">
         <Border.GestureRecognizers>
@@ -21,11 +22,11 @@
         </Border.Triggers>
 
         <Grid
+            x:Name="HorizontalLayoutRoot"
             Padding="8,6"
             MinimumHeightRequest="50"
             ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-            ColumnSpacing="10"
-            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=IsHorizontalLayout}">
+            ColumnSpacing="10">
             <skia:SKCanvasView
                 x:Name="LogoCanvas"
                 WidthRequest="32"
@@ -33,7 +34,17 @@
                 VerticalOptions="Center"
                 PaintSurface="OnLogoCanvasPaintSurface" />
             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                <Label Text="{Binding Name}" FormattedText="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TitleFormatted}" />
+                <Grid>
+                    <Label
+                        x:Name="HorizontalNameLabel"
+                        Text="{Binding Name}"
+                        TextColor="White" />
+                    <Label
+                        x:Name="HorizontalFormattedNameLabel"
+                        FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
+                        TextColor="White"
+                        IsVisible="False" />
+                </Grid>
                 <Label
                     Text="{Binding Subtitle}"
                     FontSize="12"
@@ -46,7 +57,7 @@
                 WidthRequest="24"
                 HeightRequest="24"
                 VerticalOptions="Center"
-                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=ShowRightPrimaryIconSlot}"
+                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=ShowRightPrimaryIconSlot}"
                 PaintSurface="OnRightIconPrimaryCanvasPaintSurface" />
             <skia:SKCanvasView
                 Grid.Column="3"
@@ -54,22 +65,24 @@
                 WidthRequest="24"
                 HeightRequest="24"
                 VerticalOptions="Center"
-                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=ShowRightSecondaryIconSlot}"
+                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=ShowRightSecondaryIconSlot}"
                 PaintSurface="OnRightIconSecondaryCanvasPaintSurface" />
             <Label
                 Grid.Column="4"
-                Text="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TrailingText}"
+                Text="{Binding Source={x:Reference FactionListItemRoot}, Path=TrailingText}"
                 FontAttributes="Bold"
+                TextColor="White"
                 VerticalOptions="Start"
-                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=HasTrailingText}" />
+                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=HasTrailingText}" />
         </Grid>
 
         <Grid
+            x:Name="VerticalLayoutRoot"
             Padding="8,6"
             MinimumHeightRequest="88"
             RowDefinitions="Auto,Auto"
             RowSpacing="6"
-            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=UseVerticalTileLayout}">
+            IsVisible="False">
             <skia:SKCanvasView
                 x:Name="LogoCanvasVertical"
                 Grid.Row="0"
@@ -78,15 +91,27 @@
                 HorizontalOptions="Center"
                 VerticalOptions="Center"
                 PaintSurface="OnLogoCanvasVerticalPaintSurface" />
-            <Label
-                Grid.Row="1"
-                Text="{Binding Name}"
-                FormattedText="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=TitleFormatted}"
-                FontSize="14"
-                LineBreakMode="WordWrap"
-                MaxLines="3"
-                HorizontalTextAlignment="Center"
-                HorizontalOptions="Fill" />
+            <Grid Grid.Row="1">
+                <Label
+                    x:Name="VerticalNameLabel"
+                    Text="{Binding Name}"
+                    FontSize="14"
+                    TextColor="White"
+                    LineBreakMode="WordWrap"
+                    MaxLines="3"
+                    HorizontalTextAlignment="Center"
+                    HorizontalOptions="Fill" />
+                <Label
+                    x:Name="VerticalFormattedNameLabel"
+                    FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
+                    FontSize="14"
+                    TextColor="White"
+                    LineBreakMode="WordWrap"
+                    MaxLines="3"
+                    HorizontalTextAlignment="Center"
+                    HorizontalOptions="Fill"
+                    IsVisible="False" />
+            </Grid>
         </Grid>
     </Border>
 

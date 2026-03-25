@@ -87,10 +87,10 @@ public partial class StandardCompanySelectionPage
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionFilterButtonInactive,
-            UnitSelectionFilterCanvasInactive,
-            UnitSelectionFilterButtonActive,
-            UnitSelectionFilterCanvasActive,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
             ApplyFilterButtonSize);
     }
 
@@ -192,6 +192,9 @@ public partial class StandardCompanySelectionPage
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
+            Console.WriteLine(
+                $"[StandardCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}. " +
+                $"Factions=[{string.Join(",", factions.Select(faction => faction.Id))}]");
             BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
                 merged,
                 TeamEntries,
@@ -211,6 +214,11 @@ public partial class StandardCompanySelectionPage
                 });
 
             await ApplyUnitVisibilityFiltersAsync(cancellationToken);
+            var visibleCount = Units.Count(x => x.IsVisible);
+            var preview = string.Join(", ", Units.Take(3).Select(unit => $"{unit.Name}:{unit.IsVisible}"));
+            Console.WriteLine(
+                $"[StandardCompanySelectionPage] Post-filter units: total={Units.Count}, visible={visibleCount}, " +
+                $"ShowUnitsList={ShowUnitsList}, preview=[{preview}]");
             TryAutoSelectFirstVisibleUnitAfterFactionLoad();
             await BuildUnitFilterPopupOptionsAsync(cancellationToken);
         }

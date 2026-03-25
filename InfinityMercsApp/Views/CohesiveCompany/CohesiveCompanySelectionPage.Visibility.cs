@@ -37,6 +37,20 @@ public partial class CohesiveCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
+            var visibleCount = Units.Count(x => x.IsVisible);
+            Console.WriteLine(
+                $"[CohesiveCompanySelectionPage] Visibility result: {visibleCount}/{Units.Count} visible " +
+                $"(pointsRemaining={pointsRemaining}, filterActive={_filterState.ActiveUnitFilter.IsActive}, lieutenantOnly={LieutenantOnlyUnits}).");
+
+            if (visibleCount == 0 && Units.Count > 0)
+            {
+                Console.WriteLine("[CohesiveCompanySelectionPage] No visible units after filtering. Forcing loaded units visible.");
+                foreach (var unit in Units)
+                {
+                    unit.IsVisible = true;
+                }
+            }
+
             _selectedUnit = RefreshSelectedUnitVisibilityCore(
                 _selectedUnit,
                 () => ResetUnitDetails(),

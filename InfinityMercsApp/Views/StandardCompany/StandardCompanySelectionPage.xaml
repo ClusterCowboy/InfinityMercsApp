@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <templates:CompanySelectionPageBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
@@ -39,95 +39,6 @@
             SelectFactionCommand="{Binding SelectFactionCommand}" />
 
         <Grid Grid.Row="1" Grid.Column="0">
-                <Grid IsVisible="False" RowDefinitions="*,Auto" RowSpacing="10">
-                    <Border Grid.Row="0" StrokeThickness="1" Padding="10" IsVisible="False">
-                        <Grid RowDefinitions="Auto" RowSpacing="8">
-                            <Border Grid.Row="0" Padding="12,8">
-                                
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsFactionSelectionActive}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="Black" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsFactionSelectionActive}" Value="False">
-                                        <Setter Property="BackgroundColor" Value="Transparent" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Label
-                                    Text="FACTION SELECTION"
-                                    FontSize="24"
-                                    FontAttributes="Bold"
-                                    HorizontalTextAlignment="Start">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsFactionSelectionActive}" Value="True">
-                                            <Setter Property="TextColor" Value="White" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsFactionSelectionActive}" Value="False">
-                                            <Setter Property="TextColor" Value="#A78BFA" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
-                            </Border>
-
-                        </Grid>
-                    </Border>
-
-                    <Border Grid.Row="1" StrokeThickness="1" Padding="10">
-                        <Grid ColumnDefinitions="*" ColumnSpacing="10" VerticalOptions="Center">
-                            <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderInactive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
-                                
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="Black" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                        <Setter Property="BackgroundColor" Value="Transparent" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                                    <Label
-                                        Grid.Column="0"
-                                        Text="UNIT SELECTION"
-                                        FontSize="24"
-                                        FontAttributes="Bold"
-                                        HorizontalTextAlignment="Start"
-                                        VerticalTextAlignment="Center"
-                                        VerticalOptions="Center">
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                                <Setter Property="TextColor" Value="White" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                                <Setter Property="TextColor" Value="#A78BFA" />
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
-                                    <Border
-                                        Grid.Column="1"
-                                        x:Name="UnitSelectionFilterButtonInactive"
-                                        IsVisible="{Binding IsUnitSelectionActive}"
-                                        StrokeThickness="0"
-                                        BackgroundColor="Transparent"
-                                        Padding="2"
-                                        Margin="0,0,12,0"
-                                        VerticalOptions="Center"
-                                        HorizontalOptions="End">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer Tapped="OnUnitSelectionFilterButtonTapped" />
-                                        </Border.GestureRecognizers>
-                                        <skia:SKCanvasView
-                                            x:Name="UnitSelectionFilterCanvasInactive"
-                                            WidthRequest="20"
-                                            HeightRequest="20"
-                                            VerticalOptions="Center"
-                                            HorizontalOptions="Center"
-                                            PaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </Grid>
-
                 <Grid IsVisible="True" RowDefinitions="Auto,*" RowSpacing="10" VerticalOptions="FillAndExpand">
                     <Border Grid.Row="0" StrokeThickness="1" Padding="10" IsVisible="False">
                         <Border Padding="12,8">
@@ -159,72 +70,18 @@
 
                     <Border Grid.Row="1" StrokeThickness="0" Padding="0" VerticalOptions="FillAndExpand">
                         <Grid RowDefinitions="Auto,*" RowSpacing="8" VerticalOptions="FillAndExpand">
-                            <Grid Grid.Row="0" ColumnDefinitions="*" ColumnSpacing="10" VerticalOptions="Center">
-                                <Border Grid.Column="0" x:Name="UnitSelectionHeaderBorderActive" Padding="12,8,0,8" SizeChanged="OnUnitSelectionHeaderBorderSizeChanged">
-                                    
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="Black" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                            <Setter Property="BackgroundColor" Value="Transparent" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                                        <Label
-                                            Grid.Column="0"
-                                            Text="UNIT SELECTION"
-                                            FontSize="24"
-                                            FontAttributes="Bold"
-                                            HorizontalTextAlignment="Start"
-                                            VerticalTextAlignment="Center"
-                                            VerticalOptions="Center">
-                                            <Label.Triggers>
-                                                <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="True">
-                                                    <Setter Property="TextColor" Value="White" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Label" Binding="{Binding IsUnitSelectionActive}" Value="False">
-                                                    <Setter Property="TextColor" Value="#A78BFA" />
-                                                </DataTrigger>
-                                            </Label.Triggers>
-                                        </Label>
-                                        <Border
-                                            Grid.Column="1"
-                                            x:Name="UnitSelectionFilterButtonActive"
-                                            IsVisible="{Binding IsUnitSelectionActive}"
-                                            StrokeThickness="0"
-                                            BackgroundColor="Transparent"
-                                            Padding="2"
-                                            Margin="0,0,12,0"
-                                            VerticalOptions="Center"
-                                            HorizontalOptions="End">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnUnitSelectionFilterButtonTapped" />
-                                            </Border.GestureRecognizers>
-                                            <skia:SKCanvasView
-                                                x:Name="UnitSelectionFilterCanvasActive"
-                                                WidthRequest="20"
-                                                HeightRequest="20"
-                                                VerticalOptions="Center"
-                                                HorizontalOptions="Center"
-                                                PaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
-                                        </Border>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-
-                            <ScrollView Grid.Row="1" IsVisible="{Binding ShowUnitsList}">
-                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate>
-                                            <controls:FactionListItemView
-                                                ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectUnitCommand}"
-                                                ItemTappedCommandParameter="{Binding .}"
-                                                IsVisible="{Binding IsVisible}" />
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </VerticalStackLayout>
-                            </ScrollView>
+                            <controls:CompanyUnitSelectionListPanelView
+                                x:Name="UnitSelectionPanel"
+                                Grid.Row="0"
+                                Grid.RowSpan="2"
+                                VerticalOptions="FillAndExpand"
+                                IsUnitSelectionActive="{Binding IsUnitSelectionActive}"
+                                ShowUnitsList="{Binding ShowUnitsList}"
+                                ItemsSource="{Binding Units}"
+                                ItemTappedCommand="{Binding SelectUnitCommand}"
+                                HeaderBorderSizeChanged="OnUnitSelectionHeaderBorderSizeChanged"
+                                FilterButtonTapped="OnUnitSelectionFilterButtonTapped"
+                                FilterCanvasPaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
 
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
                                 <VerticalStackLayout Spacing="0">
@@ -298,81 +155,12 @@
                         VerticalOptions="Center"
                         IsVisible="{Binding ShowCompanyNameValidationError}" />
                 </HorizontalStackLayout>
-                <CollectionView
+                <controls:MercsCompanyEntriesListView
                     Grid.Row="1"
                     ItemsSource="{Binding MercsCompanyEntries}"
-                    SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border StrokeThickness="1" Padding="8" Margin="0,0,0,6">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectMercsCompanyEntryCommand}"
-                                        CommandParameter="{Binding .}" />
-                                </Border.GestureRecognizers>
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="#004219" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
-                                        <Setter Property="BackgroundColor" Value="Transparent" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
-                                    <controls:FactionListItemView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" TitleFormatted="{Binding NameFormatted}" />
-                                    <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Start" HorizontalOptions="End">
-                                        <Label Text="{Binding CostDisplay}" VerticalOptions="Center" />
-                                        <Button
-                                            Text="X"
-                                            WidthRequest="28"
-                                            HeightRequest="28"
-                                            Padding="0"
-                                            FontAttributes="Bold"
-                                            VerticalOptions="Start"
-                                            HorizontalOptions="End"
-                                            Command="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.RemoveMercsCompanyEntryCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </HorizontalStackLayout>
-                                    <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding EquipmentLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasEquipmentLine}" />
-                                    <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding SkillsLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" IsVisible="{Binding HasSkillsLine}" />
-                                    <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding RangedLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
-                                    <Label Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" FormattedText="{Binding CcLineFormatted}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
-                                    <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding HasPeripheralStatBlock}">
-                                        <VerticalStackLayout Spacing="4">
-                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                                                <skia:SKCanvasView
-                                                    Grid.Column="0"
-                                                    WidthRequest="18"
-                                                    HeightRequest="18"
-                                                    VerticalOptions="Center"
-                                                    PaintSurface="OnPeripheralIconCanvasPaintSurface" />
-                                                <Label Grid.Column="1" Text="{Binding PeripheralNameHeading}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
-                                            </Grid>
-                                            <Label Text="{Binding PeripheralSubtitle}" FontSize="12" TextColor="#9CA3AF" LineBreakMode="WordWrap" />
-                                            <Label
-                                                FormattedText="{Binding PeripheralEquipmentLineFormatted}"
-                                                TextColor="White"
-                                                FontSize="12"
-                                                LineBreakMode="WordWrap"
-                                                HorizontalOptions="FillAndExpand"
-                                                IsVisible="{Binding HasPeripheralEquipmentLine}" />
-                                            <Label
-                                                FormattedText="{Binding PeripheralSkillsLineFormatted}"
-                                                TextColor="White"
-                                                FontSize="12"
-                                                LineBreakMode="WordWrap"
-                                                HorizontalOptions="FillAndExpand"
-                                                IsVisible="{Binding HasPeripheralSkillsLine}" />
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                    <CollectionView.EmptyView>
-                        <Label Text="No units added yet." TextColor="#6B7280" />
-                    </CollectionView.EmptyView>
-                </CollectionView>
+                    SelectEntryCommand="{Binding SelectMercsCompanyEntryCommand}"
+                    RemoveEntryCommand="{Binding RemoveMercsCompanyEntryCommand}"
+                    PeripheralIconCanvasPaintSurface="OnPeripheralIconCanvasPaintSurface" />
                 <Button
                     Grid.Row="2"
                     Text="START COMPANY"

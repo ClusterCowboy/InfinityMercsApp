@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+             x:Class="InfinityMercsApp.Views.Controls.CompanyUnitSelectionListPanelView"
+             x:Name="UnitSelectionPanelRoot">
+
+    <Grid RowDefinitions="Auto,*" RowSpacing="8" VerticalOptions="FillAndExpand">
+        <Grid Grid.Row="0" ColumnDefinitions="*" ColumnSpacing="10" VerticalOptions="Center">
+            <Border
+                x:Name="UnitSelectionHeaderBorder"
+                Grid.Column="0"
+                Padding="12,8,0,8"
+                SizeChanged="OnHeaderBorderSizeChanged">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=IsUnitSelectionActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="Black" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=IsUnitSelectionActive}" Value="False">
+                        <Setter Property="BackgroundColor" Value="Transparent" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                    <Label
+                        Grid.Column="0"
+                        Text="UNIT SELECTION"
+                        FontSize="24"
+                        FontAttributes="Bold"
+                        HorizontalTextAlignment="Start"
+                        VerticalTextAlignment="Center"
+                        VerticalOptions="Center">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=IsUnitSelectionActive}" Value="True">
+                                <Setter Property="TextColor" Value="White" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=IsUnitSelectionActive}" Value="False">
+                                <Setter Property="TextColor" Value="#A78BFA" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <Border
+                        x:Name="UnitSelectionFilterButton"
+                        Grid.Column="1"
+                        IsVisible="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=IsUnitSelectionActive}"
+                        StrokeThickness="0"
+                        BackgroundColor="Transparent"
+                        Padding="2"
+                        Margin="0,0,12,0"
+                        VerticalOptions="Center"
+                        HorizontalOptions="End">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnFilterButtonTapped" />
+                        </Border.GestureRecognizers>
+                        <skia:SKCanvasView
+                            x:Name="UnitSelectionFilterCanvas"
+                            WidthRequest="20"
+                            HeightRequest="20"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Center"
+                            PaintSurface="OnFilterCanvasPaintSurface" />
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <ScrollView Grid.Row="1" IsVisible="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ShowUnitsList}">
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ItemsSource}" Spacing="0">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <controls:UnitSelectionListItemView
+                            ItemTappedCommand="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ItemTappedCommand}"
+                            ItemTappedCommandParameter="{Binding .}"
+                            IsVisible="{Binding IsVisible}" />
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentView>
