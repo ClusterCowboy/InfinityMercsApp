@@ -39,43 +39,14 @@
             SelectFactionCommand="{Binding SelectFactionCommand}" />
 
         <Grid Grid.Row="1" Grid.Column="0">
-                <Grid IsVisible="True" RowDefinitions="Auto,*" RowSpacing="10" VerticalOptions="FillAndExpand">
-                    <Border Grid.Row="0" StrokeThickness="1" Padding="10" IsVisible="False">
-                        <Border Padding="12,8">
-                            
-                            <Border.Triggers>
-                                <DataTrigger TargetType="Border" Binding="{Binding IsFactionSelectionActive}" Value="True">
-                                    <Setter Property="BackgroundColor" Value="Black" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Border" Binding="{Binding IsFactionSelectionActive}" Value="False">
-                                    <Setter Property="BackgroundColor" Value="Transparent" />
-                                </DataTrigger>
-                            </Border.Triggers>
-                            <Label
-                                Text="FACTION SELECTION"
-                                FontSize="24"
-                                FontAttributes="Bold"
-                                HorizontalTextAlignment="Start">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsFactionSelectionActive}" Value="True">
-                                        <Setter Property="TextColor" Value="White" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsFactionSelectionActive}" Value="False">
-                                        <Setter Property="TextColor" Value="#A78BFA" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                        </Border>
-                    </Border>
-
-                    <Border Grid.Row="1" StrokeThickness="0" Padding="0" VerticalOptions="FillAndExpand">
+                <Grid VerticalOptions="FillAndExpand">
+                    <Border StrokeThickness="0" Padding="0" VerticalOptions="FillAndExpand">
                         <Grid RowDefinitions="Auto,*" RowSpacing="8" VerticalOptions="FillAndExpand">
                             <controls:CompanyUnitSelectionListPanelView
                                 x:Name="UnitSelectionPanel"
                                 Grid.Row="0"
                                 Grid.RowSpan="2"
                                 VerticalOptions="FillAndExpand"
-                                IsUnitSelectionActive="{Binding IsUnitSelectionActive}"
                                 ShowUnitsList="{Binding ShowUnitsList}"
                                 ItemsSource="{Binding Units}"
                                 ItemTappedCommand="{Binding SelectUnitCommand}"

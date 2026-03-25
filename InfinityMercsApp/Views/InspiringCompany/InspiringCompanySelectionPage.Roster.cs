@@ -120,7 +120,6 @@ public partial class InspiringCompanySelectionPage
             },
             SetSelectedUnit,
             LoadSelectedUnitDetailsAsync,
-            () => IsFactionSelectionActive = false,
             cancellationToken);
     }
 

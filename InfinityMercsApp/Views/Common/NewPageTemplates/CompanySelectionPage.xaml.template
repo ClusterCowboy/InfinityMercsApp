@@ -18,9 +18,8 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnLeftSlotTapped" />
                     </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
-                        <skia:SKCanvasView x:Name="LeftSlotCanvas" Grid.Column="0" WidthRequest="28" HeightRequest="28" VerticalOptions="Center" PaintSurface="OnLeftSlotCanvasPaintSurface" />
-                        <Label Grid.Column="1" Text="{Binding LeftSlotText}" VerticalOptions="Center" />
+                    <Grid HorizontalOptions="Center">
+                        <skia:SKCanvasView x:Name="LeftSlotCanvas" WidthRequest="28" HeightRequest="28" VerticalOptions="Center" PaintSurface="OnLeftSlotCanvasPaintSurface" />
                     </Grid>
                 </Border>
 
@@ -28,9 +27,8 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnRightSlotTapped" />
                     </Border.GestureRecognizers>
-                    <Grid ColumnDefinitions="34,*" ColumnSpacing="8">
-                        <skia:SKCanvasView x:Name="RightSlotCanvas" Grid.Column="0" WidthRequest="28" HeightRequest="28" VerticalOptions="Center" PaintSurface="OnRightSlotCanvasPaintSurface" />
-                        <Label Grid.Column="1" Text="{Binding RightSlotText}" VerticalOptions="Center" />
+                    <Grid HorizontalOptions="Center">
+                        <skia:SKCanvasView x:Name="RightSlotCanvas" WidthRequest="28" HeightRequest="28" VerticalOptions="Center" PaintSurface="OnRightSlotCanvasPaintSurface" />
                     </Grid>
                 </Border>
             </HorizontalStackLayout>
@@ -68,27 +66,10 @@
             SelectFactionCommand="{Binding SelectFactionCommand}" />
 
         <Grid Grid.Row="1" Grid.Column="0">
-            <VerticalStackLayout Spacing="10">
-                <Border StrokeThickness="1" Padding="10">
-                    <Label Text="FACTION SELECTION" FontSize="24" FontAttributes="Bold" />
-                </Border>
-
-                <Border StrokeThickness="1" Padding="10">
-                    <Label Text="UNIT SELECTION" FontSize="24" FontAttributes="Bold" />
-                </Border>
-
-                <ScrollView>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate>
-                                <controls:FactionListItemView
-                                    ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectUnitCommand}"
-                                    ItemTappedCommandParameter="{Binding .}" />
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </VerticalStackLayout>
-                </ScrollView>
-            </VerticalStackLayout>
+            <controls:CompanyUnitSelectionListPanelView
+                ItemsSource="{Binding Units}"
+                ItemTappedCommand="{Binding SelectUnitCommand}"
+                ShowUnitsList="True" />
         </Grid>
 
         <Grid Grid.Row="1" Grid.Column="1">

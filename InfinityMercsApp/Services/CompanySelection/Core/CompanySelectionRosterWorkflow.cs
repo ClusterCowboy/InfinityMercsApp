@@ -407,7 +407,6 @@ internal static class CompanySelectionRosterWorkflow
         Func<int, int, string, string?, string?, TUnit> createFallbackUnit,
         Action<TUnit> setSelectedUnit,
         Func<CancellationToken, Task> loadSelectedUnitDetailsAsync,
-        Action setFactionSelectionInactive,
         CancellationToken cancellationToken = default)
         where TEntry : class, ICompanyMercsEntry
         where TUnit : CompanyUnitSelectionItemBase
@@ -440,7 +439,6 @@ internal static class CompanySelectionRosterWorkflow
 
             setSelectedUnit(unitItem);
             await loadSelectedUnitDetailsAsync(cancellationToken);
-            setFactionSelectionInactive();
         }
         catch (Exception ex)
         {

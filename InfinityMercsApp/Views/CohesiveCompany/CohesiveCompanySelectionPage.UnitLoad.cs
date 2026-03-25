@@ -148,7 +148,6 @@ public partial class CohesiveCompanySelectionPage
         }
 
         SetSelectedUnit(firstVisibleUnit);
-        IsFactionSelectionActive = false;
         _autoSelectUnitAfterFactionLoad = false;
     }
 

@@ -73,8 +73,8 @@ public partial class AirborneCompanySelectionPage
                 0,
                 _factionSelectionState,
                 item,
-                (slotIndex, text) => FactionSlotSelectorView.LeftSlotText = string.Empty,
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
+                blockCrossSlotDuplicateSelection: true,
                 out var factionChanged))
         {
             Console.WriteLine($"[AirborneCompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
@@ -91,7 +91,6 @@ public partial class AirborneCompanySelectionPage
             onAssignmentCompleted: () =>
             {
                 TeamsView = false;
-                IsFactionSelectionActive = false;
                 ShowFactionStrip = false;
             });
     }

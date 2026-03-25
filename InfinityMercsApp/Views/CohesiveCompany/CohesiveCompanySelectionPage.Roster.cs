@@ -135,7 +135,6 @@ public partial class CohesiveCompanySelectionPage
             },
             item => SetSelectedUnit(item),
             LoadSelectedUnitDetailsAsync,
-            () => IsFactionSelectionActive = false,
             cancellationToken);
     }
 

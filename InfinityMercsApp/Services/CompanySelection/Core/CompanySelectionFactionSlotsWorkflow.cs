@@ -56,12 +56,13 @@ internal static class CompanySelectionFactionSlotsWorkflow
         int activeSlotIndex,
         FactionSlotSelectionState<TFaction> factionSelectionState,
         TFaction item,
-        Action<int, string> setSlotText,
         Action<int, string?, string?> loadSlotIcon,
+        bool blockCrossSlotDuplicateSelection,
         out bool factionChanged)
         where TFaction : CompanyFactionSelectionItemBase
     {
-        if (IsDuplicateSelectionForActiveSlot(
+        if (blockCrossSlotDuplicateSelection &&
+            IsDuplicateSelectionForActiveSlot(
                 showRightSelectionBox,
                 activeSlotIndex,
                 factionSelectionState.LeftSlotFaction,
@@ -76,14 +77,12 @@ internal static class CompanySelectionFactionSlotsWorkflow
         {
             factionChanged = factionSelectionState.LeftSlotFaction?.Id != item.Id;
             factionSelectionState.LeftSlotFaction = item;
-            setSlotText(0, item.Name);
             loadSlotIcon(0, item.CachedLogoPath, item.PackagedLogoPath);
             return true;
         }
 
         factionChanged = factionSelectionState.RightSlotFaction?.Id != item.Id;
         factionSelectionState.RightSlotFaction = item;
-        setSlotText(1, item.Name);
         loadSlotIcon(1, item.CachedLogoPath, item.PackagedLogoPath);
         return true;
     }

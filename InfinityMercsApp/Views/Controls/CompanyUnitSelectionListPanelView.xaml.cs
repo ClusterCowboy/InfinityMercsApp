@@ -19,13 +19,6 @@ public partial class CompanyUnitSelectionListPanelView : ContentView
             typeof(ICommand),
             typeof(CompanyUnitSelectionListPanelView));
 
-    public static readonly BindableProperty IsUnitSelectionActiveProperty =
-        BindableProperty.Create(
-            nameof(IsUnitSelectionActive),
-            typeof(bool),
-            typeof(CompanyUnitSelectionListPanelView),
-            true);
-
     public static readonly BindableProperty ShowUnitsListProperty =
         BindableProperty.Create(
             nameof(ShowUnitsList),
@@ -48,12 +41,6 @@ public partial class CompanyUnitSelectionListPanelView : ContentView
     {
         get => (ICommand?)GetValue(ItemTappedCommandProperty);
         set => SetValue(ItemTappedCommandProperty, value);
-    }
-
-    public bool IsUnitSelectionActive
-    {
-        get => (bool)GetValue(IsUnitSelectionActiveProperty);
-        set => SetValue(IsUnitSelectionActiveProperty, value);
     }
 
     public bool ShowUnitsList

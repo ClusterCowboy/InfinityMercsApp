@@ -270,7 +270,6 @@ public partial class AirborneCompanySelectionPage : CompanySelectionPageBase, IC
         };
 
         _factionSelectionState.RightSlotFaction = airborneItem;
-        FactionSlotSelectorView.RightSlotText = string.Empty;
         _ = LoadSlotIconAsync(1, null, AirborneCompanyLogoPath);
     }
 
@@ -319,12 +318,6 @@ public partial class AirborneCompanySelectionPage : CompanySelectionPageBase, IC
         _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = isLeftSlot };
         LieutenantOnlyUnits = isLeftSlot;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
-
-        // The Airborne Company slot (right) is locked — always show units, never the faction picker.
-        if (!isLeftSlot)
-        {
-            IsFactionSelectionActive = false;
-        }
 
         if (previousSlot != _activeSlotIndex && _loaded)
         {

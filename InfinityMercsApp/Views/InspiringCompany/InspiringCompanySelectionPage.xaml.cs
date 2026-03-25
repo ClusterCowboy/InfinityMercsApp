@@ -258,7 +258,6 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
         };
 
         _factionSelectionState.RightSlotFaction = inspiringItem;
-        FactionSlotSelectorView.RightSlotText = string.Empty;
         _ = LoadSlotIconAsync(1, null, InspiringCompanyLogoPath);
     }
 
@@ -307,12 +306,6 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
         _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = isLeftSlot };
         LieutenantOnlyUnits = isLeftSlot;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
-
-        // The Inspiring Company slot (right) is locked — always show units, never the faction picker.
-        if (!isLeftSlot)
-        {
-            IsFactionSelectionActive = false;
-        }
 
         if (previousSlot != _activeSlotIndex && _loaded)
         {

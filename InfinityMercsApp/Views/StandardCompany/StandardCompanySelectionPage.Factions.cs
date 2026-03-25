@@ -49,23 +49,21 @@ public partial class StandardCompanySelectionPage
 
     private void AssignSelectedFactionToActiveSlot(ArmyFactionSelectionItem item)
     {
+        var targetSlotIndex = _activeSlotIndex;
+        var targetSlotWasEmpty = targetSlotIndex switch
+        {
+            0 => _factionSelectionState.LeftSlotFaction is null,
+            1 => _factionSelectionState.RightSlotFaction is null,
+            _ => _factionSelectionState.LeftSlotFaction is null
+        };
+
         if (!TryAssignSelectedFactionToActiveSlotCore(
                 ShowRightSelectionBox,
-                _activeSlotIndex,
+                targetSlotIndex,
                 _factionSelectionState,
                 item,
-                (slotIndex, text) =>
-                {
-                    if (slotIndex == 0)
-                    {
-                        FactionSlotSelectorView.LeftSlotText = string.Empty;
-                    }
-                    else
-                    {
-                        FactionSlotSelectorView.RightSlotText = string.Empty;
-                    }
-                },
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
+                blockCrossSlotDuplicateSelection: true,
                 out var factionChanged))
         {
             Console.WriteLine($"[CompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
@@ -78,7 +76,7 @@ public partial class StandardCompanySelectionPage
 
         HandleFactionAssignmentSideEffectsCore(
             factionChanged,
-            AutoSelectEmptySlot,
+            targetSlotWasEmpty ? AutoSelectEmptySlot : () => SetActiveSlot(targetSlotIndex),
             ResetMercsCompany,
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
@@ -86,7 +84,6 @@ public partial class StandardCompanySelectionPage
                 TeamsView = false;
                 if (AllFactionSlotsFilled())
                 {
-                    IsFactionSelectionActive = false;
                     ShowFactionStrip = false;
                 }
             });

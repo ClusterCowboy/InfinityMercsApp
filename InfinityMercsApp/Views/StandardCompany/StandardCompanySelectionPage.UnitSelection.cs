@@ -243,7 +243,6 @@ public partial class StandardCompanySelectionPage
         }
 
         SetSelectedUnit(firstVisibleUnit);
-        IsFactionSelectionActive = false;
         _autoSelectUnitAfterFactionLoad = false;
     }
 

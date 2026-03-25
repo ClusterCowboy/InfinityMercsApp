@@ -49,8 +49,8 @@ public abstract partial class CompanySelectionPageBase
         int activeSlotIndex,
         FactionSlotSelectionState<TFaction> factionSelectionState,
         TFaction item,
-        Action<int, string> setSlotText,
         Action<int, string?, string?> loadSlotIcon,
+        bool blockCrossSlotDuplicateSelection,
         out bool factionChanged)
         where TFaction : CompanyFactionSelectionItemBase
     {
@@ -59,8 +59,8 @@ public abstract partial class CompanySelectionPageBase
             activeSlotIndex,
             factionSelectionState,
             item,
-            setSlotText,
             loadSlotIcon,
+            blockCrossSlotDuplicateSelection,
             out factionChanged);
     }
 

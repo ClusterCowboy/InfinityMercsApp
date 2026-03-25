@@ -25,9 +25,6 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     // True when the unit search/filter is active; drives which filter icon canvas is shown.
     private bool _isUnitFilterActive;
 
-    // Legacy compatibility flag retained for existing bindings.
-    // Unit selection is now always active, so this stays false.
-    private bool _isFactionSelectionActive;
     private bool _showFactionStrip = true;
 
     // When true, only lieutenant-eligible units are shown in the unit list.
@@ -127,32 +124,6 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         UnitSelectionFilterCanvasInactiveForVisuals.InvalidateSurface();
         UnitSelectionFilterCanvasActiveForVisuals.InvalidateSurface();
     }
-
-    /// <summary>
-    /// Legacy flag from the old faction/unit toggle flow.
-    /// Faction-selection mode is retired, so this is normalized to <c>false</c>.
-    /// </summary>
-    public bool IsFactionSelectionActive
-    {
-        get => _isFactionSelectionActive;
-        set
-        {
-            const bool normalizedValue = false;
-            if (_isFactionSelectionActive == normalizedValue)
-            {
-                return;
-            }
-
-            _isFactionSelectionActive = normalizedValue;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(IsUnitSelectionActive));
-            OnPropertyChanged(nameof(ShowUnitsList));
-            OnPropertyChanged(nameof(ShowTeamsList));
-        }
-    }
-
-    /// <summary>Always <c>true</c>; unit selection remains visible at all times.</summary>
-    public bool IsUnitSelectionActive => true;
 
     /// <summary>Controls visibility of the top horizontal faction strip.</summary>
     public bool ShowFactionStrip
