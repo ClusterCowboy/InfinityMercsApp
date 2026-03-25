@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             x:Class="InfinityMercsApp.Views.Controls.FactionSelectionStripView"
+             x:Name="FactionSelectionStripRoot">
+    <ContentView.GestureRecognizers>
+        <PointerGestureRecognizer
+            PointerPressed="OnStripPointerPressed"
+            PointerMoved="OnStripPointerMoved"
+            PointerReleased="OnStripPointerReleased" />
+    </ContentView.GestureRecognizers>
+
+    <ScrollView x:Name="FactionScrollView" Orientation="Horizontal" HorizontalScrollBarVisibility="Always" Padding="0">
+        <ScrollView.GestureRecognizers>
+            <PanGestureRecognizer PanUpdated="OnFactionStripPanUpdated" />
+        </ScrollView.GestureRecognizers>
+        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference FactionSelectionStripRoot}, Path=ItemsSource}"
+                               Spacing="2"
+                               Padding="0">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate>
+                    <controls:FactionListItemView
+                        WidthRequest="138"
+                        UseVerticalTileLayout="True"
+                        ItemTappedCommand="{Binding Source={x:Reference FactionSelectionStripRoot}, Path=SelectFactionCommand}"
+                        ItemTappedCommandParameter="{Binding .}" />
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </HorizontalStackLayout>
+    </ScrollView>
+
+</ContentView>

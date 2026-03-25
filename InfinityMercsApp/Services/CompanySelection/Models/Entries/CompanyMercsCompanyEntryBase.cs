@@ -1,5 +1,7 @@
 ﻿using InfinityMercsApp.ViewModels;
 
+using InfinityMercsApp.Services;
+
 namespace InfinityMercsApp.Views.Common;
 
 public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListItem, ICompanyMercsEntry
@@ -42,6 +44,10 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public string SavedCharacteristics { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public string SavedEquipmentDisplay => ToCommaSeparatedDisplay(SavedEquipment);
+    public string SavedSkillsDisplay => ToCommaSeparatedDisplay(SavedSkills);
+    public string SavedRangedWeaponsDisplay => ToCommaSeparatedDisplay(SavedRangedWeapons);
+    public string SavedCcWeaponsDisplay => ToCommaSeparatedDisplay(SavedCcWeapons);
     public int? UnitMoveFirstCm { get; init; }
     public int? UnitMoveSecondCm { get; init; }
     public string UnitMoveDisplay { get; set; } = "-";
@@ -128,6 +134,22 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
         }
     }
 
+    private bool _isDetailsExpanded = false;
+    public bool IsDetailsExpanded
+    {
+        get => _isDetailsExpanded;
+        set
+        {
+            if (_isDetailsExpanded == value)
+            {
+                return;
+            }
+
+            _isDetailsExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
     private bool _isIrregular;
     public bool IsIrregular
     {
@@ -163,6 +185,12 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     }
 
     public bool ShowRegularModifier => NormallyIrregular && !IsIrregular;
+
+    private static string ToCommaSeparatedDisplay(string? value)
+    {
+        var parts = CompanyProfileTextService.SplitDisplayLine(value);
+        return parts.Count == 0 ? "-" : string.Join(", ", parts);
+    }
 }
 
 

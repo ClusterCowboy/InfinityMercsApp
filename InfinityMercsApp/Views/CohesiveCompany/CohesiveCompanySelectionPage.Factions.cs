@@ -112,18 +112,8 @@ public partial class CohesiveCompanySelectionPage
                 _activeSlotIndex,
                 _factionSelectionState,
                 item,
-                (slotIndex, text) =>
-                {
-                    if (slotIndex == 0)
-                    {
-                        FactionSlotSelectorView.LeftSlotText = text;
-                    }
-                    else
-                    {
-                        FactionSlotSelectorView.RightSlotText = text;
-                    }
-                },
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
+                blockCrossSlotDuplicateSelection: true,
                 out var factionChanged))
         {
             Console.WriteLine($"[CompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
@@ -141,8 +131,22 @@ public partial class CohesiveCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
-                IsFactionSelectionActive = false;
+                TeamsView = true;
+                if (AllFactionSlotsFilled())
+                {
+                    ShowFactionStrip = false;
+                }
             });
+    }
+
+    private bool AllFactionSlotsFilled()
+    {
+        if (_factionSelectionState.LeftSlotFaction is null)
+        {
+            return false;
+        }
+
+        return !ShowRightSelectionBox || _factionSelectionState.RightSlotFaction is not null;
     }
 
     private string BuildCCFactionValidityFilterKey(int maxCost)
@@ -178,3 +182,4 @@ public partial class CohesiveCompanySelectionPage
         FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 }
+

@@ -73,8 +73,8 @@ public partial class InspiringCompanySelectionPage
                 0,
                 _factionSelectionState,
                 item,
-                (slotIndex, text) => FactionSlotSelectorView.LeftSlotText = text,
                 (slotIndex, cachedPath, packagedPath) => _ = LoadSlotIconAsync(slotIndex, cachedPath, packagedPath),
+                blockCrossSlotDuplicateSelection: true,
                 out var factionChanged))
         {
             Console.WriteLine($"[InspiringCompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
@@ -90,7 +90,8 @@ public partial class InspiringCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
-                IsFactionSelectionActive = false;
+                TeamsView = false;
+                ShowFactionStrip = false;
             });
     }
 
@@ -101,3 +102,4 @@ public partial class InspiringCompanySelectionPage
             UpdateMercsCompanyTotal);
     }
 }
+

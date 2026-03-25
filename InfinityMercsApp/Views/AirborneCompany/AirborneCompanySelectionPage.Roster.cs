@@ -122,7 +122,6 @@ public partial class AirborneCompanySelectionPage
             },
             SetSelectedUnit,
             LoadSelectedUnitDetailsAsync,
-            () => IsFactionSelectionActive = false,
             cancellationToken);
     }
 

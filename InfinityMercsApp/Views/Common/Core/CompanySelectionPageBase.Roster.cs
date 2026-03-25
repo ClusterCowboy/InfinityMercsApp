@@ -237,7 +237,7 @@ public abstract partial class CompanySelectionPageBase
     /// <summary>
     /// Selects a roster entry for detailed viewing, resolving its corresponding unit from the loaded
     /// unit list or falling back to a freshly fetched unit record when not found.
-    /// Switches the view to unit-selection mode and loads the full unit details.
+    /// Loads the full unit details for the resolved unit.
     /// </summary>
     protected static async Task SelectMercsCompanyEntryAsyncCore<TEntry, TUnit>(
         TEntry? entry,
@@ -246,7 +246,6 @@ public abstract partial class CompanySelectionPageBase
         Func<int, int, string, string?, string?, TUnit> createFallbackUnit,
         Action<TUnit> setSelectedUnit,
         Func<CancellationToken, Task> loadSelectedUnitDetailsAsync,
-        Action setFactionSelectionInactive,
         CancellationToken cancellationToken = default)
         where TEntry : class, ICompanyMercsEntry
         where TUnit : CompanyUnitSelectionItemBase
@@ -258,7 +257,6 @@ public abstract partial class CompanySelectionPageBase
             createFallbackUnit,
             setSelectedUnit,
             loadSelectedUnitDetailsAsync,
-            setFactionSelectionInactive,
             cancellationToken);
     }
 }

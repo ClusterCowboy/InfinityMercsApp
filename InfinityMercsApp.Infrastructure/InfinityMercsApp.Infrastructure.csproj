@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="_tempobj\\**\\*.cs" />
+    <Compile Remove="_tempbuild\\**\\*.cs" />
+    <Content Remove="_tempobj\\**\\*" />
+    <Content Remove="_tempbuild\\**\\*" />
+    <EmbeddedResource Remove="_tempobj\\**\\*" />
+    <EmbeddedResource Remove="_tempbuild\\**\\*" />
+    <None Remove="_tempobj\\**\\*" />
+    <None Remove="_tempbuild\\**\\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Markdig" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />

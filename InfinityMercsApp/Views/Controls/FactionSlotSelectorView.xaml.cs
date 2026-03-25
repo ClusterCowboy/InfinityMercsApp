@@ -14,12 +14,6 @@ public partial class FactionSlotSelectorView : ContentView
     private SKPicture? _leftSlotPicture;
     private SKPicture? _rightSlotPicture;
 
-    public static readonly BindableProperty LeftSlotTextProperty =
-        BindableProperty.Create(nameof(LeftSlotText), typeof(string), typeof(FactionSlotSelectorView), string.Empty);
-
-    public static readonly BindableProperty RightSlotTextProperty =
-        BindableProperty.Create(nameof(RightSlotText), typeof(string), typeof(FactionSlotSelectorView), string.Empty);
-
     public static readonly BindableProperty LeftSlotBorderColorProperty =
         BindableProperty.Create(nameof(LeftSlotBorderColor), typeof(Color), typeof(FactionSlotSelectorView), Colors.Transparent);
 
@@ -35,18 +29,6 @@ public partial class FactionSlotSelectorView : ContentView
     public FactionSlotSelectorView()
     {
         InitializeComponent();
-    }
-
-    public string LeftSlotText
-    {
-        get => (string)GetValue(LeftSlotTextProperty);
-        set => SetValue(LeftSlotTextProperty, value);
-    }
-
-    public string RightSlotText
-    {
-        get => (string)GetValue(RightSlotTextProperty);
-        set => SetValue(RightSlotTextProperty, value);
     }
 
     public Color LeftSlotBorderColor

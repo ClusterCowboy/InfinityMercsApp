@@ -85,6 +85,9 @@ public partial class CohesiveCompanySelectionPage
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
+            Console.WriteLine(
+                $"[CohesiveCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}. " +
+                $"Factions=[{string.Join(",", factions.Select(faction => faction.Id))}]");
 
             var validCoreTeamNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var faction in factions)
@@ -145,7 +148,6 @@ public partial class CohesiveCompanySelectionPage
         }
 
         SetSelectedUnit(firstVisibleUnit);
-        IsFactionSelectionActive = false;
         _autoSelectUnitAfterFactionLoad = false;
     }
 
@@ -163,4 +165,5 @@ public partial class CohesiveCompanySelectionPage
 
         return min ?? "0";
     }
+
 }

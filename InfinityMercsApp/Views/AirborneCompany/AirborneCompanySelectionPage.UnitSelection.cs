@@ -13,21 +13,11 @@ namespace InfinityMercsApp.Views.AirborneCompany;
 /// </summary>
 public partial class AirborneCompanySelectionPage
 {
-    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
+    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
-        // Always switch to the left slot when entering faction selection,
-        // because the right slot (Airborne Company) is locked and cannot be changed.
-        if (_activeSlotIndex != 0)
-        {
-            SetActiveSlot(0);
-        }
-
-        CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(value => IsFactionSelectionActive = value);
-    }
-
-    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(value => IsFactionSelectionActive = value);
+        ShowFactionStrip = sender is AddFactionButtonView button
+            ? button.IsExpanded
+            : !ShowFactionStrip;
     }
 
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
@@ -36,7 +26,7 @@ public partial class AirborneCompanySelectionPage
             GetPreparedPopupOptionsForCurrentPoints(),
             _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
-            TeamsView,
+            teamsView: false,
             ResolveUnitFilterPopupHeight(),
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
@@ -51,7 +41,20 @@ public partial class AirborneCompanySelectionPage
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,
-            value => TeamsView = value);
+            _ => TeamsView = false);
+        if (_filterState.ActiveUnitFilter.TeamsView)
+        {
+            _filterState.ActiveUnitFilter = new UnitFilterCriteria
+            {
+                Terms = _filterState.ActiveUnitFilter.Terms,
+                MinPoints = _filterState.ActiveUnitFilter.MinPoints,
+                MaxPoints = _filterState.ActiveUnitFilter.MaxPoints,
+                LieutenantOnlyUnits = _filterState.ActiveUnitFilter.LieutenantOnlyUnits,
+                TeamsView = false
+            };
+        }
+
+        TeamsView = false;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();
@@ -82,10 +85,10 @@ public partial class AirborneCompanySelectionPage
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionFilterButtonInactive,
-            UnitSelectionFilterCanvasInactive,
-            UnitSelectionFilterButtonActive,
-            UnitSelectionFilterCanvasActive,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
             ApplyFilterButtonSize);
     }
 
@@ -194,6 +197,18 @@ public partial class AirborneCompanySelectionPage
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
+            Console.WriteLine($"[AirborneCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}.");
+            if (Units.Count == 0 &&
+                _activeSlotIndex == 1 &&
+                _factionSelectionState.LeftSlotFaction is not null)
+            {
+                // Synthetic slot can be empty if generated faction data is unavailable.
+                // Fall back to the selected left slot so the unit list never appears blank.
+                SwitchToLeftSlot();
+                await LoadUnitsForActiveSlotAsync(cancellationToken);
+                return;
+            }
+
             BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
                 merged,
                 TeamEntries,
@@ -261,4 +276,5 @@ public partial class AirborneCompanySelectionPage
             logoUnitId = srcUnit;
         }
     }
+
 }

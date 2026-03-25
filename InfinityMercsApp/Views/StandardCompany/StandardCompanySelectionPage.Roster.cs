@@ -100,7 +100,6 @@ public partial class StandardCompanySelectionPage
             },
             SetSelectedUnit,
             LoadSelectedUnitDetailsAsync,
-            () => IsFactionSelectionActive = false,
             cancellationToken);
     }
 

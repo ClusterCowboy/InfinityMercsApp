@@ -25,8 +25,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     // True when the unit search/filter is active; drives which filter icon canvas is shown.
     private bool _isUnitFilterActive;
 
-    // Controls whether the faction picker or the unit list / detail panel is visible.
-    private bool _isFactionSelectionActive = true;
+    private bool _showFactionStrip = true;
 
     // When true, only lieutenant-eligible units are shown in the unit list.
     private bool _lieutenantOnlyUnits;
@@ -125,31 +124,21 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         UnitSelectionFilterCanvasActiveForVisuals.InvalidateSurface();
     }
 
-    /// <summary>
-    /// Controls whether the faction picker panel is the active view.
-    /// Changing this property notifies <see cref="IsUnitSelectionActive"/>,
-    /// <see cref="ShowUnitsList"/>, and <see cref="ShowTeamsList"/> so bindings update atomically.
-    /// </summary>
-    public bool IsFactionSelectionActive
+    /// <summary>Controls visibility of the top horizontal faction strip.</summary>
+    public bool ShowFactionStrip
     {
-        get => _isFactionSelectionActive;
+        get => _showFactionStrip;
         set
         {
-            if (_isFactionSelectionActive == value)
+            if (_showFactionStrip == value)
             {
                 return;
             }
 
-            _isFactionSelectionActive = value;
+            _showFactionStrip = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(IsUnitSelectionActive));
-            OnPropertyChanged(nameof(ShowUnitsList));
-            OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
-
-    /// <summary>Inverse of <see cref="IsFactionSelectionActive"/>; bound to the unit detail / list area visibility.</summary>
-    public bool IsUnitSelectionActive => !_isFactionSelectionActive;
 
     /// <summary>
     /// When set to <c>true</c>, only lieutenant-eligible units are shown in the list
@@ -193,18 +182,18 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         }
     }
 
-    /// <summary><c>true</c> when the flat unit list should be shown (i.e. fireteam view is off).</summary>
-    public bool ShowUnitsList => !TeamsView;
+    /// <summary>
+    /// <c>true</c> when the unit list should be visible.
+    /// If team entries are not ready yet, keep the unit list visible to avoid an empty panel.
+    /// </summary>
+    public bool ShowUnitsList => !TeamsView || (RequireTeamEntriesReadyForTeamsList && !AreTeamEntriesReadyForTeamsList);
 
     /// <summary>
     /// <c>true</c> when the fireteam list should be visible.
     /// Guards against showing the list before team entries are populated when
     /// <see cref="RequireTeamEntriesReadyForTeamsList"/> is active.
     /// </summary>
-    public bool ShowTeamsList =>
-        TeamsView &&
-        (!RequireTeamEntriesReadyForTeamsList ||
-         (IsUnitSelectionActive && AreTeamEntriesReadyForTeamsList));
+    public bool ShowTeamsList => TeamsView && (!RequireTeamEntriesReadyForTeamsList || AreTeamEntriesReadyForTeamsList);
 
     /// <summary>
     /// Status text displayed beneath the profile list (e.g. "Select a unit." or profile load errors).

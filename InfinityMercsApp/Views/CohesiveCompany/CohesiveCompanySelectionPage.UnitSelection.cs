@@ -6,26 +6,11 @@ namespace InfinityMercsApp.Views.CohesiveCompany;
 
 public partial class CohesiveCompanySelectionPage
 {
-    private void OnFactionSelectionHeaderTapped(object? sender, TappedEventArgs e)
+    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateFactionSelection(
-            value => IsFactionSelectionActive = value,
-            () => AreTeamEntriesReady = false);
-    }
-
-    private void OnUnitSelectionHeaderTapped(object? sender, TappedEventArgs e)
-    {
-        CompanySelectionUnitSelectionUiWorkflow.ActivateUnitSelection(
-            value => IsFactionSelectionActive = value,
-            () =>
-            {
-                if (_factionSelectionState.SelectedFaction is not null ||
-                    _factionSelectionState.LeftSlotFaction is not null ||
-                    _factionSelectionState.RightSlotFaction is not null)
-                {
-                    _ = LoadUnitsForActiveSlotAsync();
-                }
-            });
+        ShowFactionStrip = sender is AddFactionButtonView button
+            ? button.IsExpanded
+            : !ShowFactionStrip;
     }
 
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
@@ -79,10 +64,10 @@ public partial class CohesiveCompanySelectionPage
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionFilterButtonInactive,
-            UnitSelectionFilterCanvasInactive,
-            UnitSelectionFilterButtonActive,
-            UnitSelectionFilterCanvasActive,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanel.FilterButton,
+            UnitSelectionPanel.FilterCanvas,
             ApplyFilterButtonSize);
     }
 

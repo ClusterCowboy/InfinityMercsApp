@@ -4,11 +4,12 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Controls.UnitDisplayConfigurationsView"
-             x:Name="UnitDisplayConfigurationsRoot">
+             x:Name="UnitDisplayConfigurationsRoot"
+             HorizontalOptions="FillAndExpand">
     <!-- Shared UI shell for the selected-unit stat header and its configurations list. -->
-    <Border StrokeThickness="0" Padding="10">
+    <Border StrokeThickness="0" Padding="0" HorizontalOptions="FillAndExpand">
         <Grid RowDefinitions="*" RowSpacing="8">
-            <Grid x:Name="ConfigurationsRootGrid" ColumnDefinitions="58,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="2">
+            <Grid x:Name="ConfigurationsRootGrid" ColumnDefinitions="58,84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="0" ColumnSpacing="2">
                 <Border
                     Grid.Row="0"
                     Grid.RowSpan="3"
@@ -205,7 +206,7 @@
                         </Label.Shadow>
                     </Label>
                 </Border>
-                <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Configurations" FontSize="20" FontAttributes="Bold" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}" />
+                <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Profiles" FontSize="20" FontAttributes="Bold" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}" />
                 <ScrollView Grid.Row="7" Grid.ColumnSpan="3" VerticalOptions="FillAndExpand" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}">
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
                         <BindableLayout.ItemTemplate>

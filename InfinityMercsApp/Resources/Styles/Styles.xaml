@@ -24,11 +24,12 @@
     </Style>
 
     <Style TargetType="Button">
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}"/>
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
-        <Setter Property="BorderWidth" Value="0"/>
+        <Setter Property="BorderColor" Value="#22C55E"/>
+        <Setter Property="BorderWidth" Value="2"/>
         <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusDefault}"/>
         <Setter Property="Padding" Value="{DynamicResource PaddingControl}"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
@@ -39,8 +40,9 @@
                     <VisualState x:Name="Normal" />
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
-                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+                            <Setter Property="TextColor" Value="#99FFFFFF" />
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                            <Setter Property="BorderColor" Value="#665A9B73" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="PointerOver" />

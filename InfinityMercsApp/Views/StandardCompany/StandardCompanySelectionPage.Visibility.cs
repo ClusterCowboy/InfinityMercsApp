@@ -36,6 +36,21 @@ public partial class StandardCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
+            var visibleCount = Units.Count(x => x.IsVisible);
+            Console.WriteLine(
+                $"[StandardCompanySelectionPage] Visibility result: {visibleCount}/{Units.Count} visible " +
+                $"(pointsRemaining={pointsRemaining}, filterActive={_filterState.ActiveUnitFilter.IsActive}, lieutenantOnly={LieutenantOnlyUnits}).");
+
+            // Safety fallback: never leave the list blank when units are loaded.
+            if (visibleCount == 0 && Units.Count > 0)
+            {
+                Console.WriteLine("[StandardCompanySelectionPage] No visible units after filtering. Forcing loaded units visible.");
+                foreach (var unit in Units)
+                {
+                    unit.IsVisible = true;
+                }
+            }
+
             _selectedUnit = RefreshSelectedUnitVisibilityCore(
                 _selectedUnit,
                 () => ResetUnitDetails(),
