@@ -55,8 +55,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         CohesiveCompanyFactionQueryProvider = cohesiveCompanyFactionQueryProvider;
         FactionLogoCacheService = factionLogoCacheService;
         AppSettingsProvider = appSettingsProvider;
-        // Unit list is always the active selection surface.
-        _showFireteams = false;
+        _showFireteams = DefaultTeamsView;
     }
 
     /// <summary>Gets the mode (standard vs cohesive) that controls which factions and rules apply.</summary>
@@ -171,29 +170,30 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         get => _showFireteams;
         set
         {
-            // Team-selection mode is retired; keep unit list active.
-            const bool normalizedValue = false;
-            if (_showFireteams == normalizedValue)
+            if (_showFireteams == value)
             {
                 return;
             }
 
-            _showFireteams = normalizedValue;
+            _showFireteams = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowUnitsList));
             OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
 
-    /// <summary><c>true</c> because unit selection is always visible.</summary>
-    public bool ShowUnitsList => true;
+    /// <summary>
+    /// <c>true</c> when the unit list should be visible.
+    /// If team entries are not ready yet, keep the unit list visible to avoid an empty panel.
+    /// </summary>
+    public bool ShowUnitsList => !TeamsView || (RequireTeamEntriesReadyForTeamsList && !AreTeamEntriesReadyForTeamsList);
 
     /// <summary>
     /// <c>true</c> when the fireteam list should be visible.
     /// Guards against showing the list before team entries are populated when
     /// <see cref="RequireTeamEntriesReadyForTeamsList"/> is active.
     /// </summary>
-    public bool ShowTeamsList => false;
+    public bool ShowTeamsList => TeamsView && (!RequireTeamEntriesReadyForTeamsList || AreTeamEntriesReadyForTeamsList);
 
     /// <summary>
     /// Status text displayed beneath the profile list (e.g. "Select a unit." or profile load errors).

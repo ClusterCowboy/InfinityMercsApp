@@ -26,7 +26,7 @@ public partial class AirborneCompanySelectionPage
             GetPreparedPopupOptionsForCurrentPoints(),
             _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
-            TeamsView,
+            teamsView: false,
             ResolveUnitFilterPopupHeight(),
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
@@ -41,7 +41,20 @@ public partial class AirborneCompanySelectionPage
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,
-            value => TeamsView = value);
+            _ => TeamsView = false);
+        if (_filterState.ActiveUnitFilter.TeamsView)
+        {
+            _filterState.ActiveUnitFilter = new UnitFilterCriteria
+            {
+                Terms = _filterState.ActiveUnitFilter.Terms,
+                MinPoints = _filterState.ActiveUnitFilter.MinPoints,
+                MaxPoints = _filterState.ActiveUnitFilter.MaxPoints,
+                LieutenantOnlyUnits = _filterState.ActiveUnitFilter.LieutenantOnlyUnits,
+                TeamsView = false
+            };
+        }
+
+        TeamsView = false;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();

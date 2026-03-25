@@ -23,13 +23,14 @@ public partial class InspiringCompanySelectionPage
             GetPreparedPopupOptionsForCurrentPoints(),
             _filterState.ActiveUnitFilter,
             LieutenantOnlyUnits,
-            TeamsView,
+            teamsView: false,
             ResolveUnitFilterPopupHeight(),
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
             UnitFilterPopupHost,
             UnitFilterOverlay,
-            message => Console.Error.WriteLine(message));
+            message => Console.Error.WriteLine(message),
+            teamsViewEnabled: false);
     }
 
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
@@ -37,7 +38,20 @@ public partial class InspiringCompanySelectionPage
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,
-            value => TeamsView = value);
+            _ => TeamsView = false);
+        if (_filterState.ActiveUnitFilter.TeamsView)
+        {
+            _filterState.ActiveUnitFilter = new UnitFilterCriteria
+            {
+                Terms = _filterState.ActiveUnitFilter.Terms,
+                MinPoints = _filterState.ActiveUnitFilter.MinPoints,
+                MaxPoints = _filterState.ActiveUnitFilter.MaxPoints,
+                LieutenantOnlyUnits = _filterState.ActiveUnitFilter.LieutenantOnlyUnits,
+                TeamsView = false
+            };
+        }
+
+        TeamsView = false;
         SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
         _ = ApplyUnitVisibilityFiltersAsync();

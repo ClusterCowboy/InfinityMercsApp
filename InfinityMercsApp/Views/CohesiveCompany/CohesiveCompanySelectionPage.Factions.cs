@@ -131,7 +131,7 @@ public partial class CohesiveCompanySelectionPage
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
-                TeamsView = false;
+                TeamsView = true;
                 if (AllFactionSlotsFilled())
                 {
                     ShowFactionStrip = false;

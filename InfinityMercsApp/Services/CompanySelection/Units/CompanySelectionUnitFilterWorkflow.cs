@@ -16,7 +16,7 @@ internal static class CompanySelectionUnitFilterWorkflow
         ContentView popupHost,
         VisualElement popupOverlay,
         Action<string>? logError = null,
-        bool teamsViewEnabled = false)
+        bool teamsViewEnabled = true)
     {
         try
         {

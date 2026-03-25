@@ -45,14 +45,29 @@
                             <controls:CompanyUnitSelectionListPanelView
                                 x:Name="UnitSelectionPanel"
                                 Grid.Row="0"
-                                Grid.RowSpan="2"
+                                Grid.RowSpan="1"
                                 VerticalOptions="FillAndExpand"
                                 ShowUnitsList="{Binding ShowUnitsList}"
                                 ItemsSource="{Binding Units}"
                                 ItemTappedCommand="{Binding SelectUnitCommand}"
                                 HeaderBorderSizeChanged="OnUnitSelectionHeaderBorderSizeChanged"
                                 FilterButtonTapped="OnUnitSelectionFilterButtonTapped"
-                                FilterCanvasPaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
+                                FilterCanvasPaintSurface="OnUnitSelectionFilterCanvasPaintSurface">
+                                <controls:CompanyUnitSelectionListPanelView.Triggers>
+                                    <DataTrigger
+                                        TargetType="controls:CompanyUnitSelectionListPanelView"
+                                        Binding="{Binding ShowUnitsList}"
+                                        Value="True">
+                                        <Setter Property="Grid.RowSpan" Value="2" />
+                                    </DataTrigger>
+                                    <DataTrigger
+                                        TargetType="controls:CompanyUnitSelectionListPanelView"
+                                        Binding="{Binding ShowUnitsList}"
+                                        Value="False">
+                                        <Setter Property="Grid.RowSpan" Value="1" />
+                                    </DataTrigger>
+                                </controls:CompanyUnitSelectionListPanelView.Triggers>
+                            </controls:CompanyUnitSelectionListPanelView>
 
                             <ScrollView Grid.Row="1" IsVisible="{Binding ShowTeamsList}">
                                 <VerticalStackLayout Spacing="0">
@@ -78,7 +93,7 @@
                                                                     <Grid ColumnDefinitions="44,44,*" ColumnSpacing="8" IsVisible="{Binding IsVisible}" MinimumHeightRequest="50">
                                                                         <Label Grid.Column="0" Text="{Binding Min}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
                                                                         <Label Grid.Column="1" Text="{Binding Max}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" VerticalOptions="Center" />
-                                                                        <controls:FactionListItemView
+                                                                        <controls:UnitSelectionListItemView
                                                                             Grid.Column="2"
                                                                             ItemTappedCommand="{Binding Source={x:Reference ArmyFactionSelectionRoot}, Path=BindingContext.SelectTeamAllowedProfileCommand}"
                                                                             ItemTappedCommandParameter="{Binding .}" />
@@ -145,6 +160,8 @@
 
         <Grid
             x:Name="UnitFilterOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="2"
             Grid.ColumnSpan="2"
             IsVisible="False"
             BackgroundColor="#88000000"

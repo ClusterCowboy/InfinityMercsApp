@@ -254,6 +254,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
             _areTeamEntriesReady = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowUnitsList));
             OnPropertyChanged(nameof(ShowTeamsList));
         }
     }
