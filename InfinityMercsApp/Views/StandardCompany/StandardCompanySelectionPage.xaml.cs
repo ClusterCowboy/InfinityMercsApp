@@ -54,6 +54,9 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private bool IsTagCompanyMode =>
         string.Equals(_companyTypeLabelOverride, "TAG Company", StringComparison.OrdinalIgnoreCase);
 
+    private bool IsLoneWolfMode =>
+        string.Equals(_companyTypeLabelOverride, "Lone Wolf Company", StringComparison.OrdinalIgnoreCase);
+
     public StandardCompanySelectionPage(
         ArmySourceSelectionMode mode,
         IMetadataProvider? metadataProvider,

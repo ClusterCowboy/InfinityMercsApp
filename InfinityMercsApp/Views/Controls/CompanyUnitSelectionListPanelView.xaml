@@ -48,7 +48,13 @@
             </Border>
         </Grid>
 
-        <ScrollView Grid.Row="1" IsVisible="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ShowUnitsList}">
+        <ScrollView
+            x:Name="UnitSelectionScrollView"
+            Grid.Row="1"
+            IsVisible="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ShowUnitsList}">
+            <ScrollView.GestureRecognizers>
+                <PanGestureRecognizer PanUpdated="OnUnitSelectionScrollPanUpdated" />
+            </ScrollView.GestureRecognizers>
             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference UnitSelectionPanelRoot}, Path=ItemsSource}" Spacing="0">
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>

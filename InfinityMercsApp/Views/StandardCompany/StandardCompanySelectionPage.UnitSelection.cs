@@ -22,17 +22,21 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
+        var allowLieutenantOnlyFilter = !IsLoneWolfMode;
+        var allowFireteamFilter = !IsLoneWolfMode;
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
             GetPreparedPopupOptionsForCurrentPoints(),
             _filterState.ActiveUnitFilter,
-            LieutenantOnlyUnits,
-            TeamsView,
+            allowLieutenantOnlyFilter ? LieutenantOnlyUnits : false,
+            allowFireteamFilter ? TeamsView : false,
             ResolveUnitFilterPopupHeight(),
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
             UnitFilterPopupHost,
             UnitFilterOverlay,
-            message => Console.Error.WriteLine(message));
+            message => Console.Error.WriteLine(message),
+            teamsViewEnabled: allowFireteamFilter,
+            lieutenantOnlyUnitsEnabled: allowLieutenantOnlyFilter);
     }
 
     /// <summary>
@@ -40,6 +44,18 @@ public partial class StandardCompanySelectionPage
     /// </summary>
     private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
+        if (IsLoneWolfMode)
+        {
+            criteria = new UnitFilterCriteria
+            {
+                Terms = criteria.Terms,
+                MinPoints = criteria.MinPoints,
+                MaxPoints = criteria.MaxPoints,
+                LieutenantOnlyUnits = false,
+                TeamsView = false
+            };
+        }
+
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
             value => LieutenantOnlyUnits = value,

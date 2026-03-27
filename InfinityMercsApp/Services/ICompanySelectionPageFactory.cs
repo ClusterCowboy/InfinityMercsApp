@@ -10,6 +10,7 @@ public interface ICompanySelectionPageFactory
 {
     StandardCompanySelectionPage CreateStandard(ArmySourceSelectionMode mode);
     StandardCompanySelectionPage CreateTag(ArmySourceSelectionMode mode);
+    StandardCompanySelectionPage CreateLoneWolf(ArmySourceSelectionMode mode);
     CohesiveCompanySelectionPage CreateCohesive(ArmySourceSelectionMode mode);
     InspiringCompanySelectionPage CreateInspiring();
     AirborneCompanySelectionPage CreateAirborne();

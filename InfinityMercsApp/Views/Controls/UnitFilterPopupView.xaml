@@ -125,8 +125,18 @@
                         <Picker WidthRequest="120" TextColor="White" ItemsSource="{Binding PointsOptions}" SelectedItem="{Binding SelectedMaxPoints}" />
                     </HorizontalStackLayout>
 
-                    <Label Grid.Row="1" Grid.Column="0" Text="Lieutenant Only Units" VerticalTextAlignment="Center" TextColor="White" />
-                    <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding SelectedLieutenantOnlyUnits}" HorizontalOptions="Start" />
+                    <Label Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Lieutenant Only Units"
+                           VerticalTextAlignment="Center"
+                           TextColor="White"
+                           IsVisible="{Binding LieutenantOnlyUnitsEnabled}" />
+                    <CheckBox Grid.Row="1"
+                              Grid.Column="1"
+                              IsChecked="{Binding SelectedLieutenantOnlyUnits}"
+                              IsEnabled="{Binding LieutenantOnlyUnitsEnabled}"
+                              IsVisible="{Binding LieutenantOnlyUnitsEnabled}"
+                              HorizontalOptions="Start" />
 
                     <Label Grid.Row="2"
                            Grid.Column="0"

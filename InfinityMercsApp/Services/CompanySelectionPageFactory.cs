@@ -62,6 +62,20 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             companyTypeLabelOverride: "TAG Company");
     }
 
+    public StandardCompanySelectionPage CreateLoneWolf(ArmySourceSelectionMode mode)
+    {
+        return new StandardCompanySelectionPage(
+            mode,
+            _metadataProvider,
+            _factionProvider,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
+            _factionLogoCacheService,
+            _appSettingsProvider,
+            _armyDataService,
+            companyTypeLabelOverride: "Lone Wolf Company");
+    }
+
     public CohesiveCompanySelectionPage CreateCohesive(ArmySourceSelectionMode mode)
     {
         return new CohesiveCompanySelectionPage(

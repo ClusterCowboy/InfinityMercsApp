@@ -1,3 +1,5 @@
+using System.Text.Json;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.StandardCompany;
@@ -36,13 +38,24 @@ public partial class StandardCompanySelectionPage
                 GetUnitFromProvider,
                 cancellationToken);
 
+            if (IsLoneWolfMode)
+            {
+                foreach (var unit in Units.Where(x => x.IsVisible))
+                {
+                    if (!IsRegularUnitForLoneWolf(unit, lookupContext, cancellationToken))
+                    {
+                        unit.IsVisible = false;
+                    }
+                }
+            }
+
             var visibleCount = Units.Count(x => x.IsVisible);
             Console.WriteLine(
                 $"[StandardCompanySelectionPage] Visibility result: {visibleCount}/{Units.Count} visible " +
                 $"(pointsRemaining={pointsRemaining}, filterActive={_filterState.ActiveUnitFilter.IsActive}, lieutenantOnly={LieutenantOnlyUnits}).");
 
             // Safety fallback: never leave the list blank when units are loaded.
-            if (visibleCount == 0 && Units.Count > 0)
+            if (!IsLoneWolfMode && visibleCount == 0 && Units.Count > 0)
             {
                 Console.WriteLine("[StandardCompanySelectionPage] No visible units after filtering. Forcing loaded units visible.");
                 foreach (var unit in Units)
@@ -63,6 +76,40 @@ public partial class StandardCompanySelectionPage
         catch (Exception ex)
         {
             Console.Error.WriteLine($"CompanySelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+        }
+    }
+
+    private bool IsRegularUnitForLoneWolf(
+        ArmyUnitSelectionItem unit,
+        CompanyUnitVisibilityLookupContext lookupContext,
+        CancellationToken cancellationToken)
+    {
+        string? profileGroupsJson = null;
+
+        var unitRecord = GetUnitFromProvider(unit.SourceFactionId, unit.Id, cancellationToken);
+        profileGroupsJson = unitRecord?.ProfileGroupsJson;
+
+        if (lookupContext.SpecopsByFactionId.TryGetValue(unit.SourceFactionId, out var specopsUnitsById) &&
+            specopsUnitsById.TryGetValue(unit.Id, out var specopsUnit) &&
+            (unit.IsSpecOps || string.IsNullOrWhiteSpace(profileGroupsJson)))
+        {
+            profileGroupsJson = specopsUnit.ProfileGroupsJson;
+        }
+
+        if (string.IsNullOrWhiteSpace(profileGroupsJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(profileGroupsJson);
+            var traits = CompanyUnitTraitService.ParseUnitOrderTraits(doc.RootElement);
+            return traits.HasRegular;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

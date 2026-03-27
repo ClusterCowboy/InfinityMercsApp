@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<views:ContentPageBase
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:InfinityMercsApp.Views"
+    x:Class="InfinityMercsApp.Views.LoneWolfCompanySourcePopupPage"
+    BackgroundColor="#80000000"
+    Shell.NavBarIsVisible="False">
+
+    <Grid Padding="32">
+        <Border
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F2937}"
+            StrokeThickness="0"
+            Padding="24"
+            StrokeShape="RoundRectangle 16"
+            HorizontalOptions="Fill"
+            VerticalOptions="Center">
+            <Grid RowSpacing="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label
+                    Text="Lone Wolf Company source:"
+                    FontSize="30"
+                    FontAttributes="Bold"
+                    HorizontalTextAlignment="Center" />
+
+                <Grid Grid.Row="1" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" MinimumHeightRequest="240">
+                        <Button x:Name="OneVanillaFactionButton" Text="" Command="{Binding VanillaFactionSelectedCommand}" />
+                        <VerticalStackLayout InputTransparent="True" Spacing="12" Padding="12">
+                            <Image
+                                x:Name="OneVanillaFactionIcon"
+                                HeightRequest="140"
+                                HorizontalOptions="Fill"
+                                Source="single_sectorial.png" />
+                            <Label
+                                Text="One Vanilla Faction"
+                                FontSize="30"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid Grid.Column="1" MinimumHeightRequest="240">
+                        <Button x:Name="TwoSectorialsButton" Text="" Command="{Binding TwoSectorialsSelectedCommand}" />
+                        <VerticalStackLayout InputTransparent="True" Spacing="12" Padding="12">
+                            <Image
+                                x:Name="TwoSectorialsIcon"
+                                HeightRequest="140"
+                                HorizontalOptions="Fill"
+                                Source="multiple_sectorials.png" />
+                            <Label
+                                Text="Two Sectorials"
+                                FontSize="30"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Grid>
+
+                <Button
+                    Grid.Row="2"
+                    Text="← BACK"
+                    HorizontalOptions="Start"
+                    Clicked="OnBackClicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</views:ContentPageBase>

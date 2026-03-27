@@ -27,6 +27,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public static readonly Color EquipmentAccentOnLightSecondary = Color.FromArgb("#0B5563");
     public static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private sealed record HeaderIconRenderItem(SKPicture Picture);
+    private double _profilesPanLastTotalY;
 
     /// <summary>
     /// Unit MOV value shown in the primary statline.
@@ -747,6 +748,31 @@ public partial class UnitDisplayConfigurationsView : ContentView
             DefaultUnitHeadingMaxFontSize,
             DefaultUnitHeadingMinFontSize,
             DefaultUnitHeadingFontStep);
+    }
+
+    private async void OnProfilesScrollPanUpdated(object? sender, PanUpdatedEventArgs e)
+    {
+        if (sender is not ScrollView scrollView)
+        {
+            return;
+        }
+
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _profilesPanLastTotalY = 0d;
+                break;
+            case GestureStatus.Running:
+                var deltaY = e.TotalY - _profilesPanLastTotalY;
+                _profilesPanLastTotalY = e.TotalY;
+                var targetY = Math.Max(0d, scrollView.ScrollY - deltaY);
+                await scrollView.ScrollToAsync(0d, targetY, false);
+                break;
+            case GestureStatus.Completed:
+            case GestureStatus.Canceled:
+                _profilesPanLastTotalY = 0d;
+                break;
+        }
     }
 
     private List<HeaderIconRenderItem> BuildHeaderIconPictures(IUnitDisplayIconState state)
