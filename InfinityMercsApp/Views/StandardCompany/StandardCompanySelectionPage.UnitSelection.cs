@@ -14,9 +14,7 @@ public partial class StandardCompanySelectionPage
 {
     private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
-        ShowFactionStrip = sender is AddFactionButtonView button
-            ? button.IsExpanded
-            : !ShowFactionStrip;
+        ToggleFactionStrip(sender);
     }
 
     /// <summary>

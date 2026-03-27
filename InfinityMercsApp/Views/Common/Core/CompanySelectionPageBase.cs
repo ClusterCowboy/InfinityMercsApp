@@ -141,6 +141,19 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     }
 
     /// <summary>
+    /// Shared handler logic for the + button that expands/collapses the faction strip.
+    /// Uses <see cref="ShowFactionStrip"/> as the source of truth to avoid stale button state.
+    /// </summary>
+    protected void ToggleFactionStrip(object? sender)
+    {
+        ShowFactionStrip = !ShowFactionStrip;
+        if (sender is AddFactionButtonView button)
+        {
+            button.IsExpanded = ShowFactionStrip;
+        }
+    }
+
+    /// <summary>
     /// When set to <c>true</c>, only lieutenant-eligible units are shown in the list
     /// and the lieutenant visual states are refreshed immediately.
     /// </summary>
