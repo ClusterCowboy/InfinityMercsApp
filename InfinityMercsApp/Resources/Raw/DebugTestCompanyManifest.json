@@ -1,4 +1,4 @@
-﻿{
+{
     "generatedUtc":  "2026-03-24T16:10:36.7650386Z",
     "source":  "local test company files",
     "companies":  [
@@ -1633,7 +1633,7 @@
                                               "SourceFactions":  [
                                                                      {
                                                                          "FactionId":  1103,
-                                                                         "FactionName":  "Ōban"
+                                                                         "FactionName":  "Oban"
                                                                      }
                                                                  ],
                                               "Entries":  [
@@ -4149,6 +4149,1418 @@
                                                               }
                                                           ]
                                           }
+                      },
+                      {
+                          "fileName":  "test-correg-tag-0001.json",
+                          "companyData":                            {
+                            "CompanyName": "Test_Correg_Tag",
+                            "CompanyType": "TAG Company",
+                            "CompanyIdentifier": "0BCA38008752E72036743EDBE440135B06C618340A81F1FF971FF868B212500E",
+                            "CompanyIndex": 1,
+                            "CreatedUtc": "2026-03-27T12:36:23.2490927\u002B00:00",
+                            "StartSeasonPoints": 75,
+                            "PointsLimit": 75,
+                            "CurrentPoints": 74,
+                            "SourceFactions": [
+                              {
+                                "FactionId": 502,
+                                "FactionName": "Jurisdictional Command of Corregidor"
+                              },
+                              {
+                                "FactionId": 2003,
+                                "FactionName": "TAG Company"
+                              }
+                            ],
+                            "Entries": [
+                              {
+                                "EntryIndex": 0,
+                                "Name": "WILDCAT (Lieutenant)",
+                                "Base Profile (Human Readable)": "WILDCATS, Polyvalent Tactical Unit",
+                                "IsCaptain": true,
+                                "FactionId": 502,
+                                "ProfileId": 430,
+                                "Renown": 0,
+                                "Base CR": 21,
+                                "Calculated CR": 21,
+                                "Base MOV": "4-4",
+                                "Base CC": "16",
+                                "Base BS": "13",
+                                "Base PH": "11",
+                                "Base WIP": "13",
+                                "Base ARM": "2",
+                                "Base BTS": "6",
+                                "Base VITA/STR": "1",
+                                "Base S": "2",
+                                "Current MOV": "4-4",
+                                "Current CC": "16",
+                                "Current BS": "13",
+                                "Current PH": "11",
+                                "Current WIP": "13",
+                                "Current ARM": "2",
+                                "Current BTS": "6",
+                                "Current VITA/STR": "1",
+                                "Current S": "2",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 262
+                                  },
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 162,
+                                    "extra": [
+                                      30
+                                    ]
+                                  },
+                                  {
+                                    "id": 122
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 262
+                                  },
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 162,
+                                    "extra": [
+                                      30
+                                    ]
+                                  },
+                                  {
+                                    "id": 122
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  },
+                                  {
+                                    "id": 119
+                                  },
+                                  {
+                                    "id": 49
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "CurrentCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "BaseEquipmentCodes": [
+                                  {
+                                    "id": 114
+                                  }
+                                ],
+                                "CurrentEquipmentCodes": [
+                                  {
+                                    "id": 114
+                                  }
+                                ],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 17
+                                  },
+                                  {
+                                    "id": 56
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 69
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 17
+                                  },
+                                  {
+                                    "id": 56
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 69
+                                  },
+                                  {
+                                    "id": 57
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "WILDCATS, Polyvalent Tactical Unit",
+                                "CustomName": "Captain",
+                                "UnitTypeCode": "MI",
+                                "ProfileKey": "Wildcats, Polyvalent Tactical Unit|WILDCAT (Lieutenant)|21|0|lt:1",
+                                "SourceFactionId": 502,
+                                "SourceUnitId": 430,
+                                "LogoSourceFactionId": 502,
+                                "LogoSourceUnitId": 430,
+                                "IsPeripheralUnit": false,
+                                "Cost": 21,
+                                "IsLieutenant": true,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 1,
+                                "Name": "REPURPOSED MINING EQUIPMENT",
+                                "Base Profile (Human Readable)": "Repurposed Mining Equipment",
+                                "IsCaptain": false,
+                                "FactionId": 2003,
+                                "ProfileId": 1,
+                                "Renown": 0,
+                                "Base CR": 40,
+                                "Calculated CR": 40,
+                                "Base MOV": "6-2",
+                                "Base CC": "15",
+                                "Base BS": "12",
+                                "Base PH": "14",
+                                "Base WIP": "12",
+                                "Base ARM": "5",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "2",
+                                "Base S": "5",
+                                "Current MOV": "6-2",
+                                "Current CC": "15",
+                                "Current BS": "12",
+                                "Current PH": "14",
+                                "Current WIP": "12",
+                                "Current ARM": "5",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "2",
+                                "Current S": "5",
+                                "XP": 0,
+                                "BaseSkillCodes": [],
+                                "CurrentSkillCodes": [],
+                                "BaseCharacteristicCodes": [],
+                                "CurrentCharacteristicCodes": [],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 5,
+                                    "extra": [
+                                      303
+                                    ]
+                                  },
+                                  {
+                                    "id": 69
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 5,
+                                    "extra": [
+                                      303
+                                    ]
+                                  },
+                                  {
+                                    "id": 69
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [
+                                  "Regular"
+                                ],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "Repurposed Mining Equipment",
+                                "CustomName": "REPURPOSED MINING EQUIPMENT",
+                                "UnitTypeCode": "TAG",
+                                "ProfileKey": "Repurposed Mining Equipment|REPURPOSED MINING EQUIPMENT|40|0|lt:0",
+                                "SourceFactionId": 2003,
+                                "SourceUnitId": 1,
+                                "LogoSourceFactionId": 2003,
+                                "LogoSourceUnitId": 1,
+                                "IsPeripheralUnit": false,
+                                "Cost": 40,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": true,
+                                "PeripheralNameHeading": "Peripheral: Turtlemek",
+                                "PeripheralMov": "6-4",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "10",
+                                "PeripheralWip": "12",
+                                "PeripheralArm": "0",
+                                "PeripheralBts": "3",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "1",
+                                "PeripheralS": "1",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "Courage\r\nDodge (\u002B3)\r\nMimetism (-3)\r\nPeripheral (Ancillary)\r\nSpecialist Operative",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 2,
+                                "Name": "Turtlemek",
+                                "Base Profile (Human Readable)": "Turtlemek",
+                                "IsCaptain": false,
+                                "FactionId": 2003,
+                                "ProfileId": 1,
+                                "Renown": 0,
+                                "Base CR": 0,
+                                "Calculated CR": 0,
+                                "Base MOV": "6-4",
+                                "Base CC": "-",
+                                "Base BS": "-",
+                                "Base PH": "10",
+                                "Base WIP": "12",
+                                "Base ARM": "0",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "1",
+                                "Base S": "1",
+                                "Current MOV": "6-4",
+                                "Current CC": "-",
+                                "Current BS": "-",
+                                "Current PH": "10",
+                                "Current WIP": "12",
+                                "Current ARM": "0",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "1",
+                                "Current S": "1",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 243,
+                                    "extra": [
+                                      322
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 243,
+                                    "extra": [
+                                      322
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [],
+                                "CurrentCharacteristicCodes": [],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [],
+                                "CurrentWeaponCodes": [],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "Turtlemek",
+                                "CustomName": "Turtlemek",
+                                "UnitTypeCode": "PERIPHERAL",
+                                "ProfileKey": "Repurposed Mining Equipment|REPURPOSED MINING EQUIPMENT|40|0|lt:0|peripheral",
+                                "SourceFactionId": 2003,
+                                "SourceUnitId": 1,
+                                "LogoSourceFactionId": 2003,
+                                "LogoSourceUnitId": 1,
+                                "IsPeripheralUnit": true,
+                                "ParentEntryIndex": 1,
+                                "Cost": 0,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 3,
+                                "Name": "S\u0100CH\u0100",
+                                "Base Profile (Human Readable)": "S\u0100CH\u0100, Xenotech Hunters",
+                                "IsCaptain": false,
+                                "FactionId": 502,
+                                "ProfileId": 1874,
+                                "Renown": 0,
+                                "Base CR": 6,
+                                "Calculated CR": 6,
+                                "Base MOV": "4-4",
+                                "Base CC": "17",
+                                "Base BS": "11",
+                                "Base PH": "12",
+                                "Base WIP": "13",
+                                "Base ARM": "0",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "1",
+                                "Base S": "2",
+                                "Current MOV": "4-4",
+                                "Current CC": "17",
+                                "Current BS": "11",
+                                "Current PH": "12",
+                                "Current WIP": "13",
+                                "Current ARM": "0",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "1",
+                                "Current S": "2",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 25
+                                  },
+                                  {
+                                    "id": 82
+                                  },
+                                  {
+                                    "id": 161
+                                  },
+                                  {
+                                    "id": 189
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 25
+                                  },
+                                  {
+                                    "id": 82
+                                  },
+                                  {
+                                    "id": 161
+                                  },
+                                  {
+                                    "id": 189
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [
+                                  {
+                                    "id": 4
+                                  }
+                                ],
+                                "CurrentCharacteristicCodes": [
+                                  {
+                                    "id": 4
+                                  }
+                                ],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 47,
+                                    "extra": [
+                                      8
+                                    ]
+                                  },
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 92,
+                                    "extra": [
+                                      8
+                                    ]
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 47,
+                                    "extra": [
+                                      8
+                                    ]
+                                  },
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 92,
+                                    "extra": [
+                                      8
+                                    ]
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [
+                                  "Forward Deployment (\u002B4\u0022)"
+                                ],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "S\u0100CH\u0100, Xenotech Hunters",
+                                "CustomName": "S\u0100CH\u0100",
+                                "UnitTypeCode": "LI",
+                                "ProfileKey": "S\u0101ch\u0101, Xenotech Hunters|S\u0100CH\u0100|6|0|lt:0",
+                                "SourceFactionId": 502,
+                                "SourceUnitId": 1874,
+                                "LogoSourceFactionId": 502,
+                                "LogoSourceUnitId": 1874,
+                                "IsPeripheralUnit": false,
+                                "Cost": 6,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 4,
+                                "Name": "TRANSDUCTOR ZOND",
+                                "Base Profile (Human Readable)": "TRANSDUCTOR ZONDS",
+                                "IsCaptain": false,
+                                "FactionId": 502,
+                                "ProfileId": 412,
+                                "Renown": 0,
+                                "Base CR": 7,
+                                "Calculated CR": 7,
+                                "Base MOV": "6-6",
+                                "Base CC": "13",
+                                "Base BS": "8",
+                                "Base PH": "11",
+                                "Base WIP": "13",
+                                "Base ARM": "0",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "1",
+                                "Base S": "3",
+                                "Current MOV": "6-6",
+                                "Current CC": "13",
+                                "Current BS": "8",
+                                "Current PH": "11",
+                                "Current WIP": "13",
+                                "Current ARM": "0",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "1",
+                                "Current S": "3",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 235
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 235
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "CurrentCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "BaseEquipmentCodes": [
+                                  {
+                                    "id": 63
+                                  }
+                                ],
+                                "CurrentEquipmentCodes": [
+                                  {
+                                    "id": 63
+                                  }
+                                ],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 71,
+                                    "extra": [
+                                      6
+                                    ]
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 71,
+                                    "extra": [
+                                      6
+                                    ]
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "TRANSDUCTOR ZONDS",
+                                "CustomName": "TRANSDUCTOR ZOND",
+                                "UnitTypeCode": "REM",
+                                "ProfileKey": "Transductor Zonds|TRANSDUCTOR ZOND|7|0|lt:0",
+                                "SourceFactionId": 502,
+                                "SourceUnitId": 412,
+                                "LogoSourceFactionId": 502,
+                                "LogoSourceUnitId": 412,
+                                "IsPeripheralUnit": false,
+                                "Cost": 7,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              }
+                            ]
+                          }
+                      },
+                      {
+                          "fileName":  "test-nw-tag-lt-0001.json",
+                          "companyData":                            {
+                            "CompanyName": "Test_NW_Tag_Lt",
+                            "CompanyType": "TAG Company",
+                            "CompanyIdentifier": "DC071AB6DE03325CA65213863A2D6EAD5EE5E3BFF38FF0BFEC8F9788B5D590E2",
+                            "CompanyIndex": 1,
+                            "CreatedUtc": "2026-03-27T12:46:45.2708263\u002B00:00",
+                            "StartSeasonPoints": 75,
+                            "PointsLimit": 75,
+                            "CurrentPoints": 72,
+                            "SourceFactions": [
+                              {
+                                "FactionId": 605,
+                                "FactionName": "Next Wave"
+                              },
+                              {
+                                "FactionId": 2003,
+                                "FactionName": "TAG Company"
+                              }
+                            ],
+                            "Entries": [
+                              {
+                                "EntryIndex": 0,
+                                "Name": "REPURPOSED MINING EQUIPMENT (LIEUTENANT)",
+                                "Base Profile (Human Readable)": "Repurposed Mining Equipment",
+                                "IsCaptain": true,
+                                "FactionId": 2003,
+                                "ProfileId": 1,
+                                "Renown": 0,
+                                "Base CR": 40,
+                                "Calculated CR": 40,
+                                "Base MOV": "6-2",
+                                "Base CC": "15",
+                                "Base BS": "12",
+                                "Base PH": "14",
+                                "Base WIP": "12",
+                                "Base ARM": "5",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "2",
+                                "Base S": "5",
+                                "Current MOV": "6-2",
+                                "Current CC": "15",
+                                "Current BS": "12",
+                                "Current PH": "14",
+                                "Current WIP": "12",
+                                "Current ARM": "5",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "2",
+                                "Current S": "5",
+                                "XP": 0,
+                                "BaseSkillCodes": [],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 119
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [],
+                                "CurrentCharacteristicCodes": [],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 5,
+                                    "extra": [
+                                      303
+                                    ]
+                                  },
+                                  {
+                                    "id": 69
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 33
+                                  },
+                                  {
+                                    "id": 5,
+                                    "extra": [
+                                      303
+                                    ]
+                                  },
+                                  {
+                                    "id": 69
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [
+                                  "Regular"
+                                ],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "Repurposed Mining Equipment",
+                                "CustomName": "Captain",
+                                "UnitTypeCode": "TAG",
+                                "ProfileKey": "Repurposed Mining Equipment|REPURPOSED MINING EQUIPMENT (LIEUTENANT)|40|0|lt:1",
+                                "SourceFactionId": 2003,
+                                "SourceUnitId": 1,
+                                "LogoSourceFactionId": 2003,
+                                "LogoSourceUnitId": 1,
+                                "IsPeripheralUnit": false,
+                                "Cost": 40,
+                                "IsLieutenant": true,
+                                "HasPeripheralStatBlock": true,
+                                "PeripheralNameHeading": "Peripheral: Turtlemek",
+                                "PeripheralMov": "6-4",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "10",
+                                "PeripheralWip": "12",
+                                "PeripheralArm": "0",
+                                "PeripheralBts": "3",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "1",
+                                "PeripheralS": "1",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "Courage\r\nDodge (\u002B3)\r\nMimetism (-3)\r\nPeripheral (Ancillary)\r\nSpecialist Operative",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 1,
+                                "Name": "Turtlemek",
+                                "Base Profile (Human Readable)": "Turtlemek",
+                                "IsCaptain": false,
+                                "FactionId": 2003,
+                                "ProfileId": 1,
+                                "Renown": 0,
+                                "Base CR": 0,
+                                "Calculated CR": 0,
+                                "Base MOV": "6-4",
+                                "Base CC": "-",
+                                "Base BS": "-",
+                                "Base PH": "10",
+                                "Base WIP": "12",
+                                "Base ARM": "0",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "1",
+                                "Base S": "1",
+                                "Current MOV": "6-4",
+                                "Current CC": "-",
+                                "Current BS": "-",
+                                "Current PH": "10",
+                                "Current WIP": "12",
+                                "Current ARM": "0",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "1",
+                                "Current S": "1",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 243,
+                                    "extra": [
+                                      322
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 84
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 28,
+                                    "extra": [
+                                      6
+                                    ]
+                                  },
+                                  {
+                                    "id": 243,
+                                    "extra": [
+                                      322
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [],
+                                "CurrentCharacteristicCodes": [],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [],
+                                "CurrentWeaponCodes": [],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "Turtlemek",
+                                "CustomName": "Turtlemek",
+                                "UnitTypeCode": "PERIPHERAL",
+                                "ProfileKey": "Repurposed Mining Equipment|REPURPOSED MINING EQUIPMENT (LIEUTENANT)|40|0|lt:1|peripheral",
+                                "SourceFactionId": 2003,
+                                "SourceUnitId": 1,
+                                "LogoSourceFactionId": 2003,
+                                "LogoSourceUnitId": 1,
+                                "IsPeripheralUnit": true,
+                                "ParentEntryIndex": 0,
+                                "Cost": 0,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 2,
+                                "Name": "RUBY MONDAY",
+                                "Base Profile (Human Readable)": "Kazurab\u0101 RUBY MONDAY",
+                                "IsCaptain": false,
+                                "FactionId": 605,
+                                "ProfileId": 1890,
+                                "Renown": 0,
+                                "Base CR": 19,
+                                "Calculated CR": 19,
+                                "Base MOV": "6-2",
+                                "Base CC": "18",
+                                "Base BS": "12",
+                                "Base PH": "12",
+                                "Base WIP": "13",
+                                "Base ARM": "3",
+                                "Base BTS": "6",
+                                "Base VITA/STR": "2",
+                                "Base S": "2",
+                                "Current MOV": "6-2",
+                                "Current CC": "18",
+                                "Current BS": "12",
+                                "Current PH": "12",
+                                "Current WIP": "13",
+                                "Current ARM": "3",
+                                "Current BTS": "6",
+                                "Current VITA/STR": "2",
+                                "Current S": "2",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 25
+                                  },
+                                  {
+                                    "id": 201,
+                                    "extra": [
+                                      8
+                                    ]
+                                  },
+                                  {
+                                    "id": 82
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 162,
+                                    "extra": [
+                                      327
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  },
+                                  {
+                                    "id": 276
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 25
+                                  },
+                                  {
+                                    "id": 201,
+                                    "extra": [
+                                      8
+                                    ]
+                                  },
+                                  {
+                                    "id": 82
+                                  },
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 162,
+                                    "extra": [
+                                      327
+                                    ]
+                                  },
+                                  {
+                                    "id": 189
+                                  },
+                                  {
+                                    "id": 276
+                                  },
+                                  {
+                                    "id": 58,
+                                    "extra": [
+                                      33
+                                    ]
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [
+                                  {
+                                    "id": 4
+                                  }
+                                ],
+                                "CurrentCharacteristicCodes": [
+                                  {
+                                    "id": 4
+                                  }
+                                ],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 216
+                                  },
+                                  {
+                                    "id": 47
+                                  },
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 92
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 216
+                                  },
+                                  {
+                                    "id": 47
+                                  },
+                                  {
+                                    "id": 72
+                                  },
+                                  {
+                                    "id": 5
+                                  },
+                                  {
+                                    "id": 92
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "Kazurab\u0101 RUBY MONDAY",
+                                "CustomName": "RUBY MONDAY",
+                                "UnitTypeCode": "HI",
+                                "ProfileKey": "Kazurab\u0101 Ruby Monday|RUBY MONDAY|19|0|lt:0",
+                                "SourceFactionId": 605,
+                                "SourceUnitId": 1890,
+                                "LogoSourceFactionId": 605,
+                                "LogoSourceUnitId": 1890,
+                                "IsPeripheralUnit": false,
+                                "Cost": 19,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              },
+                              {
+                                "EntryIndex": 3,
+                                "Name": "GEARHEAD FTO",
+                                "Base Profile (Human Readable)": "GEARHEADS, Tech Savant Team",
+                                "IsCaptain": false,
+                                "FactionId": 605,
+                                "ProfileId": 1884,
+                                "Renown": 0,
+                                "Base CR": 13,
+                                "Calculated CR": 13,
+                                "Base MOV": "4-4",
+                                "Base CC": "14",
+                                "Base BS": "11",
+                                "Base PH": "10",
+                                "Base WIP": "13",
+                                "Base ARM": "1",
+                                "Base BTS": "3",
+                                "Base VITA/STR": "1",
+                                "Base S": "2",
+                                "Current MOV": "4-4",
+                                "Current CC": "14",
+                                "Current BS": "11",
+                                "Current PH": "10",
+                                "Current WIP": "13",
+                                "Current ARM": "1",
+                                "Current BTS": "3",
+                                "Current VITA/STR": "1",
+                                "Current S": "2",
+                                "XP": 0,
+                                "BaseSkillCodes": [
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 276
+                                  },
+                                  {
+                                    "id": 56
+                                  },
+                                  {
+                                    "id": 270
+                                  },
+                                  {
+                                    "id": 254
+                                  }
+                                ],
+                                "CurrentSkillCodes": [
+                                  {
+                                    "id": 40,
+                                    "extra": [
+                                      1
+                                    ]
+                                  },
+                                  {
+                                    "id": 276
+                                  },
+                                  {
+                                    "id": 56
+                                  },
+                                  {
+                                    "id": 270
+                                  },
+                                  {
+                                    "id": 254
+                                  }
+                                ],
+                                "BaseCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "CurrentCharacteristicCodes": [
+                                  {
+                                    "id": 3
+                                  }
+                                ],
+                                "BaseEquipmentCodes": [],
+                                "CurrentEquipmentCodes": [],
+                                "BaseWeaponCodes": [
+                                  {
+                                    "id": 174
+                                  },
+                                  {
+                                    "id": 81
+                                  },
+                                  {
+                                    "id": 175
+                                  },
+                                  {
+                                    "id": 98
+                                  },
+                                  {
+                                    "id": 5
+                                  }
+                                ],
+                                "CurrentWeaponCodes": [
+                                  {
+                                    "id": 174
+                                  },
+                                  {
+                                    "id": 81
+                                  },
+                                  {
+                                    "id": 175
+                                  },
+                                  {
+                                    "id": 98
+                                  },
+                                  {
+                                    "id": 5
+                                  }
+                                ],
+                                "Custom Weapons": [],
+                                "Custom Skills": [
+                                  "TAGCom (Dodge (PH\u002B3)",
+                                  "GizmoKit (PH\u002B1))"
+                                ],
+                                "Custom Characteristics": [],
+                                "Custom Equipment": [],
+                                "Rank1Skill": "",
+                                "Rank2Skill": "",
+                                "Rank3Skill": "",
+                                "Rank4Skill": "",
+                                "Rank5Skill": "",
+                                "Rank6Skill": "",
+                                "Rank7Skill": "",
+                                "EquippedPrimary": "",
+                                "EquippedSecondary": "",
+                                "EquippedSideArm": "",
+                                "EquippedAccessories": "",
+                                "EquippedRoles": "",
+                                "EquippedArmor": "",
+                                "EquippedAugment": "",
+                                "EquippedOther": "",
+                                "BaseUnitName": "GEARHEADS, Tech Savant Team",
+                                "CustomName": "GEARHEAD FTO",
+                                "UnitTypeCode": "LI",
+                                "ProfileKey": "Gearheads, Tech Savant Team|GEARHEAD FTO|13|0|lt:0",
+                                "SourceFactionId": 605,
+                                "SourceUnitId": 1884,
+                                "LogoSourceFactionId": 605,
+                                "LogoSourceUnitId": 1884,
+                                "IsPeripheralUnit": false,
+                                "Cost": 13,
+                                "IsLieutenant": false,
+                                "HasPeripheralStatBlock": false,
+                                "PeripheralNameHeading": "",
+                                "PeripheralMov": "-",
+                                "PeripheralCc": "-",
+                                "PeripheralBs": "-",
+                                "PeripheralPh": "-",
+                                "PeripheralWip": "-",
+                                "PeripheralArm": "-",
+                                "PeripheralBts": "-",
+                                "PeripheralVitalityHeader": "VITA",
+                                "PeripheralVitality": "-",
+                                "PeripheralS": "-",
+                                "PeripheralAva": "-",
+                                "SavedPeripheralEquipment": "-",
+                                "SavedPeripheralSkills": "-",
+                                "ExperiencePoints": 0
+                              }
+                            ]
+                          }
                       }
                   ]
 }
