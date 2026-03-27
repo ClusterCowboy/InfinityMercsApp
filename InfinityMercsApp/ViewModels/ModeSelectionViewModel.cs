@@ -10,7 +10,7 @@ public partial class ModeSelectionViewModel(INavigationService navigationService
     [RelayCommand]
     public async Task NavigateToCreateNewCompanyAsync()
     {
-        await NavigationService.NavigateToAsync(nameof(CreateNewCompanyPage));
+        await NavigationService.NavigateToAsync("//CreateNewCompanyPage");
     }
 
     [RelayCommand]

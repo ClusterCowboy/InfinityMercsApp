@@ -237,11 +237,7 @@ public static class CompanyProfileTextService
         {
             Text = $"{label}: "
         });
-        formatted.Spans.Add(new Span
-        {
-            Text = normalized,
-            TextColor = accentColor
-        });
+        AppendWithLieutenantHighlight(formatted, normalized, accentColor);
         return formatted;
     }
 
@@ -303,6 +299,58 @@ public static class CompanyProfileTextService
 
         // Preserve the base skill context so save conversion can persist id + extra.
         return $"Lieutenant ({detail})";
+    }
+
+    /// <summary>
+    /// Appends text using the default color, but highlights "Lieutenant" in purple.
+    /// </summary>
+    private static void AppendWithLieutenantHighlight(FormattedString formatted, string text, Color defaultColor)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var matches = Regex.Matches(text, "(lieutenant)", RegexOptions.IgnoreCase);
+        if (matches.Count == 0)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text,
+                TextColor = defaultColor
+            });
+            return;
+        }
+
+        var currentIndex = 0;
+        foreach (Match match in matches)
+        {
+            if (match.Index > currentIndex)
+            {
+                formatted.Spans.Add(new Span
+                {
+                    Text = text.Substring(currentIndex, match.Index - currentIndex),
+                    TextColor = defaultColor
+                });
+            }
+
+            formatted.Spans.Add(new Span
+            {
+                Text = text.Substring(match.Index, match.Length),
+                TextColor = Color.FromArgb("#C084FC")
+            });
+
+            currentIndex = match.Index + match.Length;
+        }
+
+        if (currentIndex < text.Length)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text[currentIndex..],
+                TextColor = defaultColor
+            });
+        }
     }
 }
 

@@ -49,6 +49,10 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private bool _summaryHighlightLieutenant;
     private bool _autoSelectUnitAfterFactionLoad;
     private readonly CompanySelectionFilterState _filterState = new();
+    private const string TagCompanyLogoPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
+
+    private bool IsTagCompanyMode =>
+        string.Equals(_companyTypeLabelOverride, "TAG Company", StringComparison.OrdinalIgnoreCase);
 
     public StandardCompanySelectionPage(
         ArmySourceSelectionMode mode,
@@ -64,19 +68,23 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     {
         InitializeComponent();
         SeasonStartPointsView.SelectedStartSeasonPointsChanged += OnSelectedStartSeasonPointsChanged;
-        WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox);
         _mode = Mode;
-        Title = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-        PageHeading = _mode == ArmySourceSelectionMode.VanillaFactions
-            ? "Choose your faction:"
-            : "Choose your sectorials";
-
-        _armyDataService = armyDataService;
         _companyTypeLabelOverride = string.IsNullOrWhiteSpace(companyTypeLabelOverride)
             ? null
             : companyTypeLabelOverride.Trim();
+        WireFactionSlotTapHandlers(SetActiveSlot, () => ShowRightSelectionBox && !IsTagCompanyMode);
+        Title = IsTagCompanyMode
+            ? "Choose your sectorial"
+            : _mode == ArmySourceSelectionMode.VanillaFactions
+                ? "Choose your faction:"
+                : "Choose your sectorials";
+        PageHeading = IsTagCompanyMode
+            ? "Choose your sectorial"
+            : _mode == ArmySourceSelectionMode.VanillaFactions
+                ? "Choose your faction:"
+                : "Choose your sectorials";
+
+        _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
         _profileCoordinator = new CompanyProfileCoordinator();
@@ -255,6 +263,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         }
 
         _loaded = true;
+        PopulateTagCompanySlotIfNeeded();
         await LoadFactionsAsync();
     }
 
@@ -281,6 +290,26 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     }
 
     UnitFilterCriteria ICompanySelectionVisibilityState.ActiveUnitFilter => _filterState.ActiveUnitFilter;
+
+    private void PopulateTagCompanySlotIfNeeded()
+    {
+        if (!IsTagCompanyMode || !ShowRightSelectionBox)
+        {
+            return;
+        }
+
+        _factionSelectionState.RightSlotFaction = new ArmyFactionSelectionItem
+        {
+            Id = TagCompanyFactionGenerator.TagCompanyFactionId,
+            ParentId = TagCompanyFactionGenerator.TagCompanyFactionId,
+            Name = "TAG Company",
+            CachedLogoPath = null,
+            PackagedLogoPath = TagCompanyLogoPath
+        };
+
+        _ = LoadSlotIconAsync(1, null, TagCompanyLogoPath);
+        SetActiveSlot(0);
+    }
 
 }
 

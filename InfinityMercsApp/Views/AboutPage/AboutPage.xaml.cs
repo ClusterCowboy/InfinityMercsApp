@@ -14,6 +14,12 @@ public partial class AboutPage : ContentPage
         _ = LoadAttributionIconsAsync();
     }
 
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+        UpdateAttributionColumns(width);
+    }
+
     private static async Task OpenUriAsync(string uri)
     {
         await Launcher.Default.OpenAsync(uri);
@@ -167,6 +173,29 @@ public partial class AboutPage : ContentPage
         AttributionIcon27Canvas.InvalidateSurface();
         AttributionIcon28Canvas.InvalidateSurface();
         AttributionIcon29Canvas.InvalidateSurface();
+    }
+
+    private void UpdateAttributionColumns(double pageWidth)
+    {
+        if (AttributionEntriesLayout is null)
+        {
+            return;
+        }
+
+        var twoColumns = pageWidth > 500;
+        var targetWidth = twoColumns ? Math.Max(0d, (pageWidth - 48d - 16d) / 2d) : -1d;
+
+        foreach (var child in AttributionEntriesLayout.Children)
+        {
+            if (child is not View view)
+            {
+                continue;
+            }
+
+            view.WidthRequest = targetWidth;
+            FlexLayout.SetGrow(view, 0f);
+            FlexLayout.SetShrink(view, 0f);
+        }
     }
 
     private SKPicture? GetAttributionIcon(int iconNumber)

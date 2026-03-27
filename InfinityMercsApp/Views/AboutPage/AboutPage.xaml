@@ -65,11 +65,17 @@
                 Text="CBIcons"
                 FontSize="16"
                 FontAttributes="Bold" />
+            <FlexLayout
+                x:Name="AttributionEntriesLayout"
+                Direction="Row"
+                Wrap="Wrap"
+                AlignItems="Start"
+                JustifyContent="Start">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbCubeCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon2CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="cube.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -77,8 +83,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbCube2Canvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIconCanvasPaintSurface" />
                 <Label Grid.Column="1" Text="cube2.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -86,8 +92,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbHackableCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon9CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="hackable.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -95,8 +101,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbImpetuousCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon6CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="impetuous.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -104,8 +110,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbIrregularCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon4CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="irregular.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -113,8 +119,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbLieutenantCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon7CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="lieutenant.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -122,8 +128,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbRegularCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon5CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="regular.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -131,8 +137,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="CbTacticalCanvas"
-                    WidthRequest="28"
-                    HeightRequest="28"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon8CanvasPaintSurface" />
                 <Label Grid.Column="1" Text="tactical.svg - Property of Corvus Belli, all rights reserved" VerticalTextAlignment="Center" />
@@ -142,8 +148,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIconCanvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIconCanvasPaintSurface" />
 
@@ -167,8 +173,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon4Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon4CanvasPaintSurface" />
 
@@ -193,8 +199,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon5Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon5CanvasPaintSurface" />
 
@@ -219,8 +225,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon6Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon6CanvasPaintSurface" />
 
@@ -245,8 +251,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon7Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon7CanvasPaintSurface" />
 
@@ -271,8 +277,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon8Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon8CanvasPaintSurface" />
 
@@ -297,8 +303,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon9Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon9CanvasPaintSurface" />
 
@@ -324,8 +330,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon3Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon3CanvasPaintSurface" />
 
@@ -350,8 +356,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon10Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon10CanvasPaintSurface" />
 
@@ -376,8 +382,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon11Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon11CanvasPaintSurface" />
 
@@ -402,8 +408,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon12Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon12CanvasPaintSurface" />
 
@@ -428,8 +434,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon13Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon13CanvasPaintSurface" />
 
@@ -454,8 +460,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon14Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon14CanvasPaintSurface" />
 
@@ -480,8 +486,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon15Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon15CanvasPaintSurface" />
 
@@ -506,8 +512,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon16Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon16CanvasPaintSurface" />
 
@@ -532,8 +538,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon17Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon17CanvasPaintSurface" />
 
@@ -558,8 +564,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon18Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon18CanvasPaintSurface" />
 
@@ -584,8 +590,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon19Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon19CanvasPaintSurface" />
 
@@ -610,8 +616,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon20Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon20CanvasPaintSurface" />
 
@@ -636,8 +642,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon21Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon21CanvasPaintSurface" />
 
@@ -662,8 +668,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon22Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon22CanvasPaintSurface" />
 
@@ -688,8 +694,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon23Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon23CanvasPaintSurface" />
 
@@ -714,8 +720,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon24Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon24CanvasPaintSurface" />
 
@@ -740,8 +746,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon28Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon28CanvasPaintSurface" />
 
@@ -766,8 +772,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon27Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon27CanvasPaintSurface" />
 
@@ -792,8 +798,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon25Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon25CanvasPaintSurface" />
 
@@ -818,8 +824,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon26Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon26CanvasPaintSurface" />
 
@@ -844,8 +850,8 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <skia:SKCanvasView
                     x:Name="AttributionIcon29Canvas"
-                    WidthRequest="50"
-                    HeightRequest="50"
+                    WidthRequest="100"
+                    HeightRequest="100"
                     VerticalOptions="Start"
                     PaintSurface="OnAttributionIcon29CanvasPaintSurface" />
 
@@ -866,6 +872,7 @@
                     <Label Text=" (CC BY 3.0)" />
                 </FlexLayout>
             </Grid>
+            </FlexLayout>
 
         </VerticalStackLayout>
     </ScrollView>

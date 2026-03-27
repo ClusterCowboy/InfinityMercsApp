@@ -21,6 +21,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     // Green highlight applied to a stat value when it has been improved above its base.
     private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
     private static readonly Color DefaultStatColor = Colors.White;
+    private static readonly Color SkillsDefaultColor = Color.FromArgb("#F59E0B");
+    private static readonly Color LieutenantHighlightColor = Color.FromArgb("#C084FC");
 
     /// <summary>
     /// Defines the available upgrade tiers, bonuses, and costs for each upgradeable stat.
@@ -676,6 +678,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         // Strip the "(cost) - " prefix that is prepended to choice labels for display purposes.
         var normalized = Regex.Replace(value, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
+        if (string.Equals(normalized, "Lt", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Lieutenant";
+        }
+
         return normalized;
     }
 
@@ -736,10 +743,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             GetSelectedChoices(_weapon1Picker, _weapon2Picker, _weapon3Picker),
             prependPlus: true);
         _ccValueLabel.Text = NormalizeText(_context.Unit.CcWeapons);
-        _skillsValueLabel.Text = BuildUpdatedProfileSection(
+        var updatedSkills = BuildUpdatedProfileSection(
             _context.Unit.Skills,
             GetSelectedChoices(_skill1Picker, _skill2Picker, _skill3Picker),
             prependPlus: true);
+        ApplyLieutenantHighlightToSkillsPreview(updatedSkills);
         _equipmentValueLabel.Text = BuildUpdatedProfileSection(
             _context.Unit.Equipment,
             GetSelectedChoices(_equipment1Picker, _equipment2Picker, _equipment3Picker),
@@ -1237,6 +1245,64 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : 0;
+    }
+
+    private void ApplyLieutenantHighlightToSkillsPreview(string? skillsText)
+    {
+        var normalized = NormalizeText(skillsText);
+        _skillsValueLabel.FormattedText = BuildLieutenantHighlightedFormattedText(normalized, SkillsDefaultColor);
+    }
+
+    private static FormattedString BuildLieutenantHighlightedFormattedText(string text, Color defaultColor)
+    {
+        var formatted = new FormattedString();
+        if (string.IsNullOrEmpty(text))
+        {
+            return formatted;
+        }
+
+        var matches = Regex.Matches(text, "(lieutenant)", RegexOptions.IgnoreCase);
+        if (matches.Count == 0)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text,
+                TextColor = defaultColor
+            });
+            return formatted;
+        }
+
+        var currentIndex = 0;
+        foreach (Match match in matches)
+        {
+            if (match.Index > currentIndex)
+            {
+                formatted.Spans.Add(new Span
+                {
+                    Text = text.Substring(currentIndex, match.Index - currentIndex),
+                    TextColor = defaultColor
+                });
+            }
+
+            formatted.Spans.Add(new Span
+            {
+                Text = text.Substring(match.Index, match.Length),
+                TextColor = LieutenantHighlightColor
+            });
+
+            currentIndex = match.Index + match.Length;
+        }
+
+        if (currentIndex < text.Length)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text[currentIndex..],
+                TextColor = defaultColor
+            });
+        }
+
+        return formatted;
     }
 
     /// <summary>

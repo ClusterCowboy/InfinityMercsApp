@@ -42,7 +42,7 @@ public partial class CreateNewCompanyPageViewModel(
     [RelayCommand]
     private async Task OpenTAGCompanyPageAsync()
     {
-        await NavigationService.NavigateToAsync("//TagCompanySourcePopupPage");
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateTag(ArmySourceSelectionMode.Sectorials));
     }
 
     [RelayCommand]

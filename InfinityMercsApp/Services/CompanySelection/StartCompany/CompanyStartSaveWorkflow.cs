@@ -54,6 +54,18 @@ internal static class CompanyStartSaveWorkflow
             request.RightSlotFaction,
             faction => faction.Id);
         var firstSourceFactionId = sourceFactions.FirstOrDefault()?.Id;
+        var captainPopupSkillLines = SplitCodes(captainEntry.SavedSkills);
+        if (captainEntry.IsLieutenant &&
+            !captainPopupSkillLines.Any(x =>
+                string.Equals(x, "Lt", StringComparison.OrdinalIgnoreCase) ||
+                x.Contains("lieutenant", StringComparison.OrdinalIgnoreCase)))
+        {
+            captainPopupSkillLines.Add("Lieutenant");
+        }
+
+        var captainPopupSkills = captainPopupSkillLines.Count == 0
+            ? "-"
+            : string.Join(Environment.NewLine, captainPopupSkillLines);
 
         var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<TCaptainStats>(
             new CompanyCaptainWorkflowRequest
@@ -66,7 +78,7 @@ internal static class CompanyStartSaveWorkflow
                 UnitStatline = captainEntry.Subtitle ?? "-",
                 UnitRangedWeapons = captainEntry.SavedRangedWeapons,
                 UnitCcWeapons = captainEntry.SavedCcWeapons,
-                UnitSkills = captainEntry.SavedSkills,
+                UnitSkills = captainPopupSkills,
                 UnitEquipment = captainEntry.SavedEquipment,
                 UnitCachedLogoPath = captainEntry.CachedLogoPath,
                 UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
@@ -305,6 +317,13 @@ internal static class CompanyStartSaveWorkflow
         var currentEquipmentNames = SplitCodes(entry.SavedEquipment);
         var baseWeaponNames = SplitCodes(string.Join(Environment.NewLine, [entry.SavedRangedWeapons, entry.SavedCcWeapons]));
         var currentWeaponNames = SplitCodes(string.Join(Environment.NewLine, [entry.SavedRangedWeapons, entry.SavedCcWeapons]));
+
+        // Persist Lieutenant explicitly for founded companies when this entry is the Lieutenant.
+        if (entry.IsLieutenant &&
+            !currentSkillNames.Any(x => string.Equals(x?.Trim(), "Lieutenant", StringComparison.OrdinalIgnoreCase)))
+        {
+            currentSkillNames.Add("Lieutenant");
+        }
 
         if (entry.IsLieutenant && improvedCaptainStats.IsEnabled)
         {

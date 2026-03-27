@@ -2043,21 +2043,9 @@ public class ViewerViewModel : BaseViewModel
         for (var i = 0; i < list.Count; i++)
         {
             var value = list[i];
-            var span = new Span { Text = value };
-            if (textColor is not null)
-            {
-                span.TextColor = textColor;
-            }
-
+            var valueColor = textColor ?? Colors.White;
             var link = TryResolveLinkForDisplayName(value, equipLookup, links);
-            if (!string.IsNullOrWhiteSpace(link))
-            {
-                var tap = new TapGestureRecognizer();
-                tap.Tapped += async (_, _) => await OpenLinkAsync(link);
-                span.GestureRecognizers.Add(tap);
-            }
-
-            formatted.Spans.Add(span);
+            AppendWithLieutenantHighlight(formatted, value, valueColor, link);
             if (i < list.Count - 1)
             {
                 var separatorSpan = new Span { Text = ", " };
@@ -3583,16 +3571,7 @@ public class ViewerViewModel : BaseViewModel
         for (var i = 0; i < list.Count; i++)
         {
             var line = list[i];
-            var span = new Span { Text = line.Text, TextColor = textColor };
-            if (!string.IsNullOrWhiteSpace(line.Url))
-            {
-                var link = line.Url;
-                var tap = new TapGestureRecognizer();
-                tap.Tapped += async (_, _) => await OpenLinkAsync(link);
-                span.GestureRecognizers.Add(tap);
-            }
-
-            formatted.Spans.Add(span);
+            AppendWithLieutenantHighlight(formatted, line.Text, textColor, line.Url);
             if (i < list.Count - 1)
             {
                 formatted.Spans.Add(new Span { Text = Environment.NewLine, TextColor = textColor });
@@ -3600,6 +3579,75 @@ public class ViewerViewModel : BaseViewModel
         }
 
         return formatted;
+    }
+
+    private static void AppendWithLieutenantHighlight(FormattedString formatted, string text, Color defaultColor, string? link = null)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var matches = Regex.Matches(text, "(lieutenant)", RegexOptions.IgnoreCase);
+        if (matches.Count == 0)
+        {
+            var span = new Span
+            {
+                Text = text,
+                TextColor = defaultColor
+            };
+            AttachLinkGesture(span, link);
+            formatted.Spans.Add(span);
+            return;
+        }
+
+        var currentIndex = 0;
+        foreach (Match match in matches)
+        {
+            if (match.Index > currentIndex)
+            {
+                var prefixSpan = new Span
+                {
+                    Text = text.Substring(currentIndex, match.Index - currentIndex),
+                    TextColor = defaultColor
+                };
+                AttachLinkGesture(prefixSpan, link);
+                formatted.Spans.Add(prefixSpan);
+            }
+
+            var highlightedSpan = new Span
+            {
+                Text = text.Substring(match.Index, match.Length),
+                TextColor = Color.FromArgb("#C084FC")
+            };
+            AttachLinkGesture(highlightedSpan, link);
+            formatted.Spans.Add(highlightedSpan);
+
+            currentIndex = match.Index + match.Length;
+        }
+
+        if (currentIndex < text.Length)
+        {
+            var suffixSpan = new Span
+            {
+                Text = text[currentIndex..],
+                TextColor = defaultColor
+            };
+            AttachLinkGesture(suffixSpan, link);
+            formatted.Spans.Add(suffixSpan);
+        }
+    }
+
+    private static void AttachLinkGesture(Span span, string? link)
+    {
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return;
+        }
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += async (_, _) => await OpenLinkAsync(link);
+        span.GestureRecognizers.Add(tap);
     }
 
     private static async Task OpenLinkAsync(string? link)

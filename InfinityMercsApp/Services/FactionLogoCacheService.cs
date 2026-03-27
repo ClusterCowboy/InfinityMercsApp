@@ -8,6 +8,8 @@ namespace InfinityMercsApp.Services;
 public class FactionLogoCacheService
 {
     public const int DebugFactionId = 1199;
+    private const int TagCompanyFactionId = 2003;
+    private const int TagCompanyUnitId = 1;
 
     private const string PackagedCacheRoot = "SVGCache";
     private readonly string _localCacheDirectory;
@@ -198,7 +200,8 @@ public class FactionLogoCacheService
     private async Task<EnsureResult> EnsureUnitLogoAvailableAsync(int factionId, int unitId, CancellationToken cancellationToken)
     {
         var localPath = GetCachedUnitLogoPath(factionId, unitId);
-        if (File.Exists(localPath) && new FileInfo(localPath).Length > 0)
+        var forcePackagedCopy = factionId == TagCompanyFactionId && unitId == TagCompanyUnitId;
+        if (!forcePackagedCopy && File.Exists(localPath) && new FileInfo(localPath).Length > 0)
         {
             return EnsureResult.Reused;
         }

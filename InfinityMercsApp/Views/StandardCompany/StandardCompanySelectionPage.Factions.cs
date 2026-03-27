@@ -51,7 +51,7 @@ public partial class StandardCompanySelectionPage
 
     private void AssignSelectedFactionToActiveSlot(ArmyFactionSelectionItem item)
     {
-        var targetSlotIndex = _activeSlotIndex;
+        var targetSlotIndex = IsTagCompanyMode ? 0 : _activeSlotIndex;
         var targetSlotWasEmpty = targetSlotIndex switch
         {
             0 => _factionSelectionState.LeftSlotFaction is null,
@@ -78,12 +78,19 @@ public partial class StandardCompanySelectionPage
 
         HandleFactionAssignmentSideEffectsCore(
             factionChanged,
-            targetSlotWasEmpty ? AutoSelectEmptySlot : () => SetActiveSlot(targetSlotIndex),
+            IsTagCompanyMode
+                ? () => SetActiveSlot(0)
+                : targetSlotWasEmpty ? AutoSelectEmptySlot : () => SetActiveSlot(targetSlotIndex),
             ResetMercsCompany,
             () => LoadUnitsForActiveSlotAsync(),
             onAssignmentCompleted: () =>
             {
                 TeamsView = false;
+                if (IsTagCompanyMode)
+                {
+                    SetActiveSlot(0);
+                }
+
                 if (AllFactionSlotsFilled())
                 {
                     ShowFactionStrip = false;
@@ -110,6 +117,12 @@ public partial class StandardCompanySelectionPage
 
     private void AutoSelectEmptySlot()
     {
+        if (IsTagCompanyMode)
+        {
+            SetActiveSlot(0);
+            return;
+        }
+
         SetActiveSlot(ResolveAutoSelectedSlotIndexCore(
             ShowRightSelectionBox,
             _factionSelectionState.LeftSlotFaction,
@@ -119,7 +132,9 @@ public partial class StandardCompanySelectionPage
 
     private void SetActiveSlot(int index)
     {
-        _activeSlotIndex = ResolveActiveSlotIndexCore(index, ShowRightSelectionBox);
+        _activeSlotIndex = IsTagCompanyMode
+            ? 0
+            : ResolveActiveSlotIndexCore(index, ShowRightSelectionBox);
         FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
     }
 }

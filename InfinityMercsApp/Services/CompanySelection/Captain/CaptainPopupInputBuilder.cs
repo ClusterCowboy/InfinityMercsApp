@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using InfinityMercsApp.Domain.Models.Army;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
@@ -9,6 +10,8 @@ namespace InfinityMercsApp.Views.Common.Captain;
 
 internal static class CaptainPopupInputBuilder
 {
+    private const int TagCompanyFactionId = 2003;
+
     internal static int ResolveSourceFactionId(int fallbackSourceFactionId, int? firstSelectedSourceFactionId)
     {
         if (fallbackSourceFactionId > 0)
@@ -96,6 +99,7 @@ internal static class CaptainPopupInputBuilder
                 .Select(x => ResolveSpecopsChoiceLabel(skillLookup, x.SkillId, x.Exp, "Skill", x.ExtrasJson, extrasLookup, showUnitsInInches))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            EnsureTagCompanyLieutenantSkillOption(factionId, skills);
             var equipment = equipRecords
                 .OrderBy(x => x.EntryOrder)
                 .Select(x => ResolveSpecopsChoiceLabel(equipLookup, x.EquipmentId, x.Exp, "Equipment", x.ExtrasJson, extrasLookup, showUnitsInInches))
@@ -119,6 +123,24 @@ internal static class CaptainPopupInputBuilder
             Console.Error.WriteLine($"CaptainPopupInputBuilder LoadUpgradeOptionsAsync failed for faction {factionId}: {ex.Message}");
             return CaptainUpgradeOptionSet.Empty;
         }
+    }
+
+    private static void EnsureTagCompanyLieutenantSkillOption(int factionId, List<string> skills)
+    {
+        if (factionId != TagCompanyFactionId)
+        {
+            return;
+        }
+
+        var hasLieutenantOption = skills.Any(skill =>
+            skill.Contains("lieutenant", StringComparison.OrdinalIgnoreCase) ||
+            Regex.IsMatch(skill, @"\bLt\b", RegexOptions.IgnoreCase));
+        if (hasLieutenantOption)
+        {
+            return;
+        }
+
+        skills.Insert(0, "(0) - Lieutenant");
     }
 
     private static Dictionary<int, CaptainExtraDefinition> BuildExtrasLookup(string? filtersJson)
