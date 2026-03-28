@@ -118,7 +118,13 @@ internal sealed class CompanyUnitDetailDisplayNameContext
                 return [];
             }
 
-            foreach (var group in doc.RootElement.EnumerateArray())
+            var groups = doc.RootElement.EnumerateArray().ToList();
+            var controllerGroups = groups
+                .Where(group => CompanyProfileOptionService.IsControllerGroup(doc.RootElement, group))
+                .ToList();
+            var groupsToProcess = controllerGroups.Count > 0 ? controllerGroups : groups;
+
+            foreach (var group in groupsToProcess)
             {
                 if (!group.TryGetProperty("profiles", out var profilesElement) || profilesElement.ValueKind != JsonValueKind.Array)
                 {

@@ -781,6 +781,122 @@ public class ViewerViewModel : BaseViewModel
         UnitVitality = ApplyNumericBonus(UnitVitality, vitalityBonus);
     }
 
+    public void ApplySavedUnitSnapshot(
+        string unitNameHeading,
+        string mov,
+        string cc,
+        string bs,
+        string ph,
+        string wip,
+        string arm,
+        string bts,
+        string vitalityHeader,
+        string vitality,
+        string s,
+        bool isLieutenant)
+    {
+        UnitNameHeading = string.IsNullOrWhiteSpace(unitNameHeading) ? "Unit" : unitNameHeading;
+        if (TryParseSavedMoveToCentimeters(mov, out var firstCm, out var secondCm))
+        {
+            _unitMoveFirstCm = firstCm;
+            _unitMoveSecondCm = secondCm;
+            UpdateUnitMoveDisplay();
+        }
+        else
+        {
+            _unitMoveFirstCm = null;
+            _unitMoveSecondCm = null;
+            UnitMov = string.IsNullOrWhiteSpace(mov) ? "-" : mov;
+        }
+
+        UnitCc = string.IsNullOrWhiteSpace(cc) ? "-" : cc;
+        UnitBs = string.IsNullOrWhiteSpace(bs) ? "-" : bs;
+        UnitPh = string.IsNullOrWhiteSpace(ph) ? "-" : ph;
+        UnitWip = string.IsNullOrWhiteSpace(wip) ? "-" : wip;
+        UnitArm = string.IsNullOrWhiteSpace(arm) ? "-" : arm;
+        UnitBts = string.IsNullOrWhiteSpace(bts) ? "-" : bts;
+        UnitVitalityHeader = string.IsNullOrWhiteSpace(vitalityHeader) ? "VITA" : vitalityHeader;
+        UnitVitality = string.IsNullOrWhiteSpace(vitality) ? "-" : vitality;
+        UnitS = string.IsNullOrWhiteSpace(s) ? "-" : s;
+        UnitAva = "-";
+
+        EquipmentSummary = "Equipment: -";
+        SpecialSkillsSummary = "Special Skills: -";
+        EquipmentSummaryFormatted = BuildNamedSummaryFormatted(
+            "Equipment",
+            [],
+            new Dictionary<int, string>(),
+            new Dictionary<int, string>(),
+            Color.FromArgb("#06B6D4"));
+        SpecialSkillsSummaryFormatted = BuildNamedSummaryFormatted(
+            "Special Skills",
+            [],
+            new Dictionary<int, string>(),
+            new Dictionary<int, string>(),
+            Color.FromArgb("#F59E0B"));
+
+        ShowRegularOrderIcon = !isLieutenant;
+        ShowIrregularOrderIcon = false;
+        ShowImpetuousIcon = false;
+        ShowTacticalAwarenessIcon = false;
+        ShowCubeIcon = false;
+        ShowCube2Icon = false;
+        ShowHackableIcon = false;
+    }
+
+    private static bool TryParseSavedMoveToCentimeters(string? moveText, out int? firstCm, out int? secondCm)
+    {
+        firstCm = null;
+        secondCm = null;
+
+        if (string.IsNullOrWhiteSpace(moveText))
+        {
+            return false;
+        }
+
+        var text = moveText.Trim();
+        var simple = Regex.Match(text, @"^(?<a>\d+)\s*[-/]\s*(?<b>\d+)$", RegexOptions.IgnoreCase);
+        if (simple.Success &&
+            int.TryParse(simple.Groups["a"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var aSimple) &&
+            int.TryParse(simple.Groups["b"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var bSimple))
+        {
+            var isLikelyInches = aSimple <= 8 && bSimple <= 8;
+            firstCm = isLikelyInches
+                ? (int)Math.Round(aSimple * 2.5, MidpointRounding.AwayFromZero)
+                : aSimple;
+            secondCm = isLikelyInches
+                ? (int)Math.Round(bSimple * 2.5, MidpointRounding.AwayFromZero)
+                : bSimple;
+            return true;
+        }
+
+        var tokenized = Regex.Match(
+            text,
+            @"^(?<a>\d+)\s*(?<au>cm|""|in|inch|inches)?\s*[-/]\s*(?<b>\d+)\s*(?<bu>cm|""|in|inch|inches)?$",
+            RegexOptions.IgnoreCase);
+        if (!tokenized.Success ||
+            !int.TryParse(tokenized.Groups["a"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var a) ||
+            !int.TryParse(tokenized.Groups["b"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var b))
+        {
+            return false;
+        }
+
+        var aUnit = tokenized.Groups["au"].Success ? tokenized.Groups["au"].Value.Trim().ToLowerInvariant() : string.Empty;
+        var bUnit = tokenized.Groups["bu"].Success ? tokenized.Groups["bu"].Value.Trim().ToLowerInvariant() : string.Empty;
+        var hasExplicitUnits = !string.IsNullOrWhiteSpace(aUnit) || !string.IsNullOrWhiteSpace(bUnit);
+        var useInches = hasExplicitUnits
+            ? aUnit is "\"" or "in" or "inch" or "inches" || bUnit is "\"" or "in" or "inch" or "inches"
+            : (a <= 8 && b <= 8);
+
+        firstCm = useInches
+            ? (int)Math.Round(a * 2.5, MidpointRounding.AwayFromZero)
+            : a;
+        secondCm = useInches
+            ? (int)Math.Round(b * 2.5, MidpointRounding.AwayFromZero)
+            : b;
+        return true;
+    }
+
     private static string MergeSummaryAndUnique(string summaryLine, string uniqueValues)
     {
         var merged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -886,8 +1002,7 @@ public class ViewerViewModel : BaseViewModel
             payload = summaryText[(colonIndex + 1)..];
         }
 
-        return payload
-            .Split([',', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+        return CompanyProfileTextService.SplitDisplayLine(payload)
             .Where(x => !string.Equals(x, "-", StringComparison.Ordinal));
     }
 
@@ -906,11 +1021,7 @@ public class ViewerViewModel : BaseViewModel
     private static bool ContainsHackableFromCurrentState(string? equipmentText, string? skillsText)
     {
         static IEnumerable<string> SplitLines(string? value) =>
-            string.IsNullOrWhiteSpace(value)
-                ? []
-                : value
-                    .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-");
+            CompanyProfileTextService.SplitDisplayLine(value);
 
         foreach (var line in SplitLines(equipmentText).Concat(SplitLines(skillsText)))
         {
@@ -1133,11 +1244,7 @@ public class ViewerViewModel : BaseViewModel
             return set;
         }
 
-        var normalized = text
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace('\r', '\n')
-            .Replace(", ", "\n", StringComparison.Ordinal);
-        foreach (var line in normalized.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var line in CompanyProfileTextService.SplitDisplayLine(text))
         {
             if (string.IsNullOrWhiteSpace(line) || line == "-")
             {

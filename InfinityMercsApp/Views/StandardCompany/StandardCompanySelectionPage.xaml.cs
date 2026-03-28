@@ -98,7 +98,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
             item => item.Id,
             item => item.SourceFactionId,
             item => item.Name);
-        AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(AddProfileToMercsCompany);
+        AddProfileToMercsCompanyCommand = new Command<ViewerProfileItem>(profile => _ = AddProfileToMercsCompanyAsync(profile));
         RemoveMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(RemoveMercsCompanyEntry);
         SelectMercsCompanyEntryCommand = new Command<MercsCompanyEntry>(entry => _ = SelectMercsCompanyEntryAsync(entry));
         SelectTeamAllowedProfileCommand = new Command<ArmyTeamUnitLimitItem>(teamItem =>

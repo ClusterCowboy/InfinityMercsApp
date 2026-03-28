@@ -113,7 +113,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         // Cap the popup height to 80 % of the physical screen height to leave room for the OS chrome.
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
         BackgroundColor = Color.FromRgba(0, 0, 0, 180);
-        Title = "Captain Configuration";
+        Title = string.IsNullOrWhiteSpace(context.PopupTitle) ? "Captain Configuration" : context.PopupTitle.Trim();
 
         _logoCanvas = new SKCanvasView
         {
@@ -167,7 +167,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
         _foundCompanyButton = new Button
         {
-            Text = "FOUND COMPANY",
+            Text = string.IsNullOrWhiteSpace(context.ConfirmButtonText) ? "FOUND COMPANY" : context.ConfirmButtonText.Trim(),
             BackgroundColor = Color.FromArgb("#7C3AED"),
             TextColor = Colors.Black,
             Command = new Command(async () => await CloseAsync(true))
@@ -192,6 +192,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
         var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
         var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
+
+        _captainNameCommitted = string.IsNullOrWhiteSpace(context.DefaultUnitCustomName)
+            ? "Captain"
+            : context.DefaultUnitCustomName.Trim();
 
         _captainNameEntry = new Entry
         {
@@ -762,7 +766,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private void UpdateUpgradeOptionsHeader()
     {
         // Units cost at most 28 pts; the remainder becomes the starting experience budget.
-        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
+        var baseExperience = _context.BaseExperienceOverride ?? Math.Max(0, 28 - _context.Unit.Cost);
         var selectedCost =
             ReadStatPoints(_ccPicker) +
             ReadStatPoints(_bsPicker) +
