@@ -173,6 +173,14 @@ public partial class LoadCompanyPage : ContentPage
         await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
     }
 
+    private void OnRecordIconBindingContextChanged(object? sender, EventArgs e)
+    {
+        if (sender is SKCanvasView canvasView)
+        {
+            canvasView.InvalidateSurface();
+        }
+    }
+
     private void OnTrashIconPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;

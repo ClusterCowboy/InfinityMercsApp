@@ -63,6 +63,33 @@ public abstract class CompanySavedCompanyEntryBase
     public string SavedPeripheralCharacteristics { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
+
+    [JsonPropertyName("Current MOV")]
+    public string CurrentMov { get; init; } = "-";
+
+    [JsonPropertyName("Current CC")]
+    public string CurrentCc { get; init; } = "-";
+
+    [JsonPropertyName("Current BS")]
+    public string CurrentBs { get; init; } = "-";
+
+    [JsonPropertyName("Current PH")]
+    public string CurrentPh { get; init; } = "-";
+
+    [JsonPropertyName("Current WIP")]
+    public string CurrentWip { get; init; } = "-";
+
+    [JsonPropertyName("Current ARM")]
+    public string CurrentArm { get; init; } = "-";
+
+    [JsonPropertyName("Current BTS")]
+    public string CurrentBts { get; init; } = "-";
+
+    [JsonPropertyName("Current VITA/STR")]
+    public string CurrentVitaOrStr { get; init; } = "-";
+
+    [JsonPropertyName("Current S")]
+    public string CurrentS { get; init; } = "-";
 }
 
 public sealed class CompanySavedCodeRef

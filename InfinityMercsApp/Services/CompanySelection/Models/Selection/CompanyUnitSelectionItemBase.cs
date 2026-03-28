@@ -21,8 +21,14 @@ public abstract class CompanyUnitSelectionItemBase : BaseViewModel, IViewerListI
 
     public string? Subtitle { get; init; }
     public bool IsSpecOps { get; init; }
+    public bool UseBlueHalfOpacityBackground { get; init; }
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+    public string UnitListBackgroundColor => IsSelected
+        ? "#334155"
+        : UseBlueHalfOpacityBackground
+            ? "#800000FF"
+            : "Transparent";
 
     private bool _isVisible = true;
     public bool IsVisible
@@ -53,6 +59,7 @@ public abstract class CompanyUnitSelectionItemBase : BaseViewModel, IViewerListI
 
             _isSelected = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(UnitListBackgroundColor));
         }
     }
 }

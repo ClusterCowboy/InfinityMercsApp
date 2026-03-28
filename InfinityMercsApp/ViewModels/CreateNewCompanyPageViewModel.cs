@@ -40,10 +40,9 @@ public partial class CreateNewCompanyPageViewModel(
     }
 
     [RelayCommand]
-    private Task OpenTAGCompanyPageAsync()
+    private async Task OpenTAGCompanyPageAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] TAG Company selected.");
-        return Task.CompletedTask;
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateTag(ArmySourceSelectionMode.Sectorials));
     }
 
     [RelayCommand]

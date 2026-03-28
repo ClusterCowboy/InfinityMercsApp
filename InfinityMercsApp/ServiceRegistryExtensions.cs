@@ -14,7 +14,8 @@ public static class ServiceRegistryExtensions
                 .AddTransient<MainViewModel>()
                 .AddTransient<ViewerViewModel>()
                 .AddTransient<CreateNewCompanyPageViewModel>()
-                .AddTransient<StandardCompanySourcePopupPageViewModel>();
+                .AddTransient<StandardCompanySourcePopupPageViewModel>()
+                .AddTransient<TagCompanySourcePopupPageViewModel>();
 
         return services;
     }
@@ -25,6 +26,7 @@ public static class ServiceRegistryExtensions
                 .AddTransient<ModeSelectionPage>()
                 .AddTransient<CreateNewCompanyPage>()
                 .AddTransient<StandardCompanySourcePopupPage>()
+                .AddTransient<TagCompanySourcePopupPage>()
                 .AddTransient<SplashPage>()
                 .AddTransient<SettingsPage>()
                 .AddTransient<DebugPage>()

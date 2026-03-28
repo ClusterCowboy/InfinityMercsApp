@@ -16,6 +16,11 @@ public partial class DebugPage : ContentPage
         PropertyNameCaseInsensitive = true
     };
     private const string DebugManifestFileName = "DebugTestCompanyManifest.json";
+    private static readonly string[] AdditionalReformCompanyFileNames =
+    [
+        "test-correg-tag-0001.json",
+        "test-nw-tag-lt-0001.json"
+    ];
 
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
@@ -45,7 +50,21 @@ public partial class DebugPage : ContentPage
         try
         {
             var manifest = await LoadManifestAsync();
-            if (manifest?.Companies is null || manifest.Companies.Count == 0)
+            var manifestCompanies = manifest?.Companies?.ToList() ?? [];
+            foreach (var additionalFile in AdditionalReformCompanyFileNames)
+            {
+                if (manifestCompanies.Any(x => string.Equals(x.FileName?.Trim(), additionalFile, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                manifestCompanies.Add(new DebugTestCompanyManifestEntry
+                {
+                    FileName = additionalFile
+                });
+            }
+
+            if (manifestCompanies.Count == 0)
             {
                 await DisplayAlert(
                     "Reform Test Companies",
@@ -58,17 +77,22 @@ public partial class DebugPage : ContentPage
             Directory.CreateDirectory(saveDir);
             var summaryLines = new List<string>();
 
-            foreach (var manifestCompany in manifest.Companies)
+            foreach (var manifestCompany in manifestCompanies)
             {
                 var fileName = manifestCompany.FileName?.Trim();
-                var source = manifestCompany.CompanyData;
-                if (string.IsNullOrWhiteSpace(fileName) || source is null)
+                if (string.IsNullOrWhiteSpace(fileName))
                 {
-                    summaryLines.Add("manifest entry: skipped (missing file name or company data)");
+                    summaryLines.Add("manifest entry: skipped (missing file name)");
                     continue;
                 }
 
                 var filePath = Path.Combine(saveDir, fileName);
+                var source = manifestCompany.CompanyData ?? await TryLoadSavedCompanyFileAsync(filePath);
+                if (source is null)
+                {
+                    summaryLines.Add($"{fileName}: skipped (missing company data)");
+                    continue;
+                }
 
                 try
                 {
@@ -260,6 +284,29 @@ public partial class DebugPage : ContentPage
         }
 
         return JsonSerializer.Deserialize<DebugTestCompanyManifest>(rawJson, JsonOptions);
+    }
+
+    private static async Task<DebugSavedCompanyFile?> TryLoadSavedCompanyFileAsync(string filePath)
+    {
+        try
+        {
+            if (!File.Exists(filePath))
+            {
+                return null;
+            }
+
+            var json = await File.ReadAllTextAsync(filePath);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<DebugSavedCompanyFile>(json, JsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private bool TryBuildDbDerivedProfilePayload(

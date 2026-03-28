@@ -15,7 +15,8 @@ internal class ImportService(
     IAppSettingsProvider appSettingsProvider,
     FactionLogoCacheService factionLogoCacheService,
     IInspiringCompanyFactionGenerator inspiringCompanyFactionGenerator,
-    IAirborneCompanyFactionGenerator airborneCompanyFactionGenerator) : IImportService
+    IAirborneCompanyFactionGenerator airborneCompanyFactionGenerator,
+    ITagCompanyFactionGenerator tagCompanyFactionGenerator) : IImportService
 {
     private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
 
@@ -240,6 +241,15 @@ internal class ImportService(
         catch (Exception ex)
         {
             Console.Error.WriteLine($"ImportAllDataAsync Inspiring Company generation failed: {ex.Message}");
+        }
+
+        try
+        {
+            await tagCompanyFactionGenerator.GenerateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ImportAllDataAsync TAG Company generation failed: {ex.Message}");
         }
 
         yield return new(true, $"Update complete. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");

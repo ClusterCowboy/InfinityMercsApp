@@ -8,9 +8,7 @@ public partial class CohesiveCompanySelectionPage
 {
     private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
-        ShowFactionStrip = sender is AddFactionButtonView button
-            ? button.IsExpanded
-            : !ShowFactionStrip;
+        ToggleFactionStrip(sender);
     }
 
     private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)

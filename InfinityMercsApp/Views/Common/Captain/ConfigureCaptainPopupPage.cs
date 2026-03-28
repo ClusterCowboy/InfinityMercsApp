@@ -21,6 +21,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     // Green highlight applied to a stat value when it has been improved above its base.
     private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
     private static readonly Color DefaultStatColor = Colors.White;
+    private static readonly Color SkillsDefaultColor = Color.FromArgb("#F59E0B");
+    private static readonly Color LieutenantHighlightColor = Color.FromArgb("#C084FC");
 
     /// <summary>
     /// Defines the available upgrade tiers, bonuses, and costs for each upgradeable stat.
@@ -111,7 +113,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         // Cap the popup height to 80 % of the physical screen height to leave room for the OS chrome.
         var popupHeight = (DeviceDisplay.Current.MainDisplayInfo.Height / DeviceDisplay.Current.MainDisplayInfo.Density) * 0.8;
         BackgroundColor = Color.FromRgba(0, 0, 0, 180);
-        Title = "Captain Configuration";
+        Title = string.IsNullOrWhiteSpace(context.PopupTitle) ? "Captain Configuration" : context.PopupTitle.Trim();
 
         _logoCanvas = new SKCanvasView
         {
@@ -165,7 +167,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         };
         _foundCompanyButton = new Button
         {
-            Text = "FOUND COMPANY",
+            Text = string.IsNullOrWhiteSpace(context.ConfirmButtonText) ? "FOUND COMPANY" : context.ConfirmButtonText.Trim(),
             BackgroundColor = Color.FromArgb("#7C3AED"),
             TextColor = Colors.Black,
             Command = new Command(async () => await CloseAsync(true))
@@ -190,6 +192,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
         var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
         var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
+
+        _captainNameCommitted = string.IsNullOrWhiteSpace(context.DefaultUnitCustomName)
+            ? "Captain"
+            : context.DefaultUnitCustomName.Trim();
 
         _captainNameEntry = new Entry
         {
@@ -676,6 +682,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         // Strip the "(cost) - " prefix that is prepended to choice labels for display purposes.
         var normalized = Regex.Replace(value, @"^\s*\([-+]?\d+\)\s*-\s*", string.Empty).Trim();
+        if (string.Equals(normalized, "Lt", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Lieutenant";
+        }
+
         return normalized;
     }
 
@@ -736,10 +747,11 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             GetSelectedChoices(_weapon1Picker, _weapon2Picker, _weapon3Picker),
             prependPlus: true);
         _ccValueLabel.Text = NormalizeText(_context.Unit.CcWeapons);
-        _skillsValueLabel.Text = BuildUpdatedProfileSection(
+        var updatedSkills = BuildUpdatedProfileSection(
             _context.Unit.Skills,
             GetSelectedChoices(_skill1Picker, _skill2Picker, _skill3Picker),
             prependPlus: true);
+        ApplyLieutenantHighlightToSkillsPreview(updatedSkills);
         _equipmentValueLabel.Text = BuildUpdatedProfileSection(
             _context.Unit.Equipment,
             GetSelectedChoices(_equipment1Picker, _equipment2Picker, _equipment3Picker),
@@ -754,7 +766,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private void UpdateUpgradeOptionsHeader()
     {
         // Units cost at most 28 pts; the remainder becomes the starting experience budget.
-        var baseExperience = Math.Max(0, 28 - _context.Unit.Cost);
+        var baseExperience = _context.BaseExperienceOverride ?? Math.Max(0, 28 - _context.Unit.Cost);
         var selectedCost =
             ReadStatPoints(_ccPicker) +
             ReadStatPoints(_bsPicker) +
@@ -1237,6 +1249,64 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : 0;
+    }
+
+    private void ApplyLieutenantHighlightToSkillsPreview(string? skillsText)
+    {
+        var normalized = NormalizeText(skillsText);
+        _skillsValueLabel.FormattedText = BuildLieutenantHighlightedFormattedText(normalized, SkillsDefaultColor);
+    }
+
+    private static FormattedString BuildLieutenantHighlightedFormattedText(string text, Color defaultColor)
+    {
+        var formatted = new FormattedString();
+        if (string.IsNullOrEmpty(text))
+        {
+            return formatted;
+        }
+
+        var matches = Regex.Matches(text, "(lieutenant)", RegexOptions.IgnoreCase);
+        if (matches.Count == 0)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text,
+                TextColor = defaultColor
+            });
+            return formatted;
+        }
+
+        var currentIndex = 0;
+        foreach (Match match in matches)
+        {
+            if (match.Index > currentIndex)
+            {
+                formatted.Spans.Add(new Span
+                {
+                    Text = text.Substring(currentIndex, match.Index - currentIndex),
+                    TextColor = defaultColor
+                });
+            }
+
+            formatted.Spans.Add(new Span
+            {
+                Text = text.Substring(match.Index, match.Length),
+                TextColor = LieutenantHighlightColor
+            });
+
+            currentIndex = match.Index + match.Length;
+        }
+
+        if (currentIndex < text.Length)
+        {
+            formatted.Spans.Add(new Span
+            {
+                Text = text[currentIndex..],
+                TextColor = defaultColor
+            });
+        }
+
+        return formatted;
     }
 
     /// <summary>

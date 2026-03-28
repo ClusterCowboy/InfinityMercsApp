@@ -48,6 +48,20 @@ public sealed class CompanySelectionPageFactory : ICompanySelectionPageFactory
             _armyDataService);
     }
 
+    public StandardCompanySelectionPage CreateTag(ArmySourceSelectionMode mode)
+    {
+        return new StandardCompanySelectionPage(
+            mode,
+            _metadataProvider,
+            _factionProvider,
+            _specOpsProvider,
+            _cohesiveCompanyFactionQueryProvider,
+            _factionLogoCacheService,
+            _appSettingsProvider,
+            _armyDataService,
+            companyTypeLabelOverride: "TAG Company");
+    }
+
     public CohesiveCompanySelectionPage CreateCohesive(ArmySourceSelectionMode mode)
     {
         return new CohesiveCompanySelectionPage(

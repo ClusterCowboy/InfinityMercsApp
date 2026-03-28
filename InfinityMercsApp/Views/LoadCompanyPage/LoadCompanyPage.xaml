@@ -36,12 +36,14 @@
                                         HeightRequest="50"
                                         VerticalOptions="Center"
                                         HorizontalOptions="Center"
+                                        BindingContextChanged="OnRecordIconBindingContextChanged"
                                         PaintSurface="OnCompanyIconPaintSurface" />
                                     <skia:SKCanvasView
                                         WidthRequest="50"
                                         HeightRequest="50"
                                         VerticalOptions="Center"
                                         HorizontalOptions="Center"
+                                        BindingContextChanged="OnRecordIconBindingContextChanged"
                                         PaintSurface="OnFactionIconsPaintSurface" />
                                 </HorizontalStackLayout>
 
@@ -70,6 +72,7 @@
                                         HeightRequest="50"
                                         VerticalOptions="Center"
                                         HorizontalOptions="Center"
+                                        BindingContextChanged="OnRecordIconBindingContextChanged"
                                         PaintSurface="OnTrashIconPaintSurface" />
                                 </Border>
                             </Grid>

@@ -16,6 +16,7 @@ namespace InfinityMercsApp.Views;
 
 public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 {
+    private const int TagCompanyFactionId = 2003;
     private const int MaxIconsPerRow = 6;
     private const float IconSize = 75f;
     private const float IconGap = 20f;
@@ -351,6 +352,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             for (var i = 0; i < orderedEntries.Count; i++)
             {
                 var entry = orderedEntries[i];
+                var effectiveSourceFactionId = ResolveEffectiveSourceFactionId(entry);
                 var baseUnitName = string.IsNullOrWhiteSpace(entry.BaseUnitName)
                     ? (string.IsNullOrWhiteSpace(entry.Name) ? $"Unit {i + 1}" : entry.Name)
                     : entry.BaseUnitName;
@@ -361,10 +363,10 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 var subtitle = entry.IsPeripheralUnit
                     ? "Peripheral"
                     : (entry.IsLieutenant ? "Lieutenant" : string.Empty);
-                var (savedRangedWeapons, savedCcWeapons) = ResolveSavedWeapons(entry.SourceFactionId, entry);
-                var savedSkills = ResolveSavedSkills(entry.SourceFactionId, entry);
-                var savedEquipment = ResolveSavedEquipment(entry.SourceFactionId, entry);
-                var savedCharacteristics = ResolveSavedCharacteristics(entry.SourceFactionId, entry);
+                var (savedRangedWeapons, savedCcWeapons) = ResolveSavedWeapons(effectiveSourceFactionId, entry);
+                var savedSkills = ResolveSavedSkills(effectiveSourceFactionId, entry);
+                var savedEquipment = ResolveSavedEquipment(effectiveSourceFactionId, entry);
+                var savedCharacteristics = ResolveSavedCharacteristics(effectiveSourceFactionId, entry);
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
                     savedRangedWeapons = AppendChoices(savedRangedWeapons, captainWeaponChoices);
@@ -383,7 +385,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     UnitTypeCode = NormalizeUnitTypeCode(entry.UnitTypeCode),
                     Subtitle = subtitle,
-                    SourceFactionId = entry.SourceFactionId,
+                    SourceFactionId = effectiveSourceFactionId,
                     VisualFactionId = logoSourceFactionId,
                     SourceUnitId = entry.SourceUnitId,
                     ProfileKey = entry.ProfileKey,
@@ -395,6 +397,16 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                     SavedCharacteristics = savedCharacteristics,
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = savedCcWeapons,
+                    SavedPeripheralNameHeading = entry.PeripheralNameHeading,
+                    UnitMov = entry.CurrentMov,
+                    UnitCc = entry.CurrentCc,
+                    UnitBs = entry.CurrentBs,
+                    UnitPh = entry.CurrentPh,
+                    UnitWip = entry.CurrentWip,
+                    UnitArm = entry.CurrentArm,
+                    UnitBts = entry.CurrentBts,
+                    UnitVitality = entry.CurrentVitaOrStr,
+                    UnitS = entry.CurrentS,
                     ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                     CaptainIconPackagedPath = entry.IsLieutenant ? "SVGCache/NonCBIcons/noun-captain-8115950.svg" : string.Empty,
                     ExperienceIconPackagedPath = GetExperienceIconPackagedPath(entry.ExperiencePoints),
@@ -428,11 +440,11 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    private async Task SelectCompanyUnitAsync(CompanyViewerUnitListItem? item)
+    private Task SelectCompanyUnitAsync(CompanyViewerUnitListItem? item)
     {
         if (item is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         foreach (var unit in CompanyUnits)
@@ -441,18 +453,19 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
         _selectedCompanyUnit = item;
 
-        await _viewerViewModel.LoadSpecificConfigurationAsync(
-            item.SourceFactionId,
-            item.SourceUnitId,
+        _viewerViewModel.ApplySavedUnitSnapshot(
             item.Name,
-            item.ProfileKey,
-            item.IsLieutenant,
-            item.SavedSkills,
-            item.SavedEquipment,
-            item.SavedRangedWeapons,
-            item.SavedCcWeapons,
-            item.CachedLogoPath,
-            item.PackagedLogoPath);
+            item.UnitMov,
+            item.UnitCc,
+            item.UnitBs,
+            item.UnitPh,
+            item.UnitWip,
+            item.UnitArm,
+            item.UnitBts,
+            InferVitalityHeader(item.UnitTypeCode),
+            item.UnitVitality,
+            item.UnitS,
+            item.IsLieutenant);
 
         ApplySavedOrderIconOverrides(item);
 
@@ -468,7 +481,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 _loadedCaptainStats.VitalityBonus);
         }
 
-        var loadedProfile = _viewerViewModel.Profiles.FirstOrDefault();
+        ViewerProfileItem? loadedProfile = null;
         _viewerViewModel.Profiles.Clear();
         var mergedProfile = BuildMergedProfileItem(item, loadedProfile);
         _viewerViewModel.Profiles.Add(mergedProfile);
@@ -502,6 +515,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         UpdateCurrentWeaponsDisplay();
         TopIconRowCanvas.InvalidateSurface();
+        return Task.CompletedTask;
     }
 
     private bool HasSufficientLoadedProfileDetails(CompanyViewerUnitListItem item)
@@ -548,6 +562,31 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private static int ResolveLogoSourceFactionId(SavedCompanyEntry entry)
     {
         return entry.LogoSourceFactionId > 0 ? entry.LogoSourceFactionId : entry.SourceFactionId;
+    }
+
+    private static int ResolveEffectiveSourceFactionId(SavedCompanyEntry entry)
+    {
+        if (entry.SourceFactionId == TagCompanyFactionId || entry.LogoSourceFactionId == TagCompanyFactionId)
+        {
+            return TagCompanyFactionId;
+        }
+
+        var baseName = entry.BaseUnitName ?? string.Empty;
+        if (baseName.Contains("Repurposed Mining Equipment", StringComparison.OrdinalIgnoreCase) ||
+            baseName.Contains("Turtlemek", StringComparison.OrdinalIgnoreCase))
+        {
+            return TagCompanyFactionId;
+        }
+
+        return entry.SourceFactionId;
+    }
+
+    private static string InferVitalityHeader(string? unitTypeCode)
+    {
+        var normalized = unitTypeCode?.Trim().ToUpperInvariant();
+        return normalized is "TAG" or "REM" or "PERIPHERAL"
+            ? "STR"
+            : "VITA";
     }
 
     private static string BuildCompanyViewerHeading(string? companyName)
@@ -766,7 +805,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 ? loadedProfile.UniqueSkillsFormatted
                 : BuildSimpleFormatted(uniqueSkills, Color.FromArgb("#F59E0B")),
             Characteristics = characteristics,
-            Peripherals = loadedProfile?.Peripherals ?? "-",
+            Peripherals = loadedProfile?.Peripherals ?? BuildPeripheralDisplay(item.SavedPeripheralNameHeading),
             PeripheralsFormatted = loadedProfile?.PeripheralsFormatted,
             Cost = loadedProfile?.Cost ?? item.Cost.ToString(),
             Swc = loadedProfile?.Swc ?? "-",
@@ -776,11 +815,21 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         };
     }
 
+    private static string BuildPeripheralDisplay(string? peripheralHeading)
+    {
+        if (string.IsNullOrWhiteSpace(peripheralHeading))
+        {
+            return "-";
+        }
+
+        var name = CompanySelectionSharedUtilities.ExtractFirstPeripheralName(peripheralHeading);
+        return string.IsNullOrWhiteSpace(name) ? "-" : $"{name} (1)";
+    }
+
     private string NormalizeSkillsForDisplay(string? skillsText)
     {
-        var showUnitsInInches = _viewerViewModel.ShowUnitsInInches;
         var result = new List<string>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenCanonical = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var dodgeExtras = new List<string>();
         var dodgeExtrasSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var hasPlainDodge = false;
@@ -798,7 +847,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 }
                 else
                 {
-                    extra = CompanySelectionSharedUtilities.ConvertDistanceText(extra, showUnitsInInches);
                     extra = Regex.Replace(extra, @"\s+", " ").Trim();
                     if (dodgeExtrasSeen.Add(extra))
                     {
@@ -809,7 +857,8 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
                 continue;
             }
 
-            if (seen.Add(line))
+            var canonical = NormalizeSkillLineForDedup(line);
+            if (seenCanonical.Add(canonical))
             {
                 result.Add(line);
             }
@@ -820,7 +869,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             foreach (var extra in dodgeExtras)
             {
                 var dodgeLine = $"Dodge ({extra})";
-                if (seen.Add(dodgeLine))
+                if (seenCanonical.Add(NormalizeSkillLineForDedup(dodgeLine)))
                 {
                     result.Add(dodgeLine);
                 }
@@ -829,13 +878,41 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         else if (hasPlainDodge)
         {
             const string dodgeLine = "Dodge";
-            if (seen.Add(dodgeLine))
+            if (seenCanonical.Add(NormalizeSkillLineForDedup(dodgeLine)))
             {
                 result.Add(dodgeLine);
             }
         }
 
         return result.Count == 0 ? "-" : string.Join(Environment.NewLine, result);
+    }
+
+    private static string NormalizeSkillLineForDedup(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return string.Empty;
+        }
+
+        var normalizedLine = Regex.Replace(line.Trim(), @"\s+", " ");
+        var match = Regex.Match(normalizedLine, @"^(?<name>[^()]+?)\s*\((?<args>[^()]*)\)\s*$");
+        if (!match.Success)
+        {
+            return normalizedLine;
+        }
+
+        var name = match.Groups["name"].Value.Trim();
+        var args = match.Groups["args"].Value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return args.Count == 0
+            ? name
+            : $"{name} ({string.Join(", ", args)})";
     }
 
     private void UpdateCurrentWeaponsDisplay()
@@ -1869,6 +1946,16 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string SavedCharacteristics { get; init; } = "-";
     public string SavedRangedWeapons { get; init; } = "-";
     public string SavedCcWeapons { get; init; } = "-";
+    public string SavedPeripheralNameHeading { get; init; } = string.Empty;
+    public string UnitMov { get; init; } = "-";
+    public string UnitCc { get; init; } = "-";
+    public string UnitBs { get; init; } = "-";
+    public string UnitPh { get; init; } = "-";
+    public string UnitWip { get; init; } = "-";
+    public string UnitArm { get; init; } = "-";
+    public string UnitBts { get; init; } = "-";
+    public string UnitVitality { get; init; } = "-";
+    public string UnitS { get; init; } = "-";
     public Color SelectionAccentColor { get; init; } = Color.FromArgb("#93C5FD");
     public Color TileStroke => IsSelected ? SelectionAccentColor : Color.FromArgb("#4B5563");
     public double TileStrokeThickness => IsSelected ? 2d : 1d;

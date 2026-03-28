@@ -1,5 +1,6 @@
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
+using InfinityMercsApp.Services;
 using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
 
 namespace InfinityMercsApp.Views.AirborneCompany;
@@ -170,7 +171,7 @@ public partial class AirborneCompanySelectionPage
 
         if (!string.IsNullOrWhiteSpace(uniqueSkills))
         {
-            foreach (var part in uniqueSkills.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            foreach (var part in CompanyProfileTextService.SplitDisplayLine(uniqueSkills))
             {
                 allExisting.Add(part);
             }

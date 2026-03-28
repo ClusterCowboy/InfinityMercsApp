@@ -20,8 +20,15 @@
 
     <ShellContent
         Title="Standard Company"
+        FlyoutItemIsVisible="False"
         ContentTemplate="{DataTemplate views:StandardCompanySourcePopupPage}"
         Route="StandardCompanySourcePopupPage" />
+
+    <ShellContent
+        Title="TAG Company"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate views:TagCompanySourcePopupPage}"
+        Route="TagCompanySourcePopupPage" />
 
     <ShellContent
         Title="Load Company"

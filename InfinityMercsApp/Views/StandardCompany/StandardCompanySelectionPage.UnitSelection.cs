@@ -3,6 +3,7 @@ using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
+using TagGen = InfinityMercsApp.Infrastructure.Providers.TagCompanyFactionGenerator;
 
 namespace InfinityMercsApp.Views.StandardCompany;
 
@@ -13,9 +14,7 @@ public partial class StandardCompanySelectionPage
 {
     private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
-        ShowFactionStrip = sender is AddFactionButtonView button
-            ? button.IsExpanded
-            : !ShowFactionStrip;
+        ToggleFactionStrip(sender);
     }
 
     /// <summary>
@@ -135,10 +134,15 @@ public partial class StandardCompanySelectionPage
 
         try
         {
+            Func<int, CancellationToken, IReadOnlyList<InfinityMercsApp.Domain.Models.Army.Resume>> getResumesByFaction =
+                (factionId, token) => IsTagCompanyMode && factionId == TagGen.TagCompanyFactionId
+                    ? _armyDataService.GetResumeByFaction(factionId, token)
+                    : _armyDataService.GetResumeByFactionMercsOnly(factionId, token);
+
             var merged = await BuildMergedUnitsAndTeamsAsync(
                 factions,
                 faction => faction.Id,
-                _armyDataService.GetResumeByFactionMercsOnly,
+                getResumesByFaction,
                 _specOpsProvider.GetSpecopsUnitsByFactionAsync,
                 _armyDataService.GetFactionSnapshot,
                 async (factionId, units, ct) =>
@@ -161,6 +165,9 @@ public partial class StandardCompanySelectionPage
                     IsCharacter = IsCharacterCategory(unit, categoryLookup),
                     Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
                     IsSpecOps = false,
+                    UseBlueHalfOpacityBackground = IsTagCompanyMode &&
+                                                   factionId == TagGen.TagCompanyFactionId &&
+                                                   unit.UnitId == 1,
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(factionId, unit.UnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(factionId, unit.UnitId)
                         ?? $"SVGCache/units/{factionId}-{unit.UnitId}.svg"

@@ -31,9 +31,7 @@ public partial class AddFactionButtonView : ContentView
 
     private void OnTapped(object? sender, TappedEventArgs e)
     {
-        IsExpanded = !IsExpanded;
         Tapped?.Invoke(this, e);
-        InvalidateButtonCanvas();
     }
 
     private void OnCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
