@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Common.UICommon;
+using TagGen = InfinityMercsApp.Infrastructure.Providers.TagCompanyFactionGenerator;
 
 namespace InfinityMercsApp.Views.Common;
 
@@ -67,28 +68,67 @@ internal static class CompanyStartSaveWorkflow
             ? "-"
             : string.Join(Environment.NewLine, captainPopupSkillLines);
 
-        var improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<TCaptainStats>(
-            new CompanyCaptainWorkflowRequest
-            {
-                Navigation = request.Navigation,
-                FallbackSourceFactionId = captainEntry.SourceFactionId,
-                FirstSourceFactionId = firstSourceFactionId,
-                UnitName = captainEntry.Name,
-                UnitCost = captainEntry.CostValue,
-                UnitStatline = captainEntry.Subtitle ?? "-",
-                UnitRangedWeapons = captainEntry.SavedRangedWeapons,
-                UnitCcWeapons = captainEntry.SavedCcWeapons,
-                UnitSkills = captainPopupSkills,
-                UnitEquipment = captainEntry.SavedEquipment,
-                UnitCachedLogoPath = captainEntry.CachedLogoPath,
-                UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
-                TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
-                TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
-                TryGetMetadataFactionName = request.TryGetMetadataFactionName,
-                ArmyDataService = request.ArmyDataService,
-                SpecOpsProvider = request.SpecOpsProvider,
-                ShowUnitsInInches = request.ShowUnitsInInches
-            });
+        var isTagCompanyWorkflow =
+            string.Equals(request.CompanyType, "TAG Company", StringComparison.OrdinalIgnoreCase);
+
+        TCaptainStats? improvedCaptainStats;
+        if (isTagCompanyWorkflow)
+        {
+            var preferredOtherFactionId = sourceFactions
+                .Select(x => x.Id)
+                .FirstOrDefault(id => id != TagGen.TagCompanyFactionId);
+
+            improvedCaptainStats = await CompanySpecOpsWorkflowService.ShowTagSpecOpsConfigurationAsync<TCaptainStats>(
+                new CompanySpecOpsWorkflowRequest
+                {
+                    Navigation = request.Navigation,
+                    PreferredOtherFactionId = preferredOtherFactionId > 0 ? preferredOtherFactionId : null,
+                    FallbackSourceFactionId = captainEntry.SourceFactionId,
+                    FirstSourceFactionId = firstSourceFactionId,
+                    UnitName = captainEntry.Name,
+                    UnitCost = captainEntry.CostValue,
+                    UnitStatline = captainEntry.Subtitle ?? "-",
+                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
+                    UnitCcWeapons = captainEntry.SavedCcWeapons,
+                    UnitSkills = captainPopupSkills,
+                    UnitEquipment = captainEntry.SavedEquipment,
+                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
+                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
+                    TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
+                    TryGetMetadataFactionName = request.TryGetMetadataFactionName,
+                    ArmyDataService = request.ArmyDataService,
+                    SpecOpsProvider = request.SpecOpsProvider,
+                    ShowUnitsInInches = request.ShowUnitsInInches,
+                    IsLieutenant = captainEntry.IsLieutenant,
+                    BaseExperience = 20
+                });
+        }
+        else
+        {
+            improvedCaptainStats = await CompanyCaptainWorkflowService.ShowCaptainConfigurationAsync<TCaptainStats>(
+                new CompanyCaptainWorkflowRequest
+                {
+                    Navigation = request.Navigation,
+                    FallbackSourceFactionId = captainEntry.SourceFactionId,
+                    FirstSourceFactionId = firstSourceFactionId,
+                    UnitName = captainEntry.Name,
+                    UnitCost = captainEntry.CostValue,
+                    UnitStatline = captainEntry.Subtitle ?? "-",
+                    UnitRangedWeapons = captainEntry.SavedRangedWeapons,
+                    UnitCcWeapons = captainEntry.SavedCcWeapons,
+                    UnitSkills = captainPopupSkills,
+                    UnitEquipment = captainEntry.SavedEquipment,
+                    UnitCachedLogoPath = captainEntry.CachedLogoPath,
+                    UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
+                    TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
+                    TryGetMetadataFactionName = request.TryGetMetadataFactionName,
+                    ArmyDataService = request.ArmyDataService,
+                    SpecOpsProvider = request.SpecOpsProvider,
+                    ShowUnitsInInches = request.ShowUnitsInInches
+                });
+        }
         if (improvedCaptainStats is null)
         {
             return;

@@ -61,6 +61,10 @@ public sealed class CaptainUpgradePopupContext
     public List<string> WeaponOptions { get; init; } = [];
     public List<string> SkillOptions { get; init; } = [];
     public List<string> EquipmentOptions { get; init; } = [];
+    public string PopupTitle { get; init; } = "Captain Configuration";
+    public string ConfirmButtonText { get; init; } = "FOUND COMPANY";
+    public string DefaultUnitCustomName { get; init; } = "Captain";
+    public int? BaseExperienceOverride { get; init; }
 }
 
 public sealed record StatPickerDefinition(IReadOnlyList<int> BonusesByTier, IReadOnlyList<int> CostsByTier, int? HardCap = null)
