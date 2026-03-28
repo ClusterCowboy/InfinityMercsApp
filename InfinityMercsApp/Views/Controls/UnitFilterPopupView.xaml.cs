@@ -233,6 +233,7 @@ public partial class UnitFilterPopupView : ContentView
     public string? SelectedMinPoints { get; set; }
     public string? SelectedMaxPoints { get; set; }
     public bool SelectedLieutenantOnlyUnits { get; set; }
+    public bool LieutenantOnlyUnitsEnabled { get; set; } = true;
     public bool SelectedTeamsView { get; set; }
     public bool TeamsViewEnabled { get; set; }
 
@@ -246,7 +247,8 @@ public partial class UnitFilterPopupView : ContentView
         UnitFilterCriteria? existingCriteria = null,
         bool lieutenantOnlyUnits = false,
         bool teamsView = false,
-        bool teamsViewEnabled = true)
+        bool teamsViewEnabled = true,
+        bool lieutenantOnlyUnitsEnabled = true)
     {
         InitializeComponent();
 
@@ -273,6 +275,7 @@ public partial class UnitFilterPopupView : ContentView
         var minPoints = Math.Max(0, options.MinPoints);
         var maxPoints = Math.Max(minPoints, options.MaxPoints);
         PointsOptions = BuildPointsOptions(minPoints, maxPoints);
+        LieutenantOnlyUnitsEnabled = lieutenantOnlyUnitsEnabled;
         TeamsViewEnabled = teamsViewEnabled;
         BindingContext = this;
         ApplySelections(existingCriteria ?? UnitFilterCriteria.None, minPoints, maxPoints, lieutenantOnlyUnits, teamsView);

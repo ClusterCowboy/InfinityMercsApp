@@ -199,10 +199,10 @@
                         InputTransparent="True" />
                 </Grid>
             </Grid>
-            <Grid Grid.Row="2" Grid.Column="1">
-                <Button x:Name="ProxyPackButton"
+            <Grid Grid.Row="2" Grid.Column="1" IsVisible="False">
+                <Button x:Name="LoneWolfCompanyButton"
                         Text=""
-                        Command="{Binding OpenProxyPackPageCommand}"
+                        Command="{Binding OpenLoneWolfCompanyPopupCommand}"
                         BackgroundColor="Transparent"
                         BorderColor="#22C55E"
                         BorderWidth="2"
@@ -210,12 +210,12 @@
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding OpenProxyPackPageCommand}" />
+                        <TapGestureRecognizer Command="{Binding OpenLoneWolfCompanyPopupCommand}" />
                     </Grid.GestureRecognizers>
 
                     <Image
                         Grid.Row="0"
-                        x:Name="ProxyPackIcon"
+                        x:Name="LoneWolfCompanyIcon"
                         HeightRequest="120"
                         WidthRequest="120"
                         HorizontalOptions="Center"
@@ -225,7 +225,7 @@
 
                     <Label
                         Grid.Row="1"
-                        Text="Proxy Pack"
+                        Text="Lone Wolf Company"
                         FontSize="32"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"

@@ -31,6 +31,12 @@
         Route="TagCompanySourcePopupPage" />
 
     <ShellContent
+        Title="Lone Wolf Company"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate views:LoneWolfCompanySourcePopupPage}"
+        Route="LoneWolfCompanySourcePopupPage" />
+
+    <ShellContent
         Title="Load Company"
         ContentTemplate="{DataTemplate views:LoadCompanyPage}"
         Route="LoadCompanyPage" />

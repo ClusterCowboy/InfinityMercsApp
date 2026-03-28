@@ -117,4 +117,18 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Experience Points during play
 And more
 
+
+## FUTURE (Maybe Never)
+
+#### Proxy Pack
+- [ ] Choose a single captain from any vanilla or sectorial (Lt not required, must be regular trooper)
+- [ ] Grant additional 10 XP
+- [ ] On level up, grant 2 perks and 10 renown
+- [ ] Doctor between rounds, even if unconscious
+- [ ] Always Elite Deploy with Tac Aware
+- [ ] Allow for selections of other profiles of the captain as other units, no other units allowed for purchase
+	- [ ] Allow these to provide additional orders
+- [ ] Implement Aspect of the Wolf Skill
+
+
 ## Known Defects

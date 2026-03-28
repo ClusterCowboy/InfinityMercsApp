@@ -46,9 +46,8 @@ public partial class CreateNewCompanyPageViewModel(
     }
 
     [RelayCommand]
-    private Task OpenProxyPackPageAsync()
+    private async Task OpenLoneWolfCompanyPopupAsync()
     {
-        Console.WriteLine("[CreateNewCompanyPage] Proxy Pack selected.");
-        return Task.CompletedTask;
+        await Shell.Current.Navigation.PushAsync(companySelectionPageFactory.CreateLoneWolf(ArmySourceSelectionMode.VanillaFactions));
     }
 }

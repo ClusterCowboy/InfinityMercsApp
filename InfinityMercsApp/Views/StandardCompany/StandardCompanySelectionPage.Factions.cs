@@ -12,7 +12,26 @@ public partial class StandardCompanySelectionPage
     {
         try
         {
-            var filteredFactions = await LoadFilteredFactionRecordsAsync(cancellationToken);
+            List<InfinityMercsApp.Domain.Models.Metadata.Faction> filteredFactions;
+            if (IsLoneWolfMode)
+            {
+                filteredFactions = _armyDataService
+                    .GetMetadataFactions(includeDiscontinued: true, cancellationToken)
+                    .Where(x => !IsNonAlignedArmyName(x.Name))
+                    .ToList();
+                if (_factionLogoCacheService is not null)
+                {
+                    await _factionLogoCacheService.CacheFactionLogosFromRecordsAsync(filteredFactions, cancellationToken);
+                }
+                filteredFactions = CollapseContractedBackUpVariants(filteredFactions)
+                    .OrderBy(x => x.Name)
+                    .ToList();
+            }
+            else
+            {
+                filteredFactions = await LoadFilteredFactionRecordsAsync(cancellationToken);
+            }
+
             filteredFactions = filteredFactions
                 .Where(x => x.Id != AirborneGen.AirborneCompanyFactionId &&
                             x.Id != InspiringGen.InspiringCompanyFactionId &&

@@ -207,7 +207,15 @@
                     </Label>
                 </Border>
                 <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Profiles" FontSize="20" FontAttributes="Bold" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}" />
-                <ScrollView Grid.Row="7" Grid.ColumnSpan="3" VerticalOptions="FillAndExpand" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}">
+                <ScrollView
+                    x:Name="ProfilesScrollView"
+                    Grid.Row="7"
+                    Grid.ColumnSpan="3"
+                    VerticalOptions="FillAndExpand"
+                    IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}">
+                    <ScrollView.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnProfilesScrollPanUpdated" />
+                    </ScrollView.GestureRecognizers>
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Profiles}" Spacing="6">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
