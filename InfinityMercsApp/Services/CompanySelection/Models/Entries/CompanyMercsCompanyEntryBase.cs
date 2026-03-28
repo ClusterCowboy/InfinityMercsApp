@@ -117,6 +117,7 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     }
 
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
+    public List<CompanyTrooperPerkState> Perks { get; init; } = [];
 
     private bool _isSelected;
     public bool IsSelected

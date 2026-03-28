@@ -63,6 +63,8 @@ public abstract class CompanySavedCompanyEntryBase
     public string SavedPeripheralCharacteristics { get; init; } = "-";
     public int ExperiencePoints { get; init; }
     public string ExperienceRankName => CompanyUnitExperienceRanks.GetRankName(ExperiencePoints);
+    [JsonPropertyName("Perks")]
+    public List<CompanyTrooperPerkState> Perks { get; init; } = [];
 
     [JsonPropertyName("Current MOV")]
     public string CurrentMov { get; init; } = "-";

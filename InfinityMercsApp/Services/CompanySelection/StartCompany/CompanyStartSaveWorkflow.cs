@@ -459,6 +459,7 @@ internal static class CompanyStartSaveWorkflow
             SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
             SavedPeripheralSkills = entry.SavedPeripheralSkills,
             ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
+            Perks = CompanyPerkProgressionService.Normalize(entry.Perks),
             BaseProfileHumanReadable = string.IsNullOrWhiteSpace(entry.BaseUnitName) ? entry.Name : entry.BaseUnitName,
             IsCaptain = entry.IsLieutenant,
             FactionId = entry.SourceFactionId,
@@ -563,6 +564,7 @@ internal static class CompanyStartSaveWorkflow
             SavedPeripheralEquipment = "-",
             SavedPeripheralSkills = "-",
             ExperiencePoints = 0,
+            Perks = [],
             BaseProfileHumanReadable = peripheralName,
             IsCaptain = false,
             FactionId = entry.SourceFactionId,
@@ -1167,6 +1169,8 @@ internal static class CompanyStartSaveWorkflow
         public string CurrentVitaOrStr { get; init; } = "-";
         [JsonPropertyName("Current S")]
         public string CurrentS { get; init; } = "-";
+        [JsonPropertyName("Perks")]
+        public List<CompanyTrooperPerkState> Perks { get; init; } = [];
         [JsonPropertyName("XP")]
         public int Xp { get; init; }
         [JsonPropertyName("BaseSkillCodes")]

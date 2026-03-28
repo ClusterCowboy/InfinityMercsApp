@@ -292,6 +292,9 @@ public partial class StandardCompanySelectionPage
             PeripheralSkillsLineFormatted = entry.PeripheralSkillsLineFormatted,
             HasPeripheralSkillsLine = entry.HasPeripheralSkillsLine,
             ExperiencePoints = 20,
+            Perks = entry.Perks
+                .Select(x => new CompanyTrooperPerkState { Id = x.Id, Rank = x.Rank })
+                .ToList(),
             IsIrregular = entry.IsIrregular,
             NormallyIrregular = entry.NormallyIrregular,
             IsSelected = entry.IsSelected,

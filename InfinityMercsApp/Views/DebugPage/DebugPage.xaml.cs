@@ -658,6 +658,7 @@ public partial class DebugPage : ContentPage
         public string SavedPeripheralSkills { get; init; } = "-";
         public string SavedPeripheralCharacteristics { get; init; } = "-";
         public int ExperiencePoints { get; init; }
+        public List<CompanyTrooperPerkState> Perks { get; init; } = [];
         public int? UnitMoveFirstCm { get; init; }
         public int? UnitMoveSecondCm { get; init; }
         public string UnitMoveDisplay { get; set; } = "-";

@@ -41,6 +41,7 @@ public interface ICompanyMercsEntry
     string SavedPeripheralSkills { get; }
     string SavedPeripheralCharacteristics { get; }
     int ExperiencePoints { get; }
+    List<CompanyTrooperPerkState> Perks { get; }
     int? UnitMoveFirstCm { get; }
     int? UnitMoveSecondCm { get; }
     string UnitMoveDisplay { get; set; }
