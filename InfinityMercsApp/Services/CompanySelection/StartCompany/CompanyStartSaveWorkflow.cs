@@ -70,6 +70,9 @@ internal static class CompanyStartSaveWorkflow
 
         var isTagCompanyWorkflow =
             string.Equals(request.CompanyType, "TAG Company", StringComparison.OrdinalIgnoreCase);
+        Func<int, int?> resolveParentFactionId = factionId =>
+            factions.FirstOrDefault(x => x.Id == factionId)?.ParentId
+            ?? request.ArmyDataService.GetMetadataFactionById(factionId)?.ParentId;
 
         TCaptainStats? improvedCaptainStats;
         if (isTagCompanyWorkflow)
@@ -94,7 +97,7 @@ internal static class CompanyStartSaveWorkflow
                     UnitEquipment = captainEntry.SavedEquipment,
                     UnitCachedLogoPath = captainEntry.CachedLogoPath,
                     UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
-                    TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetParentFactionId = resolveParentFactionId,
                     TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
                     TryGetMetadataFactionName = request.TryGetMetadataFactionName,
                     ArmyDataService = request.ArmyDataService,
@@ -121,7 +124,7 @@ internal static class CompanyStartSaveWorkflow
                     UnitEquipment = captainEntry.SavedEquipment,
                     UnitCachedLogoPath = captainEntry.CachedLogoPath,
                     UnitPackagedLogoPath = captainEntry.PackagedLogoPath,
-                    TryGetParentFactionId = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.ParentId,
+                    TryGetParentFactionId = resolveParentFactionId,
                     TryGetFactionName = factionId => factions.FirstOrDefault(x => x.Id == factionId)?.Name,
                     TryGetMetadataFactionName = request.TryGetMetadataFactionName,
                     ArmyDataService = request.ArmyDataService,

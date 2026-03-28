@@ -21,7 +21,12 @@ internal static class CompanySpecOpsWorkflowService
         CancellationToken cancellationToken = default)
     {
         var sourceFactionId = ResolveSourceFactionIdForTagWorkflow(request);
-        var candidateFactionIds = BuildFactionCandidateChain(sourceFactionId, request.TryGetParentFactionId);
+        var candidateFactionIds = BuildFactionCandidateChain(sourceFactionId, request.TryGetParentFactionId).ToList();
+        var inferredVanillaFactionId = InferVanillaFactionIdFromReinforcement(sourceFactionId);
+        if (inferredVanillaFactionId.HasValue && !candidateFactionIds.Contains(inferredVanillaFactionId.Value))
+        {
+            candidateFactionIds.Add(inferredVanillaFactionId.Value);
+        }
         var mergedWeapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var mergedSkills = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var mergedEquipment = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -164,6 +169,24 @@ internal static class CompanySpecOpsWorkflowService
         }
 
         return candidates;
+    }
+
+    private static int? InferVanillaFactionIdFromReinforcement(int factionId)
+    {
+        if (factionId <= 0)
+        {
+            return null;
+        }
+
+        // Reinforcement factions are encoded as x99; map to x01 for the parent vanilla faction.
+        // Examples: 199 -> 101 (PanO), 299 -> 201 (Yu Jing), 1099 -> 1001 (O-12).
+        if (factionId % 100 != 99)
+        {
+            return null;
+        }
+
+        var vanillaFactionId = (factionId / 100) * 100 + 1;
+        return vanillaFactionId > 0 ? vanillaFactionId : null;
     }
 
     private static TemplateCaptain.CaptainUpgradeOptionSet FilterDisallowedTagSpecOpsOptions(

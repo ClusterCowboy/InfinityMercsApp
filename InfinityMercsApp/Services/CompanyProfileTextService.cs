@@ -93,14 +93,7 @@ public static class CompanyProfileTextService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(uniqueValues) && uniqueValues != "-")
-        {
-            var uniqueParts = uniqueValues
-                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Where(x => !string.Equals(x, "-", StringComparison.Ordinal))
-                .Select(x => x.Trim());
-            merged.AddRange(uniqueParts);
-        }
+        merged.AddRange(SplitDisplayLine(uniqueValues));
 
         return merged
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -251,13 +244,72 @@ public static class CompanyProfileTextService
             return [];
         }
 
-        return text
-            .Replace("\r\n", ",", StringComparison.Ordinal)
-            .Replace('\r', ',')
-            .Replace('\n', ',')
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(x => !string.IsNullOrWhiteSpace(x) && x != "-")
-            .ToList();
+        return SplitDisplayTokens(text);
+    }
+
+    /// <summary>
+    /// Splits display text by line breaks and top-level commas, preserving commas inside parentheses/brackets.
+    /// </summary>
+    private static List<string> SplitDisplayTokens(string text)
+    {
+        var tokens = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var parenDepth = 0;
+        var bracketDepth = 0;
+
+        void FlushCurrent()
+        {
+            var token = current.ToString().Trim();
+            current.Clear();
+            if (!string.IsNullOrWhiteSpace(token) && token != "-")
+            {
+                tokens.Add(token);
+            }
+        }
+
+        foreach (var ch in text)
+        {
+            switch (ch)
+            {
+                case '(':
+                    parenDepth++;
+                    current.Append(ch);
+                    break;
+                case ')':
+                    if (parenDepth > 0)
+                    {
+                        parenDepth--;
+                    }
+
+                    current.Append(ch);
+                    break;
+                case '[':
+                    bracketDepth++;
+                    current.Append(ch);
+                    break;
+                case ']':
+                    if (bracketDepth > 0)
+                    {
+                        bracketDepth--;
+                    }
+
+                    current.Append(ch);
+                    break;
+                case '\r':
+                case '\n':
+                    FlushCurrent();
+                    break;
+                case ',' when parenDepth == 0 && bracketDepth == 0:
+                    FlushCurrent();
+                    break;
+                default:
+                    current.Append(ch);
+                    break;
+            }
+        }
+
+        FlushCurrent();
+        return tokens;
     }
 
     /// <summary>
