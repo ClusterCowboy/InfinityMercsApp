@@ -151,4 +151,32 @@ public static class CompanyPerkProgressionService
 
         return true;
     }
+
+    /// <summary>
+    /// Validates whether a specific tier can be acquired based on requirement rules.
+    /// </summary>
+    public static bool CanAcquireTier(
+        CompanyPerkTrackDefinition track,
+        int tier,
+        IReadOnlyCollection<int> alreadyOwnedTiers)
+    {
+        if (track is null || tier < 1 || tier > track.Tiers.Count)
+        {
+            return false;
+        }
+
+        var tierDefinition = track.Tiers[tier - 1];
+        if (tierDefinition.IsEmpty)
+        {
+            return false;
+        }
+
+        var requiredTier = CompanyPerkCatalog.ResolveRequiredTier(track, tier);
+        if (!requiredTier.HasValue)
+        {
+            return true;
+        }
+
+        return alreadyOwnedTiers.Contains(requiredTier.Value);
+    }
 }

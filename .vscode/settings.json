@@ -1,0 +1,6 @@
+{
+  "dotnet.defaultSolution": "InfinityMercsApp.sln",
+  "dotnet-test-explorer.testProjectPath": "tests/InfinityMercsApp.UnitTests/InfinityMercsApp.UnitTests.csproj",
+  "dotnet-test-explorer.autoWatch": false,
+  "dotnet-test-explorer.showCodeLens": true
+}

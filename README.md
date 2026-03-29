@@ -101,10 +101,16 @@ This is an app in C# which will allow for the easy creation and managment of a c
  - [ ] Have a reset button
 
 ## Phase 2
- - [ ] Transmutation (Auto) - only allow one form
+ - [ ] Perks
+   - [ ] Match the skills to ID codes on the backend
+   - [ ] Screen to show what perks have/haven't been selected
+   - [ ] Random selection of Perk Tree
+   - [ ] Random selection of Perk Level
+   - [ ] Highlight available options for choice
+   - [ ] Check and verify requirements for chained options
 
 
-## Phase 3 +
+## Phase 3
  - [ ] Season management
 	 - [ ] Import/Export profiles
  - [ ] Classified Objective picker
@@ -115,12 +121,13 @@ This is an app in C# which will allow for the easy creation and managment of a c
 	 - [ ] Rented Equipment
  - [ ] Company Deployment
  - [ ] Experience Points during play
-And more
 
 
 ## FUTURE (Maybe Never)
 
-#### Proxy Pack
+ - [ ] Transmutation (Auto) - only allow one form
+
+### Proxy Pack
 - [ ] Choose a single captain from any vanilla or sectorial (Lt not required, must be regular trooper)
 - [ ] Grant additional 10 XP
 - [ ] On level up, grant 2 perks and 10 renown
@@ -130,5 +137,5 @@ And more
 	- [ ] Allow these to provide additional orders
 - [ ] Implement Aspect of the Wolf Skill
 
-
 ## Known Defects
+
