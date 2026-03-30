@@ -1,5 +1,5 @@
 using System.Text.Json;
-using InfinityMercsApp.Views.Common;
+using InfinityMercsApp.Domain.Models.Perks;
 using Microsoft.Data.Sqlite;
 
 namespace InfinityMercsApp.UnitTests;
@@ -13,19 +13,30 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
         using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
         connection.Open();
 
-        var skillLookup = LoadSkillLookup(connection);
-        var ghulamDoctorSkills = FindFirstGhulamDoctorSkills(connection, skillLookup);
+        var skillLookup = LoadLookup(connection, "skills", "Id");
+        var (profile, option, unitFiltersJson, factionId) = FindFirstGhulamDoctorProfile(connection, skillLookup);
+        var filtersJson = LoadFactionFiltersJson(connection, factionId) ?? unitFiltersJson;
+        var equipLookup = BuildIdNameLookup(filtersJson, "equip");
+        var weaponLookup = BuildIdNameLookup(filtersJson, "weapons");
+        var charsLookup = BuildIdNameLookup(filtersJson, "chars");
+        var extrasLookup = BuildIdNameLookup(filtersJson, "extras");
 
-        var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(ghulamDoctorSkills);
+        var ownedPerks = CompanyPerkOwnershipResolver.ResolveOwnedPerksFromProfile(
+            profile,
+            option,
+            skillLookup,
+            equipLookup,
+            weaponLookup,
+            charsLookup,
+            extrasLookup);
 
-        Assert.Contains("intelligence-14-19-track-2-tier-3", ownedIds);
-        Assert.Contains("intelligence-14-19-track-2-tier-4", ownedIds);
+        Assert.Contains(ownedPerks, x => x.Id == "intelligence-14-19-track-2-tier-1");
     }
 
-    private static Dictionary<int, string> LoadSkillLookup(SqliteConnection connection)
+    private static Dictionary<int, string> LoadLookup(SqliteConnection connection, string tableName, string idColumnName)
     {
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT Id, Name FROM skills";
+        cmd.CommandText = $"SELECT {idColumnName}, Name FROM {tableName}";
         using var reader = cmd.ExecuteReader();
 
         var lookup = new Dictionary<int, string>();
@@ -39,7 +50,65 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
         return lookup;
     }
 
-    private static List<string> FindFirstGhulamDoctorSkills(
+    private static Dictionary<int, string> BuildIdNameLookup(string? filtersJson, string sectionName)
+    {
+        var map = new Dictionary<int, string>();
+        if (string.IsNullOrWhiteSpace(filtersJson))
+        {
+            return map;
+        }
+
+        using var doc = JsonDocument.Parse(filtersJson);
+        if (!doc.RootElement.TryGetProperty(sectionName, out var section) || section.ValueKind != JsonValueKind.Array)
+        {
+            return map;
+        }
+
+        foreach (var entry in section.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object || !entry.TryGetProperty("id", out var idEl))
+            {
+                continue;
+            }
+
+            var parsedId = 0;
+            var hasId = idEl.ValueKind == JsonValueKind.Number && idEl.TryGetInt32(out parsedId);
+            if (!hasId &&
+                !(idEl.ValueKind == JsonValueKind.String && int.TryParse(idEl.GetString(), out parsedId)))
+            {
+                continue;
+            }
+
+            if (!entry.TryGetProperty("name", out var nameEl) || nameEl.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var name = nameEl.GetString();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                map[parsedId] = name;
+            }
+        }
+
+        return map;
+    }
+
+    private static string? LoadFactionFiltersJson(SqliteConnection connection, int factionId)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+                          SELECT FiltersJson
+                          FROM armies
+                          WHERE FactionId = $factionId
+                          LIMIT 1
+                          """;
+        cmd.Parameters.AddWithValue("$factionId", factionId);
+        using var reader = cmd.ExecuteReader();
+        return reader.Read() && !reader.IsDBNull(0) ? reader.GetString(0) : null;
+    }
+
+    private static (JsonElement Profile, JsonElement Option, string? FiltersJson, int FactionId) FindFirstGhulamDoctorProfile(
         SqliteConnection connection,
         IReadOnlyDictionary<int, string> skillLookup)
     {
@@ -48,14 +117,9 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
             .Select(x => x.Key)
             .ToHashSet();
 
-        if (doctorSkillIds.Count == 0)
-        {
-            throw new Xunit.Sdk.XunitException("Could not find Doctor skill id(s) in skills table.");
-        }
-
         using var cmd = connection.CreateCommand();
         cmd.CommandText = """
-                          SELECT ProfileGroupsJson
+                          SELECT ProfileGroupsJson, FiltersJson, FactionId
                           FROM units
                           WHERE Name LIKE '%GHULAM%'
                             AND ProfileGroupsJson IS NOT NULL
@@ -70,22 +134,26 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
             }
 
             var profileGroupsJson = reader.GetString(0);
-            if (TryExtractDoctorSkills(profileGroupsJson, doctorSkillIds, skillLookup, out var doctorSkills))
+            var filtersJson = reader.IsDBNull(1) ? null : reader.GetString(1);
+            var factionId = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+            if (TryExtractDoctorProfile(profileGroupsJson, doctorSkillIds, out var profile, out var option))
             {
-                return doctorSkills;
+                return (profile, option, filtersJson, factionId);
             }
         }
 
         throw new Xunit.Sdk.XunitException("Could not find a GHULAM Doctor profile in units table.");
     }
 
-    private static bool TryExtractDoctorSkills(
+    private static bool TryExtractDoctorProfile(
         string profileGroupsJson,
         IReadOnlySet<int> doctorSkillIds,
-        IReadOnlyDictionary<int, string> skillLookup,
-        out List<string> doctorSkills)
+        out JsonElement profile,
+        out JsonElement option)
     {
-        doctorSkills = [];
+        profile = default;
+        option = default;
+
         using var doc = JsonDocument.Parse(profileGroupsJson);
         if (doc.RootElement.ValueKind != JsonValueKind.Array)
         {
@@ -99,27 +167,25 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
                 continue;
             }
 
-            foreach (var option in options.EnumerateArray())
+            foreach (var candidateOption in options.EnumerateArray())
             {
-                if (!ContainsAnySkillId(option, doctorSkillIds))
+                if (!ContainsAnySkillId(candidateOption, doctorSkillIds))
                 {
                     continue;
                 }
 
-                AddSkillNames(option, skillLookup, doctorSkills);
-
-                if (group.TryGetProperty("profiles", out var profiles) &&
-                    profiles.ValueKind == JsonValueKind.Array &&
-                    profiles.GetArrayLength() > 0)
+                if (!group.TryGetProperty("profiles", out var profiles) ||
+                    profiles.ValueKind != JsonValueKind.Array ||
+                    profiles.GetArrayLength() == 0)
                 {
-                    AddSkillNames(profiles[0], skillLookup, doctorSkills);
+                    continue;
                 }
 
-                doctorSkills = doctorSkills
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                return doctorSkills.Count > 0;
+                using var profileDoc = JsonDocument.Parse(profiles[0].GetRawText());
+                using var optionDoc = JsonDocument.Parse(candidateOption.GetRawText());
+                profile = profileDoc.RootElement.Clone();
+                option = optionDoc.RootElement.Clone();
+                return true;
             }
         }
 
@@ -147,31 +213,6 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
         }
 
         return false;
-    }
-
-    private static void AddSkillNames(
-        JsonElement container,
-        IReadOnlyDictionary<int, string> skillLookup,
-        ICollection<string> destination)
-    {
-        if (!container.TryGetProperty("skills", out var skills) || skills.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        foreach (var skill in skills.EnumerateArray())
-        {
-            if (!skill.TryGetProperty("id", out var idEl) || idEl.ValueKind != JsonValueKind.Number)
-            {
-                continue;
-            }
-
-            var id = idEl.GetInt32();
-            if (skillLookup.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name))
-            {
-                destination.Add(name);
-            }
-        }
     }
 
     private static string ResolveRepoFilePath(string relativePath)

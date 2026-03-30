@@ -20,14 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Models\CompanyUnitExperienceRanks.cs" Link="Source\CompanyUnitExperienceRanks.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Models\Perks\CompanyPerkListDefinition.cs" Link="Source\CompanyPerkListDefinition.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Models\Perks\CompanyPerkTreeModels.cs" Link="Source\CompanyPerkTreeModels.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Models\Perks\CompanyTrooperPerk.cs" Link="Source\CompanyTrooperPerk.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Perks\CompanyPerkDefinitionParser.cs" Link="Source\CompanyPerkDefinitionParser.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Perks\CompanyPerkProgressionService.cs" Link="Source\CompanyPerkProgressionService.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Perks\CompanyPerkCatalog.cs" Link="Source\CompanyPerkCatalog.cs" />
-    <Compile Include="..\..\InfinityMercsApp\Services\CompanySelection\Perks\CompanyPerkOwnershipResolver.cs" Link="Source\CompanyPerkOwnershipResolver.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyUnitExperienceRanks.cs" Link="Source\CompanyUnitExperienceRanks.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkListDefinition.cs" Link="Source\CompanyPerkListDefinition.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkTreeModels.cs" Link="Source\CompanyPerkTreeModels.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyTrooperPerk.cs" Link="Source\CompanyTrooperPerk.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkDefinitionParser.cs" Link="Source\CompanyPerkDefinitionParser.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkProgressionService.cs" Link="Source\CompanyPerkProgressionService.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.cs" Link="Source\CompanyPerkCatalog.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkOwnershipResolver.cs" Link="Source\CompanyPerkOwnershipResolver.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\PerkNode.cs" Link="Source\PerkNode.cs" />
   </ItemGroup>
 
 </Project>

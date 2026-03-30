@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Views.Common;
+namespace InfinityMercsApp.Domain.Models.Perks;
 
 /// <summary>
 /// Backend helper for trooper perk progression tied to trooper experience.

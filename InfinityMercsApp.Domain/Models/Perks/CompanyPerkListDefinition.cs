@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Views.Common;
+namespace InfinityMercsApp.Domain.Models.Perks;
 
 public sealed class CompanyPerkRollRange
 {

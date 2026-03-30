@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace InfinityMercsApp.Views.Common;
+namespace InfinityMercsApp.Domain.Models.Perks;
 
 public sealed class CompanyTrooperPerk
 {

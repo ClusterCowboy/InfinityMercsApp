@@ -1,4 +1,4 @@
-using InfinityMercsApp.Views.Common;
+using InfinityMercsApp.Domain.Models.Perks;
 
 namespace InfinityMercsApp.UnitTests;
 

@@ -2,6 +2,7 @@
   "recommendations": [
     "ms-dotnettools.csdevkit",
     "ms-dotnettools.csharp",
+    "rodrigo455.vscode-dotnet-test-controller",
     "hbenl.vscode-test-explorer",
     "formulahendry.dotnet-test-explorer"
   ]

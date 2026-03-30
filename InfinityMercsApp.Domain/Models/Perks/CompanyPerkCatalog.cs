@@ -1,4 +1,4 @@
-namespace InfinityMercsApp.Views.Common;
+namespace InfinityMercsApp.Domain.Models.Perks;
 
 public static class CompanyPerkCatalog
 {
@@ -121,6 +121,7 @@ public static class CompanyPerkCatalog
     ];
 
     private static readonly IReadOnlyList<CompanyTrooperPerk> AllPerksInternal = BuildPerkIndex(PerkListsInternal);
+    private static readonly IReadOnlyList<PerkNodeList> PerkNodeListsInternal = BuildIndependentPerkNodeLists();
 
     public static IReadOnlyList<CompanyTrooperPerk> AllPerks => AllPerksInternal;
     public static IReadOnlyList<CompanyPerkListDefinition> AllPerkLists => PerkListsInternal;
@@ -241,6 +242,33 @@ public static class CompanyPerkCatalog
         }
 
         return trees;
+    }
+
+    /// <summary>
+    /// Builds generic <see cref="PerkNode"/> trees for each perk list.
+    /// </summary>
+    public static IReadOnlyList<PerkNodeList> GetPerkNodeLists(int? listRoll = null)
+    {
+        return PerkNodeListsInternal
+            .Where(list =>
+                !listRoll.HasValue ||
+                !list.IsRandomlyGenerated ||
+                list.ListRollRanges.Any(range => range.Contains(listRoll.Value)))
+            .Select(ClonePerkNodeList)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Returns generated <see cref="PerkNode"/> roots for a specific list id/name.
+    /// </summary>
+    public static IReadOnlyList<PerkNode> GetPerkNodesForList(string listNameOrId, int? listRoll = null)
+    {
+        return GetPerkNodeLists(listRoll)
+            .Where(x =>
+                string.Equals(x.ListId, listNameOrId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(x.ListName, listNameOrId, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(x => x.Roots)
+            .ToList();
     }
 
     /// <summary>
@@ -425,6 +453,250 @@ public static class CompanyPerkCatalog
             Roots = roots
         };
     }
+
+    private static IReadOnlyList<PerkNodeList> BuildIndependentPerkNodeLists()
+    {
+        return
+        [
+            GenerateMechaPerkNodeList(),
+            GenerateInitiativePerkNodeList(),
+            GenerateCoolPerkNodeList(),
+            GenerateBodyPerkNodeList(),
+            GenerateReflexPerkNodeList(),
+            GenerateIntelligencePerkNodeList(),
+            GenerateEmpathyPerkNodeList()
+        ];
+    }
+
+    private static PerkNodeList GenerateMechaPerkNodeList()
+    {
+        var baseList = BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "mecha",
+            "Mecha",
+            false,
+            null,
+            [null, null, null, null, null, null, null]));
+
+        var track1tier1 = new PerkNode
+        {
+            Id = "mecha-track-1-tier-1",
+            Name = "S6, +1 ARM",
+            Tier = 1,
+            S = 6,
+            ARM = 1
+        };
+
+        var track1tier2 = new PerkNode
+        {
+            Id = "mecha-track-1-tier-2",
+            Name = "S7, +1 ARM, SR-1",
+            Tier = 2,
+            ParentId = track1tier1.Id,
+            S = 7,
+            ARM = 1,
+            SkillsEquipmentGained = 
+            [
+                Tuple.Create("SR-1", string.Empty)
+            ]
+
+        };
+
+        // Mecha track 1 tier 3 is intentionally empty, so tier 4 depends on tier 2.
+        var track1tier4 = new PerkNode
+        {
+            Id = "mecha-track-1-tier-4",
+            Name = "+1 ARM",
+            Tier = 4,
+            ParentId = track1tier2.Id,
+            ARM = 1
+        };
+
+        var track1tier5 = new PerkNode
+        {
+            Id = "mecha-track-1-tier-5",
+            Name = "S8, +1 ARM, Baggage",
+            Tier = 5,
+            ParentId = track1tier4.Id,
+            S = 8,
+            ARM = 1,
+            SkillsEquipmentGained = 
+            [
+                Tuple.Create("Baggage", string.Empty)
+            ]
+        };
+
+        track1tier1.AddChild(track1tier2);
+        track1tier2.AddChild(track1tier4);
+        track1tier4.AddChild(track1tier5);
+
+        return new PerkNodeList
+        {
+            ListId = baseList.ListId,
+            ListName = baseList.ListName,
+            IsRandomlyGenerated = baseList.IsRandomlyGenerated,
+            ListRollRanges = baseList.ListRollRanges,
+            Roots = [track1tier1, .. baseList.Roots.Skip(1)]
+        };
+    }
+
+    private static PerkNodeList GenerateInitiativePerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "initiative",
+            "Initiative",
+            true,
+            "1-7",
+            ["1-6", "4-9", "7-12", "10-15", "13-18", "16-20", "19-20/1-3"]));
+    }
+
+    private static PerkNodeList GenerateCoolPerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "cool",
+            "Cool",
+            true,
+            "5-10",
+            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20/1-2"]));
+    }
+
+    private static PerkNodeList GenerateBodyPerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "body",
+            "Body",
+            true,
+            "8-13",
+            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20", "19-20/1-2"]));
+    }
+
+    private static PerkNodeList GenerateReflexPerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "reflex",
+            "Reflex",
+            true,
+            "11-16",
+            ["1-5", "4-8", "7-11", "9-13", "12-16", "14-18", "17-20", "19-20/1-3"]));
+    }
+
+    private static PerkNodeList GenerateIntelligencePerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "intelligence",
+            "Intelligence",
+            true,
+            "14-19",
+            ["1-5", "4-8", "7-11", "9-13", "12-16", "14-18", "17-20", "19-20/1-3"]));
+    }
+
+    private static PerkNodeList GenerateEmpathyPerkNodeList()
+    {
+        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
+            "empathy",
+            "Empathy",
+            true,
+            "17-20/1-4",
+            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20/1-2"]));
+    }
+
+    private static PerkNodeList BuildPerkNodeListFromSpec(PerkNodeListSpec spec)
+    {
+        var listRollRanges = CompanyPerkDefinitionParser.ParseRollRanges(spec.ListRollSpec);
+        var roots = new List<PerkNode>();
+
+        for (var trackNumber = 1; trackNumber <= spec.TrackRollSpecs.Count; trackNumber++)
+        {
+            PerkNode? previousTier = null;
+            PerkNode? firstTier = null;
+            for (var tier = 1; tier <= 5; tier++)
+            {
+                var tierNode = new PerkNode
+                {
+                    Id = $"{spec.ListId}-track-{trackNumber}-tier-{tier}",
+                    Name = $"{spec.ListName} T{tier} Track {trackNumber}",
+                    Tier = tier,
+                    ParentId = previousTier?.Id
+                };
+
+                if (previousTier is null)
+                {
+                    firstTier = tierNode;
+                }
+                else
+                {
+                    previousTier.AddChild(tierNode);
+                }
+
+                previousTier = tierNode;
+            }
+
+            if (firstTier is not null)
+            {
+                roots.Add(firstTier);
+            }
+        }
+
+        return new PerkNodeList
+        {
+            ListId = spec.ListId,
+            ListName = spec.ListName,
+            IsRandomlyGenerated = spec.IsRandomlyGenerated,
+            ListRollRanges = listRollRanges,
+            Roots = roots
+        };
+    }
+
+    private static PerkNodeList ClonePerkNodeList(PerkNodeList source)
+    {
+        return new PerkNodeList
+        {
+            ListId = source.ListId,
+            ListName = source.ListName,
+            IsRandomlyGenerated = source.IsRandomlyGenerated,
+            ListRollRanges = source.ListRollRanges.Select(range => new CompanyPerkRollRange
+            {
+                Min = range.Min,
+                Max = range.Max
+            }).ToList(),
+            Roots = source.Roots.Select(ClonePerkNode).ToList()
+        };
+    }
+
+    private static PerkNode ClonePerkNode(PerkNode source)
+    {
+        var clone = new PerkNode
+        {
+            Id = source.Id,
+            Name = source.Name,
+            Tier = source.Tier,
+            ParentId = source.ParentId,
+            IsOwned = source.IsOwned,
+            MOV = source.MOV,
+            CC = source.CC,
+            BS = source.BS,
+            WIP = source.WIP,
+            ARM = source.ARM,
+            BTS = source.BTS,
+            S = source.S,
+            SkillsEquipmentGained = source.SkillsEquipmentGained
+                .Select(x => Tuple.Create(x.Item1, x.Item2))
+                .ToList()
+        };
+
+        foreach (var child in source.Children)
+        {
+            clone.AddChild(ClonePerkNode(child));
+        }
+
+        return clone;
+    }
+
+    private sealed record PerkNodeListSpec(
+        string ListId,
+        string ListName,
+        bool IsRandomlyGenerated,
+        string? ListRollSpec,
+        IReadOnlyList<string?> TrackRollSpecs);
 
     private static HashSet<int> GetOwnedTiers(
         int trackNumber,
