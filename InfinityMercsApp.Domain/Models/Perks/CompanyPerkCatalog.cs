@@ -1,6 +1,8 @@
+using System.Text.RegularExpressions;
+
 namespace InfinityMercsApp.Domain.Models.Perks;
 
-public static class CompanyPerkCatalog
+public static partial class CompanyPerkCatalog
 {
     private static readonly IReadOnlyList<CompanyPerkListDefinition> PerkListsInternal =
     [
@@ -468,184 +470,6 @@ public static class CompanyPerkCatalog
         ];
     }
 
-    private static PerkNodeList GenerateMechaPerkNodeList()
-    {
-        var baseList = BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "mecha",
-            "Mecha",
-            false,
-            null,
-            [null, null, null, null, null, null, null]));
-
-        var track1tier1 = new PerkNode
-        {
-            Id = "mecha-track-1-tier-1",
-            Name = "S6, +1 ARM",
-            Tier = 1,
-            S = 6,
-            ARM = 1
-        };
-
-        var track1tier2 = new PerkNode
-        {
-            Id = "mecha-track-1-tier-2",
-            Name = "S7, +1 ARM, SR-1",
-            Tier = 2,
-            ParentId = track1tier1.Id,
-            S = 7,
-            ARM = 1,
-            SkillsEquipmentGained = 
-            [
-                Tuple.Create("SR-1", string.Empty)
-            ]
-
-        };
-
-        // Mecha track 1 tier 3 is intentionally empty, so tier 4 depends on tier 2.
-        var track1tier4 = new PerkNode
-        {
-            Id = "mecha-track-1-tier-4",
-            Name = "+1 ARM",
-            Tier = 4,
-            ParentId = track1tier2.Id,
-            ARM = 1
-        };
-
-        var track1tier5 = new PerkNode
-        {
-            Id = "mecha-track-1-tier-5",
-            Name = "S8, +1 ARM, Baggage",
-            Tier = 5,
-            ParentId = track1tier4.Id,
-            S = 8,
-            ARM = 1,
-            SkillsEquipmentGained = 
-            [
-                Tuple.Create("Baggage", string.Empty)
-            ]
-        };
-
-        track1tier1.AddChild(track1tier2);
-        track1tier2.AddChild(track1tier4);
-        track1tier4.AddChild(track1tier5);
-
-        return new PerkNodeList
-        {
-            ListId = baseList.ListId,
-            ListName = baseList.ListName,
-            IsRandomlyGenerated = baseList.IsRandomlyGenerated,
-            ListRollRanges = baseList.ListRollRanges,
-            Roots = [track1tier1, .. baseList.Roots.Skip(1)]
-        };
-    }
-
-    private static PerkNodeList GenerateInitiativePerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "initiative",
-            "Initiative",
-            true,
-            "1-7",
-            ["1-6", "4-9", "7-12", "10-15", "13-18", "16-20", "19-20/1-3"]));
-    }
-
-    private static PerkNodeList GenerateCoolPerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "cool",
-            "Cool",
-            true,
-            "5-10",
-            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20/1-2"]));
-    }
-
-    private static PerkNodeList GenerateBodyPerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "body",
-            "Body",
-            true,
-            "8-13",
-            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20", "19-20/1-2"]));
-    }
-
-    private static PerkNodeList GenerateReflexPerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "reflex",
-            "Reflex",
-            true,
-            "11-16",
-            ["1-5", "4-8", "7-11", "9-13", "12-16", "14-18", "17-20", "19-20/1-3"]));
-    }
-
-    private static PerkNodeList GenerateIntelligencePerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "intelligence",
-            "Intelligence",
-            true,
-            "14-19",
-            ["1-5", "4-8", "7-11", "9-13", "12-16", "14-18", "17-20", "19-20/1-3"]));
-    }
-
-    private static PerkNodeList GenerateEmpathyPerkNodeList()
-    {
-        return BuildPerkNodeListFromSpec(new PerkNodeListSpec(
-            "empathy",
-            "Empathy",
-            true,
-            "17-20/1-4",
-            ["1-4", "3-6", "5-8", "7-10", "9-12", "11-14", "13-16", "15-18", "17-20/1-2"]));
-    }
-
-    private static PerkNodeList BuildPerkNodeListFromSpec(PerkNodeListSpec spec)
-    {
-        var listRollRanges = CompanyPerkDefinitionParser.ParseRollRanges(spec.ListRollSpec);
-        var roots = new List<PerkNode>();
-
-        for (var trackNumber = 1; trackNumber <= spec.TrackRollSpecs.Count; trackNumber++)
-        {
-            PerkNode? previousTier = null;
-            PerkNode? firstTier = null;
-            for (var tier = 1; tier <= 5; tier++)
-            {
-                var tierNode = new PerkNode
-                {
-                    Id = $"{spec.ListId}-track-{trackNumber}-tier-{tier}",
-                    Name = $"{spec.ListName} T{tier} Track {trackNumber}",
-                    Tier = tier,
-                    ParentId = previousTier?.Id
-                };
-
-                if (previousTier is null)
-                {
-                    firstTier = tierNode;
-                }
-                else
-                {
-                    previousTier.AddChild(tierNode);
-                }
-
-                previousTier = tierNode;
-            }
-
-            if (firstTier is not null)
-            {
-                roots.Add(firstTier);
-            }
-        }
-
-        return new PerkNodeList
-        {
-            ListId = spec.ListId,
-            ListName = spec.ListName,
-            IsRandomlyGenerated = spec.IsRandomlyGenerated,
-            ListRollRanges = listRollRanges,
-            Roots = roots
-        };
-    }
-
     private static PerkNodeList ClonePerkNodeList(PerkNodeList source)
     {
         return new PerkNodeList
@@ -691,12 +515,163 @@ public static class CompanyPerkCatalog
         return clone;
     }
 
-    private sealed record PerkNodeListSpec(
-        string ListId,
-        string ListName,
-        bool IsRandomlyGenerated,
-        string? ListRollSpec,
-        IReadOnlyList<string?> TrackRollSpecs);
+    private static List<Tuple<string, string>> BuildSkillsEquipmentGained(string perkText)
+    {
+        var tuples = new List<Tuple<string, string>>();
+        if (string.IsNullOrWhiteSpace(perkText))
+        {
+            return tuples;
+        }
+
+        foreach (var commaPart in SplitTopLevel(perkText, ','))
+        {
+            var orParts = SplitTopLevelOr(commaPart).ToList();
+            if (orParts.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var raw in orParts)
+            {
+                var part = raw.Trim();
+                if (part.Length == 0)
+                {
+                    continue;
+                }
+
+                var extras = new List<string>();
+                foreach (Match match in Regex.Matches(part, @"\(([^()]*)\)"))
+                {
+                    var value = match.Groups[1].Value.Trim();
+                    if (value.Length > 0)
+                    {
+                        extras.Add(value);
+                    }
+                }
+
+                var baseName = Regex.Replace(part, @"\([^()]*\)", " ");
+                baseName = Regex.Replace(baseName, @"\s+", " ").Trim(' ', ',');
+
+                var mustBeIndex = baseName.IndexOf(" Must be ", StringComparison.OrdinalIgnoreCase);
+                if (mustBeIndex >= 0)
+                {
+                    extras.Add(baseName[mustBeIndex..].Trim());
+                    baseName = baseName[..mustBeIndex].Trim();
+                }
+
+                if (extras.Count == 0 &&
+                    !baseName.StartsWith('+') &&
+                    !baseName.StartsWith('-'))
+                {
+                    var trailingExtra = Regex.Match(baseName, @"^(?<base>.+?)\s+(?<extra>[+\-]\d.*)$");
+                    if (trailingExtra.Success)
+                    {
+                        baseName = trailingExtra.Groups["base"].Value.Trim();
+                        extras.Add(trailingExtra.Groups["extra"].Value.Trim());
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(baseName))
+                {
+                    baseName = part;
+                }
+
+                var extraValue = extras.Count == 0
+                    ? string.Empty
+                    : string.Join(", ", extras.Distinct(StringComparer.OrdinalIgnoreCase));
+                tuples.Add(Tuple.Create(baseName, extraValue));
+            }
+        }
+
+        return tuples;
+    }
+
+    private static IEnumerable<string> SplitTopLevel(string text, char separator)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            yield break;
+        }
+
+        var depth = 0;
+        var start = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var ch = text[i];
+            if (ch == '(')
+            {
+                depth++;
+            }
+            else if (ch == ')')
+            {
+                depth = Math.Max(0, depth - 1);
+            }
+            else if (ch == separator && depth == 0)
+            {
+                var value = text[start..i].Trim();
+                if (value.Length > 0)
+                {
+                    yield return value;
+                }
+
+                start = i + 1;
+            }
+        }
+
+        var last = text[start..].Trim();
+        if (last.Length > 0)
+        {
+            yield return last;
+        }
+    }
+
+    private static IEnumerable<string> SplitTopLevelOr(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            yield break;
+        }
+
+        var depth = 0;
+        var start = 0;
+        for (var i = 0; i < text.Length - 3; i++)
+        {
+            var ch = text[i];
+            if (ch == '(')
+            {
+                depth++;
+                continue;
+            }
+
+            if (ch == ')')
+            {
+                depth = Math.Max(0, depth - 1);
+                continue;
+            }
+
+            if (depth == 0 &&
+                text[i] == ' ' &&
+                text[i + 1] == 'O' &&
+                text[i + 2] == 'R' &&
+                text[i + 3] == ' ')
+            {
+                var value = text[start..i].Trim();
+                if (value.Length > 0)
+                {
+                    yield return value;
+                }
+
+                start = i + 4;
+                i += 3;
+            }
+        }
+
+        var last = text[start..].Trim();
+        if (last.Length > 0)
+        {
+            yield return last;
+        }
+    }
 
     private static HashSet<int> GetOwnedTiers(
         int trackNumber,

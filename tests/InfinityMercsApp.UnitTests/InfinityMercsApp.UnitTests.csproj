@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -27,6 +27,13 @@
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkDefinitionParser.cs" Link="Source\CompanyPerkDefinitionParser.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkProgressionService.cs" Link="Source\CompanyPerkProgressionService.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.cs" Link="Source\CompanyPerkCatalog.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Mecha.cs" Link="Source\CompanyPerkCatalog.Mecha.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Initiative.cs" Link="Source\CompanyPerkCatalog.Initiative.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Cool.cs" Link="Source\CompanyPerkCatalog.Cool.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Body.cs" Link="Source\CompanyPerkCatalog.Body.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Reflex.cs" Link="Source\CompanyPerkCatalog.Reflex.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Intelligence.cs" Link="Source\CompanyPerkCatalog.Intelligence.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkCatalog.Empathy.cs" Link="Source\CompanyPerkCatalog.Empathy.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyPerkOwnershipResolver.cs" Link="Source\CompanyPerkOwnershipResolver.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\PerkNode.cs" Link="Source\PerkNode.cs" />
   </ItemGroup>

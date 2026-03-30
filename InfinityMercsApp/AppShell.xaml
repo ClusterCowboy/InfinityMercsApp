@@ -56,10 +56,18 @@
         ContentTemplate="{DataTemplate views:SettingsPage}"
         Route="SettingsPage" />
 
-    <ShellContent
-        Title="Mercs Glossary"
-        ContentTemplate="{DataTemplate views:MercsGlossaryPage}"
-        Route="MercsGlossaryPage" />
+    <FlyoutItem
+        Title="MERCS Reference"
+        Route="MercsReference">
+        <ShellContent
+            Title="Mercs Glossary"
+            ContentTemplate="{DataTemplate views:MercsGlossaryPage}"
+            Route="MercsGlossaryPage" />
+        <ShellContent
+            Title="Perks Tables"
+            ContentTemplate="{DataTemplate views:PerksTablesPage}"
+            Route="PerksTablesPage" />
+    </FlyoutItem>
 
     <ShellContent
         Title="Debug"
