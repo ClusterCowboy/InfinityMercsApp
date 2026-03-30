@@ -16,6 +16,7 @@ public static partial class CompanyPerkCatalog
             Id = "initiative-track-1-tier-2",
             Name = "Minelayer (2)",
             Tier = 2,
+            ParentId = t1r1.Id,
             SkillsEquipmentGained = BuildSkillsEquipmentGained("Minelayer (2)")
         };
 

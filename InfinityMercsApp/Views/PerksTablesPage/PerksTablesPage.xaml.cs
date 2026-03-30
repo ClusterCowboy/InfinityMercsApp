@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 namespace InfinityMercsApp.Views;
 
@@ -7,32 +8,26 @@ public partial class PerksTablesPage : ContentPage
     private readonly Dictionary<(int Track, int Tier), Border> _perkCellByTrackTier = [];
     private readonly List<DependencyLink> _dependencyLinks = [];
     private readonly DependencyLinesDrawable _dependencyLinesDrawable = new();
-    private string? _selectedPerkTableName;
+    private PerkTableOption? _selectedPerkTableOption;
 
-    public ObservableCollection<string> PerkTableNames { get; } = [];
+    public ObservableCollection<PerkTableOption> PerkTableOptions { get; } = [];
 
-    public string? SelectedPerkTableName
+    public PerkTableOption? SelectedPerkTableOption
     {
-        get => _selectedPerkTableName;
+        get => _selectedPerkTableOption;
         set
         {
-            if (string.Equals(_selectedPerkTableName, value, StringComparison.Ordinal))
+            if (ReferenceEquals(_selectedPerkTableOption, value))
             {
                 return;
             }
 
-            _selectedPerkTableName = value;
+            _selectedPerkTableOption = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(SelectedPerkTableLabel));
             BuildPerksTableGrid();
             ScheduleOverlayRefresh();
         }
     }
-
-    public string SelectedPerkTableLabel =>
-        string.IsNullOrWhiteSpace(SelectedPerkTableName)
-            ? "Choose a table to view."
-            : $"Selected table: {SelectedPerkTableName}";
 
     public PerksTablesPage()
     {
@@ -43,18 +38,46 @@ public partial class PerksTablesPage : ContentPage
         DependencyLinesView.SizeChanged += OnDependencyLinesViewSizeChanged;
         PerksGridHost.SizeChanged += OnPerksGridHostSizeChanged;
 
-        var names = CompanyPerkCatalog
+        var discoveredNames = CompanyPerkCatalog
             .GetPerkNodeLists()
             .Select(list => list.ListName)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        foreach (var name in names)
+
+        var preferredOrder = new[]
         {
-            PerkTableNames.Add(name);
+            "Initiative",
+            "Cool",
+            "Body",
+            "Reflex",
+            "Intelligence",
+            "Empathy",
+            "Mecha"
+        };
+
+        var orderedNames = preferredOrder
+            .Where(name => discoveredNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .Concat(discoveredNames.Where(name => !preferredOrder.Contains(name, StringComparer.OrdinalIgnoreCase)))
+            .ToList();
+
+        var listDefinitions = CompanyPerkCatalog.AllPerkLists
+            .ToDictionary(list => list.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var name in orderedNames)
+        {
+            listDefinitions.TryGetValue(name, out var definition);
+            var rangeText = definition is null || definition.ListRollRanges.Count == 0
+                ? "No Roll"
+                : BuildRollRangesLabel(definition.ListRollRanges);
+
+            PerkTableOptions.Add(new PerkTableOption
+            {
+                ListName = name,
+                DisplayName = $"{name} ({rangeText})"
+            });
         }
 
-        SelectedPerkTableName = PerkTableNames.FirstOrDefault();
+        SelectedPerkTableOption = PerkTableOptions.FirstOrDefault();
     }
 
     private void BuildPerksTableGrid()
@@ -65,30 +88,62 @@ public partial class PerksTablesPage : ContentPage
         PerksTableGrid.RowDefinitions.Clear();
         PerksTableGrid.ColumnDefinitions.Clear();
 
-        if (string.IsNullOrWhiteSpace(SelectedPerkTableName))
+        if (_selectedPerkTableOption is null)
         {
             UpdateLineOverlay();
             return;
         }
 
-        var trees = CompanyPerkCatalog.GetPerkTrees(SelectedPerkTableName)
-            .OrderBy(x => x.TrackNumber)
+        var nodeList = CompanyPerkCatalog
+            .GetPerkNodeLists()
+            .FirstOrDefault(list => string.Equals(
+                list.ListName,
+                _selectedPerkTableOption.ListName,
+                StringComparison.OrdinalIgnoreCase));
+        if (nodeList is null)
+        {
+            UpdateLineOverlay();
+            return;
+        }
+
+        var allNodes = FlattenNodes(nodeList.Roots)
+            .GroupBy(node => node.Id, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
             .ToList();
-        if (trees.Count == 0)
+
+        var rowsByTrack = new Dictionary<int, List<PerkNode>>();
+        foreach (var node in allNodes)
+        {
+            if (!TryParseTrackTier(node.Id, out var track, out _))
+            {
+                continue;
+            }
+
+            if (!rowsByTrack.TryGetValue(track, out var rowNodes))
+            {
+                rowNodes = [];
+                rowsByTrack[track] = rowNodes;
+            }
+
+            rowNodes.Add(node);
+        }
+
+        var orderedTrackNumbers = rowsByTrack.Keys.OrderBy(x => x).ToList();
+        if (orderedTrackNumbers.Count == 0)
         {
             UpdateLineOverlay();
             return;
         }
 
-        var maxTier = trees
-            .SelectMany(tree => FlattenNodes(tree.Roots))
-            .Select(node => node.Tier)
-            .DefaultIfEmpty(1)
-            .Max();
+        var maxTier = allNodes.Count == 0 ? 1 : allNodes.Max(node => node.Tier);
 
         const double headerRowHeight = 56;
         const double rollColumnWidth = 110;
         var displayedTierCount = Math.Max(5, maxTier);
+        var listDefinition = CompanyPerkCatalog.FindList(nodeList.ListId) ?? CompanyPerkCatalog.FindList(nodeList.ListName);
+        var rollLabelByTrack = listDefinition?.Tracks.ToDictionary(
+            track => track.TrackNumber,
+            track => BuildRollRangesLabel(track.RollRanges));
 
         PerksTableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = rollColumnWidth });
         for (var tier = 1; tier <= maxTier; tier++)
@@ -101,7 +156,7 @@ public partial class PerksTablesPage : ContentPage
         }
 
         PerksTableGrid.RowDefinitions.Add(new RowDefinition { Height = headerRowHeight });
-        foreach (var _ in trees)
+        foreach (var _ in orderedTrackNumbers)
         {
             PerksTableGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
         }
@@ -119,52 +174,81 @@ public partial class PerksTablesPage : ContentPage
             PerksTableGrid.Children.Add(tierHeader);
         }
 
-        for (var i = 0; i < trees.Count; i++)
+        for (var i = 0; i < orderedTrackNumbers.Count; i++)
         {
-            var track = trees[i];
-            var rollLabel = BuildRollRangesLabel(track.RollRanges);
+            var trackNumber = orderedTrackNumbers[i];
+            var rollLabel = rollLabelByTrack is not null &&
+                            rollLabelByTrack.TryGetValue(trackNumber, out var trackRollLabel)
+                ? trackRollLabel
+                : trackNumber.ToString();
             var rollCell = BuildTierCell(rollLabel);
             Grid.SetRow(rollCell, i + 1);
             Grid.SetColumn(rollCell, 0);
             PerksTableGrid.Children.Add(rollCell);
         }
 
-        for (var i = 0; i < trees.Count; i++)
+        for (var i = 0; i < orderedTrackNumbers.Count; i++)
         {
-            var track = trees[i];
-            var nodesByTier = FlattenNodes(track.Roots)
+            var trackNumber = orderedTrackNumbers[i];
+            var nodesByTier = rowsByTrack[trackNumber]
                 .GroupBy(node => node.Tier)
                 .ToDictionary(
                     group => group.Key,
                     group => string.Join(
                         Environment.NewLine,
-                        group.Select(node => FormatPerkDisplayText(node.PerkText))));
+                        group.Select(node => FormatPerkDisplayText(node.Name))));
 
             for (var tier = 1; tier <= displayedTierCount; tier++)
             {
                 nodesByTier.TryGetValue(tier, out var perksText);
-                var cell = BuildPerkCell(string.IsNullOrWhiteSpace(perksText) ? string.Empty : perksText);
+                var hasText = !string.IsNullOrWhiteSpace(perksText);
+                var cell = BuildPerkCell(hasText ? perksText! : string.Empty, hasText);
                 Grid.SetRow(cell, i + 1);
                 Grid.SetColumn(cell, tier);
                 PerksTableGrid.Children.Add(cell);
                 if (tier <= maxTier)
                 {
-                    _perkCellByTrackTier[(track.TrackNumber, tier)] = cell;
+                    _perkCellByTrackTier[(trackNumber, tier)] = cell;
                 }
             }
+        }
 
-            foreach (var node in FlattenNodes(track.Roots))
+        foreach (var node in allNodes)
+        {
+            if (!TryParseTrackTier(node.Id, out var childTrack, out var childTier))
             {
-                if (!node.RequiredTier.HasValue)
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(node.ParentId) &&
+                TryParseTrackTier(node.ParentId, out var parentTrack, out var parentTier) &&
+                parentTrack == childTrack)
+            {
+                _dependencyLinks.Add(new DependencyLink
+                {
+                    Track = childTrack,
+                    FromTier = parentTier,
+                    ToTier = childTier
+                });
+            }
+
+            foreach (var child in node.Children)
+            {
+                if (!TryParseTrackTier(child.Id, out var childNodeTrack, out var childNodeTier))
+                {
+                    continue;
+                }
+
+                if (childNodeTrack != childTrack)
                 {
                     continue;
                 }
 
                 _dependencyLinks.Add(new DependencyLink
                 {
-                    Track = track.TrackNumber,
-                    FromTier = node.RequiredTier.Value,
-                    ToTier = node.Tier
+                    Track = childTrack,
+                    FromTier = childTier,
+                    ToTier = childNodeTier
                 });
             }
         }
@@ -211,6 +295,47 @@ public partial class PerksTablesPage : ContentPage
         }
     }
 
+    private static IEnumerable<PerkNode> FlattenNodes(IEnumerable<PerkNode> roots)
+    {
+        foreach (var root in roots)
+        {
+            yield return root;
+
+            foreach (var child in FlattenNodes(root.Children))
+            {
+                yield return child;
+            }
+        }
+    }
+
+    private static bool TryParseTrackTier(string? nodeId, out int trackNumber, out int tierNumber)
+    {
+        trackNumber = 0;
+        tierNumber = 0;
+        if (string.IsNullOrWhiteSpace(nodeId))
+        {
+            return false;
+        }
+
+        var match = Regex.Match(
+            nodeId,
+            @"-track-(?<track>\d+)-tier-(?<tier>\d+)",
+            RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        return int.TryParse(match.Groups["track"].Value, out trackNumber) &&
+               int.TryParse(match.Groups["tier"].Value, out tierNumber);
+    }
+
+    public sealed class PerkTableOption
+    {
+        public string ListName { get; init; } = string.Empty;
+        public string DisplayName { get; init; } = string.Empty;
+    }
+
     private static Border BuildHeaderCell(string text)
     {
         return new Border
@@ -248,12 +373,14 @@ public partial class PerksTablesPage : ContentPage
         };
     }
 
-    private static Border BuildPerkCell(string text)
+    private static Border BuildPerkCell(string text, bool hasText)
     {
         return new Border
         {
             StrokeThickness = 1,
-            BackgroundColor = Color.FromArgb("#0B1220"),
+            BackgroundColor = hasText
+                ? Color.FromArgb("#3322C55E")
+                : Color.FromArgb("#0B1220"),
             Padding = new Thickness(10, 8),
             HorizontalOptions = LayoutOptions.Fill,
             Content = new Label
@@ -396,7 +523,7 @@ public partial class PerksTablesPage : ContentPage
 
         public void Draw(ICanvas canvas, RectF dirtyRect)
         {
-            canvas.StrokeColor = Color.FromArgb("#22D3EE");
+            canvas.StrokeColor = Color.FromArgb("#22C55E");
             canvas.StrokeSize = 2f;
 
             foreach (var line in _lines)

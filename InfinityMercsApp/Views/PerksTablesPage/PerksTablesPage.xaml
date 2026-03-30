@@ -5,23 +5,14 @@
              x:Name="PerksTablesRoot"
              Title="Perks Tables">
 
-    <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
-        <Label Grid.Row="0"
-               Text="Perks Tables"
-               FontSize="28"
-               FontAttributes="Bold" />
-
-        <Picker Grid.Row="1"
+    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="12">
+        <Picker Grid.Row="0"
                 x:Name="PerkTablePicker"
-                Title="Select a Perks Table"
-                ItemsSource="{Binding PerkTableNames}"
-                SelectedItem="{Binding SelectedPerkTableName, Mode=TwoWay}" />
+                ItemsSource="{Binding PerkTableOptions}"
+                ItemDisplayBinding="{Binding DisplayName}"
+                SelectedItem="{Binding SelectedPerkTableOption, Mode=TwoWay}" />
 
-        <Label Grid.Row="2"
-               Text="{Binding SelectedPerkTableLabel}"
-               FontSize="18" />
-
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="1"
               x:Name="PerksGridHost"
               HorizontalOptions="Fill"
               VerticalOptions="Fill">

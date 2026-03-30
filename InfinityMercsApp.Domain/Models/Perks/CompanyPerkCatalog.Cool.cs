@@ -19,7 +19,7 @@ public static partial class CompanyPerkCatalog
             Tier = 1,
             SkillsEquipmentGained = BuildSkillsEquipmentGained("Stealth")
         };
-        
+
 
         var t3r2 = new PerkNode
         {
@@ -41,6 +41,7 @@ public static partial class CompanyPerkCatalog
             Id = "cool-track-4-tier-3",
             Name = "Mimetism (-6)",
             Tier = 3,
+            ParentId = t4r2.Id,
             SkillsEquipmentGained = BuildSkillsEquipmentGained("Mimetism (-6)")
         };
 
