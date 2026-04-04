@@ -1917,11 +1917,11 @@ public class ViewerViewModel : BaseViewModel
         IEnumerable<ViewerFactionItem> filtered = _allFactions;
         if (_factionFilterMode == FactionFilterMode.Factions)
         {
-            filtered = filtered.Where(x => x.Id == x.ParentId);
+            filtered = filtered.Where(x => x.ParentId <= 0 || x.Id == x.ParentId);
         }
         else if (_factionFilterMode == FactionFilterMode.Sectorials)
         {
-            filtered = filtered.Where(x => x.Id != x.ParentId);
+            filtered = filtered.Where(x => x.ParentId > 0 && x.Id != x.ParentId);
         }
 
         var filteredList = filtered.ToList();

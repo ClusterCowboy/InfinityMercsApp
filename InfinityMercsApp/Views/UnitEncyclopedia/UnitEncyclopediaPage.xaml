@@ -27,11 +27,16 @@
                     <RadioButton Content="Sectorials" IsChecked="{Binding ShowSectorialEntriesOnly}" />
                 </HorizontalStackLayout>
 
-                <ActivityIndicator
-                    Grid.Row="2"
-                    IsRunning="{Binding IsLoading}"
-                    IsVisible="{Binding IsLoading}"
-                    HorizontalOptions="Start" />
+                <VerticalStackLayout Grid.Row="2" Spacing="2">
+                    <ActivityIndicator
+                        IsRunning="{Binding IsLoading}"
+                        IsVisible="{Binding IsLoading}"
+                        HorizontalOptions="Start" />
+                    <Label
+                        Text="{Binding Status}"
+                        FontSize="12"
+                        TextColor="#6B7280" />
+                </VerticalStackLayout>
 
                 <ScrollView Grid.Row="3" x:Name="FactionScrollView">
                     <ScrollView.GestureRecognizers>
@@ -40,7 +45,7 @@
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Factions}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <controls:FactionListItemView
+                                <controls:ViewerListRowView
                                     ItemTappedCommand="{Binding Source={x:Reference UnitEncyclopediaPageRoot}, Path=BindingContext.SelectFactionCommand}"
                                     ItemTappedCommandParameter="{Binding .}" />
                             </DataTemplate>
@@ -114,7 +119,7 @@
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Units}" Spacing="0">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <controls:FactionListItemView
+                                <controls:ViewerListRowView
                                     ItemTappedCommand="{Binding Source={x:Reference UnitEncyclopediaPageRoot}, Path=BindingContext.SelectUnitCommand}"
                                     ItemTappedCommandParameter="{Binding .}" />
                             </DataTemplate>

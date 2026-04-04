@@ -48,7 +48,12 @@ public partial class UnitEncyclopediaPage : ContentPage
 	protected override async void OnAppearing()
 	{
 		base.OnAppearing();
-		if (_loaded)
+		if (_viewModel.IsLoading)
+		{
+			return;
+		}
+
+		if (_loaded && _viewModel.Factions.Count > 0)
 		{
 			return;
 		}
