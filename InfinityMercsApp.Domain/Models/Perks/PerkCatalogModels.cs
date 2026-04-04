@@ -16,31 +16,6 @@ public sealed class CompanyPerkRollRange
     }
 }
 
-public sealed class CompanyPerkTierDefinition
-{
-    public string Id { get; init; } = string.Empty;
-    public int Tier { get; init; }
-    public string PerkText { get; init; } = string.Empty;
-    public bool RequiresPreviousTier { get; init; }
-    public bool IsEmpty => string.IsNullOrWhiteSpace(PerkText);
-}
-
-public sealed class CompanyPerkTrackDefinition
-{
-    public int TrackNumber { get; init; }
-    public List<CompanyPerkRollRange> RollRanges { get; init; } = [];
-    public List<CompanyPerkTierDefinition> Tiers { get; init; } = [];
-}
-
-public sealed class CompanyPerkListDefinition
-{
-    public string Id { get; init; } = string.Empty;
-    public string Name { get; init; } = string.Empty;
-    public bool IsRandomlyGenerated { get; init; }
-    public List<CompanyPerkRollRange> ListRollRanges { get; init; } = [];
-    public List<CompanyPerkTrackDefinition> Tracks { get; init; } = [];
-}
-
 public sealed class CompanyPerkRollOption
 {
     public string ListId { get; init; } = string.Empty;
@@ -49,4 +24,19 @@ public sealed class CompanyPerkRollOption
     public int Tier { get; init; }
     public string PerkText { get; init; } = string.Empty;
     public int? RequiredTier { get; init; }
+}
+
+public sealed class PerkTrackCatalogEntry
+{
+    public int TrackNumber { get; init; }
+    public List<CompanyPerkRollRange> RollRanges { get; init; } = [];
+}
+
+public sealed class PerkListCatalogEntry
+{
+    public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool IsRandomlyGenerated { get; init; }
+    public List<CompanyPerkRollRange> ListRollRanges { get; init; } = [];
+    public List<PerkTrackCatalogEntry> Tracks { get; init; } = [];
 }

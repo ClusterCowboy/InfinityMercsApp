@@ -25,17 +25,17 @@ public sealed class CompanyPerkOwnershipResolverProfileCasesTests
         _output.WriteLine(result.Report);
 
         Assert.True(result.Found, "Could not find O-12 Nimrod option with AP Marksman Rifle in database.");
-        Assert.Contains(result.OwnedPerkIds, x => x == "body-8-13-track-1-tier-3"); // Super Jump
-        Assert.Contains(result.OwnedPerkIds, x => x == "cool-5-10-track-4-tier-2"); // Mimetism (-3)
-        Assert.Contains(result.OwnedPerkIds, x => x == "initiative-1-7-track-3-tier-2"); // Forward Deployment (+8")
+        Assert.Contains(result.OwnedPerkIds, x => x == "body-track-1-tier-3"); // Super Jump
+        Assert.Contains(result.OwnedPerkIds, x => x == "cool-track-4-tier-2"); // Mimetism (-3)
+        Assert.Contains(result.OwnedPerkIds, x => x == "initiative-track-3-tier-2"); // Forward Deployment (+8")
 
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-8-13-track-1-tier-1"); // Climbing Plus
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-8-13-track-2-tier-1"); // Immunity chain
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-8-13-track-2-tier-2");
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-8-13-track-2-tier-3");
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "cool-5-10-track-4-tier-3"); // Mimetism (-6)
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "reflex-11-16-track-7-tier-3"); // BS Attack (-3)
-        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "reflex-11-16-track-7-tier-4"); // BS Attack (+1 SD)
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-track-1-tier-1"); // Climbing Plus
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-track-2-tier-1"); // Immunity chain
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-track-2-tier-2");
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "body-track-2-tier-3");
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "cool-track-4-tier-3"); // Mimetism (-6)
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "reflex-track-7-tier-3"); // BS Attack (-3)
+        Assert.DoesNotContain(result.OwnedPerkIds, x => x == "reflex-track-7-tier-4"); // BS Attack (+1 SD)
     }
 
     [Fact]

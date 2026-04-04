@@ -8,8 +8,9 @@ public sealed class CompanyPerkCatalogPerkNodeTests
     public void GetPerkNodeLists_BuildsRootsForEveryPerkList()
     {
         var lists = CompanyPerkCatalog.GetPerkNodeLists();
+        var catalogLists = CompanyPerkCatalog.GetPerkListCatalogEntries();
 
-        Assert.Equal(CompanyPerkCatalog.AllPerkLists.Count, lists.Count);
+        Assert.Equal(catalogLists.Count, lists.Count);
         Assert.All(lists, list =>
         {
             Assert.False(string.IsNullOrWhiteSpace(list.ListId));

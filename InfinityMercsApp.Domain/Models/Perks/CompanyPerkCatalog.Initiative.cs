@@ -130,7 +130,7 @@ public static partial class CompanyPerkCatalog
             ListId = "initiative-1-7",
             ListName = "Initiative",
             IsRandomlyGenerated = true,
-            ListRollRanges = CompanyPerkDefinitionParser.ParseRollRanges("1-7"),
+            ListRollRanges = ParseRollRanges("1-7"),
             Roots = [t1r1, t1r2, t2r2, t3r2, t4r2, t5r1, t6r1, t7r3]
         };
     }

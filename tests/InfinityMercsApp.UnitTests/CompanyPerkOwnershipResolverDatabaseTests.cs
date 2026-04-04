@@ -30,7 +30,7 @@ public sealed class CompanyPerkOwnershipResolverDatabaseTests
             charsLookup,
             extrasLookup);
 
-        Assert.Contains(ownedPerks, x => x.Id == "intelligence-14-19-track-2-tier-1");
+        Assert.Contains(ownedPerks, x => x.Id == "intelligence-track-2-tier-1");
     }
 
     private static Dictionary<int, string> LoadLookup(SqliteConnection connection, string tableName, string idColumnName)

@@ -97,7 +97,7 @@ public static partial class CompanyPerkCatalog
             ListId = "empathy-17-20-1-4",
             ListName = "Empathy",
             IsRandomlyGenerated = true,
-            ListRollRanges = CompanyPerkDefinitionParser.ParseRollRanges("17-20/1-4"),
+            ListRollRanges = ParseRollRanges("17-20/1-4"),
             Roots = [t1r1, t2r1, t3r2, t4r3, t5r3, t6r3, t7r3, t8r5, t9r1]
         };
     }

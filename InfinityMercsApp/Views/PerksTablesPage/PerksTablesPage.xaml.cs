@@ -60,7 +60,8 @@ public partial class PerksTablesPage : ContentPage
             .Concat(discoveredNames.Where(name => !preferredOrder.Contains(name, StringComparer.OrdinalIgnoreCase)))
             .ToList();
 
-        var listDefinitions = CompanyPerkCatalog.AllPerkLists
+        var listDefinitions = CompanyPerkCatalog
+            .GetPerkListCatalogEntries()
             .ToDictionary(list => list.Name, StringComparer.OrdinalIgnoreCase);
 
         foreach (var name in orderedNames)
@@ -140,7 +141,8 @@ public partial class PerksTablesPage : ContentPage
         const double headerRowHeight = 56;
         const double rollColumnWidth = 110;
         var displayedTierCount = Math.Max(5, maxTier);
-        var listDefinition = CompanyPerkCatalog.FindList(nodeList.ListId) ?? CompanyPerkCatalog.FindList(nodeList.ListName);
+        var listDefinition = CompanyPerkCatalog.FindPerkListCatalogEntry(nodeList.ListId) ??
+                             CompanyPerkCatalog.FindPerkListCatalogEntry(nodeList.ListName);
         var rollLabelByTrack = listDefinition?.Tracks.ToDictionary(
             track => track.TrackNumber,
             track => BuildRollRangesLabel(track.RollRanges));
@@ -280,19 +282,6 @@ public partial class PerksTablesPage : ContentPage
         return parts.Length <= 1
             ? text.Replace(",", string.Empty).Trim()
             : string.Join(Environment.NewLine, parts);
-    }
-
-    private static IEnumerable<CompanyPerkTreeNode> FlattenNodes(IEnumerable<CompanyPerkTreeNode> roots)
-    {
-        foreach (var root in roots)
-        {
-            yield return root;
-
-            foreach (var child in FlattenNodes(root.Children))
-            {
-                yield return child;
-            }
-        }
     }
 
     private static IEnumerable<PerkNode> FlattenNodes(IEnumerable<PerkNode> roots)

@@ -150,7 +150,7 @@ public static partial class CompanyPerkCatalog
             ListId = "intelligence-14-19",
             ListName = "Intelligence",
             IsRandomlyGenerated = true,
-            ListRollRanges = CompanyPerkDefinitionParser.ParseRollRanges("14-19"),
+            ListRollRanges = ParseRollRanges("14-19"),
             Roots = [t1r3, t2r1, t3r1, t4r1, t7r3, t8r3]
         };
     }

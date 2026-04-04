@@ -137,7 +137,7 @@ public static partial class CompanyPerkCatalog
             ListId = "reflex-11-16",
             ListName = "Reflex",
             IsRandomlyGenerated = true,
-            ListRollRanges = CompanyPerkDefinitionParser.ParseRollRanges("11-16"),
+            ListRollRanges = ParseRollRanges("11-16"),
             Roots = [t1r1, t2r1, t3r1, t3r2, t4r2, t5r2, t6r2, t7r3, t8r2]
         };
     }

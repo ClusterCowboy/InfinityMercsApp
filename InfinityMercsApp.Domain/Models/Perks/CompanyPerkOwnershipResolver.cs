@@ -33,15 +33,15 @@ public static class CompanyPerkOwnershipResolver
         }
 
         var matchedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tree in CompanyPerkCatalog.GetAllPerkTrees())
+        foreach (var list in CompanyPerkCatalog.GetPerkNodeLists())
         {
             if (!includeMechaTrack &&
-                string.Equals(tree.ListId, "mecha", StringComparison.OrdinalIgnoreCase))
+                string.Equals(list.ListId, "mecha", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            foreach (var root in tree.Roots)
+            foreach (var root in list.Roots)
             {
                 CollectMatches(root, profileTerms, matchedIds);
             }
@@ -321,11 +321,23 @@ public static class CompanyPerkOwnershipResolver
     private static Dictionary<string, OwnedPerk> BuildOwnedPerkLookup()
     {
         var lookup = new Dictionary<string, OwnedPerk>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tree in CompanyPerkCatalog.GetAllPerkTrees())
+        var listMetadata = CompanyPerkCatalog
+            .GetPerkListCatalogEntries()
+            .ToDictionary(x => x.Id, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var list in CompanyPerkCatalog.GetPerkNodeLists())
         {
-            foreach (var node in Flatten(tree.Roots))
+            listMetadata.TryGetValue(list.ListId, out var metadata);
+            var listName = metadata?.Name ?? list.ListName;
+
+            foreach (var node in Flatten(list.Roots))
             {
                 if (string.IsNullOrWhiteSpace(node.Id))
+                {
+                    continue;
+                }
+
+                if (!TryParseTrackTier(node.Id, out var trackNumber, out var tier))
                 {
                     continue;
                 }
@@ -333,11 +345,11 @@ public static class CompanyPerkOwnershipResolver
                 lookup[node.Id] = new OwnedPerk
                 {
                     Id = node.Id,
-                    ListId = tree.ListId,
-                    ListName = tree.ListName,
-                    TrackNumber = tree.TrackNumber,
-                    Tier = node.Tier,
-                    PerkText = node.PerkText
+                    ListId = list.ListId,
+                    ListName = listName,
+                    TrackNumber = trackNumber,
+                    Tier = tier,
+                    PerkText = node.Name
                 };
             }
         }
@@ -373,14 +385,14 @@ public static class CompanyPerkOwnershipResolver
     }
 
     private static void CollectMatches(
-        CompanyPerkTreeNode node,
+        PerkNode node,
         IReadOnlyCollection<string> profileTerms,
         HashSet<string> matchedIds)
     {
         if (!string.IsNullOrWhiteSpace(node.Id) &&
-            !string.IsNullOrWhiteSpace(node.PerkText))
+            !string.IsNullOrWhiteSpace(node.Name))
         {
-            var requirementGroups = ExtractPerkRequirementGroups(node.PerkText);
+            var requirementGroups = ExtractPerkRequirementGroups(node.Name);
             if (requirementGroups.Count > 0 &&
                 requirementGroups.All(group =>
                     group.Any(optionTerm => profileTerms.Any(profileTerm => IsMatch(profileTerm, optionTerm)))))
@@ -601,9 +613,23 @@ public static class CompanyPerkOwnershipResolver
         return false;
     }
 
-    private static IEnumerable<CompanyPerkTreeNode> Flatten(IEnumerable<CompanyPerkTreeNode> roots)
+    private static bool TryParseTrackTier(string nodeId, out int track, out int tier)
     {
-        var stack = new Stack<CompanyPerkTreeNode>(roots.Reverse());
+        track = 0;
+        tier = 0;
+        var match = Regex.Match(nodeId, @"-track-(?<track>\d+)-tier-(?<tier>\d+)", RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        return int.TryParse(match.Groups["track"].Value, out track) &&
+               int.TryParse(match.Groups["tier"].Value, out tier);
+    }
+
+    private static IEnumerable<PerkNode> Flatten(IEnumerable<PerkNode> roots)
+    {
+        var stack = new Stack<PerkNode>(roots.Reverse());
         while (stack.Count > 0)
         {
             var node = stack.Pop();

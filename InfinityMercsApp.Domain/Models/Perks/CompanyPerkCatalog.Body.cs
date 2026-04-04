@@ -163,7 +163,7 @@ public static partial class CompanyPerkCatalog
             ListId = "body-8-13",
             ListName = "Body",
             IsRandomlyGenerated = true,
-            ListRollRanges = CompanyPerkDefinitionParser.ParseRollRanges("8-13"),
+            ListRollRanges = ParseRollRanges("8-13"),
             Roots = [t1r1, t2r1, t3r2, t4r1, t5r2, t6r1, t7r2, t8r2, t9r3, t10r3]
         };
     }

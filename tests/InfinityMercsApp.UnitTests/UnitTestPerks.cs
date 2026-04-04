@@ -5,10 +5,10 @@ namespace InfinityMercsApp.UnitTests;
 public sealed class UnitTestPerks
 {
     [Fact]
-    public void GetAllPerkTrees_AllNodes_HaveUniqueStableIds()
+    public void GetPerkNodeLists_AllNodes_HaveUniqueStableIds()
     {
-        var ids = CompanyPerkCatalog.GetAllPerkTrees()
-            .SelectMany(tree => Flatten(tree.Roots))
+        var ids = CompanyPerkCatalog.GetPerkNodeLists()
+            .SelectMany(list => Flatten(list.Roots))
             .Select(node => node.Id)
             .ToList();
 
@@ -19,7 +19,7 @@ public sealed class UnitTestPerks
     [Fact]
     public void GetValidRollOptions_AllLists_AllRolls_ReturnsExpectedOptions()
     {
-        foreach (var list in CompanyPerkCatalog.AllPerkLists)
+        foreach (var list in CompanyPerkCatalog.GetPerkListCatalogEntries())
         {
             int? listRoll = list.IsRandomlyGenerated
                 ? list.ListRollRanges.First().Min
@@ -46,30 +46,88 @@ public sealed class UnitTestPerks
     }
 
     private static List<(int TrackNumber, int Tier, string PerkText, int? RequiredTier)> BuildExpectedOptions(
-        CompanyPerkListDefinition list,
+        PerkListCatalogEntry list,
         int trackRoll)
     {
         var expected = new List<(int TrackNumber, int Tier, string PerkText, int? RequiredTier)>();
+        var nodeList = CompanyPerkCatalog
+            .GetPerkNodeLists()
+            .First(x => string.Equals(x.ListId, list.Id, StringComparison.OrdinalIgnoreCase));
+        var nodesByTrack = Flatten(nodeList.Roots)
+            .Where(node => TryParseTrackTier(node.Id, out _, out _))
+            .GroupBy(node => GetTrackTier(node.Id).Track)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
         foreach (var track in list.Tracks.Where(track => track.RollRanges.Any(range => range.Contains(trackRoll))))
         {
-            foreach (var tier in track.Tiers.Where(tier => !tier.IsEmpty))
+            if (!nodesByTrack.TryGetValue(track.TrackNumber, out var trackNodes))
             {
-                var requiredTier = CompanyPerkCatalog.ResolveRequiredTier(track, tier.Tier);
-                if (requiredTier.HasValue)
+                continue;
+            }
+
+            foreach (var tierGroup in trackNodes.GroupBy(node => node.Tier).OrderBy(group => group.Key))
+            {
+                var tier = tierGroup.Key;
+                int? requiredTier = tierGroup
+                    .Select(node =>
+                    {
+                        if (string.IsNullOrWhiteSpace(node.ParentId))
+                        {
+                            return (int?)null;
+                        }
+
+                        return TryParseTrackTier(node.ParentId, out var parentTrack, out var parentTier) &&
+                               parentTrack == track.TrackNumber &&
+                               parentTier < tier
+                            ? parentTier
+                            : (int?)null;
+                    })
+                    .Where(value => value.HasValue)
+                    .Select(value => value!.Value)
+                    .DefaultIfEmpty()
+                    .Min();
+
+                if (requiredTier is > 0)
                 {
                     continue;
                 }
 
-                expected.Add((track.TrackNumber, tier.Tier, tier.PerkText, requiredTier));
+                var perkText = string.Join(
+                    " OR ",
+                    tierGroup.Select(node => node.Name).Distinct(StringComparer.OrdinalIgnoreCase));
+                expected.Add((track.TrackNumber, tier, perkText, requiredTier is > 0 ? requiredTier : null));
             }
         }
 
         return expected;
     }
 
-    private static IEnumerable<CompanyPerkTreeNode> Flatten(IEnumerable<CompanyPerkTreeNode> roots)
+    private static bool TryParseTrackTier(string nodeId, out int track, out int tier)
     {
-        var stack = new Stack<CompanyPerkTreeNode>(roots.Reverse());
+        track = 0;
+        tier = 0;
+        var match = System.Text.RegularExpressions.Regex.Match(
+            nodeId,
+            @"-track-(?<track>\d+)-tier-(?<tier>\d+)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        return int.TryParse(match.Groups["track"].Value, out track) &&
+               int.TryParse(match.Groups["tier"].Value, out tier);
+    }
+
+    private static (int Track, int Tier) GetTrackTier(string nodeId)
+    {
+        TryParseTrackTier(nodeId, out var track, out var tier);
+        return (track, tier);
+    }
+
+    private static IEnumerable<PerkNode> Flatten(IEnumerable<PerkNode> roots)
+    {
+        var stack = new Stack<PerkNode>(roots.Reverse());
         while (stack.Count > 0)
         {
             var node = stack.Pop();

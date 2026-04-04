@@ -125,8 +125,8 @@ public sealed class CompanyPerkCatalogListRollTests
 
     private static void AssertChartsForRoll(int roll, params ExpectedChart[] expectedCharts)
     {
-        var actual = CompanyPerkCatalog.RollRandomLists(roll)
-            .Select(x => new ExpectedChart(x.Id, x.Name))
+        var actual = CompanyPerkCatalog.RollRandomPerkLists(roll)
+            .Select(x => new ExpectedChart(x.ListId, x.ListName))
             .OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
