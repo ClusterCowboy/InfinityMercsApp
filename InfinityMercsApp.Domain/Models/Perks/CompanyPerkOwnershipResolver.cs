@@ -136,6 +136,13 @@ public static class CompanyPerkOwnershipResolver
                 continue;
             }
 
+            // Skill-style PH annotations (for example "Gizmokit (PH=11)") are not
+            // the same as owning the actual equipment item.
+            if (IsSkillOnlyKitWithPhValue(item))
+            {
+                continue;
+            }
+
             var normalized = Normalize(item);
             if (normalized.Length >= 3)
             {
@@ -185,6 +192,20 @@ public static class CompanyPerkOwnershipResolver
 
     private static bool IsMatch(string profileTerm, string nodeTerm)
     {
+        // Limited-use skills (for example "Camouflage (1 Use)") should not satisfy
+        // a perk that requires the unrestricted/base skill name.
+        if (ContainsLimitedUseToken(profileTerm) && !ContainsLimitedUseToken(nodeTerm))
+        {
+            return false;
+        }
+
+        // Specialized hacking devices do not satisfy the base "Hacking Device"
+        // requirement. A unit must explicitly have base Hacking Device for that.
+        if (IsBaseHackingDeviceRequirement(nodeTerm) && IsSpecializedHackingDevice(profileTerm))
+        {
+            return false;
+        }
+
         if (string.Equals(profileTerm, nodeTerm, StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -198,6 +219,13 @@ public static class CompanyPerkOwnershipResolver
         }
 
         if (IsSimpleStatModifier(right) && left.Contains("ps", StringComparer.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        // Weapon-based stat lines (for example "Para CC Weapon (-3)") should not
+        // satisfy raw attribute perks like "CC (-3)".
+        if (IsSimpleStatModifier(right) && left.Contains("weapon", StringComparer.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -225,7 +253,13 @@ public static class CompanyPerkOwnershipResolver
             "s"
         };
 
-        return statTokens.Contains(tokens[0]) && int.TryParse(tokens[1], out _);
+        if (!statTokens.Contains(tokens[0]))
+        {
+            return false;
+        }
+
+        return int.TryParse(tokens[1], out _) ||
+               Regex.IsMatch(tokens[1], @"^(?:plus|minus)\d+$", RegexOptions.IgnoreCase);
     }
 
     private static bool IsTokenSubset(IReadOnlyList<string> maybeSubset, IReadOnlyList<string> maybeSuperset)
@@ -381,7 +415,45 @@ public static class CompanyPerkOwnershipResolver
         // Keep Burst ("+1B") distinct from Ballistic Skill ("+1 BS").
         var value = Regex.Replace(input, @"\+?\s*(\d+)\s*bs\b", " ballistic_skill_plus_$1 ");
         value = Regex.Replace(value, @"\+?\s*(\d+)\s*b\b", " burst_plus_$1 ");
+
+        // Preserve signed numeric modifiers (for example "+3", "-3") so
+        // "Infiltration" does not match "Infiltration (+3)".
+        value = Regex.Replace(value, @"\+\s*(\d+)\b", " plus$1 ");
+        value = Regex.Replace(value, @"-\s*(\d+)\b", " minus$1 ");
+
+        // Preserve limited-use tags (for example "1 Use").
+        value = Regex.Replace(value, @"\b(\d+)\s*use\b", " limiteduse$1 ");
         return value;
+    }
+
+    private static bool ContainsLimitedUseToken(string normalizedTerm)
+    {
+        return Regex.IsMatch(normalizedTerm, @"\blimiteduse\d+\b", RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsBaseHackingDeviceRequirement(string normalizedTerm)
+    {
+        return Regex.IsMatch(normalizedTerm, @"\bhacking device\b", RegexOptions.IgnoreCase) &&
+               !Regex.IsMatch(normalizedTerm, @"\b(?:killer|evo)\b", RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsSpecializedHackingDevice(string normalizedTerm)
+    {
+        return Regex.IsMatch(normalizedTerm, @"\bhacking device\b", RegexOptions.IgnoreCase) &&
+               Regex.IsMatch(normalizedTerm, @"\b(?:killer|evo)\b", RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsSkillOnlyKitWithPhValue(string rawTerm)
+    {
+        if (string.IsNullOrWhiteSpace(rawTerm))
+        {
+            return false;
+        }
+
+        return Regex.IsMatch(
+            rawTerm,
+            @"^\s*(?:gizmokit|medikit)\s*\(\s*ph\s*=\s*\d+\s*\)\s*$",
+            RegexOptions.IgnoreCase);
     }
 
     private static void CollectMatches(
@@ -566,11 +638,6 @@ public static class CompanyPerkOwnershipResolver
         }
 
         var lower = rawText.ToLowerInvariant();
-        if (lower.Contains("hacking device"))
-        {
-            yield return "Hacker (Role) No device";
-        }
-
         var martialMatch = Regex.Match(lower, @"martial\s+arts\s+l\s*(\d+)");
         if (martialMatch.Success && int.TryParse(martialMatch.Groups[1].Value, out var level))
         {

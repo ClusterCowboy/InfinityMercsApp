@@ -66,14 +66,27 @@ public sealed class CompanyPerkOwnershipResolverTests
     }
 
     [Fact]
-    public void ResolveOwnedPerkNodeIds_HackingDevice_AlsoGrantsBaseHacker()
+    public void ResolveOwnedPerkNodeIds_KillerHackingDevice_DoesNotGrantBaseHackingPerks()
     {
         var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
             skills: ["Killer Hacking Device"]);
 
         var descriptions = ResolveDescriptions(ownedIds);
         Assert.Contains(descriptions, x => x.Contains("Killer Hacking Device", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(descriptions, x => x.Contains("Hacker (Role) No device", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(descriptions, x => x.Contains("Hacker (Role) No device", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(descriptions, x => x.Equals("Hacking Device", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ResolveOwnedPerkNodeIds_EvoHackingDevice_DoesNotGrantBaseHackingPerks()
+    {
+        var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: ["EVO Hacking Device"]);
+
+        var descriptions = ResolveDescriptions(ownedIds);
+        Assert.Contains(descriptions, x => x.Contains("EVO Hacking Device", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(descriptions, x => x.Contains("Hacker (Role) No device", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(descriptions, x => x.Equals("Hacking Device", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -96,6 +109,42 @@ public sealed class CompanyPerkOwnershipResolverTests
 
         var descriptions = ResolveDescriptions(ownedIds);
         Assert.DoesNotContain(descriptions, x => x.Contains("CC (-6)", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ResolveOwnedPerkNodeIds_ParaCcWeaponMinus3_DoesNotGrantCcMinus3Perk()
+    {
+        var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: ["Para CC Weapon (-3)"]);
+
+        var descriptions = ResolveDescriptions(ownedIds);
+        Assert.DoesNotContain(descriptions, x => x.Contains("CC (-3)", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ResolveOwnedPerkNodeIds_HackingDevice_QualifiesForHackingDevicePerk()
+    {
+        var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: ["Hacking Device"]);
+
+        var descriptions = ResolveDescriptions(ownedIds);
+        Assert.Contains(descriptions, x => x.Contains("Hacking Device", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ResolveOwnedPerkNodeIds_GizmokitOrMedikitWithPh_IsNotEquipmentUnlessExplicitlyPresent()
+    {
+        var skillOnlyOwnedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: ["Gizmokit (PH=11)", "Medikit (PH=12)"]);
+        var skillOnlyDescriptions = ResolveDescriptions(skillOnlyOwnedIds);
+        Assert.DoesNotContain(skillOnlyDescriptions, x => x.Contains("Gizmokit", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(skillOnlyDescriptions, x => x.Contains("Medikit", StringComparison.OrdinalIgnoreCase));
+
+        var explicitEquipmentOwnedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: ["Gizmokit (PH=11)"],
+            equipment: ["Gizmokit"]);
+        var explicitEquipmentDescriptions = ResolveDescriptions(explicitEquipmentOwnedIds);
+        Assert.Contains(explicitEquipmentDescriptions, x => x.Contains("Gizmokit", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

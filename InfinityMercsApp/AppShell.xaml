@@ -69,10 +69,18 @@
             Route="PerksTablesPage" />
     </FlyoutItem>
 
-    <ShellContent
+    <FlyoutItem
         Title="Debug"
-        ContentTemplate="{DataTemplate views:DebugPage}"
-        Route="DebugPage" />
+        Route="Debug">
+        <ShellContent
+            Title="Debug"
+            ContentTemplate="{DataTemplate views:DebugPage}"
+            Route="DebugPage" />
+        <ShellContent
+            Title="Perk Tester"
+            ContentTemplate="{DataTemplate views:PerkTesterPage}"
+            Route="PerkTesterPage" />
+    </FlyoutItem>
 
     <ShellContent
         Title="About"
