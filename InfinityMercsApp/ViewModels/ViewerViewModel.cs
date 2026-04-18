@@ -1917,11 +1917,11 @@ public class ViewerViewModel : BaseViewModel
         IEnumerable<ViewerFactionItem> filtered = _allFactions;
         if (_factionFilterMode == FactionFilterMode.Factions)
         {
-            filtered = filtered.Where(x => x.Id == x.ParentId);
+            filtered = filtered.Where(x => x.ParentId <= 0 || x.Id == x.ParentId);
         }
         else if (_factionFilterMode == FactionFilterMode.Sectorials)
         {
-            filtered = filtered.Where(x => x.Id != x.ParentId);
+            filtered = filtered.Where(x => x.ParentId > 0 && x.Id != x.ParentId);
         }
 
         var filteredList = filtered.ToList();
@@ -4736,6 +4736,22 @@ public class ViewerProfileItem : BaseViewModel
             }
 
             _isLieutenantBlocked = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
             OnPropertyChanged();
         }
     }

@@ -32,6 +32,7 @@ public static class ServiceRegistryExtensions
                 .AddTransient<SplashPage>()
                 .AddTransient<SettingsPage>()
                 .AddTransient<DebugPage>()
+                .AddTransient<PerkTesterPage>()
                 .AddTransient<CompanyViewerPage>()
                 .AddTransient<UnitEncyclopediaPage>()
                 .AddTransient<FeedbackBugsPage>();

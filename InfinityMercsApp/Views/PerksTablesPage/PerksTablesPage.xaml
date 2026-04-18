@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.PerksTablesPage"
+             x:Name="PerksTablesRoot"
+             Title="Perks Tables">
+
+    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="12">
+        <Picker Grid.Row="0"
+                x:Name="PerkTablePicker"
+                ItemsSource="{Binding PerkTableOptions}"
+                ItemDisplayBinding="{Binding DisplayName}"
+                SelectedItem="{Binding SelectedPerkTableOption, Mode=TwoWay}" />
+
+        <Grid Grid.Row="1"
+              x:Name="PerksGridHost"
+              HorizontalOptions="Fill"
+              VerticalOptions="Fill">
+            <Grid x:Name="PerksTableGrid"
+                  HorizontalOptions="Fill"
+                  VerticalOptions="Fill"
+                  RowSpacing="2"
+                  ColumnSpacing="2" />
+            <GraphicsView x:Name="DependencyLinesView"
+                          InputTransparent="True" />
+        </Grid>
+    </Grid>
+
+</ContentPage>
