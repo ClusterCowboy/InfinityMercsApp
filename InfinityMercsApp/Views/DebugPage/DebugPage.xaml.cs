@@ -193,6 +193,11 @@ public partial class DebugPage : ContentPage
     private List<DebugMercsEntry> BuildReformEntries(
         DebugSavedCompanyFile source)
     {
+        var sourcePeripheralByParentIndex = source.Entries
+            .Where(x => x.IsPeripheralUnit && x.ParentEntryIndex.HasValue)
+            .GroupBy(x => x.ParentEntryIndex!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
         var primaryEntries = source.Entries
             .Where(x => !x.IsPeripheralUnit)
             .OrderBy(x => x.EntryIndex)
@@ -217,6 +222,52 @@ public partial class DebugPage : ContentPage
                 ? (string.IsNullOrWhiteSpace(entry.BaseProfileHumanReadable) ? entry.Name : entry.BaseProfileHumanReadable)
                 : entry.BaseUnitName;
             var subtitle = BuildSubtitleFromBaseStats(entry);
+            var hasSourcePeripheral = sourcePeripheralByParentIndex.TryGetValue(entry.EntryIndex, out var sourcePeripheralEntry);
+
+            var peripheralNameHeading = dbPayload.PeripheralNameHeading;
+            var peripheralMov = dbPayload.PeripheralMov;
+            var peripheralCc = dbPayload.PeripheralCc;
+            var peripheralBs = dbPayload.PeripheralBs;
+            var peripheralPh = dbPayload.PeripheralPh;
+            var peripheralWip = dbPayload.PeripheralWip;
+            var peripheralArm = dbPayload.PeripheralArm;
+            var peripheralBts = dbPayload.PeripheralBts;
+            var peripheralVitalityHeader = dbPayload.PeripheralVitalityHeader;
+            var peripheralVitality = dbPayload.PeripheralVitality;
+            var peripheralS = dbPayload.PeripheralS;
+            var peripheralAva = dbPayload.PeripheralAva;
+            var savedPeripheralEquipment = dbPayload.SavedPeripheralEquipment;
+            var savedPeripheralSkills = dbPayload.SavedPeripheralSkills;
+            var savedPeripheralCharacteristics = dbPayload.SavedPeripheralCharacteristics;
+            var savedPeripheralRangedWeapons = dbPayload.SavedPeripheralRangedWeapons;
+            var savedPeripheralCcWeapons = dbPayload.SavedPeripheralCcWeapons;
+
+            if (sourcePeripheralEntry is not null)
+            {
+                var sourcePeripheralName = !string.IsNullOrWhiteSpace(sourcePeripheralEntry.CustomName)
+                    ? sourcePeripheralEntry.CustomName.Trim()
+                    : (!string.IsNullOrWhiteSpace(sourcePeripheralEntry.BaseUnitName)
+                        ? sourcePeripheralEntry.BaseUnitName.Trim()
+                        : sourcePeripheralEntry.Name.Trim());
+
+                peripheralNameHeading = string.IsNullOrWhiteSpace(sourcePeripheralName)
+                    ? peripheralNameHeading
+                    : $"Peripheral: {sourcePeripheralName}";
+                peripheralMov = NormalizeStat(sourcePeripheralEntry.CurrentMov);
+                peripheralCc = NormalizeStat(sourcePeripheralEntry.CurrentCc);
+                peripheralBs = NormalizeStat(sourcePeripheralEntry.CurrentBs);
+                peripheralPh = NormalizeStat(sourcePeripheralEntry.CurrentPh);
+                peripheralWip = NormalizeStat(sourcePeripheralEntry.CurrentWip);
+                peripheralArm = NormalizeStat(sourcePeripheralEntry.CurrentArm);
+                peripheralBts = NormalizeStat(sourcePeripheralEntry.CurrentBts);
+                peripheralVitality = NormalizeStat(sourcePeripheralEntry.CurrentVitaOrStr);
+                peripheralS = NormalizeStat(sourcePeripheralEntry.CurrentS);
+                peripheralVitalityHeader = InferVitalityHeaderForUnitType(sourcePeripheralEntry.UnitTypeCode);
+                savedPeripheralEquipment = ResolveSavedCodes(sourcePeripheralEntry, "equip");
+                savedPeripheralSkills = ResolveSavedCodes(sourcePeripheralEntry, "skills");
+                savedPeripheralCharacteristics = ResolveSavedCodes(sourcePeripheralEntry, "chars");
+                (savedPeripheralRangedWeapons, savedPeripheralCcWeapons) = ResolveSavedWeapons(sourcePeripheralEntry);
+            }
 
             result.Add(new DebugMercsEntry
             {
@@ -235,22 +286,24 @@ public partial class DebugPage : ContentPage
                 SavedCharacteristics = dbPayload.SavedCharacteristics,
                 SavedRangedWeapons = dbPayload.SavedRangedWeapons,
                 SavedCcWeapons = dbPayload.SavedCcWeapons,
-                HasPeripheralStatBlock = dbPayload.HasPeripheralStatBlock,
-                PeripheralNameHeading = dbPayload.PeripheralNameHeading,
-                PeripheralMov = dbPayload.PeripheralMov,
-                PeripheralCc = dbPayload.PeripheralCc,
-                PeripheralBs = dbPayload.PeripheralBs,
-                PeripheralPh = dbPayload.PeripheralPh,
-                PeripheralWip = dbPayload.PeripheralWip,
-                PeripheralArm = dbPayload.PeripheralArm,
-                PeripheralBts = dbPayload.PeripheralBts,
-                PeripheralVitalityHeader = dbPayload.PeripheralVitalityHeader,
-                PeripheralVitality = dbPayload.PeripheralVitality,
-                PeripheralS = dbPayload.PeripheralS,
-                PeripheralAva = dbPayload.PeripheralAva,
-                SavedPeripheralEquipment = dbPayload.SavedPeripheralEquipment,
-                SavedPeripheralSkills = dbPayload.SavedPeripheralSkills,
-                SavedPeripheralCharacteristics = dbPayload.SavedPeripheralCharacteristics,
+                HasPeripheralStatBlock = dbPayload.HasPeripheralStatBlock || hasSourcePeripheral,
+                PeripheralNameHeading = peripheralNameHeading,
+                PeripheralMov = peripheralMov,
+                PeripheralCc = peripheralCc,
+                PeripheralBs = peripheralBs,
+                PeripheralPh = peripheralPh,
+                PeripheralWip = peripheralWip,
+                PeripheralArm = peripheralArm,
+                PeripheralBts = peripheralBts,
+                PeripheralVitalityHeader = peripheralVitalityHeader,
+                PeripheralVitality = peripheralVitality,
+                PeripheralS = peripheralS,
+                PeripheralAva = peripheralAva,
+                SavedPeripheralEquipment = savedPeripheralEquipment,
+                SavedPeripheralSkills = savedPeripheralSkills,
+                SavedPeripheralCharacteristics = savedPeripheralCharacteristics,
+                SavedPeripheralRangedWeapons = savedPeripheralRangedWeapons,
+                SavedPeripheralCcWeapons = savedPeripheralCcWeapons,
                 ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
                 UnitMoveDisplay = NormalizeStat(entry.BaseMov),
                 Subtitle = subtitle
@@ -481,7 +534,9 @@ public partial class DebugPage : ContentPage
             PeripheralAva = peripheralStats?.Ava ?? selectedProfile.PeripheralAva,
             SavedPeripheralEquipment = peripheralStats?.Equipment ?? "-",
             SavedPeripheralSkills = peripheralStats?.Skills ?? "-",
-            SavedPeripheralCharacteristics = peripheralStats?.Characteristics ?? "-"
+            SavedPeripheralCharacteristics = peripheralStats?.Characteristics ?? "-",
+            SavedPeripheralRangedWeapons = peripheralStats?.RangedWeapons ?? "-",
+            SavedPeripheralCcWeapons = peripheralStats?.CcWeapons ?? "-"
         };
         return true;
     }
@@ -516,7 +571,9 @@ public partial class DebugPage : ContentPage
                 Ava = commonResult.Ava,
                 Equipment = commonResult.Equipment,
                 Skills = commonResult.Skills,
-                Characteristics = commonResult.Characteristics
+                Characteristics = commonResult.Characteristics,
+                RangedWeapons = commonResult.RangedWeapons,
+                CcWeapons = commonResult.CcWeapons
             });
     }
 
@@ -529,6 +586,124 @@ public partial class DebugPage : ContentPage
     private static string NormalizeStat(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    }
+
+    private static string InferVitalityHeaderForUnitType(string? unitTypeCode)
+    {
+        var normalized = unitTypeCode?.Trim().ToUpperInvariant();
+        return normalized is "TAG" or "REM" or "PERIPHERAL"
+            ? "STR"
+            : "VITA";
+    }
+
+    private (string SavedRangedWeapons, string SavedCcWeapons) ResolveSavedWeapons(DebugSavedEntry entry)
+    {
+        var factionId = entry.SourceFactionId > 0 ? entry.SourceFactionId : entry.FactionId;
+        if (factionId <= 0)
+        {
+            return ("-", "-");
+        }
+
+        var snapshot = _armyDataService.GetFactionSnapshot(factionId);
+        var weaponLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "weapons");
+        var extrasLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "extras");
+
+        var resolved = new List<string>();
+        foreach (var code in entry.CurrentWeaponCodes)
+        {
+            if (code is null || code.Id <= 0 || !weaponLookup.TryGetValue(code.Id, out var name) || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var displayName = name.Trim();
+            var extras = (code.Extra ?? [])
+                .Distinct()
+                .Select(extraId => extrasLookup.TryGetValue(extraId, out var extraName) ? extraName?.Trim() : null)
+                .Where(extraName => !string.IsNullOrWhiteSpace(extraName))
+                .Cast<string>()
+                .ToList();
+            if (extras.Count > 0)
+            {
+                displayName = $"{displayName} ({string.Join(", ", extras)})";
+            }
+
+            resolved.Add(displayName);
+        }
+
+        foreach (var customName in entry.CustomWeapons.Where(x => !string.IsNullOrWhiteSpace(x)))
+        {
+            resolved.Add(customName.Trim());
+        }
+
+        resolved = resolved
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var ranged = resolved.Where(x => !CompanyProfileTextService.IsMeleeWeaponName(x)).ToList();
+        var cc = resolved.Where(CompanyProfileTextService.IsMeleeWeaponName).ToList();
+        return (CompanyProfileTextService.JoinOrDash(ranged), CompanyProfileTextService.JoinOrDash(cc));
+    }
+
+    private string ResolveSavedCodes(DebugSavedEntry entry, string sectionName)
+    {
+        var factionId = entry.SourceFactionId > 0 ? entry.SourceFactionId : entry.FactionId;
+        if (factionId <= 0)
+        {
+            return "-";
+        }
+
+        var snapshot = _armyDataService.GetFactionSnapshot(factionId);
+        var sectionLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, sectionName);
+        var extrasLookup = CompanyUnitDetailsShared.BuildIdNameLookup(snapshot?.FiltersJson, "extras");
+
+        IEnumerable<CompanySavedCodeRef> codes = sectionName switch
+        {
+            "skills" => entry.CurrentSkillCodes,
+            "equip" => entry.CurrentEquipmentCodes,
+            "chars" => entry.CurrentCharacteristicCodes,
+            _ => []
+        };
+
+        IEnumerable<string> custom = sectionName switch
+        {
+            "skills" => entry.CustomSkills,
+            "equip" => entry.CustomEquipment,
+            "chars" => entry.CustomCharacteristics,
+            _ => []
+        };
+
+        var resolved = new List<string>();
+        foreach (var code in codes)
+        {
+            if (code is null || code.Id <= 0 || !sectionLookup.TryGetValue(code.Id, out var name) || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var displayName = name.Trim();
+            var extras = (code.Extra ?? [])
+                .Distinct()
+                .Select(extraId => extrasLookup.TryGetValue(extraId, out var extraName) ? extraName?.Trim() : null)
+                .Where(extraName => !string.IsNullOrWhiteSpace(extraName))
+                .Cast<string>()
+                .ToList();
+            if (extras.Count > 0)
+            {
+                displayName = $"{displayName} ({string.Join(", ", extras)})";
+            }
+
+            resolved.Add(displayName);
+        }
+
+        foreach (var customName in custom.Where(x => !string.IsNullOrWhiteSpace(x)))
+        {
+            resolved.Add(customName.Trim());
+        }
+
+        resolved = resolved
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return CompanyProfileTextService.JoinOrDash(resolved);
     }
 
     private static ViewerProfileItem? TryFindProfileByLooseKeyMatch(
@@ -615,6 +790,8 @@ public partial class DebugPage : ContentPage
         public string SavedPeripheralEquipment { get; init; } = "-";
         public string SavedPeripheralSkills { get; init; } = "-";
         public string SavedPeripheralCharacteristics { get; init; } = "-";
+        public string SavedPeripheralRangedWeapons { get; init; } = "-";
+        public string SavedPeripheralCcWeapons { get; init; } = "-";
     }
 
     private sealed class DebugSourceFaction : ICompanySourceFaction
@@ -657,6 +834,8 @@ public partial class DebugPage : ContentPage
         public string SavedPeripheralEquipment { get; init; } = "-";
         public string SavedPeripheralSkills { get; init; } = "-";
         public string SavedPeripheralCharacteristics { get; init; } = "-";
+        public string SavedPeripheralRangedWeapons { get; init; } = "-";
+        public string SavedPeripheralCcWeapons { get; init; } = "-";
         public int ExperiencePoints { get; init; }
         public List<CompanyTrooperPerkState> Perks { get; init; } = [];
         public int? UnitMoveFirstCm { get; init; }

@@ -443,21 +443,22 @@ internal static class CompanyStartSaveWorkflow
             ParentEntryIndex = null,
             Cost = entry.CostValue,
             IsLieutenant = entry.IsLieutenant,
-            HasPeripheralStatBlock = entry.HasPeripheralStatBlock,
-            PeripheralNameHeading = entry.PeripheralNameHeading,
-            PeripheralMov = entry.PeripheralMov,
-            PeripheralCc = entry.PeripheralCc,
-            PeripheralBs = entry.PeripheralBs,
-            PeripheralPh = entry.PeripheralPh,
-            PeripheralWip = entry.PeripheralWip,
-            PeripheralArm = entry.PeripheralArm,
-            PeripheralBts = entry.PeripheralBts,
-            PeripheralVitalityHeader = entry.PeripheralVitalityHeader,
-            PeripheralVitality = entry.PeripheralVitality,
-            PeripheralS = entry.PeripheralS,
-            PeripheralAva = entry.PeripheralAva,
-            SavedPeripheralEquipment = entry.SavedPeripheralEquipment,
-            SavedPeripheralSkills = entry.SavedPeripheralSkills,
+            // Persist peripherals as dedicated child entries only.
+            HasPeripheralStatBlock = false,
+            PeripheralNameHeading = string.Empty,
+            PeripheralMov = "-",
+            PeripheralCc = "-",
+            PeripheralBs = "-",
+            PeripheralPh = "-",
+            PeripheralWip = "-",
+            PeripheralArm = "-",
+            PeripheralBts = "-",
+            PeripheralVitalityHeader = "VITA",
+            PeripheralVitality = "-",
+            PeripheralS = "-",
+            PeripheralAva = "-",
+            SavedPeripheralEquipment = "-",
+            SavedPeripheralSkills = "-",
             ExperiencePoints = Math.Max(0, entry.ExperiencePoints),
             Perks = CompanyPerkProgressionService.Normalize(entry.Perks),
             BaseProfileHumanReadable = string.IsNullOrWhiteSpace(entry.BaseUnitName) ? entry.Name : entry.BaseUnitName,
@@ -532,6 +533,17 @@ internal static class CompanyStartSaveWorkflow
             SplitCodes(entry.SavedPeripheralCharacteristics),
             "chars",
             [entry.SourceFactionId]);
+        var peripheralWeaponNames = SplitCodes(entry.SavedPeripheralRangedWeapons)
+            .Concat(SplitCodes(entry.SavedPeripheralCcWeapons))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var peripheralWeaponResolution = ResolveCodes(
+            armyDataService,
+            codeIdLookupCache,
+            extrasIdLookupCache,
+            peripheralWeaponNames,
+            "weapons",
+            [entry.SourceFactionId]);
         return new SerializedCompanyEntry
         {
             EntryIndex = entryIndex,
@@ -597,12 +609,12 @@ internal static class CompanyStartSaveWorkflow
             CurrentCharacteristicCodes = peripheralCharacteristicResolution.Codes,
             BaseEquipmentCodes = peripheralEquipmentResolution.Codes,
             CurrentEquipmentCodes = peripheralEquipmentResolution.Codes,
-            BaseWeaponCodes = [],
-            CurrentWeaponCodes = [],
+            BaseWeaponCodes = peripheralWeaponResolution.Codes,
+            CurrentWeaponCodes = peripheralWeaponResolution.Codes,
             CustomSkills = peripheralSkillResolution.CustomNames,
             CustomCharacteristics = peripheralCharacteristicResolution.CustomNames,
             CustomEquipment = peripheralEquipmentResolution.CustomNames,
-            CustomWeapons = []
+            CustomWeapons = peripheralWeaponResolution.CustomNames
         };
     }
 
@@ -1240,20 +1252,35 @@ internal static class CompanyStartSaveWorkflow
         public int? ParentEntryIndex { get; init; }
         public int Cost { get; init; }
         public bool IsLieutenant { get; init; }
+        [JsonIgnore]
         public bool HasPeripheralStatBlock { get; init; }
+        [JsonIgnore]
         public string PeripheralNameHeading { get; init; } = string.Empty;
+        [JsonIgnore]
         public string PeripheralMov { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralCc { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralBs { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralPh { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralWip { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralArm { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralBts { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralVitalityHeader { get; init; } = "VITA";
+        [JsonIgnore]
         public string PeripheralVitality { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralS { get; init; } = "-";
+        [JsonIgnore]
         public string PeripheralAva { get; init; } = "-";
+        [JsonIgnore]
         public string SavedPeripheralEquipment { get; init; } = "-";
+        [JsonIgnore]
         public string SavedPeripheralSkills { get; init; } = "-";
         public int ExperiencePoints { get; init; }
     }

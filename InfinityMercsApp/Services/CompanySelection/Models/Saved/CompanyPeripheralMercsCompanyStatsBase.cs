@@ -19,4 +19,6 @@ public abstract class CompanyPeripheralMercsCompanyStatsBase
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
     public string Characteristics { get; init; } = "-";
+    public string RangedWeapons { get; init; } = "-";
+    public string CcWeapons { get; init; } = "-";
 }

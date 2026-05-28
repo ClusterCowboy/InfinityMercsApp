@@ -38,6 +38,8 @@ internal sealed class CompanyPeripheralStatBlockResult
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
     public string Characteristics { get; init; } = "-";
+    public string RangedWeapons { get; init; } = "-";
+    public string CcWeapons { get; init; } = "-";
 }
 
 internal static class CompanyPeripheralStatBlockService
@@ -56,6 +58,7 @@ internal static class CompanyPeripheralStatBlockService
         var skillsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "skills");
         var displayNameContext = CompanyUnitDetailDisplayNameContext.Create(request.FiltersJson, request.ShowUnitsInInches, request.TryParseId);
         var charsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "chars");
+        var weaponsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(request.FiltersJson, "weapons");
 
         var equipmentNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(
             CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "equip"),
@@ -67,6 +70,15 @@ internal static class CompanyPeripheralStatBlockService
         var characteristicNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(
             CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "chars"),
             charsLookup);
+        var weaponNames = displayNameContext.GetOrderedIdDisplayNamesFromEntries(
+            CompanySelectionSharedUtilities.GetContainerEntries(request.PeripheralProfile, "weapons"),
+            weaponsLookup);
+        var rangedWeaponNames = weaponNames
+            .Where(x => !CompanyProfileTextService.IsMeleeWeaponName(x))
+            .ToList();
+        var ccWeaponNames = weaponNames
+            .Where(CompanyProfileTextService.IsMeleeWeaponName)
+            .ToList();
         var (vitalityHeader, vitalityValue) = request.ReadVitality(request.PeripheralProfile);
 
         return new CompanyPeripheralStatBlockResult
@@ -87,7 +99,9 @@ internal static class CompanyPeripheralStatBlockService
             Ava = request.ReadAvaAsString(request.PeripheralProfile),
             Equipment = CompanyProfileTextService.JoinOrDash(equipmentNames),
             Skills = CompanyProfileTextService.JoinOrDash(skillNames),
-            Characteristics = CompanyProfileTextService.JoinOrDash(characteristicNames)
+            Characteristics = CompanyProfileTextService.JoinOrDash(characteristicNames),
+            RangedWeapons = CompanyProfileTextService.JoinOrDash(rangedWeaponNames),
+            CcWeapons = CompanyProfileTextService.JoinOrDash(ccWeaponNames)
         };
     }
 }

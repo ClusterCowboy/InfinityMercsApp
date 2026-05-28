@@ -403,7 +403,9 @@ public partial class InspiringCompanySelectionPage
                 Ava = commonResult.Ava,
                 Equipment = commonResult.Equipment,
                 Skills = commonResult.Skills,
-                Characteristics = commonResult.Characteristics
+                Characteristics = commonResult.Characteristics,
+                RangedWeapons = commonResult.RangedWeapons,
+                CcWeapons = commonResult.CcWeapons
             });
     }
 

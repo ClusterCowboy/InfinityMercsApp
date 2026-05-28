@@ -148,6 +148,8 @@ internal static class CompanySelectionRosterWorkflow
         var peripheralEquipment = peripheralStats?.Equipment ?? "-";
         var peripheralSkillsText = peripheralStats?.Skills ?? "-";
         var peripheralCharacteristicsText = peripheralStats?.Characteristics ?? "-";
+        var peripheralRangedWeapons = peripheralStats?.RangedWeapons ?? "-";
+        var peripheralCcWeapons = peripheralStats?.CcWeapons ?? "-";
         if (profile.PeripheralIsIrregular || peripheralHasControlModifier)
         {
             var peripheralSkillLines = CompanyProfileTextService.SplitDisplayLine(peripheralSkillsText).ToList();
@@ -215,6 +217,8 @@ internal static class CompanySelectionRosterWorkflow
             SavedPeripheralEquipment = peripheralEquipment,
             SavedPeripheralSkills = peripheralSkillsText,
             SavedPeripheralCharacteristics = peripheralCharacteristicsText,
+            SavedPeripheralRangedWeapons = peripheralRangedWeapons,
+            SavedPeripheralCcWeapons = peripheralCcWeapons,
             PeripheralEquipmentLineFormatted =
                 CompanyProfileTextService.BuildMercsCompanyLineFormatted("Equipment", peripheralEquipment, Color.FromArgb("#06B6D4")),
             HasPeripheralEquipmentLine =
