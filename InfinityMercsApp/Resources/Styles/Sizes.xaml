@@ -97,6 +97,6 @@
     <OnIdiom x:Key="MinTouchTarget" x:TypeArguments="x:Double" Phone="44" Tablet="48" Desktop="44" />
 
     <!-- Corner radius for cards, buttons, borders -->
-    <OnIdiom x:Key="CornerRadiusDefault" x:TypeArguments="x:Double" Phone="6" Tablet="8" Desktop="8" />
+    <OnIdiom x:Key="CornerRadiusDefault" x:TypeArguments="x:Int32" Phone="6" Tablet="8" Desktop="8" />
 
 </ResourceDictionary>

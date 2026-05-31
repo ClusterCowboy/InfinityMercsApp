@@ -316,12 +316,12 @@ public partial class LoadCompanyPage : ContentPage
         }
     }
 
-    private async Task LoadPictureAsync(string relativePath)
+    private async Task LoadPictureAsync(string path)
     {
         await _iconLoadGate.WaitAsync();
         try
         {
-            if (_iconPictureCache.ContainsKey(relativePath))
+            if (_iconPictureCache.ContainsKey(path))
             {
                 return;
             }
@@ -329,16 +329,33 @@ public partial class LoadCompanyPage : ContentPage
             SKPicture? picture = null;
             try
             {
-                await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(relativePath);
-                var svg = new SKSvg();
-                picture = svg.Load(stream);
+                Stream stream;
+                if (Path.IsPathRooted(path))
+                {
+                    if (!File.Exists(path))
+                    {
+                        _iconPictureCache[path] = null;
+                        return;
+                    }
+                    stream = File.OpenRead(path);
+                }
+                else
+                {
+                    stream = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                }
+
+                await using (stream)
+                {
+                    var svg = new SKSvg();
+                    picture = svg.Load(stream);
+                }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"LoadCompanyPage icon load failed for '{relativePath}': {ex.Message}");
+                Console.Error.WriteLine($"LoadCompanyPage icon load failed for '{path}': {ex.Message}");
             }
 
-            _iconPictureCache[relativePath] = picture;
+            _iconPictureCache[path] = picture;
         }
         finally
         {
@@ -371,7 +388,7 @@ public partial class LoadCompanyPage : ContentPage
 
     private static string GetFactionIconPath(int factionId)
     {
-        return $"SVGCache/factions/{factionId}.svg";
+        return Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache", $"{factionId}.svg");
     }
 
     private static List<int> ResolveSourceFactionIds(SavedCompanyFile payload)

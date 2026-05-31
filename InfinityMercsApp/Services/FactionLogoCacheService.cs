@@ -12,11 +12,13 @@ public class FactionLogoCacheService
     private const int TagCompanyUnitId = 1;
 
     private const string PackagedCacheRoot = "SVGCache";
+    private readonly HttpClient _httpClient;
     private readonly string _localCacheDirectory;
     private readonly string _localUnitCacheDirectory;
 
-    public FactionLogoCacheService()
+    public FactionLogoCacheService(HttpClient httpClient)
     {
+        _httpClient = httpClient;
         _localCacheDirectory = Path.Combine(FileSystem.Current.AppDataDirectory, "svg-cache");
         _localUnitCacheDirectory = Path.Combine(_localCacheDirectory, "units");
     }
@@ -37,12 +39,12 @@ public class FactionLogoCacheService
                 continue;
             }
 
-            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, cancellationToken);
+            var ok = await EnsureFactionLogoAvailableAsync(faction.Id, faction.Logo, cancellationToken);
             if (ok == EnsureResult.Reused)
             {
                 result.CachedReuse++;
             }
-            else if (ok == EnsureResult.CopiedFromPackage)
+            else if (ok == EnsureResult.Downloaded)
             {
                 result.Downloaded++;
             }
@@ -81,12 +83,12 @@ public class FactionLogoCacheService
                 continue;
             }
 
-            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.Id, cancellationToken);
+            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.Id, unit.Logo, cancellationToken);
             if (ok == EnsureResult.Reused)
             {
                 result.CachedReuse++;
             }
-            else if (ok == EnsureResult.CopiedFromPackage)
+            else if (ok == EnsureResult.Downloaded)
             {
                 result.Downloaded++;
             }
@@ -118,12 +120,12 @@ public class FactionLogoCacheService
                 continue;
             }
 
-            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.UnitId, cancellationToken);
+            var ok = await EnsureUnitLogoAvailableAsync(factionId, unit.UnitId, unit.Logo, cancellationToken);
             if (ok == EnsureResult.Reused)
             {
                 result.CachedReuse++;
             }
-            else if (ok == EnsureResult.CopiedFromPackage)
+            else if (ok == EnsureResult.Downloaded)
             {
                 result.Downloaded++;
             }
@@ -184,7 +186,7 @@ public class FactionLogoCacheService
         };
     }
 
-    private async Task<EnsureResult> EnsureFactionLogoAvailableAsync(int factionId, CancellationToken cancellationToken)
+    private async Task<EnsureResult> EnsureFactionLogoAvailableAsync(int factionId, string? logoUrl, CancellationToken cancellationToken)
     {
         var localPath = GetCachedLogoPath(factionId);
         if (File.Exists(localPath) && new FileInfo(localPath).Length > 0)
@@ -192,72 +194,114 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        var packagedPath = GetPackagedFactionLogoPath(factionId);
-        var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
-        return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
+        if (IsPackagedAssetPath(logoUrl))
+        {
+            var copied = await TryCopyPackagedAssetAsync(logoUrl!, localPath, cancellationToken);
+            return copied ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+        }
+
+        if (!IsDownloadableUrl(logoUrl))
+        {
+            return EnsureResult.NotAvailable;
+        }
+
+        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl!, localPath, cancellationToken);
+        return downloaded ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
     }
 
-    private async Task<EnsureResult> EnsureUnitLogoAvailableAsync(int factionId, int unitId, CancellationToken cancellationToken)
+    private async Task<EnsureResult> EnsureUnitLogoAvailableAsync(int factionId, int unitId, string? logoUrl, CancellationToken cancellationToken)
     {
         var localPath = GetCachedUnitLogoPath(factionId, unitId);
-        var forcePackagedCopy = factionId == TagCompanyFactionId && unitId == TagCompanyUnitId;
-        if (!forcePackagedCopy && File.Exists(localPath) && new FileInfo(localPath).Length > 0)
+        var forceDownload = factionId == TagCompanyFactionId && unitId == TagCompanyUnitId;
+        if (!forceDownload && File.Exists(localPath) && new FileInfo(localPath).Length > 0)
         {
             return EnsureResult.Reused;
         }
 
-        var packagedPath = GetPackagedUnitLogoPath(factionId, unitId);
-        var copied = await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
-        return copied ? EnsureResult.CopiedFromPackage : EnsureResult.MissingFromPackage;
+        if (IsPackagedAssetPath(logoUrl))
+        {
+            var copied = await TryCopyPackagedAssetAsync(logoUrl!, localPath, cancellationToken);
+            return copied ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+        }
+
+        if (!IsDownloadableUrl(logoUrl))
+        {
+            return EnsureResult.NotAvailable;
+        }
+
+        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl!, localPath, cancellationToken);
+        return downloaded ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+    }
+
+    private static bool IsPackagedAssetPath(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && url.StartsWith(PackagedCacheRoot + "/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDownloadableUrl(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
     private static async Task<bool> TryCopyPackagedAssetAsync(string packagedPath, string localPath, CancellationToken cancellationToken)
     {
-        var candidates = BuildCandidatePackagedPaths(packagedPath).Distinct(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var candidate in candidates)
+        try
         {
-            try
+            var localDirectory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrWhiteSpace(localDirectory))
             {
-                var localDirectory = Path.GetDirectoryName(localPath);
-                if (!string.IsNullOrWhiteSpace(localDirectory))
-                {
-                    Directory.CreateDirectory(localDirectory);
-                }
+                Directory.CreateDirectory(localDirectory);
+            }
 
-                await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(candidate);
-                await using var fileStream = File.Create(localPath);
-                await packageStream.CopyToAsync(fileStream, cancellationToken);
-                return true;
-            }
-            catch
-            {
-                // Try next candidate path.
-            }
+            await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
+            await using var fileStream = File.Create(localPath);
+            await packageStream.CopyToAsync(fileStream, cancellationToken);
+            return true;
         }
-
-        Console.Error.WriteLine($"SVG package copy failed for '{packagedPath}'.");
-        return false;
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Packaged asset copy failed for '{packagedPath}': {ex.Message}");
+            return false;
+        }
     }
 
-    private static IEnumerable<string> BuildCandidatePackagedPaths(string packagedPath)
+    private async Task<bool> TryDownloadRemoteAssetAsync(string url, string localPath, CancellationToken cancellationToken)
     {
-        var normalized = packagedPath.Replace('\\', '/').TrimStart('/');
-        var lower = normalized.ToLowerInvariant();
-        var backslash = normalized.Replace('/', '\\');
-        var backslashLower = lower.Replace('/', '\\');
+        try
+        {
+            var localDirectory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrWhiteSpace(localDirectory))
+            {
+                Directory.CreateDirectory(localDirectory);
+            }
 
-        yield return normalized;
-        yield return lower;
-        yield return backslash;
-        yield return backslashLower;
+            using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.Error.WriteLine($"SVG download failed for '{url}': HTTP {(int)response.StatusCode}.");
+                return false;
+            }
+
+            await using var remoteStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var fileStream = File.Create(localPath);
+            await remoteStream.CopyToAsync(fileStream, cancellationToken);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SVG download failed for '{url}': {ex.Message}");
+            return false;
+        }
     }
 
     private enum EnsureResult
     {
         Reused,
-        CopiedFromPackage,
-        MissingFromPackage
+        Downloaded,
+        NotAvailable
     }
 }
 
