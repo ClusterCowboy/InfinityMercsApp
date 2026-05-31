@@ -9,10 +9,20 @@
 
     <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="6">
         <Border Grid.Row="0" StrokeThickness="0" Padding="0">
+            <Border.GestureRecognizers>
+                <PointerGestureRecognizer
+                    PointerPressed="OnCompanyStripPointerPressed"
+                    PointerMoved="OnCompanyStripPointerMoved"
+                    PointerReleased="OnCompanyStripPointerReleased" />
+            </Border.GestureRecognizers>
             <Grid RowDefinitions="*" RowSpacing="0">
-                <ScrollView Grid.Row="0"
+                <ScrollView x:Name="CompanyUnitsScrollView"
+                            Grid.Row="0"
                             Orientation="Horizontal"
                             HorizontalScrollBarVisibility="Never">
+                    <ScrollView.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnCompanyUnitsStripPanUpdated" />
+                    </ScrollView.GestureRecognizers>
                     <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference CompanyViewerRoot}, Path=CompanyUnits}"
                                            Spacing="8"
                                            Padding="0,0,2,0">

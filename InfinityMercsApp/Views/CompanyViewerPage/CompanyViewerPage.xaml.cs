@@ -63,6 +63,9 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private bool _hasSelectedProfileBaseNameHeading;
     private string _selectedUnitTypeHeading = string.Empty;
     private bool _hasSelectedUnitTypeHeading;
+    private double _companyStripPanStartScrollX;
+    private bool _isCompanyStripMouseDragging;
+    private Point? _lastCompanyStripPointerPosition;
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
@@ -1530,6 +1533,51 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     private async void OnBottomIconRowTapped(object? sender, TappedEventArgs args)
     {
         await HandleIconRowTapAsync(BottomIconRowCanvas, args, BuildBottomIconEntries());
+    }
+
+    private void OnCompanyUnitsStripPanUpdated(object? sender, PanUpdatedEventArgs e)
+    {
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _companyStripPanStartScrollX = CompanyUnitsScrollView.ScrollX;
+                break;
+            case GestureStatus.Running:
+                var targetX = Math.Max(0d, _companyStripPanStartScrollX - e.TotalX);
+                _ = CompanyUnitsScrollView.ScrollToAsync(targetX, 0d, false);
+                break;
+        }
+    }
+
+    private void OnCompanyStripPointerPressed(object? sender, PointerEventArgs e)
+    {
+        _isCompanyStripMouseDragging = true;
+        _lastCompanyStripPointerPosition = e.GetPosition(this);
+    }
+
+    private void OnCompanyStripPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_isCompanyStripMouseDragging)
+        {
+            return;
+        }
+
+        var currentPosition = e.GetPosition(this);
+        if (!currentPosition.HasValue || !_lastCompanyStripPointerPosition.HasValue)
+        {
+            return;
+        }
+
+        var deltaX = currentPosition.Value.X - _lastCompanyStripPointerPosition.Value.X;
+        var targetX = Math.Max(0d, CompanyUnitsScrollView.ScrollX - deltaX);
+        _ = CompanyUnitsScrollView.ScrollToAsync(targetX, 0d, false);
+        _lastCompanyStripPointerPosition = currentPosition;
+    }
+
+    private void OnCompanyStripPointerReleased(object? sender, PointerEventArgs e)
+    {
+        _isCompanyStripMouseDragging = false;
+        _lastCompanyStripPointerPosition = null;
     }
 
     private static async Task HandleIconRowTapAsync(
