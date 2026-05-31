@@ -194,12 +194,18 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        if (string.IsNullOrWhiteSpace(logoUrl))
+        if (IsPackagedAssetPath(logoUrl))
+        {
+            var copied = await TryCopyPackagedAssetAsync(logoUrl!, localPath, cancellationToken);
+            return copied ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+        }
+
+        if (!IsDownloadableUrl(logoUrl))
         {
             return EnsureResult.NotAvailable;
         }
 
-        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl, localPath, cancellationToken);
+        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl!, localPath, cancellationToken);
         return downloaded ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
     }
 
@@ -212,13 +218,54 @@ public class FactionLogoCacheService
             return EnsureResult.Reused;
         }
 
-        if (string.IsNullOrWhiteSpace(logoUrl))
+        if (IsPackagedAssetPath(logoUrl))
+        {
+            var copied = await TryCopyPackagedAssetAsync(logoUrl!, localPath, cancellationToken);
+            return copied ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+        }
+
+        if (!IsDownloadableUrl(logoUrl))
         {
             return EnsureResult.NotAvailable;
         }
 
-        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl, localPath, cancellationToken);
+        var downloaded = await TryDownloadRemoteAssetAsync(logoUrl!, localPath, cancellationToken);
         return downloaded ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+    }
+
+    private static bool IsPackagedAssetPath(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && url.StartsWith(PackagedCacheRoot + "/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDownloadableUrl(string? url)
+    {
+        return !string.IsNullOrWhiteSpace(url)
+            && Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private static async Task<bool> TryCopyPackagedAssetAsync(string packagedPath, string localPath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var localDirectory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrWhiteSpace(localDirectory))
+            {
+                Directory.CreateDirectory(localDirectory);
+            }
+
+            await using var packageStream = await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
+            await using var fileStream = File.Create(localPath);
+            await packageStream.CopyToAsync(fileStream, cancellationToken);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Packaged asset copy failed for '{packagedPath}': {ex.Message}");
+            return false;
+        }
     }
 
     private async Task<bool> TryDownloadRemoteAssetAsync(string url, string localPath, CancellationToken cancellationToken)

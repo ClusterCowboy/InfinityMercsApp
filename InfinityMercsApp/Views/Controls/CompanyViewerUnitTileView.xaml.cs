@@ -8,7 +8,12 @@ namespace InfinityMercsApp.Views.Controls;
 
 public partial class CompanyViewerUnitTileView : ContentView
 {
+    private const int TagCompanyFactionId = 2003;
+    private const string TagCompanyFallbackIconPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
+
     private SKPicture? _svgPicture;
+    private SKPicture? _captainBadgePicture;
+    private SKPicture? _experienceBadgePicture;
     private int _logoLoadVersion;
 
     public static readonly BindableProperty ItemTappedCommandProperty =
@@ -51,11 +56,17 @@ public partial class CompanyViewerUnitTileView : ContentView
         var loadVersion = ++_logoLoadVersion;
         _svgPicture?.Dispose();
         _svgPicture = null;
+        _captainBadgePicture?.Dispose();
+        _captainBadgePicture = null;
+        _experienceBadgePicture?.Dispose();
+        _experienceBadgePicture = null;
 
         var item = BindingContext as IViewerListItem;
         if (item is null)
         {
             LogoCanvas.InvalidateSurface();
+            CaptainBadgeCanvas.InvalidateSurface();
+            ExperienceBadgeCanvas.InvalidateSurface();
             return;
         }
 
@@ -70,6 +81,8 @@ public partial class CompanyViewerUnitTileView : ContentView
                 }
 
                 LogoCanvas.InvalidateSurface();
+                CaptainBadgeCanvas.InvalidateSurface();
+                ExperienceBadgeCanvas.InvalidateSurface();
                 return;
             }
 
@@ -88,6 +101,12 @@ public partial class CompanyViewerUnitTileView : ContentView
 
             _svgPicture?.Dispose();
             _svgPicture = loadedPicture;
+
+            if (item is CompanyViewerUnitListItem companyItem)
+            {
+                _captainBadgePicture = await LoadPictureAsync(companyItem.CaptainIconPackagedPath);
+                _experienceBadgePicture = await LoadPictureAsync(companyItem.ExperienceIconPackagedPath);
+            }
         }
         catch (Exception ex)
         {
@@ -96,6 +115,8 @@ public partial class CompanyViewerUnitTileView : ContentView
         }
 
         LogoCanvas.InvalidateSurface();
+        CaptainBadgeCanvas.InvalidateSurface();
+        ExperienceBadgeCanvas.InvalidateSurface();
     }
 
     private static async Task<Stream?> OpenBestLogoStreamAsync(IViewerListItem item)
@@ -107,13 +128,77 @@ public partial class CompanyViewerUnitTileView : ContentView
 
         if (!string.IsNullOrWhiteSpace(item.PackagedLogoPath))
         {
+            foreach (var candidate in BuildPackagedCandidates(item.PackagedLogoPath))
+            {
+                try
+                {
+                    return await FileSystem.Current.OpenAppPackageFileAsync(candidate);
+                }
+                catch
+                {
+                    // Try next candidate.
+                }
+            }
+        }
+
+        foreach (var fallback in BuildFallbackLogoCandidates(item))
+        {
             try
             {
-                return await FileSystem.Current.OpenAppPackageFileAsync(item.PackagedLogoPath);
+                return await FileSystem.Current.OpenAppPackageFileAsync(fallback);
             }
             catch
             {
-                return null;
+                // Try next fallback.
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> BuildPackagedCandidates(string packagedPath)
+    {
+        var normalized = packagedPath.Replace('\\', '/').TrimStart('/');
+        yield return normalized;
+        yield return normalized.ToLowerInvariant();
+    }
+
+    private static IEnumerable<string> BuildFallbackLogoCandidates(IViewerListItem item)
+    {
+        if (item is not CompanyViewerUnitListItem companyItem)
+        {
+            yield break;
+        }
+
+        var isTagCompanyUnit = companyItem.VisualFactionId == TagCompanyFactionId ||
+                               companyItem.SourceFactionId == TagCompanyFactionId ||
+                               companyItem.BaseUnitName.Contains("Repurposed Mining Equipment", StringComparison.OrdinalIgnoreCase) ||
+                               companyItem.BaseUnitName.Contains("Turtlemek", StringComparison.OrdinalIgnoreCase);
+
+        if (isTagCompanyUnit)
+        {
+            yield return TagCompanyFallbackIconPath;
+        }
+    }
+
+    private static async Task<SKPicture?> LoadPictureAsync(string? packagedPath)
+    {
+        if (string.IsNullOrWhiteSpace(packagedPath))
+        {
+            return null;
+        }
+
+        foreach (var candidate in BuildPackagedCandidates(packagedPath))
+        {
+            try
+            {
+                await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(candidate);
+                var svg = new SKSvg();
+                return svg.Load(stream);
+            }
+            catch
+            {
+                // Try next candidate.
             }
         }
 
@@ -122,15 +207,30 @@ public partial class CompanyViewerUnitTileView : ContentView
 
     private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
+        DrawPictureOnCanvas(e, _svgPicture);
+    }
+
+    private void OnCaptainBadgeCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawPictureOnCanvas(e, _captainBadgePicture);
+    }
+
+    private void OnExperienceBadgeCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        DrawPictureOnCanvas(e, _experienceBadgePicture);
+    }
+
+    private static void DrawPictureOnCanvas(SKPaintSurfaceEventArgs e, SKPicture? picture)
+    {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
 
-        if (_svgPicture is null)
+        if (picture is null)
         {
             return;
         }
 
-        var bounds = _svgPicture.CullRect;
+        var bounds = picture.CullRect;
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
             return;
@@ -141,7 +241,7 @@ public partial class CompanyViewerUnitTileView : ContentView
         var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
         canvas.Translate(x, y);
         canvas.Scale(scale);
-        canvas.DrawPicture(_svgPicture);
+        canvas.DrawPicture(picture);
     }
 
     private void OnTileTapped(object? sender, TappedEventArgs e)

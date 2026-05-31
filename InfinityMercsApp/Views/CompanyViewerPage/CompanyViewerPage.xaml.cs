@@ -17,6 +17,7 @@ namespace InfinityMercsApp.Views;
 public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 {
     private const int TagCompanyFactionId = 2003;
+    private const string TagCompanyFallbackIconPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
     private const int MaxIconsPerRow = 6;
     private const float IconSize = 75f;
     private const float IconGap = 20f;
@@ -515,6 +516,7 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
         UpdateCurrentWeaponsDisplay();
         TopIconRowCanvas.InvalidateSurface();
+        _ = LoadSelectedCompanyUnitLogoAsync(item);
         return Task.CompletedTask;
     }
 
@@ -1166,25 +1168,27 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private async Task LoadSelectedUnitLogoAsync(ViewerUnitItem? unit)
     {
+        await LoadSelectedLogoPictureAsync(unit);
+    }
+
+    private async Task LoadSelectedCompanyUnitLogoAsync(CompanyViewerUnitListItem? item)
+    {
+        await LoadSelectedLogoPictureAsync(item);
+    }
+
+    private async Task LoadSelectedLogoPictureAsync(IViewerListItem? item)
+    {
         var loadVersion = ++_selectedUnitLogoLoadVersion;
         SKPicture? loadedPicture = null;
 
         try
         {
-            if (unit is not null)
+            if (item is not null)
             {
                 Stream? stream = null;
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(unit.CachedLogoPath) && File.Exists(unit.CachedLogoPath))
-                    {
-                        stream = File.OpenRead(unit.CachedLogoPath);
-                    }
-                    else if (!string.IsNullOrWhiteSpace(unit.PackagedLogoPath))
-                    {
-                        stream = await FileSystem.Current.OpenAppPackageFileAsync(unit.PackagedLogoPath);
-                    }
-
+                    stream = await OpenBestLogoStreamAsync(item);
                     if (stream is not null)
                     {
                         await using (stream)
@@ -1215,6 +1219,68 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         {
             loadedPicture?.Dispose();
             throw;
+        }
+    }
+
+    private static async Task<Stream?> OpenBestLogoStreamAsync(IViewerListItem item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.CachedLogoPath) && File.Exists(item.CachedLogoPath))
+        {
+            return File.OpenRead(item.CachedLogoPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.PackagedLogoPath))
+        {
+            foreach (var candidate in BuildPackagedCandidates(item.PackagedLogoPath))
+            {
+                try
+                {
+                    return await FileSystem.Current.OpenAppPackageFileAsync(candidate);
+                }
+                catch
+                {
+                    // Try next candidate.
+                }
+            }
+        }
+
+        foreach (var fallback in BuildFallbackLogoCandidates(item))
+        {
+            try
+            {
+                return await FileSystem.Current.OpenAppPackageFileAsync(fallback);
+            }
+            catch
+            {
+                // Try next fallback.
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> BuildPackagedCandidates(string packagedPath)
+    {
+        var normalized = packagedPath.Replace('\\', '/').TrimStart('/');
+        yield return normalized;
+        yield return normalized.ToLowerInvariant();
+    }
+
+    private static IEnumerable<string> BuildFallbackLogoCandidates(IViewerListItem item)
+    {
+        if (item is not CompanyViewerUnitListItem companyItem)
+        {
+            yield break;
+        }
+
+        var isTagCompanyUnit = companyItem.VisualFactionId == TagCompanyFactionId ||
+                               companyItem.SourceFactionId == TagCompanyFactionId ||
+                               companyItem.BaseUnitName.Contains("Repurposed Mining Equipment", StringComparison.OrdinalIgnoreCase) ||
+                               companyItem.BaseUnitName.Contains("Turtlemek", StringComparison.OrdinalIgnoreCase);
+
+        if (isTagCompanyUnit)
+        {
+            yield return TagCompanyFallbackIconPath;
         }
     }
 

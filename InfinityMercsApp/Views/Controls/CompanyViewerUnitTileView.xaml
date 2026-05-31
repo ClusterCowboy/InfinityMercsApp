@@ -33,13 +33,32 @@
                    MaxLines="2"
                    WidthRequest="112"
                    LineBreakMode="WordWrap" />
-            <skia:SKCanvasView
-                x:Name="LogoCanvas"
-                WidthRequest="46"
-                HeightRequest="46"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                PaintSurface="OnLogoCanvasPaintSurface" />
+            <Grid WidthRequest="56"
+                  HeightRequest="56"
+                  HorizontalOptions="Center"
+                  VerticalOptions="Center">
+                <skia:SKCanvasView
+                    x:Name="LogoCanvas"
+                    WidthRequest="46"
+                    HeightRequest="46"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    PaintSurface="OnLogoCanvasPaintSurface" />
+                <skia:SKCanvasView
+                    x:Name="CaptainBadgeCanvas"
+                    WidthRequest="16"
+                    HeightRequest="16"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Start"
+                    PaintSurface="OnCaptainBadgeCanvasPaintSurface" />
+                <skia:SKCanvasView
+                    x:Name="ExperienceBadgeCanvas"
+                    WidthRequest="16"
+                    HeightRequest="16"
+                    HorizontalOptions="End"
+                    VerticalOptions="Start"
+                    PaintSurface="OnExperienceBadgeCanvasPaintSurface" />
+            </Grid>
             <Label Text="{Binding BaseUnitDisplayName}"
                    HorizontalTextAlignment="Center"
                    FontSize="12"

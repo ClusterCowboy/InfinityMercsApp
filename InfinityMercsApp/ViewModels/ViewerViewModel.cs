@@ -627,6 +627,7 @@ public class ViewerViewModel : BaseViewModel
     public ICommand SelectUnitCommand { get; }
     public ICommand ShowUnitsTabCommand { get; }
     public ICommand ShowFireteamsTabCommand { get; }
+    public ICommand? AddProfileToMercsCompanyCommand { get; } = null;
 
     public async Task LoadSpecificUnitAsync(
         int sourceFactionId,

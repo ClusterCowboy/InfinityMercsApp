@@ -13,6 +13,8 @@
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<PublishTrimmed>true</PublishTrimmed>
 		<TrimMode>partial</TrimMode>
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -66,7 +68,7 @@
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
 		<!-- Images -->
-		<MauiImage Include="Resources\Images\*" />
+		<MauiImage Include="Resources\Images\**\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 
 		<!-- Custom Fonts -->
@@ -74,14 +76,12 @@
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-		<MauiImage Include="Resources\Images\MercsIcons\single_sectorial.svg">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-		</MauiImage>
-		<MauiImage Include="Resources\Images\MercsIcons\multiple_sectorials.svg">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-		</MauiImage>
+		<MauiAsset Include="Resources\Images\MercsIcons\**\*" LogicalName="MercsIcons/%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiAsset Remove="Resources\Raw\DebugTestCompanyManifest.json" Condition="'$(Configuration)' == 'Release'" />
+		<!-- Static UI icons bundled with the app. factions/ and units/ are excluded — downloaded at runtime. -->
+		<MauiAsset Include="SVGCache\CBIcons\**\*" LogicalName="SVGCache/CBIcons/%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiAsset Include="SVGCache\NonCBIcons\**\*" LogicalName="SVGCache/NonCBIcons/%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiAsset Include="SVGCache\MercsIcons\**\*" LogicalName="SVGCache/MercsIcons/%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -122,31 +122,5 @@
 	  </Compile>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <MauiImage Include="Resources\Images\MercsIcons\airborne_company.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	  <MauiImage Include="Resources\Images\MercsIcons\proxy_pack.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	  <MauiImage Include="Resources\Images\MercsIcons\tag_company.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	  <MauiImage Include="Resources\Images\MercsIcons\standard_company.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	  <MauiImage Include="Resources\Images\MercsIcons\inspiring_leadership.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	  <MauiImage Include="Resources\Images\MercsIcons\cohesive_company.svg">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    <LogicalName>SVGCache/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiImage>
-	</ItemGroup>
 
 </Project>
