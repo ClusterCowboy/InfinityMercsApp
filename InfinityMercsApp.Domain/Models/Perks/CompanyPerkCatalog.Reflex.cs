@@ -65,9 +65,9 @@ public static partial class CompanyPerkCatalog
         var t5r2 = new PerkNode
         {
             Id = "reflex-track-5-tier-2",
-            Name = "360 Visor (Accessory)",
+            Name = "360\u00BA Visor",
             Tier = 2,
-            SkillsEquipmentGained = BuildSkillsEquipmentGained("360 Visor (Accessory)")
+            SkillsEquipmentGained = BuildSkillsEquipmentGained("360\u00BA Visor")
         };
 
         var t6r2 = new PerkNode

@@ -84,6 +84,8 @@ public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListI
     public string SavedPeripheralEquipment { get; init; } = "-";
     public string SavedPeripheralSkills { get; init; } = "-";
     public string SavedPeripheralCharacteristics { get; init; } = "-";
+    public string SavedPeripheralRangedWeapons { get; init; } = "-";
+    public string SavedPeripheralCcWeapons { get; init; } = "-";
     public string PeripheralSubtitle => $"MOV {PeripheralMov} | CC {PeripheralCc} | BS {PeripheralBs} | PH {PeripheralPh} | WIP {PeripheralWip} | ARM {PeripheralArm} | BTS {PeripheralBts} | {PeripheralVitalityHeader} {PeripheralVitality} | S {PeripheralS} | AVA {PeripheralAva}";
 
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);

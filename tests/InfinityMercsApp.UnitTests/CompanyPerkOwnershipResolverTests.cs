@@ -131,6 +131,21 @@ public sealed class CompanyPerkOwnershipResolverTests
         Assert.Contains(descriptions, x => x.Contains("Hacking Device", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Theory]
+    [InlineData("360° Visor")]
+    [InlineData("360º Visor")]
+    [InlineData("360Âº Visor")]
+    public void ResolveOwnedPerkNodeIds_360VisorSymbolVariants_QualifyForPerk(string equipmentName)
+    {
+        var ownedIds = CompanyPerkOwnershipResolver.ResolveOwnedPerkNodeIds(
+            skills: [],
+            equipment: [equipmentName]);
+
+        var descriptions = ResolveDescriptions(ownedIds);
+        Assert.Contains(descriptions, x => x.Contains("360", StringComparison.OrdinalIgnoreCase) &&
+                                           x.Contains("Visor", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public void ResolveOwnedPerkNodeIds_GizmokitOrMedikitWithPh_IsNotEquipmentUnlessExplicitlyPresent()
     {

@@ -416,6 +416,7 @@ public static class CompanyPerkOwnershipResolver
         var value = Regex.Replace(input, @"\+?\s*(\d+)\s*bs\b", " ballistic_skill_plus_$1 ");
         value = Regex.Replace(value, @"\+?\s*(\d+)\s*b\b", " burst_plus_$1 ");
 
+
         // Preserve signed numeric modifiers (for example "+3", "-3") so
         // "Infiltration" does not match "Infiltration (+3)".
         value = Regex.Replace(value, @"\+\s*(\d+)\b", " plus$1 ");
@@ -635,6 +636,16 @@ public static class CompanyPerkOwnershipResolver
                 var inches = (int)Math.Round(centimeters / 2.54d, MidpointRounding.AwayFromZero);
                 yield return $"Forward Deployment (+{inches}\")";
             }
+        }
+
+        // Accept degree/ordinal symbol variants for 360 Visor text
+        // (for example: 360° Visor, 360º Visor, and mojibake 360Âº Visor).
+        var visorText = rawText.Replace("Â", string.Empty, StringComparison.Ordinal);
+        if (Regex.IsMatch(visorText, @"\b360\s*[°º]?\s*visor\b", RegexOptions.IgnoreCase))
+        {
+            yield return "360 Visor";
+            yield return "360° Visor";
+            yield return "360º Visor";
         }
 
         var lower = rawText.ToLowerInvariant();
