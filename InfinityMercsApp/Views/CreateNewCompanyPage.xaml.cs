@@ -30,7 +30,7 @@ public partial class CreateNewCompanyPage
 
     private async void OnBackClicked(object? sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("//ModeSelectionPage");
+        await Shell.Current.GoToAsync("//MercsSeasonPage");
     }
 
     private void ClearResidualNavigationStack()

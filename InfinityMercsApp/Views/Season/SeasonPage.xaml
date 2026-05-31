@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.Season.SeasonPage"
+             x:Name="SeasonRoot"
+             Title="Season"
+             BackgroundColor="#111827">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                BackgroundColor="#1F2937"
+                Stroke="#374151"
+                StrokeThickness="1"
+                Padding="16,12"
+                StrokeShape="Rectangle">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                    <Label x:Name="CompanyNameLabel"
+                           Text="Season"
+                           FontSize="{DynamicResource FontSizeSubHeadline}"
+                           FontAttributes="Bold"
+                           TextColor="White" />
+                    <Label x:Name="CompanyTypeLabel"
+                           Text=""
+                           FontSize="{DynamicResource FontSizeCaption}"
+                           TextColor="#9CA3AF" />
+                </VerticalStackLayout>
+
+                <Button Grid.Column="1"
+                        Text="PLAY ROUND"
+                        BackgroundColor="#22C55E"
+                        TextColor="Black"
+                        BorderColor="#22C55E"
+                        FontAttributes="Bold"
+                        Clicked="OnPlayRoundClicked"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Tab Content -->
+        <Grid Grid.Row="1">
+
+            <!-- Team Tab -->
+            <Grid x:Name="TeamTabContent" IsVisible="True" Padding="16,8">
+                <CollectionView ItemsSource="{Binding Source={x:Reference SeasonRoot}, Path=TeamUnits}">
+                    <CollectionView.EmptyView>
+                        <Label Text="No units loaded."
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"
+                               TextColor="#6B7280"
+                               Margin="0,40,0,0" />
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,8"
+                                    BackgroundColor="#1F2937"
+                                    Stroke="#374151"
+                                    StrokeThickness="1"
+                                    Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{DynamicResource CornerRadiusDefault}" />
+                                </Border.StrokeShape>
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                        <Label Text="{Binding DisplayName}"
+                                               FontSize="{DynamicResource FontSizeBody}"
+                                               FontAttributes="Bold"
+                                               TextColor="White" />
+                                        <Label Text="{Binding ExperienceRankName}"
+                                               FontSize="{DynamicResource FontSizeCaption}"
+                                               TextColor="#9CA3AF" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding ExperiencePoints, StringFormat='{0} XP'}"
+                                           FontSize="{DynamicResource FontSizeCaption}"
+                                           TextColor="#FACC15"
+                                           VerticalOptions="Center" />
+                                    <Label Grid.Column="2"
+                                           Text="{Binding Cost, StringFormat='{0}pts'}"
+                                           FontSize="{DynamicResource FontSizeCaption}"
+                                           TextColor="#9CA3AF"
+                                           VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+
+            <!-- Inventory Tab (stub) -->
+            <Grid x:Name="InventoryTabContent" IsVisible="False" Padding="16,8">
+                <Label Text="Inventory — coming soon."
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center"
+                       TextColor="#6B7280" />
+            </Grid>
+
+            <!-- Marketplace Tab (stub) -->
+            <Grid x:Name="MarketplaceTabContent" IsVisible="False" Padding="16,8">
+                <Label Text="Marketplace — coming soon."
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center"
+                       TextColor="#6B7280" />
+            </Grid>
+
+        </Grid>
+
+        <!-- Bottom Tab Bar -->
+        <Border Grid.Row="2"
+                BackgroundColor="#1F2937"
+                Stroke="#374151"
+                StrokeThickness="1"
+                Padding="0"
+                StrokeShape="Rectangle">
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="0">
+                <Button x:Name="TeamTabButton"
+                        Grid.Column="0"
+                        Text="TEAM"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        BorderWidth="0"
+                        FontAttributes="Bold"
+                        TextColor="#22C55E"
+                        Clicked="OnTeamTabClicked" />
+                <Button x:Name="InventoryTabButton"
+                        Grid.Column="1"
+                        Text="INVENTORY"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        BorderWidth="0"
+                        TextColor="#6B7280"
+                        Clicked="OnInventoryTabClicked" />
+                <Button x:Name="MarketplaceTabButton"
+                        Grid.Column="2"
+                        Text="MARKETPLACE"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        BorderWidth="0"
+                        TextColor="#6B7280"
+                        Clicked="OnMarketplaceTabClicked" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>

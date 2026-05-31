@@ -1,6 +1,7 @@
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Season;
 using InfinityMercsApp.Views.UnitEncyclopedia;
 
 namespace InfinityMercsApp;
@@ -35,7 +36,13 @@ public static class ServiceRegistryExtensions
                 .AddTransient<PerkTesterPage>()
                 .AddTransient<CompanyViewerPage>()
                 .AddTransient<UnitEncyclopediaPage>()
-                .AddTransient<FeedbackBugsPage>();
+                .AddTransient<FeedbackBugsPage>()
+                .AddTransient<MercsSeasonPage>()
+                .AddTransient<LoadSeasonPage>()
+                .AddTransient<SeasonPage>()
+                .AddTransient<PlayModePage>()
+                .AddTransient<ExperiencePage>()
+                .AddTransient<DowntimePage>();
 
         return services;
     }
