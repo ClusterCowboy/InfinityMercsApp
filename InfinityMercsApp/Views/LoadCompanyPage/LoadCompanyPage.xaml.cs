@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Threading;
+using InfinityMercsApp.Views.Season;
 using InfinityMercsApp.Views.StandardCompany;
 using SkiaSharp.Views.Maui.Controls;
 using SkiaSharp;
@@ -10,7 +11,7 @@ using Svg.Skia;
 
 namespace InfinityMercsApp.Views;
 
-public partial class LoadCompanyPage : ContentPage
+public partial class LoadCompanyPage : ContentPage, IQueryAttributable
 {
     private const string SaveDirectoryName = "MercenaryRecords";
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -21,6 +22,7 @@ public partial class LoadCompanyPage : ContentPage
     private readonly SemaphoreSlim _iconLoadGate = new(1, 1);
     private SKPicture? _trashIconPicture;
     private readonly Dictionary<string, SKPicture?> _iconPictureCache = new(StringComparer.OrdinalIgnoreCase);
+    private bool _seasonMode;
 
     public ObservableCollection<LoadCompanyRecordItem> SavedRecords { get; } = [];
     public bool HasSavedRecords => SavedRecords.Count > 0;
@@ -35,6 +37,11 @@ public partial class LoadCompanyPage : ContentPage
             OnPropertyChanged(nameof(HasSavedRecords));
             OnPropertyChanged(nameof(ShowEmptyState));
         };
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        _seasonMode = query.ContainsKey("seasonMode");
     }
 
     protected override async void OnAppearing()
@@ -170,7 +177,10 @@ public partial class LoadCompanyPage : ContentPage
         }
 
         var encodedPath = Uri.EscapeDataString(item.FilePath);
-        await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+        var destination = _seasonMode
+            ? $"//{nameof(SeasonPage)}?companyFilePath={encodedPath}"
+            : $"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}";
+        await Shell.Current.GoToAsync(destination);
     }
 
     private void OnRecordIconBindingContextChanged(object? sender, EventArgs e)

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              x:Class="InfinityMercsApp.Views.Season.SeasonPage"
              x:Name="SeasonRoot"
              Title="Season"
@@ -42,51 +43,108 @@
         <!-- Tab Content -->
         <Grid Grid.Row="1">
 
-            <!-- Team Tab -->
-            <Grid x:Name="TeamTabContent" IsVisible="True" Padding="16,8">
-                <CollectionView ItemsSource="{Binding Source={x:Reference SeasonRoot}, Path=TeamUnits}">
-                    <CollectionView.EmptyView>
-                        <Label Text="No units loaded."
-                               HorizontalTextAlignment="Center"
-                               VerticalTextAlignment="Center"
-                               TextColor="#6B7280"
-                               Margin="0,40,0,0" />
-                    </CollectionView.EmptyView>
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,8"
-                                    BackgroundColor="#1F2937"
-                                    Stroke="#374151"
-                                    StrokeThickness="1"
-                                    Padding="12,10">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="{DynamicResource CornerRadiusDefault}" />
-                                </Border.StrokeShape>
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                    <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="{Binding DisplayName}"
-                                               FontSize="{DynamicResource FontSizeBody}"
-                                               FontAttributes="Bold"
-                                               TextColor="White" />
-                                        <Label Text="{Binding ExperienceRankName}"
-                                               FontSize="{DynamicResource FontSizeCaption}"
-                                               TextColor="#9CA3AF" />
-                                    </VerticalStackLayout>
-                                    <Label Grid.Column="1"
-                                           Text="{Binding ExperiencePoints, StringFormat='{0} XP'}"
-                                           FontSize="{DynamicResource FontSizeCaption}"
-                                           TextColor="#FACC15"
-                                           VerticalOptions="Center" />
-                                    <Label Grid.Column="2"
-                                           Text="{Binding Cost, StringFormat='{0}pts'}"
-                                           FontSize="{DynamicResource FontSizeCaption}"
-                                           TextColor="#9CA3AF"
-                                           VerticalOptions="Center" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+            <!-- Team Tab — mirrors CompanyViewerPage layout -->
+            <Grid x:Name="TeamTabContent"
+                  IsVisible="True"
+                  Padding="16,8,16,0"
+                  RowDefinitions="Auto,*"
+                  RowSpacing="6">
+
+                <!-- Horizontal unit strip -->
+                <ScrollView Grid.Row="0"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout
+                        BindableLayout.ItemsSource="{Binding Source={x:Reference SeasonRoot}, Path=CompanyUnits}"
+                        Spacing="8"
+                        Padding="0,0,2,0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <controls:CompanyViewerUnitTileView
+                                    ItemTappedCommand="{Binding Source={x:Reference SeasonRoot}, Path=SelectCompanyUnitCommand}"
+                                    ItemTappedCommandParameter="{Binding .}" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                </ScrollView>
+
+                <!-- Selected unit details -->
+                <Border Grid.Row="1" StrokeThickness="0" Padding="0,4,0,0">
+                    <Border.Resources>
+                        <Style TargetType="Label">
+                            <Setter Property="FontSize" Value="24" />
+                        </Style>
+                    </Border.Resources>
+                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+
+                        <!-- Name / type heading -->
+                        <VerticalStackLayout Grid.Row="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="{Binding Source={x:Reference SeasonRoot}, Path=SelectedCaptainNameHeading}"
+                                   FontSize="34"
+                                   FontAttributes="Bold"
+                                   TextColor="White" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Source={x:Reference SeasonRoot}, Path=SelectedProfileBaseNameHeading}"
+                                       FontSize="28"
+                                       TextColor="#9CA3AF"
+                                       HorizontalOptions="Start"
+                                       IsVisible="{Binding Source={x:Reference SeasonRoot}, Path=HasSelectedProfileBaseNameHeading}" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Source={x:Reference SeasonRoot}, Path=SelectedUnitTypeHeading}"
+                                       FontSize="24"
+                                       TextColor="#9CA3AF"
+                                       HorizontalOptions="End"
+                                       IsVisible="{Binding Source={x:Reference SeasonRoot}, Path=HasSelectedUnitTypeHeading}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- Stats block -->
+                        <controls:UnitDisplayConfigurationsView
+                            Grid.Row="1"
+                            x:Name="TeamUnitDisplayView"
+                            UnitNameHeading="{Binding UnitNameHeading}"
+                            ShowRegularOrderIcon="{Binding ShowRegularOrderIcon}"
+                            ShowIrregularOrderIcon="{Binding ShowIrregularOrderIcon}"
+                            ShowImpetuousIcon="{Binding ShowImpetuousIcon}"
+                            ShowTacticalAwarenessIcon="{Binding ShowTacticalAwarenessIcon}"
+                            ShowCubeIcon="{Binding ShowCubeIcon}"
+                            ShowCube2Icon="{Binding ShowCube2Icon}"
+                            ShowHackableIcon="{Binding ShowHackableIcon}"
+                            UnitMov="{Binding UnitMov}"
+                            UnitCc="{Binding UnitCc}"
+                            UnitBs="{Binding UnitBs}"
+                            UnitPh="{Binding UnitPh}"
+                            UnitWip="{Binding UnitWip}"
+                            UnitArm="{Binding UnitArm}"
+                            UnitBts="{Binding UnitBts}"
+                            UnitVitalityHeader="{Binding UnitVitalityHeader}"
+                            UnitVitality="{Binding UnitVitality}"
+                            UnitS="{Binding UnitS}"
+                            UnitAva="{Binding UnitAva}"
+                            ShowConfigurationsSection="False"
+                            EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
+                            SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
+
+                        <!-- Weapons -->
+                        <ScrollView Grid.Row="2">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                    <Label Text="Weapons" FontSize="30" FontAttributes="Bold" TextColor="White" />
+                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentRangedWeaponsFormatted}"
+                                           FontSize="22" LineBreakMode="WordWrap" />
+                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentMeleeWeaponsFormatted}"
+                                           FontSize="22" LineBreakMode="WordWrap" />
+                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentPeripheralsFormatted}"
+                                           FontSize="22" LineBreakMode="WordWrap"
+                                           IsVisible="{Binding Source={x:Reference SeasonRoot}, Path=HasCurrentPeripherals}" />
+                                </VerticalStackLayout>
+                                <Grid Grid.Column="1" />
+                            </Grid>
+                        </ScrollView>
+
+                    </Grid>
+                </Border>
             </Grid>
 
             <!-- Inventory Tab (stub) -->

@@ -27,7 +27,7 @@ public partial class MercsSeasonPage : ContentPage
 
     private async void OnLoadCompanyClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync($"//{nameof(Views.LoadCompanyPage)}");
+        await Shell.Current.GoToAsync($"//{nameof(Views.LoadCompanyPage)}?seasonMode=true");
     }
 
     private async void OnCreateNewTeamClicked(object sender, EventArgs e)
