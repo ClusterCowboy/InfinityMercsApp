@@ -1,0 +1,29 @@
+{
+  "name": "Salaam Suuk",
+  "associatedFactions": [ "Haqqislam", "Druze" ],
+  "associatedType": "Continuous",
+  "alignment": "Lawful",
+  "items": [
+    { "name": "Heavy Rocket Launcher", "costCr": 12, "costSwc": 1.0, "category": "Primary" },
+    { "name": "Chain Rifle (+1B)", "costCr": 10, "costSwc": null, "category": "Primary" },
+    { "name": "Vulkan Shotgun", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "Flammenspear", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Jammer", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "Light Rocket Launcher", "costCr": 11, "costSwc": 0.5, "category": "Secondary" },
+    { "name": "Kobra Pistol", "costCr": 3, "costSwc": null, "category": "Sidearm" },
+    { "name": "Chain Colt", "costCr": 5, "costSwc": null, "category": "Sidearm" },
+    { "name": "Continuous CCW", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "Holoprojector", "costCr": 10, "costSwc": null, "category": "Accessories" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 15, "armorName": "Bashi Holo Suit", "arm": 2, "bts": null, "abilities": "Holomask, Holoprojector, Surprise Attack (-3)" },
+    { "type": null, "costCr": 16, "armorName": "Motorcycle", "arm": null, "bts": null, "abilities": "Mov 8-4 Motorcycle (S4), Impetuous, Mimetism (-3), No Cover" },
+    { "type": "MI", "costCr": 18, "armorName": "Namurr Mobility Suit", "arm": 2, "bts": 6, "abilities": "Climbing Plus, Mov 6-2, +1 Wounds Skill" },
+    { "type": "HI", "costCr": 20, "armorName": "Hazmat Suit", "arm": null, "bts": 9, "abilities": "Immunity (Continuous)" }
+  ],
+  "augments": [
+    { "name": "Hacking UPGRADE: Cybermask", "requirement": "Hacker", "costCr": 6, "costNote": null },
+    { "name": "Doctor (+3)", "requirement": "Doctor", "costCr": 7, "costNote": null },
+    { "name": "Doctor (2W)", "requirement": "Doctor", "costCr": 7, "costNote": null }
+  ]
+}

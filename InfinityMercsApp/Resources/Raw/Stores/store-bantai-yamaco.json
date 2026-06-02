@@ -1,0 +1,27 @@
+{
+  "name": "Bantai Yamaco",
+  "associatedFactions": [ "Japanese Secessionist Army", "Shindenbutai", "Oban", "Hayabusa Jōrikusentai", "Ikari" ],
+  "associatedType": "K1",
+  "alignment": "Chaotic",
+  "items": [
+    { "name": "K1 Combi", "costCr": 8, "costSwc": null, "category": "Primary" },
+    { "name": "K1 Marksman Rifle", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "K1 Sniper Rifle", "costCr": 21, "costSwc": 1.5, "category": "Primary" },
+    { "name": "K1+DA Tactical Bow", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "K1 Mine", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "EXP CCW", "costCr": 12, "costSwc": null, "category": "Sidearm" },
+    { "name": "Monofilament CCW", "costCr": 15, "costSwc": null, "category": "Sidearm" },
+    { "name": "Bangbomb (+4)", "costCr": 3, "costSwc": null, "category": "Accessories" }
+  ],
+  "troopTypes": [
+    { "type": null, "costCr": 10, "armorName": "Harmonic Combat Exosuit", "arm": null, "bts": null, "abilities": "Martial Arts Lvl (+1)" },
+    { "type": "LI", "costCr": 15, "armorName": "Oniwaban Suit", "arm": 1, "bts": null, "abilities": "Infiltration, Camouflage, Hidden Deployment" },
+    { "type": "MI", "costCr": 10, "armorName": "Power Suit", "arm": 2, "bts": 6, "abilities": "PH=15, CC Attack (PS=5 Optional)" },
+    { "type": "HI", "costCr": 30, "armorName": "Shizoku Armor", "arm": 5, "bts": 6, "abilities": "Berserk, Frenzy" }
+  ],
+  "augments": [
+    { "name": "CC=21", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "CC Attack (AP)", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "Camouflage [1 Use]", "requirement": "Forward Observer", "costCr": 10, "costNote": null }
+  ]
+}

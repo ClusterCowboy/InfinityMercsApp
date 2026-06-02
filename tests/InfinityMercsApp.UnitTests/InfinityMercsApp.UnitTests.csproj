@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\InfinityMercsApp.Domain\Models\Metadata\Faction.cs" Link="Source\Faction.cs" />
+    <Compile Include="..\..\InfinityMercsApp.Domain\Utilities\FactionResolver.cs" Link="Source\FactionResolver.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyUnitExperienceRanks.cs" Link="Source\CompanyUnitExperienceRanks.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\PerkCatalogModels.cs" Link="Source\PerkCatalogModels.cs" />
     <Compile Include="..\..\InfinityMercsApp.Domain\Models\Perks\CompanyTrooperPerk.cs" Link="Source\CompanyTrooperPerk.cs" />

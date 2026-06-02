@@ -1,0 +1,30 @@
+{
+  "name": "Alpha Sec",
+  "associatedFactions": [ "Aleph", "O-12" ],
+  "associatedType": "E/M, PARA",
+  "alignment": "Lawful",
+  "items": [
+    { "name": "Adhesive Launcher Rifle", "costCr": 6, "costSwc": null, "category": "Primary" },
+    { "name": "E/M Carbine", "costCr": 8, "costSwc": null, "category": "Primary" },
+    { "name": "E/M Grenade Launcher", "costCr": 12, "costSwc": 0.5, "category": "Primary" },
+    { "name": "Zapper", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Heavy Riotstopper", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "E/Mitter", "costCr": 12, "costSwc": null, "category": "Secondary" },
+    { "name": "E/M Grenades", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "PARA CCW (-6)", "costCr": 8, "costSwc": null, "category": "Sidearm" },
+    { "name": "E/M CCW", "costCr": 12, "costSwc": null, "category": "Sidearm" },
+    { "name": "Eclipse Grenades", "costCr": 12, "costSwc": null, "category": "Accessories" },
+    { "name": "Hacker (+EVO Hacking Device)", "costCr": 15, "costSwc": 0.5, "category": "Roles" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 15, "armorName": "Myrmidon Suit", "arm": 2, "bts": null, "abilities": "Frenzy, Mimetism (-6), Stealth" },
+    { "type": "MI", "costCr": 30, "armorName": "Waverider Cybersuit", "arm": 3, "bts": 6, "abilities": "Hacker, Hacking Device (UPGRADE: Oblivion (+1B))" },
+    { "type": "HI", "costCr": 30, "armorName": "Hoplite Armor", "arm": 3, "bts": 6, "abilities": "Immunity (Enhanced), Religious" },
+    { "type": "HI", "costCr": 40, "armorName": "Gamma Armor", "arm": 6, "bts": 6, "abilities": "2W, NWI, S5" }
+  ],
+  "augments": [
+    { "name": "WIP=12", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "Armed Turret (E/Mitter)", "requirement": "Engineer", "costCr": 12, "costNote": null },
+    { "name": "Hacking UPGRADE: Assisted Fire", "requirement": "Killer/Hacking Device", "costCr": 15, "costNote": null }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Jade Temu",
+  "associatedFactions": [ "Yu Jing" ],
+  "associatedType": "AP",
+  "alignment": "Neutral",
+  "items": [
+    { "name": "AP Rifle", "costCr": 7, "costSwc": null, "category": "Primary" },
+    { "name": "AP Marksman Rifle", "costCr": 11, "costSwc": null, "category": "Primary" },
+    { "name": "Missile Launcher", "costCr": 16, "costSwc": 1.5, "category": "Primary" },
+    { "name": "AP HMG", "costCr": 26, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Panzerfaust", "costCr": 9, "costSwc": null, "category": "Secondary" },
+    { "name": "AP Mine", "costCr": 6, "costSwc": null, "category": "Secondary" },
+    { "name": "AP + DA CCW", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "AP Heavy Pistol", "costCr": 8, "costSwc": null, "category": "Sidearm" },
+    { "name": "Holomask", "costCr": 5, "costSwc": null, "category": "Accessories" },
+    { "name": "Tinbot: Firewall (-6)", "costCr": 15, "costSwc": null, "category": "Accessories" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 5, "armorName": "Jumpsuit", "arm": null, "bts": null, "abilities": "Combat Jump (-3)" },
+    { "type": "MI", "costCr": 10, "armorName": "Ambush Suit", "arm": 2, "bts": 3, "abilities": "Decoy(2)" },
+    { "type": "HI", "costCr": 20, "armorName": "Haidao Armor", "arm": 3, "bts": 3, "abilities": "NCO" },
+    { "type": "HI", "costCr": 38, "armorName": "Hsien Armor", "arm": 4, "bts": 6, "abilities": "MSV2" }
+  ],
+  "augments": [
+    { "name": "CC Attack (-1 SR)", "requirement": null, "costCr": 6, "costNote": null },
+    { "name": "Armed Turret (Combi)", "requirement": "Engineer", "costCr": 5, "costNote": null }
+  ]
+}

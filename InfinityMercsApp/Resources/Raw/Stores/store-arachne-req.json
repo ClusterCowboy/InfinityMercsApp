@@ -1,0 +1,28 @@
+{
+  "name": "Arachne Req",
+  "associatedFactions": [ "Nomads" ],
+  "associatedType": "Breaker",
+  "alignment": "Chaotic",
+  "items": [
+    { "name": "Breaker Combi", "costCr": 8, "costSwc": null, "category": "Primary" },
+    { "name": "Breaker Spitfire", "costCr": 20, "costSwc": 1.0, "category": "Primary" },
+    { "name": "Thunderbolt", "costCr": 16, "costSwc": null, "category": "Primary" },
+    { "name": "Cybermine", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Fast Panda", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "Pitcher", "costCr": 20, "costSwc": 1.0, "category": "Secondary" },
+    { "name": "Breaker Pistol", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "Silenced Pistol", "costCr": 8, "costSwc": null, "category": "Sidearm" },
+    { "name": "Repeater", "costCr": 10, "costSwc": null, "category": "Accessories" },
+    { "name": "Hacker (+Hacking Device Plus)", "costCr": 15, "costSwc": 0.5, "category": "Roles" }
+  ],
+  "troopTypes": [
+    { "type": null, "costCr": 5, "armorName": "Chemtank", "arm": null, "bts": null, "abilities": "Impetuous, Metachemistry, Limited Cover" },
+    { "type": "MI", "costCr": 15, "armorName": "Hellcat Dropsuit", "arm": 2, "bts": 3, "abilities": "Combat Jump (-3), Parachutist" },
+    { "type": "HI", "costCr": 25, "armorName": "Riot Armor", "arm": 3, "bts": 3, "abilities": "MSV1, Dodge(+3), Frenzy" },
+    { "type": "REM", "costCr": 15, "armorName": "Black Labs Body Modification", "arm": null, "bts": null, "abilities": "VITA becomes STR, Remote Presence, Courage" }
+  ],
+  "augments": [
+    { "name": "Comms Attack (-1 SR)", "requirement": "Hacker", "costCr": 6, "costNote": null },
+    { "name": "Hacking UPGRADE: Trinity", "requirement": "Hacker", "costCr": 8, "costNote": null }
+  ]
+}

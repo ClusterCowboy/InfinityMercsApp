@@ -1,0 +1,31 @@
+{
+  "name": "Frontier General",
+  "associatedFactions": [ "Ariadna", "Dashat" ],
+  "associatedType": "T2",
+  "alignment": "Neutral",
+  "items": [
+    { "name": "T2 Rifle", "costCr": 6, "costSwc": null, "category": "Primary" },
+    { "name": "T2 Marksman Rifle", "costCr": 10, "costSwc": null, "category": "Primary" },
+    { "name": "T2 Boarding Shotgun", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "T2 Sniper Rifle", "costCr": 20, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Portable Autocannon", "costCr": 30, "costSwc": 1.5, "category": "Primary" },
+    { "name": "T2 Tactical Bow", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Contender", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "Ohotnik", "costCr": 12, "costSwc": null, "category": "Secondary" },
+    { "name": "Trench Hammer", "costCr": 5, "costSwc": null, "category": "Sidearm" },
+    { "name": "T2 CCW", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "Assault Pistol", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "Smoke Grenades", "costCr": 8, "costSwc": null, "category": "Accessories" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 15, "armorName": "Irmandihno Wetsuit", "arm": 1, "bts": null, "abilities": "Booty, Engineer" },
+    { "type": "LI", "costCr": 15, "armorName": "Scout Suit", "arm": 1, "bts": null, "abilities": "Camouflage, Infiltrate, Surprise Attack (-3)" },
+    { "type": null, "costCr": 20, "armorName": "Cuckoo Virus Infusion", "arm": 4, "bts": null, "abilities": "MOV 6-4, Super Jump, +2 Wounds Skill, No Primary" },
+    { "type": "HI", "costCr": 20, "armorName": "Teseum Plate Armor", "arm": 5, "bts": 0, "abilities": "Immunity (IMM-B), Lose the Hackable trait" }
+  ],
+  "augments": [
+    { "name": "PH=12", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "Thrown Attack (+3) BS Attack (PH)", "requirement": null, "costCr": 5, "costNote": null },
+    { "name": "Deployable Cover", "requirement": "Engineer", "costCr": 5, "costNote": null }
+  ]
+}

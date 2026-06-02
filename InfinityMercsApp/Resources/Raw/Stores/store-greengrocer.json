@@ -1,0 +1,28 @@
+{
+  "name": "Greengrocer",
+  "associatedFactions": [ "Tohaa" ],
+  "associatedType": "Viral",
+  "alignment": "Lawful",
+  "items": [
+    { "name": "Viral Combi", "costCr": 8, "costSwc": null, "category": "Primary" },
+    { "name": "Viral Marksman Rifle", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "Viral Sniper Rifle", "costCr": 21, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Viral Tactical Bow", "costCr": 6, "costSwc": null, "category": "Secondary" },
+    { "name": "Viral Mine", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Nanopulser", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "Viral CCW", "costCr": 6, "costSwc": null, "category": "Sidearm" },
+    { "name": "Viral Pistol", "costCr": 8, "costSwc": null, "category": "Sidearm" },
+    { "name": "PT: Endgame", "costCr": 15, "costSwc": 0.5, "category": "Accessories" },
+    { "name": "PT: Eraser (Disposable (2))", "costCr": 13, "costSwc": 0.5, "category": "Accessories" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 8, "armorName": "Nanosuit", "arm": 1, "bts": 3, "abilities": "Nanoscreen, No Cover" },
+    { "type": "MI", "costCr": 20, "armorName": "Taqeul Armor", "arm": 3, "bts": 6, "abilities": "Regeneration, Immunity (Shock)" },
+    { "type": null, "costCr": 20, "armorName": "Symbio - Resonance", "arm": null, "bts": null, "abilities": "Combine Transmutation (X)" },
+    { "type": "HI", "costCr": 20, "armorName": "Ablative Armor", "arm": 3, "bts": 3, "abilities": "Symbiomate (Self Use)" }
+  ],
+  "augments": [
+    { "name": "QAZ Creature (Disposable (1), Perimeter, Deployable)", "requirement": "Doctor", "costCr": 12, "costNote": null },
+    { "name": "Peripheral (Controller): Add any non-servant Tohaa peripheral unit to your company.", "requirement": null, "costCr": 5, "costNote": "+ Cost of Unit" }
+  ]
+}
