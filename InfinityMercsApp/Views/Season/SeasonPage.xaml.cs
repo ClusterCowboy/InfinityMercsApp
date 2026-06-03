@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.Services.Season;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Views.Common;
@@ -38,6 +39,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private SKPicture? _selectedUnitPicture;
     private int _selectedUnitLogoLoadVersion;
     private string? _companyFilePath;
+    private string? _seasonFilePath;
     private bool _loadAttempted;
     private CompanyViewerUnitListItem? _selectedCompanyUnit;
     private SavedImprovedCaptainStats _loadedCaptainStats = new();
@@ -161,8 +163,15 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             return;
         }
 
-        var rawPath = companyFileValue?.ToString() ?? string.Empty;
-        _companyFilePath = Uri.UnescapeDataString(rawPath);
+        _companyFilePath = Uri.UnescapeDataString(companyFileValue?.ToString() ?? string.Empty);
+        _loadAttempted = false;
+
+        // When loading an existing season the caller provides the season file path,
+        // preventing a new season file from being created in LoadCompanyFromFileAsync.
+        _seasonFilePath = query.TryGetValue("seasonFilePath", out var seasonFileValue)
+            ? Uri.UnescapeDataString(seasonFileValue?.ToString() ?? string.Empty)
+            : null;
+
         await LoadCompanyFromFileAsync(_companyFilePath);
     }
 
@@ -207,6 +216,14 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             var companyName = string.IsNullOrWhiteSpace(payload.CompanyName)
                 ? Path.GetFileNameWithoutExtension(filePath)
                 : payload.CompanyName;
+
+            if (_seasonFilePath is null)
+            {
+                _seasonFilePath = await SeasonFileService.CreateSeasonFileAsync(
+                    companyName,
+                    payload.CompanyIdentifier ?? string.Empty,
+                    filePath ?? string.Empty);
+            }
 
             CompanyNameLabel.Text = companyName;
             CompanyTypeLabel.Text = payload.CompanyType ?? string.Empty;
