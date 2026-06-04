@@ -152,6 +152,14 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     }
 
     /// <inheritdoc/>
+    public IReadOnlyList<DomainWeapon> GetAllWeapons()
+    {
+        return sqliteRepository.GetAll<DbWeapon>(x => true, x => x.Name)
+            .Select(MapWeapon)
+            .ToList();
+    }
+
+    /// <inheritdoc/>
     public IReadOnlyList<DomainWeapon> SearchWeaponsByName(string searchTerm)
     {
         var records = string.IsNullOrWhiteSpace(searchTerm)

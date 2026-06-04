@@ -960,141 +960,37 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private void ShowWeaponPopup(string weaponName)
     {
         var baseName = Regex.Match(weaponName, @"^[^(]+").Value.Trim();
-        var weapon = FindWeaponByName(baseName);
-
         PopupTitleLabel.Text = weaponName;
         PopupContentArea.Children.Clear();
-        AppendWeaponDetails(weapon);
+        AppendWeaponDetails(baseName);
         MarketplacePopupOverlay.IsVisible = true;
     }
 
-    private Domain.Models.Metadata.Weapon? FindWeaponByName(string name)
+    private void AppendWeaponDetails(string weaponName)
+    {
+        var baseName = Regex.Match(weaponName, @"^[^(]+").Value.Trim();
+        var weapons = FindAllWeaponsByName(baseName);
+        foreach (var weapon in weapons)
+        {
+            PopupContentArea.Children.Add(new WeaponDetailCardView
+            {
+                Weapon = weapon,
+                Margin = new Thickness(0, 0, 0, 8)
+            });
+        }
+    }
+
+    private IReadOnlyList<Domain.Models.Metadata.Weapon> FindAllWeaponsByName(string name)
     {
         var matches = _metadataProvider?.SearchWeaponsByName(name) ?? [];
-        return matches.FirstOrDefault(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase))
-               ?? matches.FirstOrDefault();
-    }
-
-    private void AppendWeaponDetails(string itemName)
-    {
-        var baseName = Regex.Match(itemName, @"^[^(]+").Value.Trim();
-        AppendWeaponDetails(FindWeaponByName(baseName));
-    }
-
-    private void AppendWeaponDetails(Domain.Models.Metadata.Weapon? weapon)
-    {
-        if (weapon is null)
-            return;
-
-        // Stats — each links to the weapon's wiki page
-        if (!IsStatDash(weapon.Burst))
-            AddLinkablePopupRow("Burst", weapon.Burst!, weapon.Wiki);
-        if (!IsStatDash(weapon.Damage))
-            AddLinkablePopupRow("Damage", weapon.Damage!, weapon.Wiki);
-        if (!IsStatDash(weapon.Saving))
-            AddLinkablePopupRow("Saving", weapon.Saving!, weapon.Wiki);
-        if (!IsStatDash(weapon.SavingNum))
-            AddLinkablePopupRow("Saving Rolls", weapon.SavingNum!, weapon.Wiki);
-
-        // Special rules — each links to its own wiki page
-        var properties = ParseWeaponProperties(weapon.PropertiesJson);
-        if (properties.Count > 0)
-        {
-            PopupContentArea.Children.Add(new Label
-            {
-                Text = "SPECIAL RULES",
-                FontSize = 11,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#6B7280"),
-                Margin = new Thickness(0, 8, 0, 4)
-            });
-
-            foreach (var prop in properties)
-            {
-                var url = BuildPropertyWikiUrl(prop);
-                var label = new Label
-                {
-                    Text = $"• {prop}",
-                    FontSize = 14,
-                    TextColor = Color.FromArgb("#60A5FA"),
-                    TextDecorations = TextDecorations.Underline,
-                    LineBreakMode = LineBreakMode.WordWrap
-                };
-                var tap = new TapGestureRecognizer();
-                tap.Tapped += async (_, _) => await OpenLinkAsync(url);
-                label.GestureRecognizers.Add(tap);
-                PopupContentArea.Children.Add(label);
-            }
-        }
-
-        // Range band bar
-        if (!string.IsNullOrWhiteSpace(weapon.DistanceJson))
-        {
-            PopupContentArea.Children.Add(new WeaponRangeBandBarView
-            {
-                DistanceJson = weapon.DistanceJson,
-                Margin = new Thickness(0, 10, 0, 4),
-                HorizontalOptions = LayoutOptions.Fill
-            });
-        }
-    }
-
-    private void AddLinkablePopupRow(string label, string value, string? url)
-    {
-        var row = new Grid();
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-        row.Margin = new Thickness(0, 2);
-
-        row.Children.Add(new Label
-        {
-            Text = label,
-            FontSize = 13,
-            TextColor = Color.FromArgb("#9CA3AF"),
-            VerticalTextAlignment = TextAlignment.Center
-        });
-
-        var valueLabel = new Label
-        {
-            Text = value,
-            FontSize = 13,
-            TextColor = string.IsNullOrWhiteSpace(url) ? Colors.White : Color.FromArgb("#60A5FA"),
-            TextDecorations = string.IsNullOrWhiteSpace(url) ? TextDecorations.None : TextDecorations.Underline,
-            VerticalTextAlignment = TextAlignment.Center,
-            LineBreakMode = LineBreakMode.WordWrap
-        };
-
-        if (!string.IsNullOrWhiteSpace(url))
-        {
-            var tap = new TapGestureRecognizer();
-            tap.Tapped += async (_, _) => await OpenLinkAsync(url);
-            valueLabel.GestureRecognizers.Add(tap);
-        }
-
-        Grid.SetColumn(valueLabel, 1);
-        row.Children.Add(valueLabel);
-        PopupContentArea.Children.Add(row);
-    }
-
-    private static IReadOnlyList<string> ParseWeaponProperties(string? propertiesJson)
-    {
-        if (string.IsNullOrWhiteSpace(propertiesJson))
-            return [];
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(propertiesJson, JsonOptions) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
+        var exact = matches.Where(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
+        return exact.Count > 0 ? exact : [.. matches];
     }
 
     private static string BuildPropertyWikiUrl(string propertyName)
     {
         var baseName = Regex.Match(propertyName, @"^[^(]+").Value.Trim();
-        var pageName = baseName.Replace(' ', '_');
-        return $"https://infinitythewiki.com/{pageName}?version=n4";
+        return $"https://infinitythewiki.com/{baseName.Replace(' ', '_')}?version=n4";
     }
 
     private Dictionary<string, string?> BuildSkillsWikiLookup()

@@ -26,6 +26,7 @@ public static class ServiceRegistryExtensions
     public static IServiceCollection AddPages(this IServiceCollection services)
     {
         services.AddTransient<AppShell>()
+                .AddTransient<ArmoryPage>()
                 .AddTransient<ModeSelectionPage>()
                 .AddTransient<CreateNewCompanyPage>()
                 .AddTransient<StandardCompanySourcePopupPage>()

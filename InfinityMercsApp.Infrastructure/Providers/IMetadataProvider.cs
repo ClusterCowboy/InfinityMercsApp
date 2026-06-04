@@ -34,6 +34,11 @@ public interface IMetadataProvider
     Faction? GetFactionById(int id);
 
     /// <summary>
+    /// Gets all weapons from metadata, ordered by name.
+    /// </summary>
+    IReadOnlyList<Weapon> GetAllWeapons();
+
+    /// <summary>
     /// Gets weapons by filter.
     /// </summary>
     /// <param name="searchTerm"></param>

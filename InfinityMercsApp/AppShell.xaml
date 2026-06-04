@@ -74,6 +74,10 @@
             Title="Perks Tables"
             ContentTemplate="{DataTemplate views:PerksTablesPage}"
             Route="PerksTablesPage" />
+        <ShellContent
+            Title="Armory"
+            ContentTemplate="{DataTemplate views:ArmoryPage}"
+            Route="ArmoryPage" />
     </FlyoutItem>
 
     <FlyoutItem

@@ -7,7 +7,7 @@
     { "name": "Heavy Rocket Launcher", "costCr": 12, "costSwc": 1.0, "category": "Primary" },
     { "name": "Chain Rifle (+1B)", "costCr": 10, "costSwc": null, "category": "Primary" },
     { "name": "Vulkan Shotgun", "costCr": 12, "costSwc": null, "category": "Primary" },
-    { "name": "Flammenspear", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Flammenspeer", "costCr": 8, "costSwc": null, "category": "Secondary" },
     { "name": "Jammer", "costCr": 10, "costSwc": null, "category": "Secondary" },
     { "name": "Light Rocket Launcher", "costCr": 11, "costSwc": 0.5, "category": "Secondary" },
     { "name": "Kobra Pistol", "costCr": 3, "costSwc": null, "category": "Sidearm" },
