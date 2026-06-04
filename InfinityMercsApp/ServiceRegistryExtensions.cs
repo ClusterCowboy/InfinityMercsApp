@@ -1,3 +1,4 @@
+using InfinityMercsApp.Domain.Models.Stores;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
@@ -52,6 +53,7 @@ public static class ServiceRegistryExtensions
         services.AddSingleton<INavigationService, MauiNavigationService>()
                 .AddSingleton<ICompanySelectionPageFactory, CompanySelectionPageFactory>()
                 .AddSingleton<IArmyDataService, ArmyDataService>()
+                .AddSingleton<IStoreProvider, StoreProvider>()
                 .AddSingleton<FactionLogoCacheService>()
                 .AddSingleton<IFeedbackService, FeedbackService>()
                 .AddSingleton<IImportService, ImportService>();

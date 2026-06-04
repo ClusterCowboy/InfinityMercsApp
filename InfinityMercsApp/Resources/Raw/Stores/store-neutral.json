@@ -5,18 +5,18 @@
   "alignment": "Neutral",
   "items": [
     { "name": "Combi Rifle", "costCr": 5, "costSwc": null, "category": "Primary" },
-    { "name": "MK12", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "Mk12", "costCr": 12, "costSwc": null, "category": "Primary" },
     { "name": "Spitfire", "costCr": 18, "costSwc": 1.0, "category": "Primary" },
-    { "name": "HMG", "costCr": 24, "costSwc": 1.5, "category": "Primary" },
-    { "name": "Shock Mines", "costCr": 5, "costSwc": null, "category": "Secondary" },
+    { "name": "Heavy Machine Gun", "costCr": 24, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Shock Mine", "costCr": 5, "costSwc": null, "category": "Secondary" },
     { "name": "Deployable Repeater", "costCr": 8, "costSwc": null, "category": "Secondary" },
     { "name": "Boarding Shotgun", "costCr": 10, "costSwc": null, "category": "Secondary" },
     { "name": "Stun Pistol", "costCr": 1, "costSwc": null, "category": "Sidearm" },
-    { "name": "DA CCW", "costCr": 3, "costSwc": null, "category": "Sidearm" },
+    { "name": "DA CC Weapon", "costCr": 3, "costSwc": null, "category": "Sidearm" },
     { "name": "Grenades", "costCr": 4, "costSwc": null, "category": "Sidearm" },
     { "name": "PARA CC (-3)", "costCr": 4, "costSwc": null, "category": "Sidearm" },
     { "name": "Albedo (-3)", "costCr": 8, "costSwc": null, "category": "Accessories" },
-    { "name": "MSV1", "costCr": 10, "costSwc": null, "category": "Accessories" },
+    { "name": "Multispectral Visor Level 1", "costCr": 10, "costSwc": null, "category": "Accessories" },
     { "name": "Tinbot: Firewall (-3)", "costCr": 10, "costSwc": null, "category": "Accessories" },
     { "name": "BS Attack (Guided)", "costCr": 20, "costSwc": null, "category": "Accessories" },
     { "name": "Doctor (+Medikit)", "costCr": 10, "costSwc": null, "category": "Roles" },
@@ -26,10 +26,10 @@
     { "name": "Hacker (+Killer Hacking Device)", "costCr": 10, "costSwc": null, "category": "Roles" }
   ],
   "troopTypes": [
-    { "type": null, "costCr": 5, "armorName": "Belts and Pouches", "arm": null, "bts": null, "abilities": "Equipment Slot +1 (Of choice)*" },
+    { "type": null, "costCr": 5, "armorName": "Belts and Pouches", "arm": null, "bts": null, "abilities": "Equipment Slot +1 (Of choice)  " },
     { "type": "LI", "costCr": 5, "armorName": "Mobility Suit", "arm": null, "bts": null, "abilities": "Climbing Plus, Terrain (Total), 6-4 Mov" },
     { "type": "MI", "costCr": 15, "armorName": "Stim Suit", "arm": 3, "bts": 3, "abilities": "Dogged" },
-    { "type": "HI", "costCr": 20, "armorName": "Heavy Armor", "arm": 4, "bts": 3, "abilities": "Wound Skill +1***" }
+    { "type": "HI", "costCr": 20, "armorName": "Heavy Armor", "arm": 4, "bts": 3, "abilities": "Wound Skill +1 (See Mercs Rules)" }
   ],
   "augments": []
 }

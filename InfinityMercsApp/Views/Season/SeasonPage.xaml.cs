@@ -3,11 +3,16 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using InfinityMercsApp.Domain.Models.Stores;
+using InfinityMercsApp.Domain.Utilities;
+using MauiShapes = Microsoft.Maui.Controls.Shapes;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Services.Season;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Views.Common;
+using InfinityMercsApp.Views.Controls;
+using InfinityMercsApp.Infrastructure.Providers;
 using SkiaSharp;
 using Svg.Skia;
 
@@ -26,6 +31,10 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private readonly ViewerViewModel _viewerViewModel;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IArmyDataService? _armyDataService;
+    private readonly IStoreProvider? _storeProvider;
+    private readonly IMetadataProvider? _metadataProvider;
+    private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
+    private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
 
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
@@ -144,12 +153,16 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     public SeasonPage(
         ViewerViewModel viewerViewModel,
         FactionLogoCacheService? factionLogoCacheService = null,
-        IArmyDataService? armyDataService = null)
+        IArmyDataService? armyDataService = null,
+        IStoreProvider? storeProvider = null,
+        IMetadataProvider? metadataProvider = null)
     {
         InitializeComponent();
         _viewerViewModel = viewerViewModel;
         _factionLogoCacheService = factionLogoCacheService;
         _armyDataService = armyDataService;
+        _storeProvider = storeProvider;
+        _metadataProvider = metadataProvider;
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;
@@ -320,6 +333,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             {
                 await SelectCompanyUnitAsync(CompanyUnits[0]);
             }
+
+            await PopulateMarketplaceStoresAsync(payload.SourceFactions);
         }
         catch (Exception ex)
         {
@@ -632,10 +647,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             return;
         }
 
-        CurrentRangedWeaponsFormatted = profile.RangedWeaponsFormatted
-            ?? BuildSimpleFormatted(profile.RangedWeapons, Color.FromArgb("#EF4444"));
-        CurrentMeleeWeaponsFormatted = profile.MeleeWeaponsFormatted
-            ?? BuildSimpleFormatted(profile.MeleeWeapons, Color.FromArgb("#22C55E"));
+        CurrentRangedWeaponsFormatted = BuildWeaponsFormatted(profile.RangedWeapons, Color.FromArgb("#EF4444"));
+        CurrentMeleeWeaponsFormatted = BuildWeaponsFormatted(profile.MeleeWeapons, Color.FromArgb("#22C55E"));
         CurrentPeripheralsFormatted = profile.PeripheralsFormatted
             ?? BuildSimpleFormatted(profile.Peripherals, Color.FromArgb("#FACC15"));
         HasCurrentPeripherals = !IsDashOrEmpty(profile.Peripherals);
@@ -915,6 +928,209 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             TextColor = color
         });
         return formatted;
+    }
+
+    private FormattedString BuildWeaponsFormatted(string? text, Color color)
+    {
+        var formatted = new FormattedString();
+        var lines = SplitProfileText(text);
+
+        if (lines.Count == 0)
+        {
+            formatted.Spans.Add(new Span { Text = "-", TextColor = color });
+            return formatted;
+        }
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var weaponName = lines[i];
+            var span = new Span { Text = weaponName, TextColor = color };
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += (_, _) => ShowWeaponPopup(weaponName);
+            span.GestureRecognizers.Add(tap);
+            formatted.Spans.Add(span);
+
+            if (i < lines.Count - 1)
+                formatted.Spans.Add(new Span { Text = Environment.NewLine });
+        }
+
+        return formatted;
+    }
+
+    private void ShowWeaponPopup(string weaponName)
+    {
+        var baseName = Regex.Match(weaponName, @"^[^(]+").Value.Trim();
+        var weapon = FindWeaponByName(baseName);
+
+        PopupTitleLabel.Text = weaponName;
+        PopupContentArea.Children.Clear();
+        AppendWeaponDetails(weapon);
+        MarketplacePopupOverlay.IsVisible = true;
+    }
+
+    private Domain.Models.Metadata.Weapon? FindWeaponByName(string name)
+    {
+        var matches = _metadataProvider?.SearchWeaponsByName(name) ?? [];
+        return matches.FirstOrDefault(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase))
+               ?? matches.FirstOrDefault();
+    }
+
+    private void AppendWeaponDetails(string itemName)
+    {
+        var baseName = Regex.Match(itemName, @"^[^(]+").Value.Trim();
+        AppendWeaponDetails(FindWeaponByName(baseName));
+    }
+
+    private void AppendWeaponDetails(Domain.Models.Metadata.Weapon? weapon)
+    {
+        if (weapon is null)
+            return;
+
+        // Stats — each links to the weapon's wiki page
+        if (!IsStatDash(weapon.Burst))
+            AddLinkablePopupRow("Burst", weapon.Burst!, weapon.Wiki);
+        if (!IsStatDash(weapon.Damage))
+            AddLinkablePopupRow("Damage", weapon.Damage!, weapon.Wiki);
+        if (!IsStatDash(weapon.Saving))
+            AddLinkablePopupRow("Saving", weapon.Saving!, weapon.Wiki);
+        if (!IsStatDash(weapon.SavingNum))
+            AddLinkablePopupRow("Saving Rolls", weapon.SavingNum!, weapon.Wiki);
+
+        // Special rules — each links to its own wiki page
+        var properties = ParseWeaponProperties(weapon.PropertiesJson);
+        if (properties.Count > 0)
+        {
+            PopupContentArea.Children.Add(new Label
+            {
+                Text = "SPECIAL RULES",
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#6B7280"),
+                Margin = new Thickness(0, 8, 0, 4)
+            });
+
+            foreach (var prop in properties)
+            {
+                var url = BuildPropertyWikiUrl(prop);
+                var label = new Label
+                {
+                    Text = $"• {prop}",
+                    FontSize = 14,
+                    TextColor = Color.FromArgb("#60A5FA"),
+                    TextDecorations = TextDecorations.Underline,
+                    LineBreakMode = LineBreakMode.WordWrap
+                };
+                var tap = new TapGestureRecognizer();
+                tap.Tapped += async (_, _) => await OpenLinkAsync(url);
+                label.GestureRecognizers.Add(tap);
+                PopupContentArea.Children.Add(label);
+            }
+        }
+
+        // Range band bar
+        if (!string.IsNullOrWhiteSpace(weapon.DistanceJson))
+        {
+            PopupContentArea.Children.Add(new WeaponRangeBandBarView
+            {
+                DistanceJson = weapon.DistanceJson,
+                Margin = new Thickness(0, 10, 0, 4),
+                HorizontalOptions = LayoutOptions.Fill
+            });
+        }
+    }
+
+    private void AddLinkablePopupRow(string label, string value, string? url)
+    {
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        row.Margin = new Thickness(0, 2);
+
+        row.Children.Add(new Label
+        {
+            Text = label,
+            FontSize = 13,
+            TextColor = Color.FromArgb("#9CA3AF"),
+            VerticalTextAlignment = TextAlignment.Center
+        });
+
+        var valueLabel = new Label
+        {
+            Text = value,
+            FontSize = 13,
+            TextColor = string.IsNullOrWhiteSpace(url) ? Colors.White : Color.FromArgb("#60A5FA"),
+            TextDecorations = string.IsNullOrWhiteSpace(url) ? TextDecorations.None : TextDecorations.Underline,
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += async (_, _) => await OpenLinkAsync(url);
+            valueLabel.GestureRecognizers.Add(tap);
+        }
+
+        Grid.SetColumn(valueLabel, 1);
+        row.Children.Add(valueLabel);
+        PopupContentArea.Children.Add(row);
+    }
+
+    private static IReadOnlyList<string> ParseWeaponProperties(string? propertiesJson)
+    {
+        if (string.IsNullOrWhiteSpace(propertiesJson))
+            return [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(propertiesJson, JsonOptions) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static string BuildPropertyWikiUrl(string propertyName)
+    {
+        var baseName = Regex.Match(propertyName, @"^[^(]+").Value.Trim();
+        var pageName = baseName.Replace(' ', '_');
+        return $"https://infinitythewiki.com/{pageName}?version=n4";
+    }
+
+    private Dictionary<string, string?> BuildSkillsWikiLookup()
+    {
+        var skills = _metadataProvider?.GetSkills() ?? [];
+        var lookup = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var s in skills)
+        {
+            var url = string.IsNullOrWhiteSpace(s.Wiki) ? BuildPropertyWikiUrl(s.Name) : s.Wiki;
+            lookup.TryAdd(s.Name.Trim(), url);
+        }
+        return lookup;
+    }
+
+    private static string ExtractSkillBaseName(string ability)
+    {
+        // Strip parenthetical level/modifier, then strip trailing non-word chars (e.g. asterisks)
+        var beforeParen = Regex.Match(ability, @"^[^(]+").Value.Trim();
+        return Regex.Replace(beforeParen, @"\W+$", string.Empty).Trim();
+    }
+
+    private static bool IsStatDash(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Trim() == "-";
+
+    private static async Task OpenLinkAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+        try
+        {
+            await Launcher.Default.OpenAsync(url);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to open link '{url}': {ex.Message}");
+        }
     }
 
     private string NormalizeSkillsForDisplay(string? skillsText)
@@ -1276,6 +1492,379 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         }
 
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
+    }
+
+    private async Task PopulateMarketplaceStoresAsync(IReadOnlyList<SavedCompanyFaction> sourceFactions)
+    {
+        StoreTabStrip.Children.Clear();
+        StoreContentArea.Children.Clear();
+
+        if (_storeProvider is null || _armyDataService is null)
+            return;
+
+        var allFactions = _armyDataService.GetMetadataFactions();
+        var teamFactions = sourceFactions
+            .Select(sf => _armyDataService.GetMetadataFactionById(sf.FactionId))
+            .OfType<InfinityMercsApp.Domain.Models.Metadata.Faction>()
+            .ToList();
+
+        var factionNames = FactionResolver.GetExpandedFactionNames(teamFactions, allFactions);
+        _availableStores = await _storeProvider.GetAvailableStoresAsync(factionNames.ToList());
+
+        foreach (var (name, _, _) in _availableStores)
+        {
+            StoreTabStrip.Children.Add(BuildStoreTabButton(name));
+        }
+
+        if (_availableStores.Count > 0)
+        {
+            await SelectStoreAsync(_availableStores[0].Name);
+        }
+    }
+
+    private Button BuildStoreTabButton(string storeName)
+    {
+        var btn = new Button
+        {
+            Text = storeName,
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Color.FromArgb("#9CA3AF"),
+            BorderColor = Color.FromArgb("#4B5563"),
+            BorderWidth = 1,
+            CornerRadius = 6,
+            FontSize = 11,
+            Padding = new Thickness(10, 4),
+            HeightRequest = 34
+        };
+        btn.Clicked += (_, _) => _ = SelectStoreAsync(storeName);
+        return btn;
+    }
+
+    private async Task SelectStoreAsync(string storeName)
+    {
+        foreach (var child in StoreTabStrip.Children)
+        {
+            if (child is not Button btn) continue;
+            var isActive = string.Equals(btn.Text, storeName, StringComparison.OrdinalIgnoreCase);
+            btn.TextColor = isActive ? Color.FromArgb("#22C55E") : Color.FromArgb("#9CA3AF");
+            btn.BackgroundColor = isActive ? Color.FromArgb("#111827") : Color.FromArgb("#374151");
+            btn.BorderColor = isActive ? Color.FromArgb("#22C55E") : Color.FromArgb("#4B5563");
+        }
+
+        StoreContentArea.Children.Clear();
+        MarketplacePopupOverlay.IsVisible = false;
+
+        var store = await _storeProvider!.GetStoreByNameAsync(storeName);
+        if (store is null) return;
+
+        StoreContentArea.Children.Add(new Label
+        {
+            Text = store.Name,
+            FontSize = 22,
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Colors.White,
+            Margin = new Thickness(0, 0, 0, 2)
+        });
+
+        if (!string.IsNullOrWhiteSpace(store.Alignment))
+        {
+            StoreContentArea.Children.Add(new Label
+            {
+                Text = store.Alignment,
+                FontSize = 13,
+                TextColor = Color.FromArgb("#9CA3AF"),
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+        }
+
+        var itemsByCategory = store.Items
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Category) ? "General" : x.Category,
+                     StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in itemsByCategory)
+        {
+            StoreContentArea.Children.Add(BuildSectionHeader(group.Key.ToUpperInvariant()));
+            foreach (var item in group)
+            {
+                var costText = item.CostSwc.HasValue
+                    ? $"{item.CostCr}cr / {item.CostSwc}swc"
+                    : $"{item.CostCr}cr";
+                StoreContentArea.Children.Add(
+                    BuildItemRow(storeName, item.Name, costText, () => ShowItemPopup(item)));
+            }
+        }
+
+        if (store.TroopTypes.Count > 0)
+        {
+            StoreContentArea.Children.Add(BuildSectionHeader("ARMOR UPGRADES"));
+            foreach (var troop in store.TroopTypes)
+            {
+                StoreContentArea.Children.Add(BuildArmorRow(storeName, troop));
+            }
+        }
+
+        if (store.Augments.Count > 0)
+        {
+            StoreContentArea.Children.Add(BuildSectionHeader("AUGMENTS"));
+            foreach (var augment in store.Augments)
+            {
+                var costText = $"{augment.CostCr}cr";
+                StoreContentArea.Children.Add(
+                    BuildItemRow(storeName, augment.Name, costText, () => ShowAugmentPopup(augment)));
+            }
+        }
+    }
+
+    private static Label BuildSectionHeader(string text) => new()
+    {
+        Text = text,
+        FontSize = 11,
+        FontAttributes = FontAttributes.Bold,
+        TextColor = Color.FromArgb("#6B7280"),
+        Margin = new Thickness(0, 10, 0, 2)
+    };
+
+    // Builds a standard item/augment row: left = name + cost (tappable), right = + count -
+    private Border BuildItemRow(string storeName, string itemName, string costText, Action onTap)
+    {
+        var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
+        leftStack.Children.Add(new Label { Text = itemName, FontSize = 14, TextColor = Colors.White });
+        leftStack.Children.Add(new Label { Text = costText, FontSize = 12, TextColor = Color.FromArgb("#22C55E") });
+        leftStack.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(onTap) });
+
+        return BuildRowBorder($"{storeName}|{itemName}", leftStack);
+    }
+
+    // Builds an armor row: left = name + type + ARM/BTS + abilities (tappable), right = + count -
+    private Border BuildArmorRow(string storeName, StoreTroopType troop)
+    {
+        var displayName = string.IsNullOrWhiteSpace(troop.Type)
+            ? troop.ArmorName
+            : $"{troop.ArmorName} ({troop.Type})";
+        var armText = troop.Arm.HasValue ? troop.Arm.Value.ToString() : "—";
+        var btsText = troop.Bts.HasValue ? troop.Bts.Value.ToString() : "—";
+
+        var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
+        leftStack.Children.Add(new Label { Text = displayName, FontSize = 14, TextColor = Colors.White });
+        leftStack.Children.Add(new Label
+        {
+            Text = $"ARM {armText}  BTS {btsText}",
+            FontSize = 12,
+            TextColor = Color.FromArgb("#9CA3AF")
+        });
+        if (!string.IsNullOrWhiteSpace(troop.Abilities))
+        {
+            leftStack.Children.Add(new Label
+            {
+                Text = troop.Abilities,
+                FontSize = 12,
+                TextColor = Color.FromArgb("#9CA3AF"),
+                LineBreakMode = LineBreakMode.WordWrap
+            });
+        }
+        leftStack.Children.Add(new Label
+        {
+            Text = $"{troop.CostCr}cr",
+            FontSize = 12,
+            TextColor = Color.FromArgb("#22C55E")
+        });
+        leftStack.GestureRecognizers.Add(
+            new TapGestureRecognizer { Command = new Command(() => ShowArmorPopup(troop)) });
+
+        return BuildRowBorder($"{storeName}|{displayName}", leftStack);
+    }
+
+    // Shared core: wraps a left-content view in a bordered row with + count - controls on the right.
+    private Border BuildRowBorder(string key, View leftContent)
+    {
+        var countLabel = new Label
+        {
+            Text = _inventoryCounts.GetValueOrDefault(key, 0).ToString(),
+            FontSize = 15,
+            TextColor = Colors.White,
+            VerticalTextAlignment = TextAlignment.Center,
+            HorizontalTextAlignment = TextAlignment.Center,
+            MinimumWidthRequest = 28
+        };
+
+        var plusBtn = new Button
+        {
+            Text = "+",
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Color.FromArgb("#22C55E"),
+            BorderColor = Color.FromArgb("#4B5563"),
+            BorderWidth = 1,
+            CornerRadius = 4,
+            FontSize = 18,
+            WidthRequest = 44,
+            HeightRequest = 44,
+            Padding = new Thickness(0)
+        };
+        plusBtn.Clicked += (_, _) =>
+        {
+            _inventoryCounts[key] = _inventoryCounts.GetValueOrDefault(key, 0) + 1;
+            countLabel.Text = _inventoryCounts[key].ToString();
+        };
+
+        var minusBtn = new Button
+        {
+            Text = "−",
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Color.FromArgb("#EF4444"),
+            BorderColor = Color.FromArgb("#4B5563"),
+            BorderWidth = 1,
+            CornerRadius = 4,
+            FontSize = 18,
+            WidthRequest = 44,
+            HeightRequest = 44,
+            Padding = new Thickness(0)
+        };
+        minusBtn.Clicked += (_, _) =>
+        {
+            var current = _inventoryCounts.GetValueOrDefault(key, 0);
+            if (current <= 0) return;
+            _inventoryCounts[key] = current - 1;
+            countLabel.Text = _inventoryCounts[key].ToString();
+        };
+
+        var controls = new HorizontalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 6 };
+        controls.Children.Add(plusBtn);
+        controls.Children.Add(countLabel);
+        controls.Children.Add(minusBtn);
+
+        var rowGrid = new Grid { MinimumHeightRequest = 52 };
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        rowGrid.Children.Add(leftContent);
+        Grid.SetColumn(controls, 1);
+        rowGrid.Children.Add(controls);
+
+        return new Border
+        {
+            Content = rowGrid,
+            Stroke = Color.FromArgb("#374151"),
+            StrokeThickness = 1,
+            StrokeShape = new MauiShapes.RoundRectangle { CornerRadius = new CornerRadius(4) },
+            Padding = new Thickness(12, 6, 8, 6),
+            Margin = new Thickness(0, 0, 0, 3)
+        };
+    }
+
+    private void ShowItemPopup(StoreItem item)
+    {
+        PopupTitleLabel.Text = item.Name;
+        PopupContentArea.Children.Clear();
+
+        AddPopupRow("Cost", item.CostSwc.HasValue
+            ? $"{item.CostCr}cr / {item.CostSwc}swc"
+            : $"{item.CostCr}cr");
+        AddPopupRow("Category", item.Category);
+
+        AppendWeaponDetails(item.Name);
+
+        MarketplacePopupOverlay.IsVisible = true;
+    }
+
+    private void ShowArmorPopup(StoreTroopType troop)
+    {
+        var displayName = string.IsNullOrWhiteSpace(troop.Type)
+            ? troop.ArmorName
+            : $"{troop.ArmorName} ({troop.Type})";
+        PopupTitleLabel.Text = displayName;
+        PopupContentArea.Children.Clear();
+
+        AddPopupRow("Cost", $"{troop.CostCr}cr");
+        AddPopupRow("ARM", troop.Arm.HasValue ? troop.Arm.Value.ToString() : "—");
+        AddPopupRow("BTS", troop.Bts.HasValue ? troop.Bts.Value.ToString() : "—");
+
+        if (!string.IsNullOrWhiteSpace(troop.Abilities))
+        {
+            PopupContentArea.Children.Add(new Label
+            {
+                Text = "ABILITIES & EQUIPMENT",
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#6B7280"),
+                Margin = new Thickness(0, 8, 0, 4)
+            });
+
+            var skillsLookup = BuildSkillsWikiLookup();
+            var abilities = troop.Abilities
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var ability in abilities)
+            {
+                var baseName = ExtractSkillBaseName(ability);
+                var isSkill = skillsLookup.TryGetValue(baseName, out var wikiUrl);
+
+                var label = new Label
+                {
+                    Text = $"• {ability}",
+                    FontSize = 14,
+                    TextColor = isSkill ? Color.FromArgb("#60A5FA") : Colors.White,
+                    TextDecorations = isSkill ? TextDecorations.Underline : TextDecorations.None,
+                    LineBreakMode = LineBreakMode.WordWrap
+                };
+
+                if (isSkill && !string.IsNullOrWhiteSpace(wikiUrl))
+                {
+                    var url = wikiUrl;
+                    var tap = new TapGestureRecognizer();
+                    tap.Tapped += async (_, _) => await OpenLinkAsync(url);
+                    label.GestureRecognizers.Add(tap);
+                }
+
+                PopupContentArea.Children.Add(label);
+            }
+        }
+
+        MarketplacePopupOverlay.IsVisible = true;
+    }
+
+    private void ShowAugmentPopup(StoreAugment augment)
+    {
+        PopupTitleLabel.Text = augment.Name;
+        PopupContentArea.Children.Clear();
+
+        AddPopupRow("Cost", $"{augment.CostCr}cr");
+        if (!string.IsNullOrWhiteSpace(augment.Requirement))
+            AddPopupRow("Requires", augment.Requirement);
+        if (!string.IsNullOrWhiteSpace(augment.CostNote))
+            AddPopupRow("Note", augment.CostNote!);
+
+        MarketplacePopupOverlay.IsVisible = true;
+    }
+
+    private void AddPopupRow(string label, string value)
+    {
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        row.Margin = new Thickness(0, 2);
+
+        var labelView = new Label
+        {
+            Text = label,
+            FontSize = 13,
+            TextColor = Color.FromArgb("#9CA3AF"),
+            VerticalTextAlignment = TextAlignment.Center
+        };
+        var valueView = new Label
+        {
+            Text = value,
+            FontSize = 13,
+            TextColor = Colors.White,
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+        Grid.SetColumn(valueView, 1);
+        row.Children.Add(labelView);
+        row.Children.Add(valueView);
+        PopupContentArea.Children.Add(row);
+    }
+
+    private void OnPopupBackClicked(object sender, EventArgs e)
+    {
+        MarketplacePopupOverlay.IsVisible = false;
     }
 
     private void OnTeamTabClicked(object sender, EventArgs e) => SetActiveTab(0);

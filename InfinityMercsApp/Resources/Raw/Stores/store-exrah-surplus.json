@@ -12,7 +12,7 @@
     { "name": "Sepsitor", "costCr": 15, "costSwc": null, "category": "Secondary" },
     { "name": "Vorpal CCW", "costCr": 12, "costSwc": null, "category": "Sidearm" },
     { "name": "Chest Mine", "costCr": 6, "costSwc": null, "category": "Accessories" },
-    { "name": "MSV3", "costCr": 25, "costSwc": null, "category": "Accessories" }
+    { "name": "Multispectral Visor Level 3", "costCr": 25, "costSwc": null, "category": "Accessories" }
   ],
   "troopTypes": [
     { "type": null, "costCr": 10, "armorName": "Unstable Exrah Exoskeleton", "arm": null, "bts": null, "abilities": "Exrah, Explode (PS=4), Super-Jump" },

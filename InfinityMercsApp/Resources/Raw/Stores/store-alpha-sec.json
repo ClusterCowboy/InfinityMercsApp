@@ -19,8 +19,8 @@
   "troopTypes": [
     { "type": "LI", "costCr": 15, "armorName": "Myrmidon Suit", "arm": 2, "bts": null, "abilities": "Frenzy, Mimetism (-6), Stealth" },
     { "type": "MI", "costCr": 30, "armorName": "Waverider Cybersuit", "arm": 3, "bts": 6, "abilities": "Hacker, Hacking Device (UPGRADE: Oblivion (+1B))" },
-    { "type": "HI", "costCr": 30, "armorName": "Hoplite Armor", "arm": 3, "bts": 6, "abilities": "Immunity (Enhanced), Religious" },
-    { "type": "HI", "costCr": 40, "armorName": "Gamma Armor", "arm": 6, "bts": 6, "abilities": "2W, NWI, S5" }
+    { "type": "HI", "costCr": 30, "armorName": "Hoplite Armor", "arm": 3, "bts": 6, "abilities": "Immunity (Enhanced), Religious Troop" },
+    { "type": "HI", "costCr": 40, "armorName": "Gamma Armor", "arm": 6, "bts": 6, "abilities": "2W, No Wound Incapacitation, S5" }
   ],
   "augments": [
     { "name": "WIP=12", "requirement": null, "costCr": 10, "costNote": null },

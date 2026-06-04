@@ -155,14 +155,68 @@
                        TextColor="#6B7280" />
             </Grid>
 
-            <!-- Marketplace Tab (stub) -->
-            <Grid x:Name="MarketplaceTabContent" IsVisible="False" Padding="16,8">
-                <Label Text="Marketplace — coming soon."
-                       HorizontalTextAlignment="Center"
-                       VerticalTextAlignment="Center"
-                       TextColor="#6B7280" />
+            <!-- Marketplace Tab -->
+            <Grid x:Name="MarketplaceTabContent" IsVisible="False" RowDefinitions="Auto,*">
+                <!-- Store tab strip -->
+                <Border Grid.Row="0"
+                        BackgroundColor="#1F2937"
+                        StrokeThickness="0"
+                        Padding="0">
+                    <VerticalStackLayout Spacing="0">
+                        <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                            <HorizontalStackLayout x:Name="StoreTabStrip" Spacing="6" Padding="12,6" />
+                        </ScrollView>
+                        <BoxView HeightRequest="1" Color="#374151" />
+                    </VerticalStackLayout>
+                </Border>
+                <!-- Store content -->
+                <ScrollView Grid.Row="1">
+                    <VerticalStackLayout x:Name="StoreContentArea" Padding="16,12" Spacing="0" />
+                </ScrollView>
             </Grid>
 
+        </Grid>
+
+        <!-- Marketplace item popup overlay — covers full page -->
+        <Grid x:Name="MarketplacePopupOverlay"
+              Grid.Row="0" Grid.RowSpan="3"
+              IsVisible="False"
+              BackgroundColor="#D0111827">
+            <Border BackgroundColor="#1F2937"
+                    Stroke="#374151"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8"
+                    Margin="16,60,16,24">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="Auto,*"
+                          BackgroundColor="#374151"
+                          Padding="4,4">
+                        <Button x:Name="PopupBackButton"
+                                Grid.Column="0"
+                                Text="← Back"
+                                BackgroundColor="Transparent"
+                                BorderColor="Transparent"
+                                TextColor="#22C55E"
+                                FontAttributes="Bold"
+                                Padding="8,0"
+                                Clicked="OnPopupBackClicked" />
+                        <Label x:Name="PopupTitleLabel"
+                               Grid.Column="1"
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               VerticalTextAlignment="Center"
+                               Padding="4,0,8,0"
+                               LineBreakMode="TailTruncation" />
+                    </Grid>
+                    <ScrollView Grid.Row="1">
+                        <VerticalStackLayout x:Name="PopupContentArea"
+                                             Padding="16,12"
+                                             Spacing="6" />
+                    </ScrollView>
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- Bottom Tab Bar -->
