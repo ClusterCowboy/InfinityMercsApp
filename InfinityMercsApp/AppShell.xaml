@@ -78,6 +78,10 @@
             Title="Armory"
             ContentTemplate="{DataTemplate views:ArmoryPage}"
             Route="ArmoryPage" />
+        <ShellContent
+            Title="Marketplaces"
+            ContentTemplate="{DataTemplate views:MarketplacesPage}"
+            Route="MarketplacesPage" />
     </FlyoutItem>
 
     <FlyoutItem

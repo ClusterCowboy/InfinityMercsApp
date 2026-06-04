@@ -31,6 +31,9 @@ public sealed class StoreProvider : IStoreProvider
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     /// <inheritdoc/>
+    public IReadOnlyList<string> GetAllStoreNames() => StoreAssetPaths.Keys.ToList();
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<(string Name, string? AssociatedType, string Alignment)>> GetAvailableStoresAsync(
         IReadOnlyList<string> factionNames,
         CancellationToken cancellationToken = default)

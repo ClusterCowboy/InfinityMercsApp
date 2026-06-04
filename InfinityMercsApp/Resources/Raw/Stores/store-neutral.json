@@ -26,7 +26,7 @@
     { "name": "Hacker (+Killer Hacking Device)", "costCr": 10, "costSwc": null, "category": "Roles" }
   ],
   "troopTypes": [
-    { "type": null, "costCr": 5, "armorName": "Belts and Pouches", "arm": null, "bts": null, "abilities": "Equipment Slot +1 (Of choice)  " },
+    { "type": null, "costCr": 5, "armorName": "Belts and Pouches", "arm": null, "bts": null, "abilities": "Equip one additional piece of equipment of any type" },
     { "type": "LI", "costCr": 5, "armorName": "Mobility Suit", "arm": null, "bts": null, "abilities": "Climbing Plus, Terrain (Total), 6-4 Mov" },
     { "type": "MI", "costCr": 15, "armorName": "Stim Suit", "arm": 3, "bts": 3, "abilities": "Dogged" },
     { "type": "HI", "costCr": 20, "armorName": "Heavy Armor", "arm": 4, "bts": 3, "abilities": "Wound Skill +1 (See Mercs Rules)" }

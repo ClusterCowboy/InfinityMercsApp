@@ -44,7 +44,8 @@ public static class ServiceRegistryExtensions
                 .AddTransient<SeasonPage>()
                 .AddTransient<PlayModePage>()
                 .AddTransient<ExperiencePage>()
-                .AddTransient<DowntimePage>();
+                .AddTransient<DowntimePage>()
+                .AddTransient<MarketplacesPage>();
 
         return services;
     }

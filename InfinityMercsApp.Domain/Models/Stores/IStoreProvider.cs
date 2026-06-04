@@ -13,6 +13,11 @@ public interface IStoreProvider
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the names of all known stores in their canonical display form.
+    /// </summary>
+    IReadOnlyList<string> GetAllStoreNames();
+
+    /// <summary>
     /// Loads and returns the full store by name (case-insensitive), or null if not found.
     /// </summary>
     Task<Store?> GetStoreByNameAsync(string name, CancellationToken cancellationToken = default);
