@@ -144,8 +144,7 @@ public partial class MarketplacesPage : ContentPage
                     CostSwcDisplay = item.CostSwc.HasValue ? item.CostSwc.Value.ToString("0.##") : "—",
                     Category = item.Category,
                     WikiUrl = item.WikiUrl,
-                    WikiSection = item.WikiSection,
-                    WikiBoxes = item.WikiBoxes
+                    WikiSection = item.WikiSection
                 });
             }
             ItemGroups.Add(g);
@@ -216,7 +215,7 @@ public partial class MarketplacesPage : ContentPage
 
         if (wikiContainer is not null && !string.IsNullOrWhiteSpace(item.WikiUrl))
         {
-            var blocks = await _wikiDescriptionService!.FetchContentAsync(item.WikiUrl, item.WikiSection, item.WikiBoxes);
+            var blocks = await _wikiDescriptionService!.FetchContentAsync(item.WikiUrl, item.WikiSection);
             wikiContainer.Children.Clear();
             if (blocks.Count == 0)
             {
@@ -526,7 +525,6 @@ public partial class MarketplacesPage : ContentPage
         public string Category { get; init; } = string.Empty;
         public string? WikiUrl { get; init; }
         public string? WikiSection { get; init; }
-        public IReadOnlyList<string>? WikiBoxes { get; init; }
 
         public string CostDisplay => CostSwc.HasValue
             ? $"{CostCr}cr / {CostSwc.Value.ToString("0.##")}swc"

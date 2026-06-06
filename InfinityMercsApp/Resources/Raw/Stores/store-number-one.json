@@ -12,7 +12,7 @@
     { "name": "Drop Bears", "costCr": 6, "costSwc": null, "category": "Secondary", "wikiUrl": "https://infinitythewiki.com/Drop_Bears" },
     { "name": "WildParrots", "costCr": 10, "costSwc": null, "category": "Secondary", "wikiUrl": "https://infinitythewiki.com/Wild_Parrots" },
     { "name": "MULTI Pistol", "costCr": 8, "costSwc": null, "category": "Sidearm" },
-    { "name": "Multispectral Visor Level 2", "costCr": 20, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Multispectral_Visor", "wikiSection": "MULTISPECTRAL VISOR LEVEL 2", "wikiBoxes": ["cssbox-black", "n5-skill-black"] }
+    { "name": "Multispectral Visor Level 2", "costCr": 20, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Multispectral_Visor", "wikiSection": "MULTISPECTRAL VISOR LEVEL 2" }
   ],
   "troopTypes": [
     { "type": "LI", "costCr": 15, "armorName": "Blink Suit", "arm": 1, "bts": null, "abilities": "Hidden Deployment" },
@@ -23,7 +23,7 @@
   "augments": [
     { "name": "BS=11", "requirement": "Cannot have the BS Attack (+#) skill", "costCr": 10, "costNote": null },
     { "name": "BS Attack (-1 SR)", "requirement": null, "costCr": 10, "costNote": null },
-    { "name": "Armed Turret (MMR)", "requirement": "Engineer", "costCr": 10, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Armed_Turret", "wikiSection": "ARMED TURRET", "wikiBoxes": ["cssbox-black", "n5-skill-black"] },
+    { "name": "Armed Turret (MMR)", "requirement": "Engineer", "costCr": 10, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Armed_Turret", "wikiSection": "ARMED TURRET" },
     { "name": "Discoballer + Deactivator", "requirement": "Forward Observer", "costCr": 10, "costNote": null }
   ]
 }

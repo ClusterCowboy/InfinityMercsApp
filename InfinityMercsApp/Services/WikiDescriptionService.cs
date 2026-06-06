@@ -6,7 +6,13 @@ namespace InfinityMercsApp.Services;
 
 public sealed class WikiDescriptionService : IWikiDescriptionService
 {
-    private static readonly string[] DefaultBoxClasses = ["cssbox-black"];
+    // Priority order for auto-detecting which CSS box to extract.
+    // "cssbox" (bare word) matches skills like "cssbox cssbox-greenyellow" but NOT
+    // "cssbox-black", "cssbox-title", or "cssbox-type" — those don't have a bare cssbox token.
+    // errata_border is intentionally excluded: pages that use it (e.g. BS Attack Guided) also
+    // have an introductory paragraph outside the box that would be missed if we only grab the box.
+    // The section fallback (StripCollapsedElements + full parse) handles those pages correctly.
+    private static readonly string[] AutoDetectClasses = ["cssbox-black", "cssbox"];
 
     private readonly HttpClient _http;
     private readonly Dictionary<string, IReadOnlyList<WikiContentBlock>> _cache =
@@ -18,11 +24,9 @@ public sealed class WikiDescriptionService : IWikiDescriptionService
     public async Task<IReadOnlyList<WikiContentBlock>> FetchContentAsync(
         string url,
         string? section = null,
-        IReadOnlyList<string>? boxClasses = null,
         CancellationToken cancellationToken = default)
     {
-        var effectiveBoxes = boxClasses is { Count: > 0 } ? boxClasses : DefaultBoxClasses;
-        var cacheKey = $"{url}\0{section ?? ""}\0{string.Join(",", effectiveBoxes)}";
+        var cacheKey = $"{url}\0{section ?? ""}";
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -35,7 +39,7 @@ public sealed class WikiDescriptionService : IWikiDescriptionService
             if (!string.IsNullOrEmpty(section))
                 html = IsolateSectionByText(html, section);
 
-            var blocks = ParsePage(html, effectiveBoxes);
+            var blocks = ParsePage(html, AutoDetectClasses);
             _cache[cacheKey] = blocks;
             return blocks;
         }

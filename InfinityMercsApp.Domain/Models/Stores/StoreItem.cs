@@ -8,5 +8,4 @@ public class StoreItem
     public string Category { get; set; } = string.Empty;
     public string? WikiUrl { get; set; }
     public string? WikiSection { get; set; }
-    public List<string>? WikiBoxes { get; set; }
 }
