@@ -6,4 +6,7 @@ public class StoreItem
     public int CostCr { get; set; }
     public decimal? CostSwc { get; set; }
     public string Category { get; set; } = string.Empty;
+    public string? WikiUrl { get; set; }
+    public string? WikiSection { get; set; }
+    public List<string>? WikiBoxes { get; set; }
 }

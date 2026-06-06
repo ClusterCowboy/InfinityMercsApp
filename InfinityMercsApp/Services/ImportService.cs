@@ -18,7 +18,7 @@ internal class ImportService(
     IAirborneCompanyFactionGenerator airborneCompanyFactionGenerator,
     ITagCompanyFactionGenerator tagCompanyFactionGenerator) : IImportService
 {
-    private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(7);
+    private static readonly TimeSpan StartupUpdateInterval = TimeSpan.FromDays(1);
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<SuccessWithStringResult> ImportFactionAsync(string factionIdAsString)
@@ -132,8 +132,14 @@ internal class ImportService(
         yield return new(true, $"Metadata imported. Updated: {updatedCount}, Unchanged: {skippedCount}, Errors: {errorCount}.");
     }
 
-    public async IAsyncEnumerable<SuccessWithStringResult> ImportAllDataAsync()
+    public async IAsyncEnumerable<SuccessWithStringResult> ImportAllDataAsync(bool force = false)
     {
+        if (!force && !ShouldAttemptStartupUpdate())
+        {
+            yield return new(true, "Update skipped. Startup update already attempted today.");
+            yield break;
+        }
+
         RecordStartupUpdateAttempt();
 
         yield return new(true, "Updating database: downloading metadata...");

@@ -117,11 +117,11 @@ public partial class WeaponDetailCardView : ContentView
 
         var leftStack = new VerticalStackLayout { Spacing = 2 };
         foreach (var (lbl, val) in leftStats)
-            leftStack.Children.Add(BuildStatRow(lbl, val, weapon.Wiki));
+            leftStack.Children.Add(BuildStatRow(lbl, val));
 
         var rightStack = new VerticalStackLayout { Spacing = 2 };
         foreach (var (lbl, val) in rightStats)
-            rightStack.Children.Add(BuildStatRow(lbl, val, weapon.Wiki));
+            rightStack.Children.Add(BuildStatRow(lbl, val));
 
         outerGrid.Children.Add(leftStack);
         Grid.SetColumn(rightStack, 1);
@@ -130,7 +130,7 @@ public partial class WeaponDetailCardView : ContentView
         return outerGrid;
     }
 
-    private static View BuildStatRow(string label, string value, string? wikiUrl)
+    private static View BuildStatRow(string label, string value)
     {
         var row = new Grid
         {
@@ -155,30 +155,27 @@ public partial class WeaponDetailCardView : ContentView
             Text = value,
             FontSize = 12,
             FontAttributes = FontAttributes.Bold,
-            TextColor = string.IsNullOrWhiteSpace(wikiUrl) ? Colors.White : Color.FromArgb("#60A5FA"),
-            TextDecorations = string.IsNullOrWhiteSpace(wikiUrl) ? TextDecorations.None : TextDecorations.Underline,
+            TextColor = Colors.White,
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.End,
             HorizontalOptions = LayoutOptions.Fill
         };
-
-        if (!string.IsNullOrWhiteSpace(wikiUrl))
-        {
-            var url = wikiUrl;
-            var tap = new TapGestureRecognizer();
-            tap.Tapped += async (_, _) => await OpenLinkAsync(url);
-            valueLabel.GestureRecognizers.Add(tap);
-        }
 
         Grid.SetColumn(valueLabel, 1);
         row.Children.Add(valueLabel);
         return row;
     }
 
+    private static readonly Regex AsteriskBracketPattern = new(@"^\[\*+\]$", RegexOptions.Compiled);
+
     private static IReadOnlyList<string> ParseProperties(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return [];
-        try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
+        try
+        {
+            var all = JsonSerializer.Deserialize<List<string>>(json) ?? [];
+            return all.Where(p => !AsteriskBracketPattern.IsMatch(p.Trim())).ToList();
+        }
         catch { return []; }
     }
 

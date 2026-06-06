@@ -60,6 +60,14 @@ public static class ServiceRegistryExtensions
                 .AddSingleton<IFeedbackService, FeedbackService>()
                 .AddSingleton<IImportService, ImportService>();
 
+        services.AddSingleton<HttpClient>(_ =>
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("InfinityMercsApp/1.0");
+            return client;
+        });
+        services.AddSingleton<IWikiDescriptionService, WikiDescriptionService>();
+
         return services;
     }
 }

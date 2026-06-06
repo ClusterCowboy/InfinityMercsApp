@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Domain.Models.Stores;
 using InfinityMercsApp.Infrastructure.Providers;
+using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 
 namespace InfinityMercsApp.Views;
@@ -12,6 +13,7 @@ public partial class MarketplacesPage : ContentPage
 {
     private readonly IStoreProvider _storeProvider;
     private readonly IMetadataProvider? _metadataProvider;
+    private readonly IWikiDescriptionService? _wikiDescriptionService;
     private bool _showQuantityControls;
     private string _storeName = string.Empty;
     private string _storeFactionsDisplay = string.Empty;
@@ -70,12 +72,13 @@ public partial class MarketplacesPage : ContentPage
         }
     }
 
-    public MarketplacesPage(IStoreProvider storeProvider, IMetadataProvider? metadataProvider = null)
+    public MarketplacesPage(IStoreProvider storeProvider, IMetadataProvider? metadataProvider = null, IWikiDescriptionService? wikiDescriptionService = null)
     {
         InitializeComponent();
         BindingContext = this;
         _storeProvider = storeProvider;
         _metadataProvider = metadataProvider;
+        _wikiDescriptionService = wikiDescriptionService;
 
         ShowItemCommand = new Command<StoreItemRowViewModel>(ShowItemPopup);
         ShowTroopTypeCommand = new Command<TroopTypeRowViewModel>(ShowTroopTypePopup);
@@ -139,7 +142,10 @@ public partial class MarketplacesPage : ContentPage
                     CostCr = item.CostCr,
                     CostSwc = item.CostSwc,
                     CostSwcDisplay = item.CostSwc.HasValue ? item.CostSwc.Value.ToString("0.##") : "—",
-                    Category = item.Category
+                    Category = item.Category,
+                    WikiUrl = item.WikiUrl,
+                    WikiSection = item.WikiSection,
+                    WikiBoxes = item.WikiBoxes
                 });
             }
             ItemGroups.Add(g);
@@ -179,7 +185,7 @@ public partial class MarketplacesPage : ContentPage
 
     // ── Popup handlers ──────────────────────────────────────────────────────
 
-    private void ShowItemPopup(StoreItemRowViewModel item)
+    private async void ShowItemPopup(StoreItemRowViewModel item)
     {
         PopupTitleLabel.Text = item.Name;
         PopupContentArea.Children.Clear();
@@ -189,9 +195,43 @@ public partial class MarketplacesPage : ContentPage
             : $"{item.CostCr}cr");
         AddPopupRow("Category", item.Category);
 
+        // Wiki section — placeholder container inserted before weapon cards
+        VerticalStackLayout? wikiContainer = null;
+        if (_wikiDescriptionService is not null && !string.IsNullOrWhiteSpace(item.WikiUrl))
+        {
+            wikiContainer = new VerticalStackLayout { Spacing = 4, Margin = new Thickness(0, 6, 0, 0) };
+            wikiContainer.Children.Add(new Label
+            {
+                Text = "Loading…",
+                FontSize = 13,
+                TextColor = Color.FromArgb("#6B7280"),
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+            PopupContentArea.Children.Add(wikiContainer);
+        }
+
         AppendWeaponDetails(item.Name);
 
         MarketplacePopupOverlay.IsVisible = true;
+
+        if (wikiContainer is not null && !string.IsNullOrWhiteSpace(item.WikiUrl))
+        {
+            var blocks = await _wikiDescriptionService!.FetchContentAsync(item.WikiUrl, item.WikiSection, item.WikiBoxes);
+            wikiContainer.Children.Clear();
+            if (blocks.Count == 0)
+            {
+                wikiContainer.Children.Add(new Label
+                {
+                    Text = "(No description available)",
+                    FontSize = 13,
+                    TextColor = Color.FromArgb("#6B7280")
+                });
+            }
+            else
+            {
+                RenderWikiBlocks(wikiContainer, blocks);
+            }
+        }
     }
 
     private void ShowTroopTypePopup(TroopTypeRowViewModel troop)
@@ -269,6 +309,78 @@ public partial class MarketplacesPage : ContentPage
     }
 
     // ── Popup helpers ────────────────────────────────────────────────────────
+
+    private static void RenderWikiBlocks(Layout container, IReadOnlyList<Services.WikiContentBlock> blocks)
+    {
+        foreach (var block in blocks)
+        {
+            switch (block.Type)
+            {
+                case Services.WikiBlockType.SectionHeader:
+                    container.Children.Add(new Border
+                    {
+                        BackgroundColor = Color.FromArgb("#4B5563"),
+                        StrokeThickness = 0,
+                        Padding = new Thickness(10, 6),
+                        Margin = new Thickness(0, 8, 0, 2),
+                        Content = new Label
+                        {
+                            Text = block.Text,
+                            FontSize = 13,
+                            FontAttributes = FontAttributes.Bold,
+                            TextColor = Colors.White
+                        }
+                    });
+                    break;
+
+                case Services.WikiBlockType.Paragraph:
+                    container.Children.Add(new Label
+                    {
+                        Text = block.Text,
+                        FontSize = 13,
+                        TextColor = Color.FromArgb("#D1D5DB"),
+                        LineBreakMode = LineBreakMode.WordWrap,
+                        Margin = new Thickness(0, 4, 0, 0)
+                    });
+                    break;
+
+                case Services.WikiBlockType.BulletItem:
+                {
+                    double leftMargin = block.IndentLevel == 0 ? 4 : 20;
+                    var row = new Grid
+                    {
+                        ColumnSpacing = 4,
+                        Margin = new Thickness(leftMargin, 3, 0, 0)
+                    };
+                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                    row.Children.Add(new Label
+                    {
+                        Text = "▶",
+                        FontSize = 9,
+                        TextColor = Color.FromArgb("#6B7280"),
+                        VerticalTextAlignment = TextAlignment.Start,
+                        Margin = new Thickness(0, 3, 0, 0)
+                    });
+
+                    var textLabel = new Label
+                    {
+                        Text = block.Text,
+                        FontSize = 13,
+                        FontAttributes = block.Bold ? FontAttributes.Bold : FontAttributes.None,
+                        TextColor = block.Bold ? Colors.White : Color.FromArgb("#D1D5DB"),
+                        LineBreakMode = LineBreakMode.WordWrap
+                    };
+                    Grid.SetColumn(textLabel, 1);
+                    row.Children.Add(textLabel);
+
+                    container.Children.Add(row);
+                    break;
+                }
+            }
+        }
+    }
 
     private void AddPopupRow(string labelText, string value)
     {
@@ -412,6 +524,9 @@ public partial class MarketplacesPage : ContentPage
         public decimal? CostSwc { get; init; }
         public string CostSwcDisplay { get; init; } = string.Empty;
         public string Category { get; init; } = string.Empty;
+        public string? WikiUrl { get; init; }
+        public string? WikiSection { get; init; }
+        public IReadOnlyList<string>? WikiBoxes { get; init; }
 
         public string CostDisplay => CostSwc.HasValue
             ? $"{CostCr}cr / {CostSwc.Value.ToString("0.##")}swc"

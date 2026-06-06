@@ -14,7 +14,7 @@
     { "name": "PARA CCW (-6)", "costCr": 8, "costSwc": null, "category": "Sidearm" },
     { "name": "E/M CCW", "costCr": 12, "costSwc": null, "category": "Sidearm" },
     { "name": "Eclipse Grenades", "costCr": 12, "costSwc": null, "category": "Accessories" },
-    { "name": "Hacker (+EVO Hacking Device)", "costCr": 15, "costSwc": 0.5, "category": "Roles" }
+    { "name": "Hacker (+EVO Hacking Device)", "costCr": 15, "costSwc": 0.5, "category": "Roles", "wikiUrl": "https://infinitythewiki.com/EVO_Hacking_Device" }
   ],
   "troopTypes": [
     { "type": "LI", "costCr": 15, "armorName": "Myrmidon Suit", "arm": 2, "bts": null, "abilities": "Frenzy, Mimetism (-6), Stealth" },
@@ -24,7 +24,7 @@
   ],
   "augments": [
     { "name": "WIP=12", "requirement": null, "costCr": 10, "costNote": null },
-    { "name": "Armed Turret (E/Mitter)", "requirement": "Engineer", "costCr": 12, "costNote": null },
-    { "name": "Hacking UPGRADE: Assisted Fire", "requirement": "Killer/Hacking Device", "costCr": 15, "costNote": null }
+    { "name": "Armed Turret (E/Mitter)", "requirement": "Engineer", "costCr": 12, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Armed_Turret"  },
+    { "name": "Hacking UPGRADE: Assisted Fire", "requirement": "Killer/Hacking Device", "costCr": 15, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Assisted_Fire" }
   ]
 }
