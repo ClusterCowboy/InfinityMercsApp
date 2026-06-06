@@ -9,7 +9,7 @@
             <Label
                 Text="Feedback/Bugs"
                 FontAttributes="Bold"
-                FontSize="26" />
+                FontSize="{DynamicResource FontSizeTitleLarge}" />
 
             <Label
                 Text="This page automatically emails feedback/bug details to jeremiahpatrick@protonmail.com."

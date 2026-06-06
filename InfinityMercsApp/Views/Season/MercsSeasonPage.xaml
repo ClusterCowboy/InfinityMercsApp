@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.Season.MercsSeasonPage"
+             Title="Home"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#111827">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Logo and title -->
+        <VerticalStackLayout Grid.Row="0"
+                             Spacing="{DynamicResource SpacingLarge}"
+                             VerticalOptions="Center"
+                             Padding="24,0">
+            <Image Source="m2_no_bg_short.webp"
+                   HeightRequest="180"
+                   HorizontalOptions="Center"
+                   Aspect="AspectFit" />
+
+            <Label Text="MERCS SEASON"
+                   FontSize="{DynamicResource FontSizeHeadline}"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="Campaigns, downtime, and the long war."
+                   FontSize="{DynamicResource FontSizeBody}"
+                   TextColor="#6B7280"
+                   HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+
+        <!-- Action panel -->
+        <Grid Grid.Row="1" Padding="24,0,24,40">
+
+            <!-- Main actions -->
+            <VerticalStackLayout x:Name="MainActionsPanel" Spacing="{DynamicResource SpacingMedium}">
+                <Button Text="LOAD SEASON"
+                        Clicked="OnLoadSeasonClicked"
+                        HorizontalOptions="Fill" />
+                <Button Text="START NEW SEASON"
+                        BackgroundColor="#22C55E"
+                        TextColor="Black"
+                        BorderColor="#22C55E"
+                        FontAttributes="Bold"
+                        Clicked="OnStartNewSeasonClicked"
+                        HorizontalOptions="Fill" />
+            </VerticalStackLayout>
+
+            <!-- New-season sub-choices (hidden until Start New Season is tapped) -->
+            <VerticalStackLayout x:Name="NewSeasonChoicePanel"
+                                 IsVisible="False"
+                                 Spacing="{DynamicResource SpacingMedium}">
+                <Label Text="Choose your starting point:"
+                       FontSize="{DynamicResource FontSizeBody}"
+                       TextColor="#9CA3AF"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,0,0,4" />
+                <Button Text="LOAD A COMPANY"
+                        Clicked="OnLoadCompanyClicked"
+                        HorizontalOptions="Fill" />
+                <Button Text="CREATE A NEW TEAM"
+                        BackgroundColor="#22C55E"
+                        TextColor="Black"
+                        BorderColor="#22C55E"
+                        FontAttributes="Bold"
+                        Clicked="OnCreateNewTeamClicked"
+                        HorizontalOptions="Fill" />
+                <Button Text="CANCEL"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        BorderWidth="0"
+                        TextColor="#6B7280"
+                        Clicked="OnCancelNewSeasonClicked"
+                        HorizontalOptions="Fill" />
+            </VerticalStackLayout>
+
+        </Grid>
+    </Grid>
+</ContentPage>

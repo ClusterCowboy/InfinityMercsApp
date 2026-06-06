@@ -201,14 +201,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         {
             Text = _captainNameCommitted,
             IsReadOnly = true,
-            FontSize = 22,
+            Style = (Style)Application.Current!.Resources["EntryTitleSmall"],
             HorizontalOptions = LayoutOptions.Fill
         };
         _captainNameHeadingLabel = new Label
         {
             Text = _captainNameCommitted,
             FontAttributes = FontAttributes.Bold,
-            FontSize = 22,
+            Style = (Style)Application.Current!.Resources["LabelTitleSmall"],
             LineBreakMode = LineBreakMode.WordWrap
         };
         _editCaptainNameCanvas = BuildCaptainNameIconCanvas(OnEditCaptainNameTapped);
@@ -263,13 +263,13 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _upgradeOptionsHeaderLabel = new Label
         {
             FontAttributes = FontAttributes.Bold,
-            FontSize = 18,
+            Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
             TextColor = Colors.White
         };
         _experienceRemainingLabel = new Label
         {
             FontAttributes = FontAttributes.Bold,
-            FontSize = 15,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Colors.White
         };
 
@@ -705,7 +705,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         valueLabel = new Label
         {
             Text = "-",
-            FontSize = 19,
+            Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
             TextColor = valueColor,
             HorizontalTextAlignment = TextAlignment.End,
             LineBreakMode = LineBreakMode.WordWrap
@@ -719,7 +719,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
                 new Label
                 {
                     Text = $"{label}:",
-                    FontSize = 22,
+                    Style = (Style)Application.Current!.Resources["LabelTitleSmall"],
                     LineBreakMode = LineBreakMode.WordWrap
                 },
                 valueLabel
@@ -926,7 +926,7 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             var empty = new Label
             {
                 Text = "-",
-                FontSize = 19,
+                Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
                 LineBreakMode = LineBreakMode.WordWrap
             };
             grid.Children.Add(empty);
@@ -945,14 +945,14 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
             var keyLabel = new Label
             {
                 Text = key,
-                FontSize = 19,
+                Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center
             };
             var valueLabel = new Label
             {
                 Text = value,
-                FontSize = 19,
+                Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
                 HorizontalTextAlignment = TextAlignment.Center,
                 TextColor = DefaultStatColor
             };

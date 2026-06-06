@@ -47,7 +47,7 @@
                 </Grid>
                 <Label
                     Text="{Binding Subtitle}"
-                    FontSize="12"
+                    FontSize="{DynamicResource FontSizeCaption}"
                     TextColor="#6B7280"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
@@ -95,7 +95,7 @@
                 <Label
                     x:Name="VerticalNameLabel"
                     Text="{Binding Name}"
-                    FontSize="14"
+                    FontSize="{DynamicResource FontSizeBody}"
                     TextColor="White"
                     LineBreakMode="WordWrap"
                     MaxLines="3"
@@ -104,7 +104,7 @@
                 <Label
                     x:Name="VerticalFormattedNameLabel"
                     FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
-                    FontSize="14"
+                    FontSize="{DynamicResource FontSizeBody}"
                     TextColor="White"
                     LineBreakMode="WordWrap"
                     MaxLines="3"

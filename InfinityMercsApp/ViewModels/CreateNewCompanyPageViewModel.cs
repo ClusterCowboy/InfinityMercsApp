@@ -12,7 +12,7 @@ public partial class CreateNewCompanyPageViewModel(
     [RelayCommand]
     public async Task NavigateToModeSelectionPageAsync()
     {
-        await NavigationService.NavigateToAsync("//ModeSelectionPage");
+        await NavigationService.NavigateToAsync("//MercsSeasonPage");
     }
 
     [RelayCommand]

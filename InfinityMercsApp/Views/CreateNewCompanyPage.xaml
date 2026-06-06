@@ -56,7 +56,7 @@
                     <Label
                         Grid.Row="1"
                         Text="Standard Company"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
@@ -90,7 +90,7 @@
                     <Label
                         Grid.Row="1"
                         Text="Cohesive Company"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
@@ -124,7 +124,7 @@
                     <Label
                         Grid.Row="1"
                         Text="Inspiring Leader"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
@@ -158,7 +158,7 @@
                     <Label
                         Grid.Row="1"
                         Text="Airborne Company"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
@@ -192,7 +192,7 @@
                     <Label
                         Grid.Row="1"
                         Text="TAG Company"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
@@ -226,7 +226,7 @@
                     <Label
                         Grid.Row="1"
                         Text="Lone Wolf Company"
-                        FontSize="32"
+                        FontSize="{DynamicResource FontSizeHeadline}"
                         VerticalOptions="Start"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"

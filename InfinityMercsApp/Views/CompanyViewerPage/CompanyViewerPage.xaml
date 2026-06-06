@@ -41,13 +41,13 @@
         <Border Grid.Row="1" StrokeThickness="0" Padding="12">
                 <Border.Resources>
                     <Style TargetType="Label">
-                        <Setter Property="FontSize" Value="24" />
+                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSubHeadline}" />
                     </Style>
                 </Border.Resources>
                 <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                     <VerticalStackLayout Grid.Row="0" Spacing="2" VerticalOptions="Center">
                         <Grid x:Name="SelectedNameDisplayRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="34" FontAttributes="Bold">
+                            <Label x:Name="SelectedNameLabel" Grid.Column="0" Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedCaptainNameHeading}" FontSize="{DynamicResource FontSizeDisplay}" FontAttributes="Bold">
                                 <Label.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnSelectedNameLabelTapped" />
                                 </Label.GestureRecognizers>
@@ -61,7 +61,7 @@
                                 PaintSurface="OnSelectedNameEditCanvasPaintSurface" />
                         </Grid>
                         <Grid x:Name="SelectedNameEditRow" IsVisible="False" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                            <Entry x:Name="SelectedNameEntry" Grid.Column="0" FontSize="34" />
+                            <Entry x:Name="SelectedNameEntry" Grid.Column="0" FontSize="{DynamicResource FontSizeDisplay}" />
                             <skia:SKCanvasView
                                 x:Name="SelectedNameSaveCanvas"
                                 Grid.Column="1"
@@ -80,13 +80,13 @@
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <Label Grid.Column="0"
                                    Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedProfileBaseNameHeading}"
-                                   FontSize="28"
+                                   FontSize="{DynamicResource FontSizeHeadline}"
                                    TextColor="#9CA3AF"
                                    HorizontalOptions="Start"
                                    IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasSelectedProfileBaseNameHeading}" />
                             <Label Grid.Column="1"
                                    Text="{Binding Source={x:Reference CompanyViewerRoot}, Path=SelectedUnitTypeHeading}"
-                                   FontSize="24"
+                                   FontSize="{DynamicResource FontSizeSubHeadline}"
                                    TextColor="#9CA3AF"
                                    HorizontalTextAlignment="End"
                                    HorizontalOptions="End"
@@ -123,10 +123,10 @@
                     <ScrollView Grid.Row="2">
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                <Label Text="Weapons" FontSize="30" FontAttributes="Bold" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentRangedWeaponsFormatted}" FontSize="22" LineBreakMode="WordWrap" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentMeleeWeaponsFormatted}" FontSize="22" LineBreakMode="WordWrap" />
-                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentPeripheralsFormatted}" FontSize="22" LineBreakMode="WordWrap" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasCurrentPeripherals}" />
+                                <Label Text="Weapons" FontSize="{DynamicResource FontSizeTitleLarge}" FontAttributes="Bold" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentRangedWeaponsFormatted}" FontSize="{DynamicResource FontSizeTitleSmall}" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentMeleeWeaponsFormatted}" FontSize="{DynamicResource FontSizeTitleSmall}" LineBreakMode="WordWrap" />
+                                <Label FormattedText="{Binding Source={x:Reference CompanyViewerRoot}, Path=CurrentPeripheralsFormatted}" FontSize="{DynamicResource FontSizeTitleSmall}" LineBreakMode="WordWrap" IsVisible="{Binding Source={x:Reference CompanyViewerRoot}, Path=HasCurrentPeripherals}" />
                             </VerticalStackLayout>
                             <Grid Grid.Column="1" />
                         </Grid>

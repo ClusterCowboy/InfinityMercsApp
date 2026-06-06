@@ -15,11 +15,11 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private const float IconSize = 24f;
     private const float IconVerticalGap = 5f;
     private const float IconHorizontalGap = 6f;
-    private const double DefaultUnitHeadingMaxFontSize = 24d;
     private const double DefaultUnitHeadingMinFontSize = 11d;
     private const double DefaultUnitHeadingFontStep = 0.5d;
     private const string DefaultStatValue = "-";
     private const string DefaultVitalityHeader = "VITA";
+    private const double LogoHideThreshold = 500d;
     public static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
     public static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
     public static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
@@ -28,6 +28,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private sealed record HeaderIconRenderItem(SKPicture Picture);
     private double _profilesPanLastTotalY;
+    private bool _logoVisible = true;
 
     /// <summary>
     /// Unit MOV value shown in the primary statline.
@@ -610,6 +611,21 @@ public partial class UnitDisplayConfigurationsView : ContentView
         UpdateConfigurationRows();
     }
 
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+        if (width <= 0) return;
+
+        var shouldShowLogo = width >= LogoHideThreshold;
+        if (shouldShowLogo == _logoVisible) return;
+
+        _logoVisible = shouldShowLogo;
+        LogoColumnBorder.IsVisible = shouldShowLogo;
+        ConfigurationsRootGrid.ColumnDefinitions[1].Width = shouldShowLogo
+            ? new GridLength(84)
+            : new GridLength(0);
+    }
+
     public Label UnitNameHeadingElement => UnitNameHeadingLabel;
 
     public void InvalidateHeaderIconsCanvas()
@@ -643,7 +659,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
         }
 
         UpdateUnitHeadingFontSize(
-            DefaultUnitHeadingMaxFontSize,
+            ResolveHeadingMaxFontSize(),
             DefaultUnitHeadingMinFontSize,
             DefaultUnitHeadingFontStep);
         UnitNameHeadingSizeChanged?.Invoke(this, EventArgs.Empty);
@@ -745,7 +761,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
         }
 
         UpdateUnitHeadingFontSize(
-            DefaultUnitHeadingMaxFontSize,
+            ResolveHeadingMaxFontSize(),
             DefaultUnitHeadingMinFontSize,
             DefaultUnitHeadingFontStep);
     }
@@ -992,6 +1008,13 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
         var destination = new SKRect(0, 0, e.Info.Width, e.Info.Height);
         DrawPictureInRect(canvas, picture, destination);
+    }
+
+    private static double ResolveHeadingMaxFontSize()
+    {
+        if (Application.Current?.Resources.TryGetValue("FontSizeSubHeadline", out var raw) == true && raw is double d)
+            return d;
+        return 24d;
     }
 
     private void UpdateUnitHeadingFontSize(double maxFontSize, double minFontSize, double fontStep)

@@ -24,5 +24,5 @@ public interface IImportService
     /// Imports all data, emitting an IAsyncEnumerable of strings as an update.
     /// </summary>
     /// <returns></returns>
-    IAsyncEnumerable<SuccessWithStringResult> ImportAllDataAsync();
+    IAsyncEnumerable<SuccessWithStringResult> ImportAllDataAsync(bool force = false);
 }

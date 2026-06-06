@@ -1,6 +1,7 @@
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Season;
 
 namespace InfinityMercsApp.Views.Common;
 
@@ -124,7 +125,7 @@ public abstract partial class CompanySelectionPageBase
                     NavigateToCompanyViewerAsync = async filePath =>
                     {
                         var encodedPath = Uri.EscapeDataString(filePath);
-                        await Shell.Current.GoToAsync($"//{nameof(CompanyViewerPage)}?companyFilePath={encodedPath}");
+                        await Shell.Current.GoToAsync($"//{nameof(SeasonPage)}?companyFilePath={encodedPath}");
                     }
                 },
                 HandleFailureAsync = async ex =>

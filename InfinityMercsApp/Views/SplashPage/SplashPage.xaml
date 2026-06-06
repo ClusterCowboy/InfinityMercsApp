@@ -21,7 +21,7 @@
 
             <Label
                 Text="Infinity Mercs"
-                FontSize="30"
+                FontSize="{DynamicResource FontSizeTitleLarge}"
                 FontAttributes="Bold"
                 TextColor="White"
                 HorizontalTextAlignment="Center" />
@@ -34,7 +34,7 @@
             <Label
                 x:Name="StatusLabel"
                 Text="{Binding UpdateProgressMessage}"
-                FontSize="16"
+                FontSize="{DynamicResource FontSizeSectionHeader}"
                 TextColor="#9CA3AF"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>

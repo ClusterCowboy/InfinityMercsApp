@@ -1,0 +1,35 @@
+{
+  "name": "Neutral",
+  "associatedFactions": [],
+  "associatedType": null,
+  "alignment": "Neutral",
+  "items": [
+    { "name": "Combi Rifle", "costCr": 5, "costSwc": null, "category": "Primary" },
+    { "name": "Mk12", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "Spitfire", "costCr": 18, "costSwc": 1.0, "category": "Primary" },
+    { "name": "Heavy Machine Gun", "costCr": 24, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Shock Mine", "costCr": 5, "costSwc": null, "category": "Secondary" },
+    { "name": "Deployable Repeater", "costCr": 8, "costSwc": null, "category": "Secondary" },
+    { "name": "Boarding Shotgun", "costCr": 10, "costSwc": null, "category": "Secondary" },
+    { "name": "Stun Pistol", "costCr": 1, "costSwc": null, "category": "Sidearm" },
+    { "name": "DA CC Weapon", "costCr": 3, "costSwc": null, "category": "Sidearm" },
+    { "name": "Grenades", "costCr": 4, "costSwc": null, "category": "Sidearm" },
+    { "name": "PARA CC (-3)", "costCr": 4, "costSwc": null, "category": "Sidearm" },
+    { "name": "Albedo (-3)", "costCr": 8, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Albedo", "wikiSection": "ALBEDO" },
+    { "name": "Multispectral Visor Level 1", "costCr": 10, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Multispectral_Visor", "wikiSection": "MULTISPECTRAL VISOR LEVEL 1" },
+    { "name": "Tinbot: Firewall (-3)", "costCr": 10, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Tinbot", "wikiSection": "TINBOT" },
+    { "name": "BS Attack (Guided)", "costCr": 20, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/BS_Attack#BS_Attack_.28Guided.29", "wikiSection": "BS ATTACK (GUIDED)" },
+    { "name": "Doctor (+Medikit)", "costCr": 10, "costSwc": null, "category": "Roles" },
+    { "name": "Engineer (+Gizmokit)", "costCr": 10, "costSwc": null, "category": "Roles" },
+    { "name": "Forward Observer (+Flash Pulse)", "costCr": 8, "costSwc": null, "category": "Roles" },
+    { "name": "Hacker (+Hacking Device)", "costCr": 12, "costSwc": 0.5, "category": "Roles" },
+    { "name": "Hacker (+Killer Hacking Device)", "costCr": 10, "costSwc": null, "category": "Roles" }
+  ],
+  "troopTypes": [
+    { "type": null, "costCr": 5, "armorName": "Belts and Pouches", "arm": null, "bts": null, "abilities": "Equip one additional piece of equipment of any type" },
+    { "type": "LI", "costCr": 5, "armorName": "Mobility Suit", "arm": null, "bts": null, "abilities": "Climbing Plus, Terrain (Total), 6-4 Mov" },
+    { "type": "MI", "costCr": 15, "armorName": "Stim Suit", "arm": 3, "bts": 3, "abilities": "Dogged" },
+    { "type": "HI", "costCr": 20, "armorName": "Heavy Armor", "arm": 4, "bts": 3, "abilities": "Wound Skill +1 (See Mercs Rules)" }
+  ],
+  "augments": []
+}

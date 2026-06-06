@@ -10,7 +10,7 @@
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label
                 Text="Load Records"
-                FontSize="28"
+                FontSize="{DynamicResource FontSizeDisplay}"
                 FontAttributes="Bold"
                 HorizontalTextAlignment="Start" />
             <Label
@@ -50,11 +50,11 @@
                                 <VerticalStackLayout Grid.Column="1" Spacing="2">
                                     <Label
                                         Text="{Binding DisplayName}"
-                                        FontSize="18"
+                                        FontSize="{DynamicResource FontSizeSubHeadline}"
                                         FontAttributes="Bold" />
                                     <Label
                                         Text="{Binding Subtitle}"
-                                        FontSize="12"
+                                        FontSize="{DynamicResource FontSizeCaption}"
                                         TextColor="#9CA3AF" />
                                 </VerticalStackLayout>
 

@@ -1,0 +1,29 @@
+{
+  "name": "Number One",
+  "associatedFactions": [ "PanOceania", "White Company" ],
+  "associatedType": "MULTI",
+  "alignment": "Lawful",
+  "items": [
+    { "name": "MULTI Rifle", "costCr": 8, "costSwc": null, "category": "Primary" },
+    { "name": "MULTI Marksman Rifle", "costCr": 12, "costSwc": null, "category": "Primary" },
+    { "name": "MULTI Sniper Rifle", "costCr": 21, "costSwc": 1.5, "category": "Primary" },
+    { "name": "Feuerbach", "costCr": 25, "costSwc": 1.5, "category": "Primary" },
+    { "name": "MULTI Heavy Machine Gun", "costCr": 28, "costSwc": 2.0, "category": "Primary" },
+    { "name": "Drop Bears", "costCr": 6, "costSwc": null, "category": "Secondary", "wikiUrl": "https://infinitythewiki.com/Drop_Bears" },
+    { "name": "WildParrots", "costCr": 10, "costSwc": null, "category": "Secondary", "wikiUrl": "https://infinitythewiki.com/Wild_Parrots" },
+    { "name": "MULTI Pistol", "costCr": 8, "costSwc": null, "category": "Sidearm" },
+    { "name": "Multispectral Visor Level 2", "costCr": 20, "costSwc": null, "category": "Accessories", "wikiUrl": "https://infinitythewiki.com/Multispectral_Visor", "wikiSection": "MULTISPECTRAL VISOR LEVEL 2" }
+  ],
+  "troopTypes": [
+    { "type": "LI", "costCr": 15, "armorName": "Blink Suit", "arm": 1, "bts": null, "abilities": "Hidden Deployment" },
+    { "type": "MI", "costCr": 20, "armorName": "Bagh Mari Suit", "arm": 2, "bts": null, "abilities": "Multispectral Visor Level 1, Mimetism (-3)" },
+    { "type": "HI", "costCr": 30, "armorName": "Superheavy Armor", "arm": 5, "bts": 6, "abilities": "2W, No Wound Incapacitation, S5" },
+    { "type": "HI", "costCr": 40, "armorName": "Swiss Order Armor", "arm": 5, "bts": 6, "abilities": "Religious, Mimetism (-6)" }
+  ],
+  "augments": [
+    { "name": "BS=11", "requirement": "Cannot have the BS Attack (+#) skill", "costCr": 10, "costNote": null },
+    { "name": "BS Attack (-1 SR)", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "Armed Turret (MMR)", "requirement": "Engineer", "costCr": 10, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Armed_Turret", "wikiSection": "ARMED TURRET" },
+    { "name": "Discoballer + Deactivator", "requirement": "Forward Observer", "costCr": 10, "costNote": null }
+  ]
+}

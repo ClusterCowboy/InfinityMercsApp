@@ -18,6 +18,14 @@
 
     <!-- FONT SIZES -->
 
+    <!--
+        Stat-block / fixed-grid micro text.
+        Constant across idioms because the 10-column unit stat grid has
+        physically limited column width on any screen. OS accessibility
+        scaling still applies via FontAutoScalingEnabled.
+    -->
+    <OnIdiom x:Key="FontSizeMicro" x:TypeArguments="x:Double" Phone="10" Tablet="10" Desktop="10" />
+
     <!-- Captions, badges, secondary metadata -->
     <OnIdiom x:Key="FontSizeCaption" x:TypeArguments="x:Double" Phone="11" Tablet="13" Desktop="12" />
 
@@ -30,8 +38,14 @@
     <!-- Sub-headline (SubHeadline named style) -->
     <OnIdiom x:Key="FontSizeSubHeadline" x:TypeArguments="x:Double" Phone="18" Tablet="22" Desktop="24" />
 
+    <!-- Mid-weight titles, card headers (between sub-headline and headline) -->
+    <OnIdiom x:Key="FontSizeTitleSmall" x:TypeArguments="x:Double" Phone="20" Tablet="24" Desktop="22" />
+
     <!-- Top-level page title (Headline named style) -->
     <OnIdiom x:Key="FontSizeHeadline" x:TypeArguments="x:Double" Phone="24" Tablet="28" Desktop="32" />
+
+    <!-- Large hero text, popup headings -->
+    <OnIdiom x:Key="FontSizeTitleLarge" x:TypeArguments="x:Double" Phone="26" Tablet="30" Desktop="30" />
 
     <!-- Large display numbers / hero values (e.g. unit stat totals) -->
     <OnIdiom x:Key="FontSizeDisplay" x:TypeArguments="x:Double" Phone="28" Tablet="34" Desktop="36" />

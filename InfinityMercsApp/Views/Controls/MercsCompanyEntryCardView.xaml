@@ -29,7 +29,7 @@
                 HeightRequest="26"
                 Padding="0"
                 FontAttributes="Bold"
-                FontSize="18"
+                FontSize="{DynamicResource FontSizeSubHeadline}"
                 CornerRadius="13"
                 BackgroundColor="#111827"
                 BorderColor="#6B7280"
@@ -62,16 +62,16 @@
                 IsVisible="{Binding IsDetailsExpanded}">
                 <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
                     <Border Grid.Row="0" Grid.Column="0" BackgroundColor="Transparent" StrokeThickness="0" Padding="6,4">
-                        <Label Text="{Binding SavedEquipmentDisplay}" TextColor="#06B6D4" FontSize="12" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                        <Label Text="{Binding SavedEquipmentDisplay}" TextColor="#06B6D4" FontSize="{DynamicResource FontSizeCaption}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                     </Border>
                     <Border Grid.Row="0" Grid.Column="1" BackgroundColor="Transparent" StrokeThickness="0" Padding="6,4">
-                        <Label Text="{Binding SavedSkillsDisplay}" TextColor="#F59E0B" FontSize="12" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                        <Label Text="{Binding SavedSkillsDisplay}" TextColor="#F59E0B" FontSize="{DynamicResource FontSizeCaption}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                     </Border>
                     <Border Grid.Row="1" Grid.Column="0" BackgroundColor="Transparent" StrokeThickness="0" Padding="6,4">
-                        <Label Text="{Binding SavedRangedWeaponsDisplay}" TextColor="#EF4444" FontSize="12" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                        <Label Text="{Binding SavedRangedWeaponsDisplay}" TextColor="#EF4444" FontSize="{DynamicResource FontSizeCaption}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                     </Border>
                     <Border Grid.Row="1" Grid.Column="1" BackgroundColor="Transparent" StrokeThickness="0" Padding="6,4">
-                        <Label Text="{Binding SavedCcWeaponsDisplay}" TextColor="#22C55E" FontSize="12" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
+                        <Label Text="{Binding SavedCcWeaponsDisplay}" TextColor="#22C55E" FontSize="{DynamicResource FontSizeCaption}" LineBreakMode="WordWrap" HorizontalOptions="FillAndExpand" />
                     </Border>
                 </Grid>
 
@@ -84,20 +84,20 @@
                                 HeightRequest="18"
                                 VerticalOptions="Center"
                                 PaintSurface="OnPeripheralIconCanvasPaintSurface" />
-                            <Label Grid.Column="1" Text="{Binding PeripheralNameHeading}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding PeripheralNameHeading}" FontSize="{DynamicResource FontSizeCaption}" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
                         </Grid>
-                        <Label Text="{Binding PeripheralSubtitle}" FontSize="12" TextColor="#9CA3AF" LineBreakMode="WordWrap" />
+                        <Label Text="{Binding PeripheralSubtitle}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#9CA3AF" LineBreakMode="WordWrap" />
                         <Label
                             FormattedText="{Binding PeripheralEquipmentLineFormatted}"
                             TextColor="White"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             LineBreakMode="WordWrap"
                             HorizontalOptions="FillAndExpand"
                             IsVisible="{Binding HasPeripheralEquipmentLine}" />
                         <Label
                             FormattedText="{Binding PeripheralSkillsLineFormatted}"
                             TextColor="White"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             LineBreakMode="WordWrap"
                             HorizontalOptions="FillAndExpand"
                             IsVisible="{Binding HasPeripheralSkillsLine}" />
@@ -117,7 +117,7 @@
                             PaintSurface="OnIrregularIconCanvasPaintSurface" />
                         <Label
                             Text="Irregular"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             TextColor="#F87171"
                             VerticalOptions="Center" />
                     </HorizontalStackLayout>
@@ -131,7 +131,7 @@
                             PaintSurface="OnRegularModifierIconCanvasPaintSurface" />
                         <Label
                             Text="Regular"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             TextColor="#4ADE80"
                             VerticalOptions="Center" />
                     </HorizontalStackLayout>

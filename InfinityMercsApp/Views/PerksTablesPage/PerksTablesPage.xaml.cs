@@ -375,7 +375,7 @@ public partial class PerksTablesPage : ContentPage
             Content = new Label
             {
                 Text = text,
-                FontSize = 14,
+                Style = (Style)Application.Current!.Resources["LabelBody"],
                 LineBreakMode = LineBreakMode.WordWrap,
                 VerticalTextAlignment = TextAlignment.Center,
                 HorizontalTextAlignment = TextAlignment.Center,

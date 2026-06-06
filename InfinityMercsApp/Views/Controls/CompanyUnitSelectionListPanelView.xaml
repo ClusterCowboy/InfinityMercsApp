@@ -18,7 +18,7 @@
                     <Label
                         Grid.Column="0"
                         Text="UNIT SELECTION"
-                        FontSize="24"
+                        FontSize="{DynamicResource FontSizeSubHeadline}"
                         FontAttributes="Bold"
                         TextColor="White"
                         HorizontalTextAlignment="Start"

@@ -1,6 +1,8 @@
+using InfinityMercsApp.Domain.Models.Stores;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Season;
 using InfinityMercsApp.Views.UnitEncyclopedia;
 
 namespace InfinityMercsApp;
@@ -24,6 +26,7 @@ public static class ServiceRegistryExtensions
     public static IServiceCollection AddPages(this IServiceCollection services)
     {
         services.AddTransient<AppShell>()
+                .AddTransient<ArmoryPage>()
                 .AddTransient<ModeSelectionPage>()
                 .AddTransient<CreateNewCompanyPage>()
                 .AddTransient<StandardCompanySourcePopupPage>()
@@ -35,7 +38,15 @@ public static class ServiceRegistryExtensions
                 .AddTransient<PerkTesterPage>()
                 .AddTransient<CompanyViewerPage>()
                 .AddTransient<UnitEncyclopediaPage>()
-                .AddTransient<FeedbackBugsPage>();
+                .AddTransient<FeedbackBugsPage>()
+                .AddTransient<MercsSeasonPage>()
+                .AddTransient<LoadSeasonPage>()
+                .AddTransient<SeasonPage>()
+                .AddTransient<PlayModePage>()
+                .AddTransient<GameModePage>()
+                .AddTransient<ExperiencePage>()
+                .AddTransient<DowntimePage>()
+                .AddTransient<MarketplacesPage>();
 
         return services;
     }
@@ -45,9 +56,18 @@ public static class ServiceRegistryExtensions
         services.AddSingleton<INavigationService, MauiNavigationService>()
                 .AddSingleton<ICompanySelectionPageFactory, CompanySelectionPageFactory>()
                 .AddSingleton<IArmyDataService, ArmyDataService>()
+                .AddSingleton<IStoreProvider, StoreProvider>()
                 .AddSingleton<FactionLogoCacheService>()
                 .AddSingleton<IFeedbackService, FeedbackService>()
                 .AddSingleton<IImportService, ImportService>();
+
+        services.AddSingleton<HttpClient>(_ =>
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("InfinityMercsApp/1.0");
+            return client;
+        });
+        services.AddSingleton<IWikiDescriptionService, WikiDescriptionService>();
 
         return services;
     }

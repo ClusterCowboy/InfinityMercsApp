@@ -302,7 +302,7 @@ public class MainViewModel : BaseViewModel
             UpdateStatus = "Running online update...";
             UpdateProgressMessage = "Starting update...";
 
-            await foreach (var result in _importService.ImportAllDataAsync())
+            await foreach (var result in _importService.ImportAllDataAsync(force: true))
             {
                 UpdateProgressMessage = result.Message;
                 UpdateStatus = result.Message;

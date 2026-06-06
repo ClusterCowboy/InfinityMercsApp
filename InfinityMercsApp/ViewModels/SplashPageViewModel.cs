@@ -28,7 +28,7 @@ public partial class SplashPageViewModel(
         if (updated)
         {
             WeakReferenceMessenger.Default.Send(new SplashCompletedMessage());
-            await NavigationService.NavigateToAsync("//ModeSelectionPage");
+            await NavigationService.NavigateToAsync("//MercsSeasonPage");
         }
     }
 
