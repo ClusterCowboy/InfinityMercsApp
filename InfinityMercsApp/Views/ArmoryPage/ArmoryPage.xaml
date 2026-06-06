@@ -15,7 +15,7 @@
                 <Label Grid.Row="0"
                        Text="Weapons"
                        HorizontalTextAlignment="Center"
-                       FontSize="20"
+                       FontSize="{DynamicResource FontSizeTitleSmall}"
                        FontAttributes="Bold" />
                 <Entry Grid.Row="1"
                        Placeholder="Search weapons..."
@@ -29,7 +29,7 @@
                         <DataTemplate>
                             <Grid Padding="6,4">
                                 <Label Text="{Binding Name}"
-                                       FontSize="14"
+                                       FontSize="{DynamicResource FontSizeBody}"
                                        VerticalTextAlignment="Center" />
                             </Grid>
                         </DataTemplate>
@@ -43,7 +43,7 @@
             <Grid RowDefinitions="Auto,*" RowSpacing="10">
                 <Label Grid.Row="0"
                        Text="{Binding Source={x:Reference ArmoryRoot}, Path=SelectedWeaponName}"
-                       FontSize="18"
+                       FontSize="{DynamicResource FontSizeSubHeadline}"
                        FontAttributes="Bold" />
                 <Grid Grid.Row="1">
                     <Label Text="Select a weapon from the list."

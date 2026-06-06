@@ -24,7 +24,7 @@
 
                 <Label
                     Text="Lone Wolf Company source:"
-                    FontSize="30"
+                    FontSize="{DynamicResource FontSizeTitleLarge}"
                     FontAttributes="Bold"
                     HorizontalTextAlignment="Center" />
 
@@ -44,7 +44,7 @@
                                 Source="single_sectorial.png" />
                             <Label
                                 Text="One Vanilla Faction"
-                                FontSize="30"
+                                FontSize="{DynamicResource FontSizeTitleLarge}"
                                 HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
                     </Grid>
@@ -59,7 +59,7 @@
                                 Source="multiple_sectorials.png" />
                             <Label
                                 Text="Two Sectorials"
-                                FontSize="30"
+                                FontSize="{DynamicResource FontSizeTitleLarge}"
                                 HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
                     </Grid>

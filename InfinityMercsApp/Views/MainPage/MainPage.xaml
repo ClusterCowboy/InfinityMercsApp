@@ -19,13 +19,13 @@
         <Label
             Grid.Row="1"
             Text="MERCENARIES"
-            FontSize="28"
+            FontSize="{DynamicResource FontSizeDisplay}"
             HorizontalTextAlignment="Center" />
 
         <Label
             Grid.Row="2"
             Text="Dirty fights in the world of Infinity: The Game"
-            FontSize="22"
+            FontSize="{DynamicResource FontSizeTitleSmall}"
             HorizontalTextAlignment="Center" />
 
         <HorizontalStackLayout Grid.Row="3" Spacing="12" VerticalOptions="Center" HorizontalOptions="Center">

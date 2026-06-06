@@ -36,6 +36,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
     private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
 
+    private double _unitStripPanLastTotalX;
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
     private SKPicture? _lieutenantOrderIconPicture;
@@ -1428,7 +1429,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             BorderColor = Color.FromArgb("#4B5563"),
             BorderWidth = 1,
             CornerRadius = 6,
-            FontSize = 11,
+            Style = (Style)Application.Current!.Resources["ButtonCaption"],
             Padding = new Thickness(10, 4),
             HeightRequest = 34
         };
@@ -1456,7 +1457,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         StoreContentArea.Children.Add(new Label
         {
             Text = store.Name,
-            FontSize = 22,
+            Style = (Style)Application.Current!.Resources["LabelTitleSmall"],
             FontAttributes = FontAttributes.Bold,
             TextColor = Colors.White,
             Margin = new Thickness(0, 0, 0, 2)
@@ -1467,7 +1468,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(new Label
             {
                 Text = store.Alignment,
-                FontSize = 13,
+                Style = (Style)Application.Current!.Resources["LabelBody"],
                 TextColor = Color.FromArgb("#9CA3AF"),
                 Margin = new Thickness(0, 0, 0, 10)
             });
@@ -1514,7 +1515,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private static Label BuildSectionHeader(string text) => new()
     {
         Text = text,
-        FontSize = 11,
+        Style = (Style)Application.Current!.Resources["LabelCaption"],
         FontAttributes = FontAttributes.Bold,
         TextColor = Color.FromArgb("#6B7280"),
         Margin = new Thickness(0, 10, 0, 2)
@@ -1524,8 +1525,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private Border BuildItemRow(string storeName, string itemName, string costText, Action onTap)
     {
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
-        leftStack.Children.Add(new Label { Text = itemName, FontSize = 14, TextColor = Colors.White });
-        leftStack.Children.Add(new Label { Text = costText, FontSize = 12, TextColor = Color.FromArgb("#22C55E") });
+        leftStack.Children.Add(new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White });
+        leftStack.Children.Add(new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#22C55E") });
         leftStack.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(onTap) });
 
         return BuildRowBorder($"{storeName}|{itemName}", leftStack);
@@ -1541,11 +1542,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var btsText = troop.Bts.HasValue ? troop.Bts.Value.ToString() : "—";
 
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
-        leftStack.Children.Add(new Label { Text = displayName, FontSize = 14, TextColor = Colors.White });
+        leftStack.Children.Add(new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White });
         leftStack.Children.Add(new Label
         {
             Text = $"ARM {armText}  BTS {btsText}",
-            FontSize = 12,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
             TextColor = Color.FromArgb("#9CA3AF")
         });
         if (!string.IsNullOrWhiteSpace(troop.Abilities))
@@ -1553,7 +1554,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             leftStack.Children.Add(new Label
             {
                 Text = troop.Abilities,
-                FontSize = 12,
+                Style = (Style)Application.Current!.Resources["LabelCaption"],
                 TextColor = Color.FromArgb("#9CA3AF"),
                 LineBreakMode = LineBreakMode.WordWrap
             });
@@ -1561,7 +1562,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         leftStack.Children.Add(new Label
         {
             Text = $"{troop.CostCr}cr",
-            FontSize = 12,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
             TextColor = Color.FromArgb("#22C55E")
         });
         leftStack.GestureRecognizers.Add(
@@ -1576,7 +1577,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var countLabel = new Label
         {
             Text = _inventoryCounts.GetValueOrDefault(key, 0).ToString(),
-            FontSize = 15,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Colors.White,
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
@@ -1591,7 +1592,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             BorderColor = Color.FromArgb("#4B5563"),
             BorderWidth = 1,
             CornerRadius = 4,
-            FontSize = 18,
+            Style = (Style)Application.Current!.Resources["ButtonSubHeadline"],
             WidthRequest = 44,
             HeightRequest = 44,
             Padding = new Thickness(0)
@@ -1610,7 +1611,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             BorderColor = Color.FromArgb("#4B5563"),
             BorderWidth = 1,
             CornerRadius = 4,
-            FontSize = 18,
+            Style = (Style)Application.Current!.Resources["ButtonSubHeadline"],
             WidthRequest = 44,
             HeightRequest = 44,
             Padding = new Thickness(0)
@@ -1678,7 +1679,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             PopupContentArea.Children.Add(new Label
             {
                 Text = "ABILITIES & EQUIPMENT",
-                FontSize = 11,
+                Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
                 TextColor = Color.FromArgb("#6B7280"),
                 Margin = new Thickness(0, 8, 0, 4)
@@ -1695,7 +1696,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 var label = new Label
                 {
                     Text = $"• {ability}",
-                    FontSize = 14,
+                    Style = (Style)Application.Current!.Resources["LabelBody"],
                     TextColor = isSkill ? Color.FromArgb("#60A5FA") : Colors.White,
                     TextDecorations = isSkill ? TextDecorations.Underline : TextDecorations.None,
                     LineBreakMode = LineBreakMode.WordWrap
@@ -1740,14 +1741,14 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var labelView = new Label
         {
             Text = label,
-            FontSize = 13,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Color.FromArgb("#9CA3AF"),
             VerticalTextAlignment = TextAlignment.Center
         };
         var valueView = new Label
         {
             Text = value,
-            FontSize = 13,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Colors.White,
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.WordWrap
@@ -1761,6 +1762,26 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private void OnPopupBackClicked(object sender, EventArgs e)
     {
         MarketplacePopupOverlay.IsVisible = false;
+    }
+
+    private async void OnUnitStripPanUpdated(object? sender, PanUpdatedEventArgs e)
+    {
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _unitStripPanLastTotalX = 0d;
+                break;
+            case GestureStatus.Running:
+                var deltaX = e.TotalX - _unitStripPanLastTotalX;
+                _unitStripPanLastTotalX = e.TotalX;
+                var targetX = Math.Max(0d, UnitStripScrollView.ScrollX - deltaX);
+                await UnitStripScrollView.ScrollToAsync(targetX, 0d, false);
+                break;
+            case GestureStatus.Completed:
+            case GestureStatus.Canceled:
+                _unitStripPanLastTotalX = 0d;
+                break;
+        }
     }
 
     private void OnTeamTabClicked(object sender, EventArgs e) => SetActiveTab(0);

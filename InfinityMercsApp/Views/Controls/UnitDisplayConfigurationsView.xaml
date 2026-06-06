@@ -35,7 +35,7 @@
                     HorizontalOptions="Center"
                     IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasAnyHeaderIcons}"
                     PaintSurface="OnHeaderIconsCanvasPaintSurface" />
-                <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" BackgroundColor="Transparent" StrokeThickness="0" Padding="0" VerticalOptions="Center">
+                <Border x:Name="LogoColumnBorder" Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" BackgroundColor="Transparent" StrokeThickness="0" Padding="0" VerticalOptions="Center">
                     <skia:SKCanvasView
                         x:Name="SelectedUnitCanvas"
                         WidthRequest="82"
@@ -76,16 +76,16 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="0" Text="MOV" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="1" Text="CC" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="2" Text="BS" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="3" Text="PH" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="4" Text="WIP" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="5" Text="ARM" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="6" Text="BTS" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitVitalityHeader}" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="8" Text="S" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="9" Text="AVA" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
                     </Grid>
                 </Border>
                 <Border Grid.Column="2" Grid.Row="2" BackgroundColor="#E5E7EB" Stroke="#9CA3AF" StrokeThickness="1" Padding="8,2" StrokeShape="RoundRectangle 4">
@@ -102,16 +102,16 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitMov}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitCc}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="2" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitBs}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="3" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitPh}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="4" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitWip}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="5" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitArm}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="6" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitBts}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitVitality}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="8" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitS}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                        <Label Grid.Column="9" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitAva}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="0" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitMov}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitCc}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="2" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitBs}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="3" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitPh}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="4" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitWip}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="5" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitArm}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="6" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitBts}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitVitality}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="8" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitS}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                        <Label Grid.Column="9" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitAva}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
                     </Grid>
                 </Border>
                 <Border Grid.Row="3" Grid.Column="2" BackgroundColor="#111827" Stroke="#4B5563" StrokeThickness="1" Padding="6,4" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasPeripheralStatBlock}">
@@ -124,7 +124,7 @@
                                 HeightRequest="18"
                                 VerticalOptions="Center"
                                 PaintSurface="OnPeripheralIconCanvasPaintSurface" />
-                            <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralNameHeading}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralNameHeading}" FontSize="{DynamicResource FontSizeCaption}" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" />
                         </Grid>
                         <Border BackgroundColor="#D1D5DB" Stroke="#9CA3AF" StrokeThickness="1" Padding="8,2" StrokeShape="RoundRectangle 4">
                             <Grid ColumnSpacing="6">
@@ -140,16 +140,16 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Label Grid.Column="0" Text="MOV" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="1" Text="CC" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="2" Text="BS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="3" Text="PH" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="4" Text="WIP" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="5" Text="ARM" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="6" Text="BTS" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralVitalityHeader}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="8" Text="S" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="9" Text="AVA" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="0" Text="MOV" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="1" Text="CC" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="2" Text="BS" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="3" Text="PH" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="4" Text="WIP" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="5" Text="ARM" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="6" Text="BTS" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralVitalityHeader}" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="8" Text="S" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="9" Text="AVA" FontSize="{DynamicResource FontSizeMicro}" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#111827" />
                             </Grid>
                         </Border>
                         <Border BackgroundColor="#E5E7EB" Stroke="#9CA3AF" StrokeThickness="1" Padding="8,2" StrokeShape="RoundRectangle 4">
@@ -166,28 +166,28 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Label Grid.Column="0" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralMov}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralCc}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="2" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralBs}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="3" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralPh}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="4" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralWip}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="5" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralArm}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="6" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralBts}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralVitality}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="8" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralS}" HorizontalTextAlignment="Center" TextColor="#111827" />
-                                <Label Grid.Column="9" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralAva}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="0" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralMov}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="1" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralCc}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="2" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralBs}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="3" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralPh}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="4" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralWip}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="5" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralArm}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="6" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralBts}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="7" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralVitality}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="8" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralS}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
+                                <Label Grid.Column="9" Text="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralAva}" FontSize="{DynamicResource FontSizeMicro}" HorizontalTextAlignment="Center" TextColor="#111827" />
                             </Grid>
                         </Border>
                         <Label
                             FormattedText="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralEquipmentFormatted}"
                             TextColor="White"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             LineBreakMode="WordWrap"
                             IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasPeripheralEquipment}" />
                         <Label
                             FormattedText="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=PeripheralSkillsFormatted}"
                             TextColor="White"
-                            FontSize="12"
+                            FontSize="{DynamicResource FontSizeCaption}"
                             LineBreakMode="WordWrap"
                             IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasPeripheralSkills}" />
                     </VerticalStackLayout>
@@ -206,7 +206,7 @@
                         </Label.Shadow>
                     </Label>
                 </Border>
-                <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Profiles" FontSize="20" FontAttributes="Bold" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}" />
+                <Label Grid.Row="6" Grid.ColumnSpan="3" Text="Profiles" FontSize="{DynamicResource FontSizeTitleSmall}" FontAttributes="Bold" IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowConfigurationsSection}" />
                 <ScrollView
                     x:Name="ProfilesScrollView"
                     Grid.Row="7"
@@ -247,7 +247,7 @@
                                                     VerticalOptions="Center"
                                                     IsVisible="{Binding ShowProfileTacticalAwarenessIcon}"
                                                     PaintSurface="OnProfileTacticalIconCanvasPaintSurface" />
-                                                <Label Text="{Binding Cost, StringFormat='C {0}'}" FontSize="12" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                                <Label Text="{Binding Cost, StringFormat='C {0}'}" FontSize="{DynamicResource FontSizeCaption}" HorizontalTextAlignment="End" VerticalOptions="Center" />
                                             </HorizontalStackLayout>
                                         </Grid>
                                         <Grid ColumnSpacing="8">
@@ -257,14 +257,14 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="12" TextColor="#EF4444" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="12" TextColor="#22C55E" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="12" TextColor="#06B6D4" LineBreakMode="WordWrap" />
-                                            <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="12" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#22C55E" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#F59E0B" LineBreakMode="WordWrap" />
                                         </Grid>
                                         <Label
                                             Text="{Binding Peripherals, StringFormat='Peripheral: {0}'}"
-                                            FontSize="12"
+                                            FontSize="{DynamicResource FontSizeCaption}"
                                             TextColor="#FACC15"
                                             LineBreakMode="WordWrap"
                                             Margin="12,4,0,0"

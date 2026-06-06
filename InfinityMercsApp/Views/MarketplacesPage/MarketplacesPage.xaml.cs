@@ -202,7 +202,7 @@ public partial class MarketplacesPage : ContentPage
             wikiContainer.Children.Add(new Label
             {
                 Text = "Loading…",
-                FontSize = 13,
+                Style = (Style)Application.Current!.Resources["LabelBody"],
                 TextColor = Color.FromArgb("#6B7280"),
                 Margin = new Thickness(0, 2, 0, 0)
             });
@@ -222,7 +222,7 @@ public partial class MarketplacesPage : ContentPage
                 wikiContainer.Children.Add(new Label
                 {
                     Text = "(No description available)",
-                    FontSize = 13,
+                    Style = (Style)Application.Current!.Resources["LabelBody"],
                     TextColor = Color.FromArgb("#6B7280")
                 });
             }
@@ -250,7 +250,7 @@ public partial class MarketplacesPage : ContentPage
             PopupContentArea.Children.Add(new Label
             {
                 Text = "ABILITIES & EQUIPMENT",
-                FontSize = 11,
+                Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
                 TextColor = Color.FromArgb("#6B7280"),
                 Margin = new Thickness(0, 8, 0, 4)
@@ -267,7 +267,7 @@ public partial class MarketplacesPage : ContentPage
                 var label = new Label
                 {
                     Text = $"• {ability}",
-                    FontSize = 14,
+                    Style = (Style)Application.Current!.Resources["LabelBody"],
                     TextColor = isSkill ? Color.FromArgb("#60A5FA") : Colors.White,
                     TextDecorations = isSkill ? TextDecorations.Underline : TextDecorations.None,
                     LineBreakMode = LineBreakMode.WordWrap
@@ -325,7 +325,7 @@ public partial class MarketplacesPage : ContentPage
                         Content = new Label
                         {
                             Text = block.Text,
-                            FontSize = 13,
+                            Style = (Style)Application.Current!.Resources["LabelBody"],
                             FontAttributes = FontAttributes.Bold,
                             TextColor = Colors.White
                         }
@@ -336,7 +336,7 @@ public partial class MarketplacesPage : ContentPage
                     container.Children.Add(new Label
                     {
                         Text = block.Text,
-                        FontSize = 13,
+                        Style = (Style)Application.Current!.Resources["LabelBody"],
                         TextColor = Color.FromArgb("#D1D5DB"),
                         LineBreakMode = LineBreakMode.WordWrap,
                         Margin = new Thickness(0, 4, 0, 0)
@@ -357,7 +357,7 @@ public partial class MarketplacesPage : ContentPage
                     row.Children.Add(new Label
                     {
                         Text = "▶",
-                        FontSize = 9,
+                        Style = (Style)Application.Current!.Resources["LabelMicro"],
                         TextColor = Color.FromArgb("#6B7280"),
                         VerticalTextAlignment = TextAlignment.Start,
                         Margin = new Thickness(0, 3, 0, 0)
@@ -366,7 +366,7 @@ public partial class MarketplacesPage : ContentPage
                     var textLabel = new Label
                     {
                         Text = block.Text,
-                        FontSize = 13,
+                        Style = (Style)Application.Current!.Resources["LabelBody"],
                         FontAttributes = block.Bold ? FontAttributes.Bold : FontAttributes.None,
                         TextColor = block.Bold ? Colors.White : Color.FromArgb("#D1D5DB"),
                         LineBreakMode = LineBreakMode.WordWrap
@@ -391,14 +391,14 @@ public partial class MarketplacesPage : ContentPage
         var labelView = new Label
         {
             Text = labelText,
-            FontSize = 13,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Color.FromArgb("#9CA3AF"),
             VerticalTextAlignment = TextAlignment.Center
         };
         var valueView = new Label
         {
             Text = value,
-            FontSize = 13,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
             TextColor = Colors.White,
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.WordWrap

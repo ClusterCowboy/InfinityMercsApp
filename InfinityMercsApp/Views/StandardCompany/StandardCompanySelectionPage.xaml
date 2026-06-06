@@ -121,7 +121,7 @@
             <HorizontalStackLayout Grid.Row="2" Spacing="8" VerticalOptions="Center">
                 <Label
                     Text="Mercs Company"
-                    FontSize="20"
+                    FontSize="{DynamicResource FontSizeTitleSmall}"
                     FontAttributes="Bold"
                     VerticalOptions="Center" />
                 <Label Text="-" VerticalOptions="Center" />

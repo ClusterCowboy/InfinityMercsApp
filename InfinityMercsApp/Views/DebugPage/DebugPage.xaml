@@ -8,7 +8,7 @@
         <VerticalStackLayout Padding="24" Spacing="12">
             <Label
                 Text="Debug"
-                FontSize="32"
+                FontSize="{DynamicResource FontSizeHeadline}"
                 FontAttributes="Bold" />
             <Label
                 Text="Use this page for diagnostics, tooling, and temporary debug controls."

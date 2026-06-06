@@ -29,7 +29,7 @@
                     TextColor="White" />
                 <Label
                     Text="{Binding Subtitle}"
-                    FontSize="12"
+                    FontSize="{DynamicResource FontSizeCaption}"
                     TextColor="#6B7280"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>

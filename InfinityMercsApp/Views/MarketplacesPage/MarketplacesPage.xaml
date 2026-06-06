@@ -13,7 +13,7 @@
                     Title="Select a Marketplace"
                     ItemsSource="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreNames}"
                     SelectedIndexChanged="OnStorePickerSelectedIndexChanged"
-                    FontSize="16" />
+                    FontSize="{DynamicResource FontSizeSectionHeader}" />
         </Border>
 
         <!-- Content area -->
@@ -25,7 +25,7 @@
                        Text="Select a marketplace from the dropdown above."
                        HorizontalTextAlignment="Center"
                        Margin="0,24,0,0"
-                       FontSize="16"
+                       FontSize="{DynamicResource FontSizeSectionHeader}"
                        TextColor="#6B7280" />
 
                 <!-- Store detail, hidden until a store is selected -->
@@ -37,13 +37,13 @@
                     <Border StrokeThickness="1" Padding="12">
                         <VerticalStackLayout Spacing="4">
                             <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreName}"
-                                   FontSize="22"
+                                   FontSize="{DynamicResource FontSizeTitleSmall}"
                                    FontAttributes="Bold" />
                             <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreFactionsDisplay}"
-                                   FontSize="14"
+                                   FontSize="{DynamicResource FontSizeBody}"
                                    TextColor="#9CA3AF" />
                             <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreMetaDisplay}"
-                                   FontSize="14"
+                                   FontSize="{DynamicResource FontSizeBody}"
                                    TextColor="#9CA3AF" />
                         </VerticalStackLayout>
                     </Border>
@@ -54,7 +54,7 @@
                             Padding="12"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Items" FontSize="18" FontAttributes="Bold" />
+                            <Label Text="Items" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference MarketplacesRoot}, Path=ItemGroups}"
                                                  Spacing="12">
@@ -63,7 +63,7 @@
                                         <VerticalStackLayout Spacing="4">
                                             <!-- Category label -->
                                             <Label Text="{Binding Category}"
-                                                   FontSize="13"
+                                                   FontSize="{DynamicResource FontSizeBody}"
                                                    FontAttributes="Bold,Italic"
                                                    TextColor="#60A5FA"
                                                    Padding="2,4,2,0" />
@@ -90,11 +90,11 @@
                                                                                      Spacing="2"
                                                                                      VerticalOptions="Center">
                                                                     <Label Text="{Binding Name}"
-                                                                           FontSize="15"
+                                                                           FontSize="{DynamicResource FontSizeBody}"
                                                                            FontAttributes="Bold"
                                                                            TextColor="White" />
                                                                     <Label Text="{Binding CostDisplay}"
-                                                                           FontSize="13"
+                                                                           FontSize="{DynamicResource FontSizeBody}"
                                                                            TextColor="#22C55E" />
                                                                 </VerticalStackLayout>
                                                                 <HorizontalStackLayout Grid.Column="1"
@@ -107,14 +107,14 @@
                                                                             BorderColor="#4B5563"
                                                                             BorderWidth="1"
                                                                             CornerRadius="4"
-                                                                            FontSize="18"
+                                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                                             WidthRequest="44"
                                                                             HeightRequest="44"
                                                                             Padding="0"
                                                                             CommandParameter="{Binding}"
                                                                             Clicked="OnItemDecrement" />
                                                                     <Label Text="{Binding Quantity}"
-                                                                           FontSize="15"
+                                                                           FontSize="{DynamicResource FontSizeBody}"
                                                                            TextColor="White"
                                                                            VerticalTextAlignment="Center"
                                                                            HorizontalTextAlignment="Center"
@@ -125,7 +125,7 @@
                                                                             BorderColor="#4B5563"
                                                                             BorderWidth="1"
                                                                             CornerRadius="4"
-                                                                            FontSize="18"
+                                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                                             WidthRequest="44"
                                                                             HeightRequest="44"
                                                                             Padding="0"
@@ -150,7 +150,7 @@
                             Padding="12"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Troop Types" FontSize="18" FontAttributes="Bold" />
+                            <Label Text="Troop Types" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference MarketplacesRoot}, Path=TroopTypeRows}"
                                                  Spacing="4">
@@ -172,17 +172,17 @@
                                                                      Spacing="2"
                                                                      VerticalOptions="Center">
                                                     <Label Text="{Binding DisplayName}"
-                                                           FontSize="15"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            FontAttributes="Bold"
                                                            TextColor="White" />
                                                     <Label Text="{Binding StatDisplay}"
-                                                           FontSize="13"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="#9CA3AF" />
                                                     <Label Text="{Binding CostDisplay}"
-                                                           FontSize="13"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="#22C55E" />
                                                     <Label Text="{Binding Abilities}"
-                                                           FontSize="12"
+                                                           FontSize="{DynamicResource FontSizeCaption}"
                                                            TextColor="#6B7280"
                                                            LineBreakMode="WordWrap"
                                                            IsVisible="{Binding HasAbilities}" />
@@ -197,14 +197,14 @@
                                                             BorderColor="#4B5563"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
-                                                            FontSize="18"
+                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                             WidthRequest="44"
                                                             HeightRequest="44"
                                                             Padding="0"
                                                             CommandParameter="{Binding}"
                                                             Clicked="OnTroopDecrement" />
                                                     <Label Text="{Binding Quantity}"
-                                                           FontSize="15"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="White"
                                                            VerticalTextAlignment="Center"
                                                            HorizontalTextAlignment="Center"
@@ -215,7 +215,7 @@
                                                             BorderColor="#4B5563"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
-                                                            FontSize="18"
+                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                             WidthRequest="44"
                                                             HeightRequest="44"
                                                             Padding="0"
@@ -236,7 +236,7 @@
                             Padding="12"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Augments" FontSize="18" FontAttributes="Bold" />
+                            <Label Text="Augments" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference MarketplacesRoot}, Path=AugmentRows}"
                                                  Spacing="4">
@@ -258,15 +258,15 @@
                                                                      Spacing="2"
                                                                      VerticalOptions="Center">
                                                     <Label Text="{Binding Name}"
-                                                           FontSize="15"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            FontAttributes="Bold"
                                                            TextColor="White" />
                                                     <Label Text="{Binding RequirementDisplay}"
-                                                           FontSize="13"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="#9CA3AF"
                                                            IsVisible="{Binding HasRequirement}" />
                                                     <Label Text="{Binding CostDisplay}"
-                                                           FontSize="13"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="#22C55E" />
                                                 </VerticalStackLayout>
                                                 <HorizontalStackLayout Grid.Column="1"
@@ -279,14 +279,14 @@
                                                             BorderColor="#4B5563"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
-                                                            FontSize="18"
+                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                             WidthRequest="44"
                                                             HeightRequest="44"
                                                             Padding="0"
                                                             CommandParameter="{Binding}"
                                                             Clicked="OnAugmentDecrement" />
                                                     <Label Text="{Binding Quantity}"
-                                                           FontSize="15"
+                                                           FontSize="{DynamicResource FontSizeBody}"
                                                            TextColor="White"
                                                            VerticalTextAlignment="Center"
                                                            HorizontalTextAlignment="Center"
@@ -297,7 +297,7 @@
                                                             BorderColor="#4B5563"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
-                                                            FontSize="18"
+                                                            FontSize="{DynamicResource FontSizeSubHeadline}"
                                                             WidthRequest="44"
                                                             HeightRequest="44"
                                                             Padding="0"
@@ -342,7 +342,7 @@
                                 Clicked="OnPopupBackClicked" />
                         <Label x:Name="PopupTitleLabel"
                                Grid.Column="1"
-                               FontSize="15"
+                               FontSize="{DynamicResource FontSizeBody}"
                                FontAttributes="Bold"
                                TextColor="White"
                                VerticalTextAlignment="Center"

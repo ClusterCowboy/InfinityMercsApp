@@ -20,7 +20,7 @@
                 <Label
                     Grid.Row="0"
                     Text="Choose criteria to filter units by"
-                    FontSize="24"
+                    FontSize="{DynamicResource FontSizeSubHeadline}"
                     FontAttributes="Bold"
                     TextColor="White" />
 
@@ -40,7 +40,7 @@
                                         <Border Stroke="#4B5563" StrokeThickness="1" Padding="8" Margin="0,0,0,6">
                                             <VerticalStackLayout Spacing="3">
                                                 <Label Text="{Binding Title}" TextColor="White" FontAttributes="Bold" />
-                                                <Label Text="{Binding Summary}" TextColor="#9CA3AF" FontSize="12" />
+                                                <Label Text="{Binding Summary}" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeCaption}" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </DataTemplate>
@@ -52,7 +52,7 @@
                     <Border Grid.Column="1" Stroke="#374151" StrokeThickness="1" Padding="10">
                         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Grid.Column="0" Text="{Binding SelectedCriterionTitle}" TextColor="White" FontAttributes="Bold" FontSize="18" />
+                                <Label Grid.Column="0" Text="{Binding SelectedCriterionTitle}" TextColor="White" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" />
                                 <Picker Grid.Column="1" WidthRequest="110" TextColor="White" ItemsSource="{Binding MatchModeOptions}" SelectedItem="{Binding SelectedActiveMatchMode}" />
                             </Grid>
 

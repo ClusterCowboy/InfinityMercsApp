@@ -135,7 +135,7 @@
                     <HorizontalStackLayout Spacing="8">
                         <Label
                             Text="Mercs Company"
-                            FontSize="20"
+                            FontSize="{DynamicResource FontSizeTitleSmall}"
                             FontAttributes="Bold"
                             VerticalOptions="Center" />
                         <Label Text="-" VerticalOptions="Center" />
@@ -168,7 +168,7 @@
                         Text="{Binding TrackedFireteamLevelBonusText}"
                         HorizontalOptions="Fill"
                         HorizontalTextAlignment="Center"
-                        FontSize="11"
+                        FontSize="{DynamicResource FontSizeCaption}"
                         IsVisible="{Binding HasTrackedFireteamLevelBonus}"
                         LineBreakMode="WordWrap"
                         MaxLines="2" />

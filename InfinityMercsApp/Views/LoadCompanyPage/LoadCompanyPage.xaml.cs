@@ -507,7 +507,7 @@ public sealed class DeleteCompanyConfirmationPage : ContentPage
                     new Label
                     {
                         Text = $"Confirm deletion of company [{companyName}]",
-                        FontSize = 18,
+                        Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
                         HorizontalTextAlignment = TextAlignment.Center
                     },
                     buttonsGrid

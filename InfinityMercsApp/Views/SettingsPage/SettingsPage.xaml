@@ -49,7 +49,7 @@
                     <Label
                         Text="Force Update Running"
                         FontAttributes="Bold"
-                        FontSize="18"
+                        FontSize="{DynamicResource FontSizeSubHeadline}"
                         HorizontalTextAlignment="Center" />
                     <ActivityIndicator IsRunning="True" HorizontalOptions="Center" />
                     <Label

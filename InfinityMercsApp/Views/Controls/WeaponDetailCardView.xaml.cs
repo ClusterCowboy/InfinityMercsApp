@@ -39,7 +39,7 @@ public partial class WeaponDetailCardView : ContentView
                 Text = weapon.Mode,
                 TextColor = Colors.White,
                 FontAttributes = FontAttributes.Bold,
-                FontSize = 13,
+                Style = (Style)Application.Current!.Resources["LabelBody"],
                 Margin = new Thickness(0, 0, 0, 4)
             });
         }
@@ -56,7 +56,7 @@ public partial class WeaponDetailCardView : ContentView
             ContentStack.Children.Add(new Label
             {
                 Text = "SPECIAL RULES",
-                FontSize = 11,
+                Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
                 TextColor = Color.FromArgb("#6B7280"),
                 Margin = new Thickness(0, 6, 0, 2)
@@ -68,7 +68,7 @@ public partial class WeaponDetailCardView : ContentView
                 var label = new Label
                 {
                     Text = $"• {prop}",
-                    FontSize = 13,
+                    Style = (Style)Application.Current!.Resources["LabelBody"],
                     TextColor = Color.FromArgb("#60A5FA"),
                     TextDecorations = TextDecorations.Underline,
                     LineBreakMode = LineBreakMode.WordWrap
@@ -144,7 +144,7 @@ public partial class WeaponDetailCardView : ContentView
         row.Children.Add(new Label
         {
             Text = label,
-            FontSize = 12,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
             TextColor = Color.FromArgb("#9CA3AF"),
             VerticalTextAlignment = TextAlignment.Center,
             Margin = new Thickness(0, 0, 6, 0)
@@ -153,7 +153,7 @@ public partial class WeaponDetailCardView : ContentView
         var valueLabel = new Label
         {
             Text = value,
-            FontSize = 12,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
             FontAttributes = FontAttributes.Bold,
             TextColor = Colors.White,
             VerticalTextAlignment = TextAlignment.Center,

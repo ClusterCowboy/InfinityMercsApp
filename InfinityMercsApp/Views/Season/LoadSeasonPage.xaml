@@ -9,7 +9,7 @@
 
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Load Season"
-                   FontSize="28"
+                   FontSize="{DynamicResource FontSizeDisplay}"
                    FontAttributes="Bold"
                    TextColor="White"
                    HorizontalTextAlignment="Start" />
@@ -39,11 +39,11 @@
                             </Border.GestureRecognizers>
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding DisplayName}"
-                                       FontSize="18"
+                                       FontSize="{DynamicResource FontSizeSubHeadline}"
                                        FontAttributes="Bold"
                                        TextColor="White" />
                                 <Label Text="{Binding Subtitle}"
-                                       FontSize="12"
+                                       FontSize="{DynamicResource FontSizeCaption}"
                                        TextColor="#9CA3AF" />
                             </VerticalStackLayout>
                         </Border>

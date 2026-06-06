@@ -66,7 +66,7 @@
 
                     <!-- Unit name -->
                     <Label Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.Name}"
-                           FontSize="20"
+                           FontSize="{DynamicResource FontSizeTitleSmall}"
                            FontAttributes="Bold"
                            TextColor="White"
                            IsVisible="{Binding Source={x:Reference PageRoot}, Path=HasSelectedUnit}" />
@@ -85,32 +85,32 @@
                             <!-- Header row -->
                             <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*,*,*,*,*">
                                 <Label Grid.Column="0" Text="MOV"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="1" Text="CC"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="2" Text="BS"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="3" Text="PH"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="4" Text="WIP"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="5" Text="ARM"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="6" Text="BTS"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="7"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.VitalityHeader}"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                                 <Label Grid.Column="8" Text="S"
-                                       FontSize="10" TextColor="#9CA3AF"
+                                       FontSize="{DynamicResource FontSizeMicro}" TextColor="#9CA3AF"
                                        HorizontalTextAlignment="Center" FontAttributes="Bold" />
                             </Grid>
 
@@ -118,39 +118,39 @@
                             <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*,*,*">
                                 <Label Grid.Column="0"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitMov}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="1"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitCc}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="2"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitBs}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="3"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitPh}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="4"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitWip}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="5"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitArm}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="6"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitBts}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="7"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitVitality}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                                 <Label Grid.Column="8"
                                        Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.UnitS}"
-                                       FontSize="13" TextColor="White"
+                                       FontSize="{DynamicResource FontSizeBody}" TextColor="White"
                                        HorizontalTextAlignment="Center" />
                             </Grid>
 
@@ -161,11 +161,11 @@
                     <VerticalStackLayout Spacing="4"
                                          IsVisible="{Binding Source={x:Reference PageRoot}, Path=HasSelectedUnit}">
                         <Label Text="Equipment"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                FontAttributes="Bold"
                                TextColor="#06B6D4" />
                         <Label Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.Equipment}"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                TextColor="#D1D5DB"
                                LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
@@ -174,11 +174,11 @@
                     <VerticalStackLayout Spacing="4"
                                          IsVisible="{Binding Source={x:Reference PageRoot}, Path=HasSelectedUnit}">
                         <Label Text="Skills"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                FontAttributes="Bold"
                                TextColor="#F59E0B" />
                         <Label Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.Skills}"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                TextColor="#D1D5DB"
                                LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
@@ -187,15 +187,15 @@
                     <VerticalStackLayout Spacing="4"
                                          IsVisible="{Binding Source={x:Reference PageRoot}, Path=HasSelectedUnit}">
                         <Label Text="Weapons"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                FontAttributes="Bold"
                                TextColor="White" />
                         <Label Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.RangedWeapons}"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                TextColor="#EF4444"
                                LineBreakMode="WordWrap" />
                         <Label Text="{Binding Source={x:Reference PageRoot}, Path=SelectedUnit.MeleeWeapons}"
-                               FontSize="13"
+                               FontSize="{DynamicResource FontSizeBody}"
                                TextColor="#22C55E"
                                LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
