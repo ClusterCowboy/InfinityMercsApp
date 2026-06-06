@@ -43,6 +43,7 @@ public static class ServiceRegistryExtensions
                 .AddTransient<LoadSeasonPage>()
                 .AddTransient<SeasonPage>()
                 .AddTransient<PlayModePage>()
+                .AddTransient<GameModePage>()
                 .AddTransient<ExperiencePage>()
                 .AddTransient<DowntimePage>()
                 .AddTransient<MarketplacesPage>();
