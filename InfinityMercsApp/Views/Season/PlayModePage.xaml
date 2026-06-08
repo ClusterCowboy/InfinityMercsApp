@@ -43,6 +43,7 @@
                                     ItemTappedCommandParameter="{Binding .}"
                                     PanScrollCommand="{Binding Source={x:Reference PageRoot}, Path=TileStripPanCommand}" />
                                 <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                          IsEnabled="{Binding IsCheckboxEnabled}"
                                           HorizontalOptions="Center"
                                           Color="#22C55E" />
                             </VerticalStackLayout>
@@ -207,17 +208,21 @@
 
         </Grid>
 
-        <!-- Deploy button -->
-        <Button Grid.Row="2"
-                Text="DEPLOY"
-                BackgroundColor="#22C55E"
-                TextColor="Black"
-                BorderColor="#22C55E"
-                FontAttributes="Bold"
-                HorizontalOptions="Center"
-                WidthRequest="200"
-                Margin="0,8,0,12"
-                Clicked="OnDeployClicked" />
+        <!-- Deploy area -->
+        <VerticalStackLayout Grid.Row="2" Spacing="4" Padding="0,8,0,12" HorizontalOptions="Center">
+            <Label Text="{Binding Source={x:Reference PageRoot}, Path=DeploymentStatusText}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   TextColor="{Binding Source={x:Reference PageRoot}, Path=DeploymentStatusColor}"
+                   HorizontalTextAlignment="Center" />
+            <Button Text="DEPLOY"
+                    BackgroundColor="#22C55E"
+                    TextColor="Black"
+                    BorderColor="#22C55E"
+                    FontAttributes="Bold"
+                    HorizontalOptions="Center"
+                    WidthRequest="200"
+                    Clicked="OnDeployClicked" />
+        </VerticalStackLayout>
 
     </Grid>
 

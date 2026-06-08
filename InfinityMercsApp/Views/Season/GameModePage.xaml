@@ -13,14 +13,43 @@
                 BackgroundColor="#1F2937"
                 Stroke="#374151"
                 StrokeThickness="1"
-                Padding="16,10"
+                Padding="8,6"
                 StrokeShape="Rectangle">
-            <Label x:Name="RoundLabel"
-                   Text="Round 1"
-                   FontSize="{DynamicResource FontSizeSubHeadline}"
-                   FontAttributes="Bold"
-                   TextColor="#22C55E"
-                   HorizontalTextAlignment="Center" />
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                <Button x:Name="EndRoundButton"
+                        Grid.Column="0"
+                        Text="END"
+                        BackgroundColor="#DC2626"
+                        BorderColor="#DC2626"
+                        BorderWidth="2"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        FontSize="14"
+                        HeightRequest="36"
+                        WidthRequest="60"
+                        Padding="4,0"
+                        CornerRadius="4"
+                        IsVisible="False"
+                        Clicked="OnEndRoundButtonClicked" />
+                <Label x:Name="RoundLabel"
+                       Grid.Column="1"
+                       Text="Round 1"
+                       FontSize="{DynamicResource FontSizeSubHeadline}"
+                       FontAttributes="Bold"
+                       TextColor="#22C55E"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center" />
+                <Button x:Name="NextRoundButton"
+                        Grid.Column="2"
+                        Text="➡"
+                        BackgroundColor="Transparent"
+                        TextColor="#22C55E"
+                        FontSize="20"
+                        HeightRequest="36"
+                        WidthRequest="44"
+                        Padding="0"
+                        Clicked="OnNextRoundClicked" />
+            </Grid>
         </Border>
 
         <!-- Color order icon row with counts (tap to mark as used) -->

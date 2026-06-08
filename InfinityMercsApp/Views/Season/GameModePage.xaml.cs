@@ -45,11 +45,21 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     private SKPicture? _regPicture;
     private bool _iconsLoaded;
 
+    private SKPicture? _woundHealthyPicture;
+    private SKPicture? _woundWoundedPicture;
+    private SKPicture? _woundMadPicture;
+    private SKPicture? _woundKoPicture;
+    private SKPicture? _woundDeadPicture;
+
     // Each entry is (expandable content view, arrow label) for exclusive-open behaviour.
     private readonly List<(View ContentArea, Label Arrow)> _accordionRows = [];
 
+    private readonly List<(DeploymentUnitItem Unit, bool IsLt, bool IsImp, bool IsIrr)> _unitTracker = [];
+    private int _currentRound = 1;
+
     // null = show all (no filter), empty set = none checked, non-empty = filtered list
     private HashSet<int>? _deployedEntryIndices;
+    private bool _isEliteDeployment;
 
     public GameModePage(
         IArmyDataService? armyDataService = null,
@@ -86,6 +96,9 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             _deployedEntryIndices = null;
         }
+
+        _isEliteDeployment = query.TryGetValue("eliteDeployment", out var eliteRaw) &&
+                             eliteRaw?.ToString() == "1";
     }
 
     protected override async void OnAppearing()
@@ -107,6 +120,12 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         _impPicture = await TryLoadSvgAsync("SVGCache/CBIcons/impetuous.svg");
         _irrPicture = await TryLoadSvgAsync("SVGCache/CBIcons/irregular.svg");
         _regPicture = await TryLoadSvgAsync("SVGCache/CBIcons/regular.svg");
+
+        _woundHealthyPicture = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-smiley-face.svg");
+        _woundWoundedPicture = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-sad-face.svg");
+        _woundMadPicture     = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-mad-face.svg");
+        _woundKoPicture      = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-knocked-out-face.svg");
+        _woundDeadPicture    = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-gravestone.svg");
 
         foreach (var canvas in new SKCanvasView[] { LtColorCanvas, ImpColorCanvas, IrrColorCanvas, RegColorCanvas,
                                                     LtGreyCanvas,  ImpGreyCanvas,  IrrGreyCanvas,  RegGreyCanvas })
@@ -204,6 +223,10 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         _loadAttempted = true;
         AccordionStack.Children.Clear();
         _accordionRows.Clear();
+        _unitTracker.Clear();
+        _currentRound = 1;
+        RoundLabel.Text = "Round 1";
+        EndRoundButton.IsVisible = false;
 
         if (!File.Exists(filePath)) return;
 
@@ -247,6 +270,9 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 var characteristics = ResolveSavedCharacteristics(effectiveSourceFactionId, entry);
                 var isIrregular = HasOrderKeyword(characteristics, "Irregular");
                 var isImpetuous = HasOrderKeyword(characteristics, "Impetuous");
+                var hasNwi = HasSkill(skills, "No Wound Incapacitation");
+                var hasRemotePresence = HasSkill(skills, "Remote Presence");
+                var startingVitality = Math.Max(1, int.TryParse(entry.CurrentVitaOrStr, out var svParsed) ? svParsed : 1);
 
                 if (entry.IsLieutenant) ltCount++;
                 if (isImpetuous) impCount++;
@@ -290,13 +316,17 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                     UnitBts      = entry.CurrentBts,
                     UnitVitality = entry.CurrentVitaOrStr,
                     UnitS        = entry.CurrentS,
-                    VitalityHeader = InferVitalityHeader(entry.UnitTypeCode),
+                    VitalityHeader    = InferVitalityHeader(entry.UnitTypeCode),
+                    StartingVitality  = startingVitality,
+                    HasNwi            = hasNwi,
+                    HasRemotePresence = hasRemotePresence,
                     Equipment     = SeasonDisplayUnitFormatter.ConvertExplicitDistances(equipment,     _showUnitsInInches),
                     Skills        = SeasonDisplayUnitFormatter.ConvertExplicitDistances(skills,        _showUnitsInInches),
                     RangedWeapons = SeasonDisplayUnitFormatter.ConvertExplicitDistances(rangedWeapons, _showUnitsInInches),
                     MeleeWeapons  = SeasonDisplayUnitFormatter.ConvertExplicitDistances(meleeWeapons,  _showUnitsInInches)
                 };
 
+                _unitTracker.Add((unit, entry.IsLieutenant, isImpetuous, isIrregular));
                 AccordionStack.Children.Add(BuildAccordionRow(unit));
             }
 
@@ -334,17 +364,114 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             LineBreakMode = LineBreakMode.TailTruncation
         };
 
-        var contentArea = BuildUnitDetailContent(unit);
+        VerticalStackLayout contentArea = BuildUnitDetailContent(unit);
         contentArea.IsVisible = false;
 
         _accordionRows.Add((contentArea, arrow));
 
-        var headerGrid = new Grid { MinimumHeightRequest = 48, Padding = new Thickness(16, 8) };
+        // ── Wound icon ──────────────────────────────────────────────────────
+        var woundCanvas = new SKCanvasView
+        {
+            WidthRequest = 32,
+            HeightRequest = 32,
+            VerticalOptions = LayoutOptions.Center
+        };
+        woundCanvas.PaintSurface += (_, e) =>
+        {
+            e.Surface.Canvas.Clear(SKColors.Transparent);
+            var pic = GetWoundPicture(unit.WoundStateKey);
+            if (pic is not null) DrawScaled(e.Surface.Canvas, e.Info, pic, null);
+        };
+
+        var woundBadge = new Label
+        {
+            Text = "2",
+            TextColor = Colors.White,
+            FontSize = 9,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalTextAlignment = TextAlignment.End,
+            VerticalTextAlignment = TextAlignment.End,
+            IsVisible = unit.WoundStateKey == "KnockedOutBody2",
+            Padding = 0
+        };
+
+        var woundIconGrid = new Grid
+        {
+            WidthRequest = 32,
+            HeightRequest = 32,
+            VerticalOptions = LayoutOptions.Center
+        };
+        woundIconGrid.Children.Add(woundCanvas);
+        woundIconGrid.Children.Add(woundBadge);
+
+        void RefreshWoundDisplay()
+        {
+            woundCanvas.InvalidateSurface();
+            woundBadge.IsVisible = unit.WoundStateKey == "KnockedOutBody2";
+        }
+
+        // ── Wound buttons (live inside the expanded content area) ────────────
+        var addWoundBtn = new Button
+        {
+            Text = "Take Wound",
+            FontSize = 13,
+            HeightRequest = 36,
+            Padding = new Thickness(0),
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Colors.White,
+            CornerRadius = 4
+        };
+        addWoundBtn.Clicked += (_, _) =>
+        {
+            unit.WoundsReceived++;
+            RefreshWoundDisplay();
+        };
+
+        var removeWoundBtn = new Button
+        {
+            Text = "Heal Wound",
+            FontSize = 13,
+            HeightRequest = 36,
+            Padding = new Thickness(0),
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Colors.White,
+            CornerRadius = 4
+        };
+        removeWoundBtn.Clicked += (_, _) =>
+        {
+            unit.WoundsReceived--;
+            RefreshWoundDisplay();
+        };
+
+        var woundButtonRow = new Grid
+        {
+            ColumnSpacing = 8,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        woundButtonRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        woundButtonRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        Grid.SetColumn(addWoundBtn, 0);
+        Grid.SetColumn(removeWoundBtn, 1);
+        woundButtonRow.Children.Add(addWoundBtn);
+        woundButtonRow.Children.Add(removeWoundBtn);
+
+        contentArea.Children.Insert(0, woundButtonRow);
+
+        var headerGrid = new Grid
+        {
+            MinimumHeightRequest = 48,
+            Padding = new Thickness(16, 8),
+            ColumnSpacing = 4
+        };
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
+
         headerGrid.Children.Add(arrow);
         Grid.SetColumn(nameLabel, 1);
         headerGrid.Children.Add(nameLabel);
+        Grid.SetColumn(woundIconGrid, 2);
+        headerGrid.Children.Add(woundIconGrid);
 
         headerGrid.GestureRecognizers.Add(new TapGestureRecognizer
         {
@@ -371,7 +498,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         return row;
     }
 
-    private View BuildUnitDetailContent(DeploymentUnitItem unit)
+    private VerticalStackLayout BuildUnitDetailContent(DeploymentUnitItem unit)
     {
         var container = new VerticalStackLayout
         {
@@ -539,10 +666,46 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
     // ── Navigation ───────────────────────────────────────────────────────────
 
-    private async void OnEndGameClicked(object sender, EventArgs e)
+    private async void OnEndGameClicked(object sender, EventArgs e) => await ConfirmAndEndGame();
+
+    private async void OnEndRoundButtonClicked(object sender, EventArgs e) => await ConfirmAndEndGame();
+
+    private async Task ConfirmAndEndGame()
     {
+        var confirmed = await DisplayAlert("End Game", "Are you sure you want to end the game?", "Yes", "No");
+        if (!confirmed) return;
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
         await Shell.Current.GoToAsync($"{nameof(ExperiencePage)}?companyFilePath={encodedPath}");
+    }
+
+    private void OnNextRoundClicked(object sender, EventArgs e)
+    {
+        _currentRound++;
+        RoundLabel.Text = $"Round {_currentRound}";
+        EndRoundButton.IsVisible = _currentRound >= 3;
+        NextRoundButton.IsVisible = _currentRound < 4;
+        RecalculateOrders();
+    }
+
+    private void RecalculateOrders()
+    {
+        int ltCount = 0, impCount = 0, irrCount = 0, regCount = 0;
+        foreach (var (unit, isLt, isImp, isIrr) in _unitTracker)
+        {
+            if (unit.WoundStateKey is not ("Healthy" or "Wounded" or "NwiDown")) continue;
+            if (isLt) ltCount++;
+            if (isImp) impCount++;
+            if (isIrr) irrCount++;
+            if (!isIrr) regCount++;
+        }
+        LtCountLabel.Text  = ltCount.ToString();
+        ImpCountLabel.Text = impCount.ToString();
+        IrrCountLabel.Text = irrCount.ToString();
+        RegCountLabel.Text = regCount.ToString();
+        LtGreyCountLabel.Text  = "0";
+        ImpGreyCountLabel.Text = "0";
+        IrrGreyCountLabel.Text = "0";
+        RegGreyCountLabel.Text = "0";
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
@@ -558,6 +721,19 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         characteristics
             .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries)
             .Any(s => s.Trim().Equals(keyword, StringComparison.OrdinalIgnoreCase));
+
+    private static bool HasSkill(string skills, string skillName) =>
+        skills.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+              .Any(s => s.Trim().Equals(skillName, StringComparison.OrdinalIgnoreCase));
+
+    private SKPicture? GetWoundPicture(string stateKey) => stateKey switch
+    {
+        "Healthy"                              => _woundHealthyPicture,
+        "Wounded"                              => _woundWoundedPicture,
+        "NwiDown"                              => _woundMadPicture,
+        "KnockedOut" or "KnockedOutBody2"      => _woundKoPicture,
+        _                                      => _woundDeadPicture
+    };
 
     private string ResolveSavedSkills(int sourceFactionId, SavedCompanyEntry entry)
     {

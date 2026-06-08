@@ -898,6 +898,136 @@
                     <Label Text=" (CC BY 3.0)" />
                 </FlexLayout>
             </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon31Canvas"
+                    WidthRequest="100"
+                    HeightRequest="100"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon31CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-knocked-out-face.svg knocked out face by Tim Martin from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounKnockedOutFaceAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon32Canvas"
+                    WidthRequest="100"
+                    HeightRequest="100"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon32CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-mad-face.svg mad face by Tim Martin from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounMadFaceAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon33Canvas"
+                    WidthRequest="100"
+                    HeightRequest="100"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon33CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-sad-face.svg sad face by Tim Martin from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounSadFaceAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon34Canvas"
+                    WidthRequest="100"
+                    HeightRequest="100"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon34CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-smiley-face.svg smiley face by Tim Martin from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounSmileyFaceAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <skia:SKCanvasView
+                    x:Name="AttributionIcon35Canvas"
+                    WidthRequest="100"
+                    HeightRequest="100"
+                    VerticalOptions="Start"
+                    PaintSurface="OnAttributionIcon35CanvasPaintSurface" />
+
+                <FlexLayout
+                    Grid.Column="1"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    AlignItems="Start">
+                    <Label Text="noun-gravestone.svg gravestone by Ahmad Faiz Shofiyyulloh from " />
+                    <Label
+                        Text="Noun Project"
+                        TextColor="#2563EB"
+                        TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNounGravestoneAttributionTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Text=" (CC BY 3.0)" />
+                </FlexLayout>
+            </Grid>
             </FlexLayout>
 
         </VerticalStackLayout>
