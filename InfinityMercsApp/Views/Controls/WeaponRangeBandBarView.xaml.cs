@@ -15,6 +15,14 @@ public partial class WeaponRangeBandBarView : ContentView
             null,
             propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
 
+    public static readonly BindableProperty ShowUnitsInInchesProperty =
+        BindableProperty.Create(
+            nameof(ShowUnitsInInches),
+            typeof(bool),
+            typeof(WeaponRangeBandBarView),
+            true,
+            propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
+
     public WeaponRangeBandBarView()
     {
         InitializeComponent();
@@ -24,6 +32,12 @@ public partial class WeaponRangeBandBarView : ContentView
     {
         get => (string?)GetValue(DistanceJsonProperty);
         set => SetValue(DistanceJsonProperty, value);
+    }
+
+    public bool ShowUnitsInInches
+    {
+        get => (bool)GetValue(ShowUnitsInInchesProperty);
+        set => SetValue(ShowUnitsInInchesProperty, value);
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -95,7 +109,7 @@ public partial class WeaponRangeBandBarView : ContentView
         for (int i = 0; i < boundaries.Count; i++)
         {
             var (bx, cm) = boundaries[i];
-            string label = CmToInches(cm) + "\"";
+            string label = FormatDistanceLabel(cm, ShowUnitsInInches);
 
             // Thin divider line through the full height at interior boundaries
             if (i > 0 && i < boundaries.Count - 1)
@@ -156,6 +170,10 @@ public partial class WeaponRangeBandBarView : ContentView
         };
     }
 
-    private static int CmToInches(int cm) =>
-        (int)Math.Round(cm / 2.5, MidpointRounding.AwayFromZero);
+    private static string FormatDistanceLabel(int cm, bool showUnitsInInches)
+    {
+        return showUnitsInInches
+            ? $"{(int)Math.Round(cm / 2.5, MidpointRounding.AwayFromZero)}\""
+            : $"{cm}cm";
+    }
 }

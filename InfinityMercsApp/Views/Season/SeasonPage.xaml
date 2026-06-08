@@ -8,6 +8,36 @@
              Title=""
              BackgroundColor="#111827">
 
+    <Shell.TitleView>
+        <Grid HorizontalOptions="Fill"
+              VerticalOptions="Fill"
+              Padding="4,0,12,0"
+              ColumnDefinitions="*,Auto"
+              ColumnSpacing="12">
+            <Label x:Name="SeasonTitleBarLabel"
+                   Grid.Column="0"
+                   Text="{Binding Source={x:Reference SeasonRoot}, Path=SeasonTitleBarText}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   VerticalTextAlignment="Center"
+                   HorizontalTextAlignment="Start"
+                   MaxLines="1"
+                   LineBreakMode="TailTruncation" />
+            <Label x:Name="SeasonResourcesTitleBarLabel"
+                   Grid.Column="1"
+                   Text="{Binding Source={x:Reference SeasonRoot}, Path=SeasonResourcesTitleBarText}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   FontAttributes="Bold"
+                   TextColor="#22C55E"
+                   VerticalTextAlignment="Center"
+                   HorizontalTextAlignment="End"
+                   HorizontalOptions="End"
+                   MaxLines="1"
+                   LineBreakMode="NoWrap" />
+        </Grid>
+    </Shell.TitleView>
+
     <Grid RowDefinitions="Auto,*,Auto">
 
         <Border Grid.Row="0"

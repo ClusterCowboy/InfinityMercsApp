@@ -69,6 +69,12 @@ public abstract class CompanySavedCompanyEntryBase
     [JsonPropertyName("Current MOV")]
     public string CurrentMov { get; init; } = "-";
 
+    [JsonPropertyName("CurrentMoveFirstCm")]
+    public int? CurrentMoveFirstCm { get; init; }
+
+    [JsonPropertyName("CurrentMoveSecondCm")]
+    public int? CurrentMoveSecondCm { get; init; }
+
     [JsonPropertyName("Current CC")]
     public string CurrentCc { get; init; } = "-";
 

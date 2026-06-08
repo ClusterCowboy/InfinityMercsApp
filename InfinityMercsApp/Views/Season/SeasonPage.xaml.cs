@@ -35,6 +35,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private readonly IArmyDataService? _armyDataService;
     private readonly IStoreProvider? _storeProvider;
     private readonly IMetadataProvider? _metadataProvider;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
     private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
 
@@ -81,9 +82,34 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private bool _hasSelectedProfileBaseNameHeading;
     private string _selectedUnitTypeHeading = string.Empty;
     private bool _hasSelectedUnitTypeHeading;
+    private bool _showUnitsInInches = true;
+    private string _seasonTitleBarText = "Season";
+    private string _seasonResourcesTitleBarText = "0 CR - 0 SWC";
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
+
+    public string SeasonTitleBarText
+    {
+        get => _seasonTitleBarText;
+        private set
+        {
+            if (_seasonTitleBarText == value) return;
+            _seasonTitleBarText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SeasonResourcesTitleBarText
+    {
+        get => _seasonResourcesTitleBarText;
+        private set
+        {
+            if (_seasonResourcesTitleBarText == value) return;
+            _seasonResourcesTitleBarText = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string SelectedCaptainNameHeading
     {
@@ -174,7 +200,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         FactionLogoCacheService? factionLogoCacheService = null,
         IArmyDataService? armyDataService = null,
         IStoreProvider? storeProvider = null,
-        IMetadataProvider? metadataProvider = null)
+        IMetadataProvider? metadataProvider = null,
+        IAppSettingsProvider? appSettingsProvider = null)
     {
         InitializeComponent();
         _viewerViewModel = viewerViewModel;
@@ -182,6 +209,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         _armyDataService = armyDataService;
         _storeProvider = storeProvider;
         _metadataProvider = metadataProvider;
+        _appSettingsProvider = appSettingsProvider;
+        ApplyGlobalDisplayUnitsPreference();
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;
@@ -204,6 +233,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             ? Uri.UnescapeDataString(seasonFileValue?.ToString() ?? string.Empty)
             : null;
 
+        await UpdateSeasonTitleBarLabelAsync();
         await LoadCompanyFromFileAsync(_companyFilePath);
     }
 
@@ -212,10 +242,16 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         base.OnAppearing();
         CaptureOriginalFontSizes();
         ApplyResponsiveFontSizes(Width);
+        var unitsPreferenceChanged = ApplyGlobalDisplayUnitsPreference();
+        await UpdateSeasonTitleBarLabelAsync();
         await LoadPlayRoundFlagsIconAsync();
         if (!_loadAttempted && !string.IsNullOrWhiteSpace(_companyFilePath))
         {
             await LoadCompanyFromFileAsync(_companyFilePath);
+        }
+        else if (unitsPreferenceChanged && _selectedCompanyUnit is not null)
+        {
+            await SelectCompanyUnitAsync(_selectedCompanyUnit);
         }
     }
 
@@ -268,6 +304,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
     private async Task LoadCompanyFromFileAsync(string? filePath)
     {
+        ApplyGlobalDisplayUnitsPreference();
         _loadAttempted = true;
         CompanyUnits.Clear();
         _loadedCaptainStats = new SavedImprovedCaptainStats();
@@ -305,6 +342,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     companyName,
                     payload.CompanyIdentifier ?? string.Empty,
                     filePath ?? string.Empty);
+                await UpdateSeasonTitleBarLabelAsync();
             }
 
             CompanyNameLabel.Text = companyName;
@@ -379,7 +417,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = savedCcWeapons,
                     SavedPeripheralNameHeading = entry.PeripheralNameHeading,
-                    UnitMov = entry.CurrentMov,
+                    UnitMov = SeasonDisplayUnitFormatter.FormatMoveValue(
+                        entry.CurrentMov,
+                        entry.CurrentMoveFirstCm,
+                        entry.CurrentMoveSecondCm,
+                        _showUnitsInInches),
                     UnitCc = entry.CurrentCc,
                     UnitBs = entry.CurrentBs,
                     UnitPh = entry.CurrentPh,
@@ -425,6 +467,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             return Task.CompletedTask;
         }
+
+        ApplyGlobalDisplayUnitsPreference();
 
         foreach (var unit in CompanyUnits)
         {
@@ -738,6 +782,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
         }
         uniqueSkills = NormalizeSkillsForDisplay(uniqueSkills);
+        uniqueEquipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(uniqueEquipment, _showUnitsInInches);
+        uniqueSkills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(uniqueSkills, _showUnitsInInches);
+        characteristics = SeasonDisplayUnitFormatter.ConvertExplicitDistances(characteristics, _showUnitsInInches);
         var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -1046,9 +1093,38 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             PopupContentArea.Children.Add(new WeaponDetailCardView
             {
                 Weapon = weapon,
+                ShowUnitsInInches = _showUnitsInInches,
                 Margin = new Thickness(0, 0, 0, 8)
             });
         }
+    }
+
+    public void UpdateSeasonTitleBarLabel(string? text)
+    {
+        SeasonTitleBarText = string.IsNullOrWhiteSpace(text) ? "Season" : text.Trim();
+    }
+
+    public void UpdateSeasonResourcesTitleBarLabel(string? text)
+    {
+        SeasonResourcesTitleBarText = string.IsNullOrWhiteSpace(text) ? "0 CR - 0 SWC" : text.Trim();
+    }
+
+    private async Task UpdateSeasonTitleBarLabelAsync()
+    {
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var currentRound = SeasonFileService.ResolveCurrentRound(seasonFile);
+        UpdateSeasonTitleBarLabel(currentRound <= 0
+            ? "Arming the Company"
+            : $"Round {currentRound} - Rest and Rearm");
+    }
+
+    private bool ApplyGlobalDisplayUnitsPreference()
+    {
+        var showUnitsInInches = SeasonDisplayUnitFormatter.GetShowUnitsInInches(_appSettingsProvider);
+        var changed = _showUnitsInInches != showUnitsInInches;
+        _showUnitsInInches = showUnitsInInches;
+        _viewerViewModel.ShowUnitsInInches = showUnitsInInches;
+        return changed;
     }
 
     private IReadOnlyList<Domain.Models.Metadata.Weapon> FindAllWeaponsByName(string name)

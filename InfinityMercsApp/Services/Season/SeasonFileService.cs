@@ -6,6 +6,11 @@ namespace InfinityMercsApp.Services.Season;
 
 internal static class SeasonFileService
 {
+    private static readonly JsonSerializerOptions ReadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private static readonly JsonSerializerOptions WriteOptions = new()
     {
         WriteIndented = true,
@@ -35,5 +40,36 @@ internal static class SeasonFileService
 
         await File.WriteAllTextAsync(filePath, JsonSerializer.Serialize(seasonFile, WriteOptions));
         return filePath;
+    }
+
+    internal static async Task<SeasonFile?> LoadSeasonFileAsync(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(filePath);
+            return JsonSerializer.Deserialize<SeasonFile>(json, ReadOptions);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SeasonFileService failed to load season file '{filePath}': {ex.Message}");
+            return null;
+        }
+    }
+
+    internal static int ResolveCurrentRound(SeasonFile? seasonFile)
+    {
+        var rounds = seasonFile?.Rounds ?? [];
+        if (rounds.Count == 0)
+        {
+            return 0;
+        }
+
+        var highestRoundIndex = rounds.Max(round => Math.Max(0, round.RoundIndex));
+        return highestRoundIndex > 0 ? highestRoundIndex : rounds.Count;
     }
 }

@@ -6,6 +6,7 @@ using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.StandardCompany;
+using InfinityMercsApp.Infrastructure.Providers;
 
 namespace InfinityMercsApp.Views.Season;
 
@@ -20,8 +21,10 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     private readonly IArmyDataService? _armyDataService;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private string _companyFilePath = string.Empty;
     private bool _loadAttempted;
+    private bool _showUnitsInInches = true;
     private DeploymentUnitItem? _selectedUnit;
 
     public ObservableCollection<DeploymentUnitItem> DeploymentUnits { get; } = [];
@@ -45,11 +48,14 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     public PlayModePage(
         IArmyDataService? armyDataService = null,
-        FactionLogoCacheService? factionLogoCacheService = null)
+        FactionLogoCacheService? factionLogoCacheService = null,
+        IAppSettingsProvider? appSettingsProvider = null)
     {
         InitializeComponent();
         _armyDataService = armyDataService;
         _factionLogoCacheService = factionLogoCacheService;
+        _appSettingsProvider = appSettingsProvider;
+        ApplyGlobalDisplayUnitsPreference();
         BindingContext = this;
         SelectUnitCommand = new Command<DeploymentUnitItem>(SelectUnit);
         TileStripPanCommand = new Command<object>(delta =>
@@ -72,7 +78,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!_loadAttempted && !string.IsNullOrWhiteSpace(_companyFilePath))
+        var unitsPreferenceChanged = ApplyGlobalDisplayUnitsPreference();
+        if ((!_loadAttempted || unitsPreferenceChanged) && !string.IsNullOrWhiteSpace(_companyFilePath))
         {
             await LoadCompanyFromFileAsync(_companyFilePath);
         }
@@ -80,6 +87,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     private async Task LoadCompanyFromFileAsync(string filePath)
     {
+        ApplyGlobalDisplayUnitsPreference();
         _loadAttempted = true;
         DeploymentUnits.Clear();
         SelectedUnit = null;
@@ -153,7 +161,11 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoSourceFactionId, logoSourceUnitId),
                     PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoSourceFactionId, logoSourceUnitId)
                         ?? $"SVGCache/units/{logoSourceFactionId}-{logoSourceUnitId}.svg",
-                    UnitMov = entry.CurrentMov,
+                    UnitMov = SeasonDisplayUnitFormatter.FormatMoveValue(
+                        entry.CurrentMov,
+                        entry.CurrentMoveFirstCm,
+                        entry.CurrentMoveSecondCm,
+                        _showUnitsInInches),
                     UnitCc = entry.CurrentCc,
                     UnitBs = entry.CurrentBs,
                     UnitPh = entry.CurrentPh,
@@ -163,8 +175,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     UnitVitality = entry.CurrentVitaOrStr,
                     UnitS = entry.CurrentS,
                     VitalityHeader = InferVitalityHeader(entry.UnitTypeCode),
-                    Equipment = equipment,
-                    Skills = skills,
+                    Equipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(equipment, _showUnitsInInches),
+                    Skills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(skills, _showUnitsInInches),
                     RangedWeapons = rangedWeapons,
                     MeleeWeapons = meleeWeapons
                 });
@@ -189,6 +201,14 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
             unit.IsSelected = ReferenceEquals(unit, item);
         }
         SelectedUnit = item;
+    }
+
+    private bool ApplyGlobalDisplayUnitsPreference()
+    {
+        var showUnitsInInches = SeasonDisplayUnitFormatter.GetShowUnitsInInches(_appSettingsProvider);
+        var changed = _showUnitsInInches != showUnitsInInches;
+        _showUnitsInInches = showUnitsInInches;
+        return changed;
     }
 
     private async void OnDeployClicked(object sender, EventArgs e)
