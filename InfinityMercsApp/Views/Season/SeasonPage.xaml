@@ -2,41 +2,100 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Season.SeasonPage"
              x:Name="SeasonRoot"
-             Title="Season"
+             Title=""
              BackgroundColor="#111827">
+
+    <Shell.TitleView>
+        <Grid HorizontalOptions="Fill"
+              VerticalOptions="Fill"
+              Padding="4,0,12,0"
+              ColumnDefinitions="*,Auto"
+              ColumnSpacing="12">
+            <Label x:Name="SeasonTitleBarLabel"
+                   Grid.Column="0"
+                   Text="{Binding Source={x:Reference SeasonRoot}, Path=SeasonTitleBarText}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   VerticalTextAlignment="Center"
+                   HorizontalTextAlignment="Start"
+                   MaxLines="1"
+                   LineBreakMode="TailTruncation" />
+            <Label x:Name="SeasonResourcesTitleBarLabel"
+                   Grid.Column="1"
+                   Text="{Binding Source={x:Reference SeasonRoot}, Path=SeasonResourcesTitleBarText}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   FontAttributes="Bold"
+                   TextColor="#22C55E"
+                   VerticalTextAlignment="Center"
+                   HorizontalTextAlignment="End"
+                   HorizontalOptions="End"
+                   MaxLines="1"
+                   LineBreakMode="NoWrap" />
+        </Grid>
+    </Shell.TitleView>
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Header -->
         <Border Grid.Row="0"
-                BackgroundColor="#1F2937"
+                BackgroundColor="#111827"
                 Stroke="#374151"
                 StrokeThickness="1"
-                Padding="16,12"
-                StrokeShape="Rectangle">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                StrokeShape="Rectangle"
+                Padding="10,8"
+                MinimumHeightRequest="92">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                <VerticalStackLayout Grid.Column="0"
+                                     Spacing="2"
+                                     VerticalOptions="Center"
+                                     HorizontalOptions="Fill">
                     <Label x:Name="CompanyNameLabel"
                            Text="Season"
                            FontSize="{DynamicResource FontSizeSubHeadline}"
                            FontAttributes="Bold"
-                           TextColor="White" />
+                           TextColor="White"
+                           MaxLines="1"
+                           LineBreakMode="TailTruncation" />
                     <Label x:Name="CompanyTypeLabel"
                            Text=""
                            FontSize="{DynamicResource FontSizeCaption}"
-                           TextColor="#9CA3AF" />
+                           TextColor="#9CA3AF"
+                           MaxLines="1"
+                           LineBreakMode="TailTruncation" />
                 </VerticalStackLayout>
-
-                <Button Grid.Column="1"
-                        Text="PLAY ROUND"
+                <Border Grid.Column="1"
+                        x:Name="PlayRoundButton"
                         BackgroundColor="#22C55E"
-                        TextColor="Black"
-                        BorderColor="#22C55E"
-                        FontAttributes="Bold"
-                        Clicked="OnPlayRoundClicked"
-                        VerticalOptions="Center" />
+                        Stroke="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 6"
+                        Padding="10,5"
+                        WidthRequest="112"
+                        MinimumWidthRequest="112"
+                        HeightRequest="66"
+                        VerticalOptions="Center"
+                        SizeChanged="OnPlayRoundButtonSizeChanged">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnPlayRoundClicked" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="1" HorizontalOptions="Center">
+                        <skia:SKCanvasView x:Name="PlayRoundFlagsCanvas"
+                                           WidthRequest="36" HeightRequest="36"
+                                           HorizontalOptions="Center"
+                                           PaintSurface="OnPlayRoundFlagsCanvasPaintSurface" />
+                        <Label x:Name="PlayRoundLabel"
+                               Text="PLAY ROUND"
+                               TextColor="Black"
+                               FontAttributes="Bold"
+                               FontSize="{DynamicResource FontSizeCaption}"
+                               HorizontalTextAlignment="Center"
+                               MaxLines="1"
+                               LineBreakMode="NoWrap" />
+                    </VerticalStackLayout>
+                </Border>
             </Grid>
         </Border>
 
@@ -50,27 +109,44 @@
                   RowDefinitions="Auto,*"
                   RowSpacing="6">
 
-                <!-- Horizontal unit strip -->
-                <ScrollView x:Name="UnitStripScrollView"
-                            Grid.Row="0"
-                            Orientation="Horizontal"
-                            HorizontalScrollBarVisibility="Never">
-                    <ScrollView.GestureRecognizers>
-                        <PanGestureRecognizer PanUpdated="OnUnitStripPanUpdated" />
-                    </ScrollView.GestureRecognizers>
-                    <HorizontalStackLayout
-                        BindableLayout.ItemsSource="{Binding Source={x:Reference SeasonRoot}, Path=CompanyUnits}"
-                        Spacing="8"
-                        Padding="0,0,2,0">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate>
-                                <controls:CompanyViewerUnitTileView
-                                    ItemTappedCommand="{Binding Source={x:Reference SeasonRoot}, Path=SelectCompanyUnitCommand}"
-                                    ItemTappedCommandParameter="{Binding .}" />
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </HorizontalStackLayout>
-                </ScrollView>
+                <!-- Unit selector (combo box) -->
+                <Border Grid.Row="0"
+                        x:Name="UnitPickerHeader"
+                        BackgroundColor="#1F2937"
+                        Stroke="#374151"
+                        StrokeThickness="1"
+                        Padding="8,6">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnUnitPickerTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="40,*,20" ColumnSpacing="8" VerticalOptions="Center">
+                        <Grid Grid.Column="0" WidthRequest="36" HeightRequest="36" HorizontalOptions="Center" VerticalOptions="Center">
+                            <skia:SKCanvasView x:Name="PickerHeaderLogoCanvas"
+                                               PaintSurface="OnPickerHeaderLogoCanvasPaintSurface" />
+                            <skia:SKCanvasView x:Name="PickerHeaderLtCanvas"
+                                               WidthRequest="14" HeightRequest="14"
+                                               HorizontalOptions="Start" VerticalOptions="Start"
+                                               IsVisible="False"
+                                               PaintSurface="OnPickerHeaderLtCanvasPaintSurface" />
+                        </Grid>
+                        <Label x:Name="PickerHeaderNameLabel"
+                               Grid.Column="1"
+                               Text="Select unit..."
+                               TextColor="White"
+                               FontSize="{DynamicResource FontSizeBody}"
+                               VerticalTextAlignment="Center"
+                               LineBreakMode="TailTruncation" />
+                        <Label Grid.Column="2"
+                               Text="▼"
+                               TextColor="#9CA3AF"
+                               FontSize="{DynamicResource FontSizeCaption}"
+                               VerticalTextAlignment="Center"
+                               HorizontalTextAlignment="Center" />
+                    </Grid>
+                </Border>
 
                 <!-- Selected unit details -->
                 <Border Grid.Row="1" StrokeThickness="0" Padding="0,4,0,0">
@@ -122,6 +198,8 @@
                             UnitS="{Binding UnitS}"
                             UnitAva="{Binding UnitAva}"
                             ShowConfigurationsSection="False"
+                            ShowUnitName="False"
+                            ShowAva="False"
                             EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                             SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 
@@ -144,6 +222,36 @@
 
                     </Grid>
                 </Border>
+
+                <!-- Unit picker dropdown list -->
+                <Border Grid.Row="1"
+                        x:Name="UnitPickerDropdown"
+                        IsVisible="False"
+                        ZIndex="50"
+                        VerticalOptions="Start"
+                        BackgroundColor="#1F2937"
+                        Stroke="#374151"
+                        StrokeThickness="1"
+                        Padding="0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <ScrollView MaximumHeightRequest="320">
+                        <VerticalStackLayout x:Name="UnitPickerDropdownStack" Spacing="0" />
+                    </ScrollView>
+                </Border>
+
+                <!-- Tap-outside-to-dismiss backdrop -->
+                <Grid Grid.Row="1"
+                      x:Name="UnitPickerDismissOverlay"
+                      IsVisible="False"
+                      ZIndex="49"
+                      BackgroundColor="Transparent"
+                      InputTransparent="False">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnUnitPickerDismissTapped" />
+                    </Grid.GestureRecognizers>
+                </Grid>
             </Grid>
 
             <!-- Inventory Tab (stub) -->

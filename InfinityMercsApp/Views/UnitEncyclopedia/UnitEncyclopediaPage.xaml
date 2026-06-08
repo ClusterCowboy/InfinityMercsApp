@@ -203,16 +203,7 @@
                     UnitS="{Binding UnitS}"
                     UnitAva="{Binding UnitAva}"
                     EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
-                    SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
-                <Grid Grid.Row="1" IsVisible="False" HeightRequest="0" WidthRequest="0">
-                    <skia:SKCanvasView
-                        x:Name="TopIconRowCanvas"
-                        PaintSurface="OnTopIconRowCanvasPaintSurface" />
-                    <skia:SKCanvasView
-                        x:Name="BottomIconRowCanvas"
-                        PaintSurface="OnBottomIconRowCanvasPaintSurface" />
-                </Grid>
-            </Grid>
+                    SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />            </Grid>
         </Border>
 
         <Grid

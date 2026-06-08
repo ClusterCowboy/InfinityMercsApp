@@ -14,6 +14,8 @@ using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Infrastructure.Providers;
 using SkiaSharp;
+using SkiaSharp.Views.Maui;
+using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
 
 namespace InfinityMercsApp.Views.Season;
@@ -33,10 +35,27 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private readonly IArmyDataService? _armyDataService;
     private readonly IStoreProvider? _storeProvider;
     private readonly IMetadataProvider? _metadataProvider;
+    private readonly IAppSettingsProvider? _appSettingsProvider;
     private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
     private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
 
-    private double _unitStripPanLastTotalX;
+    private SKPicture? _pickerHeaderLogoPicture;
+    private SKPicture? _playRoundFlagsPicture;
+    private bool _unitPickerIsOpen;
+
+    // Responsive font scaling
+    private static readonly string[] ScaledFontKeys =
+        ["FontSizeCaption", "FontSizeBody", "FontSizeSectionHeader", "FontSizeSubHeadline", "FontSizeTitleSmall"];
+    private static readonly Dictionary<string, double> DesktopBaseFontSizes = new()
+    {
+        ["FontSizeCaption"]      = 12.0,
+        ["FontSizeBody"]         = 14.0,
+        ["FontSizeSectionHeader"]= 18.0,
+        ["FontSizeSubHeadline"]  = 24.0,
+        ["FontSizeTitleSmall"]   = 22.0,
+    };
+    private static readonly Dictionary<string, object> OriginalFontResources = new();
+    private static double _lastFontScaleWidth = -1;
     private SKPicture? _regularOrderIconPicture;
     private SKPicture? _irregularOrderIconPicture;
     private SKPicture? _lieutenantOrderIconPicture;
@@ -63,9 +82,34 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private bool _hasSelectedProfileBaseNameHeading;
     private string _selectedUnitTypeHeading = string.Empty;
     private bool _hasSelectedUnitTypeHeading;
+    private bool _showUnitsInInches = true;
+    private string _seasonTitleBarText = "Season";
+    private string _seasonResourcesTitleBarText = "0 CR - 0 SWC";
 
     public ObservableCollection<CompanyViewerUnitListItem> CompanyUnits { get; } = [];
     public ICommand SelectCompanyUnitCommand { get; }
+
+    public string SeasonTitleBarText
+    {
+        get => _seasonTitleBarText;
+        private set
+        {
+            if (_seasonTitleBarText == value) return;
+            _seasonTitleBarText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SeasonResourcesTitleBarText
+    {
+        get => _seasonResourcesTitleBarText;
+        private set
+        {
+            if (_seasonResourcesTitleBarText == value) return;
+            _seasonResourcesTitleBarText = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string SelectedCaptainNameHeading
     {
@@ -156,7 +200,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         FactionLogoCacheService? factionLogoCacheService = null,
         IArmyDataService? armyDataService = null,
         IStoreProvider? storeProvider = null,
-        IMetadataProvider? metadataProvider = null)
+        IMetadataProvider? metadataProvider = null,
+        IAppSettingsProvider? appSettingsProvider = null)
     {
         InitializeComponent();
         _viewerViewModel = viewerViewModel;
@@ -164,6 +209,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         _armyDataService = armyDataService;
         _storeProvider = storeProvider;
         _metadataProvider = metadataProvider;
+        _appSettingsProvider = appSettingsProvider;
+        ApplyGlobalDisplayUnitsPreference();
         BindingContext = _viewerViewModel;
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;
@@ -186,20 +233,78 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             ? Uri.UnescapeDataString(seasonFileValue?.ToString() ?? string.Empty)
             : null;
 
+        await UpdateSeasonTitleBarLabelAsync();
         await LoadCompanyFromFileAsync(_companyFilePath);
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        CaptureOriginalFontSizes();
+        ApplyResponsiveFontSizes(Width);
+        var unitsPreferenceChanged = ApplyGlobalDisplayUnitsPreference();
+        await UpdateSeasonTitleBarLabelAsync();
+        await LoadPlayRoundFlagsIconAsync();
         if (!_loadAttempted && !string.IsNullOrWhiteSpace(_companyFilePath))
         {
             await LoadCompanyFromFileAsync(_companyFilePath);
         }
+        else if (unitsPreferenceChanged && _selectedCompanyUnit is not null)
+        {
+            await SelectCompanyUnitAsync(_selectedCompanyUnit);
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        RestoreOriginalFontSizes();
+        _lastFontScaleWidth = -1;
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+        if (width > 0)
+            ApplyResponsiveFontSizes(width);
+    }
+
+    private static void CaptureOriginalFontSizes()
+    {
+        if (OriginalFontResources.Count > 0) return;
+        var resources = Application.Current?.Resources;
+        if (resources is null) return;
+        foreach (var key in ScaledFontKeys)
+        {
+            if (resources.TryGetValue(key, out var value))
+                OriginalFontResources[key] = value;
+        }
+    }
+
+    private static void RestoreOriginalFontSizes()
+    {
+        var resources = Application.Current?.Resources;
+        if (resources is null) return;
+        foreach (var (key, value) in OriginalFontResources)
+            resources[key] = value;
+    }
+
+    private static void ApplyResponsiveFontSizes(double width)
+    {
+        if (width <= 0 || OriginalFontResources.Count == 0) return;
+        if (Math.Abs(width - _lastFontScaleWidth) < 20) return;
+        _lastFontScaleWidth = width;
+
+        var scale = width >= 1000 ? 1.35 : width >= 700 ? 1.2 : width >= 500 ? 1.1 : 1.0;
+        var resources = Application.Current?.Resources;
+        if (resources is null) return;
+        foreach (var (key, baseSize) in DesktopBaseFontSizes)
+            resources[key] = Math.Round(baseSize * scale, 1);
     }
 
     private async Task LoadCompanyFromFileAsync(string? filePath)
     {
+        ApplyGlobalDisplayUnitsPreference();
         _loadAttempted = true;
         CompanyUnits.Clear();
         _loadedCaptainStats = new SavedImprovedCaptainStats();
@@ -237,6 +342,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     companyName,
                     payload.CompanyIdentifier ?? string.Empty,
                     filePath ?? string.Empty);
+                await UpdateSeasonTitleBarLabelAsync();
             }
 
             CompanyNameLabel.Text = companyName;
@@ -311,7 +417,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     SavedRangedWeapons = savedRangedWeapons,
                     SavedCcWeapons = savedCcWeapons,
                     SavedPeripheralNameHeading = entry.PeripheralNameHeading,
-                    UnitMov = entry.CurrentMov,
+                    UnitMov = SeasonDisplayUnitFormatter.FormatMoveValue(
+                        entry.CurrentMov,
+                        entry.CurrentMoveFirstCm,
+                        entry.CurrentMoveSecondCm,
+                        _showUnitsInInches),
                     UnitCc = entry.CurrentCc,
                     UnitBs = entry.CurrentBs,
                     UnitPh = entry.CurrentPh,
@@ -330,6 +440,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 });
             }
 
+            BuildUnitPickerDropdown();
             if (CompanyUnits.Count > 0)
             {
                 await SelectCompanyUnitAsync(CompanyUnits[0]);
@@ -356,6 +467,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             return Task.CompletedTask;
         }
+
+        ApplyGlobalDisplayUnitsPreference();
 
         foreach (var unit in CompanyUnits)
         {
@@ -399,6 +512,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             mergedProfile.UniqueEquipment,
             mergedProfile.UniqueSkills);
 
+        UpdatePickerHeader(item);
         SelectedCaptainNameHeading = item.Name;
         var baseHeading = string.IsNullOrWhiteSpace(item.BaseUnitName)
             ? (string.IsNullOrWhiteSpace(mergedProfile.Name) ? item.Name : mergedProfile.Name)
@@ -668,6 +782,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             uniqueSkills = NormalizeLieutenantOrderEntries(uniqueSkills);
         }
         uniqueSkills = NormalizeSkillsForDisplay(uniqueSkills);
+        uniqueEquipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(uniqueEquipment, _showUnitsInInches);
+        uniqueSkills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(uniqueSkills, _showUnitsInInches);
+        characteristics = SeasonDisplayUnitFormatter.ConvertExplicitDistances(characteristics, _showUnitsInInches);
         var keepLoadedRangedFormatting = string.Equals(loadedProfile?.RangedWeapons?.Trim(), rangedWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedMeleeFormatting = string.Equals(loadedProfile?.MeleeWeapons?.Trim(), meleeWeapons.Trim(), StringComparison.OrdinalIgnoreCase);
         var keepLoadedEquipmentFormatting = string.Equals(loadedProfile?.UniqueEquipment?.Trim(), uniqueEquipment.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -976,9 +1093,38 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             PopupContentArea.Children.Add(new WeaponDetailCardView
             {
                 Weapon = weapon,
+                ShowUnitsInInches = _showUnitsInInches,
                 Margin = new Thickness(0, 0, 0, 8)
             });
         }
+    }
+
+    public void UpdateSeasonTitleBarLabel(string? text)
+    {
+        SeasonTitleBarText = string.IsNullOrWhiteSpace(text) ? "Season" : text.Trim();
+    }
+
+    public void UpdateSeasonResourcesTitleBarLabel(string? text)
+    {
+        SeasonResourcesTitleBarText = string.IsNullOrWhiteSpace(text) ? "0 CR - 0 SWC" : text.Trim();
+    }
+
+    private async Task UpdateSeasonTitleBarLabelAsync()
+    {
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var currentRound = SeasonFileService.ResolveCurrentRound(seasonFile);
+        UpdateSeasonTitleBarLabel(currentRound <= 0
+            ? "Arming the Company"
+            : $"Round {currentRound} - Rest and Rearm");
+    }
+
+    private bool ApplyGlobalDisplayUnitsPreference()
+    {
+        var showUnitsInInches = SeasonDisplayUnitFormatter.GetShowUnitsInInches(_appSettingsProvider);
+        var changed = _showUnitsInInches != showUnitsInInches;
+        _showUnitsInInches = showUnitsInInches;
+        _viewerViewModel.ShowUnitsInInches = showUnitsInInches;
+        return changed;
     }
 
     private IReadOnlyList<Domain.Models.Metadata.Weapon> FindAllWeaponsByName(string name)
@@ -1764,25 +1910,136 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         MarketplacePopupOverlay.IsVisible = false;
     }
 
-    private async void OnUnitStripPanUpdated(object? sender, PanUpdatedEventArgs e)
+    private static void DrawPictureOnCanvas(SKPaintSurfaceEventArgs e, SKPicture? picture)
     {
-        switch (e.StatusType)
-        {
-            case GestureStatus.Started:
-                _unitStripPanLastTotalX = 0d;
-                break;
-            case GestureStatus.Running:
-                var deltaX = e.TotalX - _unitStripPanLastTotalX;
-                _unitStripPanLastTotalX = e.TotalX;
-                var targetX = Math.Max(0d, UnitStripScrollView.ScrollX - deltaX);
-                await UnitStripScrollView.ScrollToAsync(targetX, 0d, false);
-                break;
-            case GestureStatus.Completed:
-            case GestureStatus.Canceled:
-                _unitStripPanLastTotalX = 0d;
-                break;
-        }
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        if (picture is null) return;
+        var bounds = picture.CullRect;
+        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
+        var x = (e.Info.Width - bounds.Width * scale) / 2f;
+        var y = (e.Info.Height - bounds.Height * scale) / 2f;
+        canvas.Translate(x, y);
+        canvas.Scale(scale);
+        canvas.DrawPicture(picture);
     }
+
+    private void BuildUnitPickerDropdown()
+    {
+        UnitPickerDropdownStack.Children.Clear();
+        foreach (var unit in CompanyUnits)
+            UnitPickerDropdownStack.Children.Add(BuildUnitPickerItem(unit));
+    }
+
+    private View BuildUnitPickerItem(CompanyViewerUnitListItem unit)
+    {
+        SKPicture? logoPicture = null;
+
+        var logoCanvas = new SKCanvasView { WidthRequest = 36, HeightRequest = 36 };
+        logoCanvas.PaintSurface += (_, e) => DrawPictureOnCanvas(e, logoPicture);
+        _ = LoadAndBindPickerLogoAsync(unit, pic => { logoPicture = pic; logoCanvas.InvalidateSurface(); });
+
+        var logoGrid = new Grid { WidthRequest = 36, HeightRequest = 36 };
+        logoGrid.Children.Add(logoCanvas);
+
+        if (unit.IsLieutenant)
+        {
+            var ltCanvas = new SKCanvasView
+            {
+                WidthRequest = 14,
+                HeightRequest = 14,
+                HorizontalOptions = LayoutOptions.Start,
+                VerticalOptions = LayoutOptions.Start
+            };
+            ltCanvas.PaintSurface += (_, e) => DrawPictureOnCanvas(e, _lieutenantOrderIconPicture);
+            logoGrid.Children.Add(ltCanvas);
+        }
+
+        var nameLabel = new Label
+        {
+            Text = unit.Name,
+            TextColor = Colors.White,
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+        Grid.SetColumn(nameLabel, 1);
+
+        var rowGrid = new Grid { MinimumHeightRequest = 48, Padding = new Thickness(10, 6) };
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        rowGrid.Children.Add(logoGrid);
+        rowGrid.Children.Add(nameLabel);
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => { _ = SelectCompanyUnitAsync(unit); CloseUnitPicker(); };
+        rowGrid.GestureRecognizers.Add(tap);
+
+        var separator = new BoxView { HeightRequest = 1, Color = Color.FromArgb("#374151") };
+        var item = new VerticalStackLayout { Spacing = 0 };
+        item.Children.Add(rowGrid);
+        item.Children.Add(separator);
+        return item;
+    }
+
+    private static async Task LoadAndBindPickerLogoAsync(CompanyViewerUnitListItem unit, Action<SKPicture?> onLoaded)
+    {
+        try
+        {
+            var stream = await OpenBestLogoStreamAsync(unit);
+            if (stream is null) { onLoaded(null); return; }
+            await using (stream)
+            {
+                var svg = new SKSvg();
+                onLoaded(svg.Load(stream));
+            }
+        }
+        catch { onLoaded(null); }
+    }
+
+    private void UpdatePickerHeader(CompanyViewerUnitListItem? unit)
+    {
+        if (unit is null)
+        {
+            PickerHeaderNameLabel.Text = "Select unit...";
+            _pickerHeaderLogoPicture = null;
+            PickerHeaderLogoCanvas.InvalidateSurface();
+            PickerHeaderLtCanvas.IsVisible = false;
+            return;
+        }
+
+        PickerHeaderNameLabel.Text = unit.Name;
+        PickerHeaderLtCanvas.IsVisible = unit.IsLieutenant;
+        PickerHeaderLtCanvas.InvalidateSurface();
+        _ = LoadAndBindPickerLogoAsync(unit, pic => { _pickerHeaderLogoPicture = pic; PickerHeaderLogoCanvas.InvalidateSurface(); });
+    }
+
+    private void OnPickerHeaderLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+        => DrawPictureOnCanvas(e, _pickerHeaderLogoPicture);
+
+    private void OnPickerHeaderLtCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+        => DrawPictureOnCanvas(e, _lieutenantOrderIconPicture);
+
+    private void OnUnitPickerTapped(object? sender, TappedEventArgs e)
+    {
+        if (_unitPickerIsOpen) CloseUnitPicker(); else OpenUnitPicker();
+    }
+
+    private void OpenUnitPicker()
+    {
+        _unitPickerIsOpen = true;
+        UnitPickerDropdown.IsVisible = true;
+        UnitPickerDismissOverlay.IsVisible = true;
+    }
+
+    private void CloseUnitPicker()
+    {
+        _unitPickerIsOpen = false;
+        UnitPickerDropdown.IsVisible = false;
+        UnitPickerDismissOverlay.IsVisible = false;
+    }
+
+    private void OnUnitPickerDismissTapped(object? sender, TappedEventArgs e) => CloseUnitPicker();
 
     private void OnTeamTabClicked(object sender, EventArgs e) => SetActiveTab(0);
     private void OnInventoryTabClicked(object sender, EventArgs e) => SetActiveTab(1);
@@ -1803,9 +2060,33 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         MarketplaceTabButton.FontAttributes = index == 2 ? FontAttributes.Bold : FontAttributes.None;
     }
 
-    private async void OnPlayRoundClicked(object sender, EventArgs e)
+    private async void OnPlayRoundClicked(object? sender, EventArgs e)
     {
         var encodedPath = Uri.EscapeDataString(_companyFilePath ?? string.Empty);
         await Shell.Current.GoToAsync($"{nameof(PlayModePage)}?companyFilePath={encodedPath}");
+    }
+
+    private async Task LoadPlayRoundFlagsIconAsync()
+    {
+        if (_playRoundFlagsPicture is not null) return;
+        try
+        {
+            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-flags.svg");
+            var svg = new SKSvg();
+            _playRoundFlagsPicture = svg.Load(stream);
+            PlayRoundFlagsCanvas.InvalidateSurface();
+        }
+        catch
+        {
+            // Icon unavailable — button still functional without it.
+        }
+    }
+
+    private void OnPlayRoundFlagsCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+        => DrawPictureOnCanvas(e, _playRoundFlagsPicture);
+
+    private void OnPlayRoundButtonSizeChanged(object? sender, EventArgs e)
+    {
+        PlayRoundLabel.IsVisible = true;
     }
 }

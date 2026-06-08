@@ -188,6 +188,13 @@ public partial class UnitDisplayConfigurationsView : ContentView
             typeof(UnitDisplayConfigurationsView),
             true,
             propertyChanged: OnShowConfigurationsSectionChanged);
+    public static readonly BindableProperty ShowUnitNameProperty =
+        BindableProperty.Create(nameof(ShowUnitName), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
+    public static readonly BindableProperty ShowAvaProperty =
+        BindableProperty.Create(nameof(ShowAva), typeof(bool), typeof(UnitDisplayConfigurationsView), true,
+            propertyChanged: OnShowAvaChanged);
+    public static readonly BindableProperty StatFontSizeProperty =
+        BindableProperty.Create(nameof(StatFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
 
     public string UnitMov
     {
@@ -571,6 +578,24 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         get => (bool)GetValue(ShowConfigurationsSectionProperty);
         set => SetValue(ShowConfigurationsSectionProperty, value);
+    }
+
+    public bool ShowUnitName
+    {
+        get => (bool)GetValue(ShowUnitNameProperty);
+        set => SetValue(ShowUnitNameProperty, value);
+    }
+
+    public bool ShowAva
+    {
+        get => (bool)GetValue(ShowAvaProperty);
+        set => SetValue(ShowAvaProperty, value);
+    }
+
+    public double StatFontSize
+    {
+        get => (double)GetValue(StatFontSizeProperty);
+        set => SetValue(StatFontSizeProperty, value);
     }
 
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
@@ -1050,6 +1075,35 @@ public partial class UnitDisplayConfigurationsView : ContentView
         view.OnPropertyChanged(nameof(HasAnyBottomHeaderIcons));
         view.OnPropertyChanged(nameof(HasAnyHeaderIcons));
         view.InvalidateHeaderIconsCanvas();
+    }
+
+    private static void OnShowAvaChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not UnitDisplayConfigurationsView view) return;
+        var show = (bool)newValue;
+        var colWidth = show ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        view.MainStatHeadersGrid.ColumnDefinitions[9].Width = colWidth;
+        view.MainStatValuesGrid.ColumnDefinitions[9].Width = colWidth;
+        view.PeripheralStatHeadersGrid.ColumnDefinitions[9].Width = colWidth;
+        view.PeripheralStatValuesGrid.ColumnDefinitions[9].Width = colWidth;
+    }
+
+    private void OnStatHeadersBorderSizeChanged(object? sender, EventArgs e)
+    {
+        if (sender is not View view || view.Height <= 0 || view.Width <= 0) return;
+
+        // Height constraint: labels should fill the row without overflowing vertically.
+        var fontFromHeight = (view.Height - 4) * 0.75;
+
+        // Width constraint: "VITA" / "ARM" are the widest headers (4 bold chars).
+        // Bold character width is roughly 0.65× the font size, so 4 chars ≈ 2.6× font size.
+        // ColumnSpacing=6 with 9 or 10 columns, Border padding=8 each side.
+        var numCols = ShowAva ? 10 : 9;
+        var colSpacing = 6 * (numCols - 1);
+        var colWidth = (view.Width - 16 - colSpacing) / numCols;
+        var fontFromWidth = colWidth / 2.6;
+
+        StatFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, fontFromWidth), 1));
     }
 
     private static void OnShowConfigurationsSectionChanged(BindableObject bindable, object oldValue, object newValue)

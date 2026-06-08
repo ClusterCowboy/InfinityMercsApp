@@ -20,4 +20,3 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(Views.Season.LoadSeasonPage), typeof(Views.Season.LoadSeasonPage));
     }
 }
-

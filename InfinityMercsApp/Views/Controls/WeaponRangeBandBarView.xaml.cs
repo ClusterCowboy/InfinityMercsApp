@@ -15,6 +15,31 @@ public partial class WeaponRangeBandBarView : ContentView
             null,
             propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
 
+    public static readonly BindableProperty ShowUnitsInInchesProperty =
+        BindableProperty.Create(
+            nameof(ShowUnitsInInches),
+            typeof(bool),
+            typeof(WeaponRangeBandBarView),
+            true,
+            propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
+
+    public static readonly BindableProperty BarHeightRequestProperty =
+        BindableProperty.Create(
+            nameof(BarHeightRequest),
+            typeof(double),
+            typeof(WeaponRangeBandBarView),
+            88.0,
+            propertyChanged: (bindable, _, newVal) =>
+                ((WeaponRangeBandBarView)bindable).Canvas.HeightRequest = (double)newVal);
+
+    public static readonly BindableProperty XVisorActiveProperty =
+        BindableProperty.Create(
+            nameof(XVisorActive),
+            typeof(bool),
+            typeof(WeaponRangeBandBarView),
+            false,
+            propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
+
     public WeaponRangeBandBarView()
     {
         InitializeComponent();
@@ -24,6 +49,24 @@ public partial class WeaponRangeBandBarView : ContentView
     {
         get => (string?)GetValue(DistanceJsonProperty);
         set => SetValue(DistanceJsonProperty, value);
+    }
+
+    public bool ShowUnitsInInches
+    {
+        get => (bool)GetValue(ShowUnitsInInchesProperty);
+        set => SetValue(ShowUnitsInInchesProperty, value);
+    }
+
+    public double BarHeightRequest
+    {
+        get => (double)GetValue(BarHeightRequestProperty);
+        set => SetValue(BarHeightRequestProperty, value);
+    }
+
+    public bool XVisorActive
+    {
+        get => (bool)GetValue(XVisorActiveProperty);
+        set => SetValue(XVisorActiveProperty, value);
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -73,13 +116,14 @@ public partial class WeaponRangeBandBarView : ContentView
             var band = bands[i];
             float bandWidth = (band.RangeEnd - band.RangeStart) / totalRange * canvasWidth;
 
-            fillPaint.Color = GetBandColor(band.Mod);
+            var displayMod = ApplyXVisorMod(band.Mod, XVisorActive);
+            fillPaint.Color = GetBandColor(displayMod);
             canvas.DrawRect(new SKRect(x, 0, x + bandWidth, coloredHeight), fillPaint);
 
             // Modifier text centered in the colored area
             float centerX = x + bandWidth / 2f;
             float centerY = coloredHeight / 2f + modFont.Size * 0.38f;
-            canvas.DrawText(band.Mod, centerX, centerY, SKTextAlign.Center, modFont, modPaint);
+            canvas.DrawText(displayMod, centerX, centerY, SKTextAlign.Center, modFont, modPaint);
 
             x += bandWidth;
             boundaries.Add((x, band.RangeEnd));
@@ -95,7 +139,7 @@ public partial class WeaponRangeBandBarView : ContentView
         for (int i = 0; i < boundaries.Count; i++)
         {
             var (bx, cm) = boundaries[i];
-            string label = CmToInches(cm) + "\"";
+            string label = FormatDistanceLabel(cm, ShowUnitsInInches);
 
             // Thin divider line through the full height at interior boundaries
             if (i > 0 && i < boundaries.Count - 1)
@@ -142,6 +186,12 @@ public partial class WeaponRangeBandBarView : ContentView
         }
     }
 
+    private static string ApplyXVisorMod(string mod, bool xVisorActive)
+    {
+        if (!xVisorActive || !int.TryParse(mod, out var val) || val >= 0) return mod;
+        return Math.Min(0, val + 3).ToString();
+    }
+
     private static SKColor GetBandColor(string mod)
     {
         if (!int.TryParse(mod, out int value))
@@ -156,6 +206,10 @@ public partial class WeaponRangeBandBarView : ContentView
         };
     }
 
-    private static int CmToInches(int cm) =>
-        (int)Math.Round(cm / 2.5, MidpointRounding.AwayFromZero);
+    private static string FormatDistanceLabel(int cm, bool showUnitsInInches)
+    {
+        return showUnitsInInches
+            ? $"{(int)Math.Round(cm / 2.5, MidpointRounding.AwayFromZero)}\""
+            : $"{cm}cm";
+    }
 }

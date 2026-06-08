@@ -18,11 +18,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 {
     private const int TagCompanyFactionId = 2003;
     private const string TagCompanyFallbackIconPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
-    private const int MaxIconsPerRow = 6;
-    private const float IconSize = 75f;
-    private const float IconGap = 20f;
-    private const float RightPadding = 24f;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -248,12 +243,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         SelectCompanyUnitCommand = new Command<CompanyViewerUnitListItem>(item => _ = SelectCompanyUnitAsync(item));
         _viewerViewModel.PropertyChanged += OnViewerViewModelPropertyChanged;
 
-        var topTap = new TapGestureRecognizer();
-        topTap.Tapped += OnTopIconRowTapped;
-        TopIconRowCanvas.GestureRecognizers.Add(topTap);
-        var bottomTap = new TapGestureRecognizer();
-        bottomTap.Tapped += OnBottomIconRowTapped;
-        BottomIconRowCanvas.GestureRecognizers.Add(bottomTap);
         var saveNameTap = new TapGestureRecognizer();
         saveNameTap.Tapped += OnSelectedNameSaveTapped;
         SelectedNameSaveCanvas.GestureRecognizers.Add(saveNameTap);
@@ -518,7 +507,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         SelectedNameEntry.Text = item.Name;
 
         UpdateCurrentWeaponsDisplay();
-        TopIconRowCanvas.InvalidateSurface();
         _ = LoadSelectedCompanyUnitLogoAsync(item);
         return Task.CompletedTask;
     }
@@ -1074,8 +1062,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
             Console.Error.WriteLine($"CompanyViewerPage hackable icon load failed: {ex.Message}");
         }
 
-        TopIconRowCanvas.InvalidateSurface();
-        BottomIconRowCanvas.InvalidateSurface();
         UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
         UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
         UnitDisplayConfigurationsView.LieutenantIconPicture = _lieutenantOrderIconPicture;
@@ -1137,21 +1123,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
 
     private void OnViewerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
-            or nameof(ViewerViewModel.ShowIrregularOrderIcon)
-            or nameof(ViewerViewModel.ShowImpetuousIcon)
-            or nameof(ViewerViewModel.ShowTacticalAwarenessIcon))
-        {
-            TopIconRowCanvas.InvalidateSurface();
-        }
-
-        if (e.PropertyName is nameof(ViewerViewModel.ShowCubeIcon)
-            or nameof(ViewerViewModel.ShowCube2Icon)
-            or nameof(ViewerViewModel.ShowHackableIcon))
-        {
-            BottomIconRowCanvas.InvalidateSurface();
-        }
-
         if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
             or nameof(ViewerViewModel.ShowIrregularOrderIcon)
             or nameof(ViewerViewModel.ShowImpetuousIcon)
@@ -1285,20 +1256,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         {
             yield return TagCompanyFallbackIconPath;
         }
-    }
-
-    private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        DrawIconRow(canvas, e.Info, BuildTopIconEntries().Select(x => x.Picture).ToList());
-    }
-
-    private void OnBottomIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        DrawIconRow(canvas, e.Info, BuildBottomIconEntries().Select(x => x.Picture).ToList());
     }
 
     private void OnSelectedNameSaveCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -1437,104 +1394,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
         }
     }
 
-    private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
-    {
-        var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-        var profile = _viewerViewModel.Profiles.FirstOrDefault();
-        var profileIsIrregular = !IsDashOrEmpty(profile?.UniqueSkills) &&
-                                 profile!.UniqueSkills.Contains("irregular", StringComparison.OrdinalIgnoreCase);
-        var orderTypePicture = profileIsIrregular ? _irregularOrderIconPicture : _regularOrderIconPicture;
-        if (orderTypePicture is not null)
-        {
-            entries.Add((orderTypePicture, null));
-        }
-
-        var isLieutenantProfile = profile?.IsLieutenant == true;
-        if (isLieutenantProfile && _lieutenantOrderIconPicture is not null)
-        {
-            entries.Add((_lieutenantOrderIconPicture, null));
-        }
-
-        var bonusRegularOrders = CountBonusRegularOrders(profile?.UniqueSkills);
-        if (!isLieutenantProfile)
-        {
-            for (var i = 0; i < bonusRegularOrders; i++)
-            {
-                if (_regularOrderIconPicture is null)
-                {
-                    break;
-                }
-
-                entries.Add((_regularOrderIconPicture, null));
-            }
-        }
-
-        var bonusLieutenantOrders = CountBonusLieutenantOrders(profile?.UniqueSkills);
-        for (var i = 0; i < bonusLieutenantOrders; i++)
-        {
-            if (_lieutenantOrderIconPicture is null)
-            {
-                break;
-            }
-
-            entries.Add((_lieutenantOrderIconPicture, null));
-        }
-
-        var bonusCommandTokens = CountBonusCommandTokens(profile?.UniqueSkills);
-        for (var i = 0; i < bonusCommandTokens; i++)
-        {
-            if (_commandTokenIconPicture is null)
-            {
-                break;
-            }
-
-            entries.Add((_commandTokenIconPicture, null));
-        }
-
-        if (_viewerViewModel.ShowImpetuousIcon && _impetuousIconPicture is not null)
-        {
-            entries.Add((_impetuousIconPicture, _viewerViewModel.ImpetuousIconUrl));
-        }
-
-        if (_viewerViewModel.ShowTacticalAwarenessIcon && _tacticalAwarenessIconPicture is not null)
-        {
-            entries.Add((_tacticalAwarenessIconPicture, _viewerViewModel.TacticalAwarenessIconUrl));
-        }
-
-        return entries;
-    }
-
-    private List<(SKPicture Picture, string? Url)> BuildBottomIconEntries()
-    {
-        var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-        if (_viewerViewModel.ShowCubeIcon && _cubeIconPicture is not null)
-        {
-            entries.Add((_cubeIconPicture, _viewerViewModel.CubeIconUrl));
-        }
-
-        if (_viewerViewModel.ShowCube2Icon && _cube2IconPicture is not null)
-        {
-            entries.Add((_cube2IconPicture, _viewerViewModel.Cube2IconUrl));
-        }
-
-        if (_viewerViewModel.ShowHackableIcon && _hackableIconPicture is not null)
-        {
-            entries.Add((_hackableIconPicture, _viewerViewModel.HackableIconUrl));
-        }
-
-        return entries;
-    }
-
-    private async void OnTopIconRowTapped(object? sender, TappedEventArgs args)
-    {
-        await HandleIconRowTapAsync(TopIconRowCanvas, args, BuildTopIconEntries());
-    }
-
-    private async void OnBottomIconRowTapped(object? sender, TappedEventArgs args)
-    {
-        await HandleIconRowTapAsync(BottomIconRowCanvas, args, BuildBottomIconEntries());
-    }
-
     private void OnCompanyUnitsStripPanUpdated(object? sender, PanUpdatedEventArgs e)
     {
         switch (e.StatusType)
@@ -1578,90 +1437,6 @@ public partial class CompanyViewerPage : ContentPage, IQueryAttributable
     {
         _isCompanyStripMouseDragging = false;
         _lastCompanyStripPointerPosition = null;
-    }
-
-    private static async Task HandleIconRowTapAsync(
-        SKCanvasView canvasView,
-        TappedEventArgs args,
-        IReadOnlyList<(SKPicture Picture, string? Url)> entries)
-    {
-        if (entries.Count == 0)
-        {
-            return;
-        }
-
-        var point = args.GetPosition(canvasView);
-        if (point is null)
-        {
-            return;
-        }
-
-        var slot = GetTappedIconSlot(point.Value.X, canvasView.Width);
-        if (!slot.HasValue || slot.Value < 0 || slot.Value >= entries.Count)
-        {
-            return;
-        }
-
-        var url = entries[slot.Value].Url;
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return;
-        }
-
-        try
-        {
-            await Launcher.Default.OpenAsync(url);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"CompanyViewerPage icon link open failed: {ex.Message}");
-        }
-    }
-
-    private static int? GetTappedIconSlot(double tapX, double controlWidth)
-    {
-        var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-        var startX = controlWidth - RightPadding - rowWidth;
-        if (startX < 0)
-        {
-            startX = 0;
-        }
-
-        for (var i = 0; i < MaxIconsPerRow; i++)
-        {
-            var iconLeft = startX + (i * (IconSize + IconGap));
-            var iconRight = iconLeft + IconSize;
-            if (tapX >= iconLeft && tapX <= iconRight)
-            {
-                return i;
-            }
-        }
-
-        return null;
-    }
-
-    private static void DrawIconRow(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
-    {
-        if (pictures.Count == 0)
-        {
-            return;
-        }
-
-        var drawCount = Math.Min(MaxIconsPerRow, pictures.Count);
-        var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-        var startX = info.Width - RightPadding - rowWidth;
-        if (startX < 0)
-        {
-            startX = 0;
-        }
-
-        for (var i = 0; i < drawCount; i++)
-        {
-            var x = startX + (i * (IconSize + IconGap));
-            var y = (info.Height - IconSize) / 2f;
-            var destination = new SKRect(x, y, x + IconSize, y + IconSize);
-            DrawPictureInRect(canvas, pictures[i], destination);
-        }
     }
 
     private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)

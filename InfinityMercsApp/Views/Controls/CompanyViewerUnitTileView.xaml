@@ -12,6 +12,7 @@
             MinimumHeightRequest="142">
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTileTapped" />
+            <PanGestureRecognizer PanUpdated="OnTilePanUpdated" />
         </Border.GestureRecognizers>
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="8" />

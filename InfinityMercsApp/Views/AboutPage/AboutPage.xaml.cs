@@ -72,6 +72,7 @@ public partial class AboutPage : ContentPage
     private async void OnNounRejectAttributionTapped(object? sender, TappedEventArgs e) => await OpenUriAsync("https://thenounproject.com/browse/icons/term/reject/");
     private async void OnNounDeltaAttributionTapped(object? sender, TappedEventArgs e) => await OpenUriAsync("https://thenounproject.com/browse/icons/term/delta/");
     private async void OnNounCyborgAttributionTapped(object? sender, TappedEventArgs e) => await OpenUriAsync("https://thenounproject.com/browse/icons/term/cyborg/");
+    private async void OnNounFlagsAttributionTapped(object? sender, TappedEventArgs e) => await OpenUriAsync("https://thenounproject.com/browse/icons/term/flags/");
 
     private async Task LoadAttributionIconsAsync()
     {
@@ -111,6 +112,7 @@ public partial class AboutPage : ContentPage
         _attributionPictures[27] = await TryLoadAttributionIconAsync(27, "SVGCache/NonCBIcons/noun-delta.svg");
         _attributionPictures[28] = await TryLoadAttributionIconAsync(28, "SVGCache/NonCBIcons/noun-filter.svg");
         _attributionPictures[29] = await TryLoadAttributionIconAsync(29, "SVGCache/units/2003-1.svg");
+        _attributionPictures[30] = await TryLoadAttributionIconAsync(30, "SVGCache/NonCBIcons/noun-flags.svg");
 
         InvalidateCanvases();
     }
@@ -173,6 +175,7 @@ public partial class AboutPage : ContentPage
         AttributionIcon27Canvas.InvalidateSurface();
         AttributionIcon28Canvas.InvalidateSurface();
         AttributionIcon29Canvas.InvalidateSurface();
+        AttributionIcon30Canvas.InvalidateSurface();
     }
 
     private void UpdateAttributionColumns(double pageWidth)
@@ -257,4 +260,5 @@ public partial class AboutPage : ContentPage
     private void OnAttributionIcon27CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => DrawAttributionIcon(e, GetAttributionIcon(27));
     private void OnAttributionIcon28CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => DrawAttributionIcon(e, GetAttributionIcon(28));
     private void OnAttributionIcon29CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => DrawAttributionIcon(e, GetAttributionIcon(29));
+    private void OnAttributionIcon30CanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e) => DrawAttributionIcon(e, GetAttributionIcon(30));
 }

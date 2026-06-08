@@ -14,6 +14,38 @@ public partial class WeaponDetailCardView : ContentView
             null,
             propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
 
+    public static readonly BindableProperty ShowUnitsInInchesProperty =
+        BindableProperty.Create(
+            nameof(ShowUnitsInInches),
+            typeof(bool),
+            typeof(WeaponDetailCardView),
+            true,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    public static readonly BindableProperty RangeBandHeightRequestProperty =
+        BindableProperty.Create(
+            nameof(RangeBandHeightRequest),
+            typeof(double),
+            typeof(WeaponDetailCardView),
+            88.0,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    public static readonly BindableProperty XVisorActiveProperty =
+        BindableProperty.Create(
+            nameof(XVisorActive),
+            typeof(bool),
+            typeof(WeaponDetailCardView),
+            false,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    public static readonly BindableProperty DamageReductionProperty =
+        BindableProperty.Create(
+            nameof(DamageReduction),
+            typeof(int),
+            typeof(WeaponDetailCardView),
+            0,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
     public WeaponDetailCardView()
     {
         InitializeComponent();
@@ -23,6 +55,30 @@ public partial class WeaponDetailCardView : ContentView
     {
         get => (Weapon?)GetValue(WeaponProperty);
         set => SetValue(WeaponProperty, value);
+    }
+
+    public bool ShowUnitsInInches
+    {
+        get => (bool)GetValue(ShowUnitsInInchesProperty);
+        set => SetValue(ShowUnitsInInchesProperty, value);
+    }
+
+    public double RangeBandHeightRequest
+    {
+        get => (double)GetValue(RangeBandHeightRequestProperty);
+        set => SetValue(RangeBandHeightRequestProperty, value);
+    }
+
+    public bool XVisorActive
+    {
+        get => (bool)GetValue(XVisorActiveProperty);
+        set => SetValue(XVisorActiveProperty, value);
+    }
+
+    public int DamageReduction
+    {
+        get => (int)GetValue(DamageReductionProperty);
+        set => SetValue(DamageReductionProperty, value);
     }
 
     private void RebuildContent()
@@ -45,11 +101,11 @@ public partial class WeaponDetailCardView : ContentView
         }
 
         // Two-column stats: Burst/Damage on the left, Saving/Saving Rolls on the right
-        var statsView = BuildStatsView(weapon);
+        var statsView = BuildStatsView(weapon, DamageReduction);
         if (statsView is not null)
             ContentStack.Children.Add(statsView);
 
-        // Special rules
+        // Special rules — two-column grid, no bullet points
         var properties = ParseProperties(weapon.PropertiesJson);
         if (properties.Count > 0)
         {
@@ -62,12 +118,20 @@ public partial class WeaponDetailCardView : ContentView
                 Margin = new Thickness(0, 6, 0, 2)
             });
 
-            foreach (var prop in properties)
+            var numRows = (properties.Count + 1) / 2;
+            var propGrid = new Grid { ColumnSpacing = 8, RowSpacing = 4 };
+            propGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            propGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            for (int r = 0; r < numRows; r++)
+                propGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            for (int i = 0; i < properties.Count; i++)
             {
+                var prop = properties[i];
                 var url = BuildWikiUrl(prop);
                 var label = new Label
                 {
-                    Text = $"• {prop}",
+                    Text = prop,
                     Style = (Style)Application.Current!.Resources["LabelBody"],
                     TextColor = Color.FromArgb("#60A5FA"),
                     TextDecorations = TextDecorations.Underline,
@@ -76,8 +140,11 @@ public partial class WeaponDetailCardView : ContentView
                 var tap = new TapGestureRecognizer();
                 tap.Tapped += async (_, _) => await OpenLinkAsync(url);
                 label.GestureRecognizers.Add(tap);
-                ContentStack.Children.Add(label);
+                Grid.SetColumn(label, i % 2);
+                Grid.SetRow(label, i / 2);
+                propGrid.Children.Add(label);
             }
+            ContentStack.Children.Add(propGrid);
         }
 
         // Range band bar
@@ -86,19 +153,23 @@ public partial class WeaponDetailCardView : ContentView
             ContentStack.Children.Add(new WeaponRangeBandBarView
             {
                 DistanceJson = weapon.DistanceJson,
+                ShowUnitsInInches = ShowUnitsInInches,
+                BarHeightRequest = RangeBandHeightRequest,
+                XVisorActive = XVisorActive,
                 Margin = new Thickness(0, 6, 0, 0),
                 HorizontalOptions = LayoutOptions.Fill
             });
         }
     }
 
-    private static View? BuildStatsView(Weapon weapon)
+    private static View? BuildStatsView(Weapon weapon, int damageReduction = 0)
     {
         var leftStats = new List<(string Label, string Value)>();
         var rightStats = new List<(string Label, string Value)>();
 
         if (!IsDash(weapon.Burst)) leftStats.Add(("Burst", weapon.Burst!));
-        if (!IsDash(weapon.Damage)) leftStats.Add(("Damage", weapon.Damage!));
+        var damageDisplay = ApplyDamageReduction(weapon.Damage, damageReduction);
+        if (!IsDash(damageDisplay)) leftStats.Add(("Damage", damageDisplay!));
         if (!IsDash(weapon.Saving)) rightStats.Add(("Saving", weapon.Saving!));
         if (!IsDash(weapon.SavingNum)) rightStats.Add(("Saving Rolls", weapon.SavingNum!));
 
@@ -183,6 +254,14 @@ public partial class WeaponDetailCardView : ContentView
     {
         var baseName = Regex.Match(name, @"^[^(]+").Value.Trim();
         return $"https://infinitythewiki.com/{baseName.Replace(' ', '_')}?version=n4";
+    }
+
+    private static string? ApplyDamageReduction(string? damage, int reduction)
+    {
+        if (reduction <= 0 || IsDash(damage)) return damage;
+        if (int.TryParse(damage!.Trim(), out var val))
+            return Math.Max(1, val - reduction).ToString();
+        return damage;
     }
 
     private static bool IsDash(string? v) =>

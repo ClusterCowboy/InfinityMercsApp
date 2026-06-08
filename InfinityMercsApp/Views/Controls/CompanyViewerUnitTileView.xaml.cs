@@ -15,6 +15,7 @@ public partial class CompanyViewerUnitTileView : ContentView
     private SKPicture? _captainBadgePicture;
     private SKPicture? _experienceBadgePicture;
     private int _logoLoadVersion;
+    private double _panLastTotalX;
 
     public static readonly BindableProperty ItemTappedCommandProperty =
         BindableProperty.Create(
@@ -26,6 +27,12 @@ public partial class CompanyViewerUnitTileView : ContentView
         BindableProperty.Create(
             nameof(ItemTappedCommandParameter),
             typeof(object),
+            typeof(CompanyViewerUnitTileView));
+
+    public static readonly BindableProperty PanScrollCommandProperty =
+        BindableProperty.Create(
+            nameof(PanScrollCommand),
+            typeof(ICommand),
             typeof(CompanyViewerUnitTileView));
 
     public CompanyViewerUnitTileView()
@@ -43,6 +50,12 @@ public partial class CompanyViewerUnitTileView : ContentView
     {
         get => GetValue(ItemTappedCommandParameterProperty);
         set => SetValue(ItemTappedCommandParameterProperty, value);
+    }
+
+    public ICommand? PanScrollCommand
+    {
+        get => (ICommand?)GetValue(PanScrollCommandProperty);
+        set => SetValue(PanScrollCommandProperty, value);
     }
 
     protected override void OnBindingContextChanged()
@@ -242,6 +255,26 @@ public partial class CompanyViewerUnitTileView : ContentView
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(picture);
+    }
+
+    private void OnTilePanUpdated(object? sender, PanUpdatedEventArgs e)
+    {
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _panLastTotalX = 0d;
+                break;
+            case GestureStatus.Running:
+                var deltaX = e.TotalX - _panLastTotalX;
+                _panLastTotalX = e.TotalX;
+                if (PanScrollCommand?.CanExecute(deltaX) == true)
+                    PanScrollCommand.Execute(deltaX);
+                break;
+            case GestureStatus.Completed:
+            case GestureStatus.Canceled:
+                _panLastTotalX = 0d;
+                break;
+        }
     }
 
     private void OnTileTapped(object? sender, TappedEventArgs e)

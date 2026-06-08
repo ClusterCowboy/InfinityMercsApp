@@ -478,6 +478,8 @@ internal static class CompanyStartSaveWorkflow
             BaseVitaOrStr = baseVitaOrStr,
             BaseS = baseS,
             CurrentMov = baseMov,
+            CurrentMoveFirstCm = entry.UnitMoveFirstCm,
+            CurrentMoveSecondCm = entry.UnitMoveSecondCm,
             CurrentCc = currentCc,
             CurrentBs = currentBs,
             CurrentPh = currentPh,
@@ -594,6 +596,8 @@ internal static class CompanyStartSaveWorkflow
             BaseVitaOrStr = entry.PeripheralVitality,
             BaseS = entry.PeripheralS,
             CurrentMov = entry.PeripheralMov,
+            CurrentMoveFirstCm = entry.PeripheralMoveFirstCm,
+            CurrentMoveSecondCm = entry.PeripheralMoveSecondCm,
             CurrentCc = entry.PeripheralCc,
             CurrentBs = entry.PeripheralBs,
             CurrentPh = entry.PeripheralPh,
@@ -1165,6 +1169,10 @@ internal static class CompanyStartSaveWorkflow
         public string BaseS { get; init; } = "-";
         [JsonPropertyName("Current MOV")]
         public string CurrentMov { get; init; } = "-";
+        [JsonPropertyName("CurrentMoveFirstCm")]
+        public int? CurrentMoveFirstCm { get; init; }
+        [JsonPropertyName("CurrentMoveSecondCm")]
+        public int? CurrentMoveSecondCm { get; init; }
         [JsonPropertyName("Current CC")]
         public string CurrentCc { get; init; } = "-";
         [JsonPropertyName("Current BS")]

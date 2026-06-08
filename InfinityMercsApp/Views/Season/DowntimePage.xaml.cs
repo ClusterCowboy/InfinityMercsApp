@@ -20,6 +20,6 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
     private async void OnBackToBaseClicked(object sender, EventArgs e)
     {
         // Pop the entire play → experience → downtime stack back to SeasonPage.
-        await Shell.Current.GoToAsync("../../..");
+        await Shell.Current.GoToAsync("../../../..");
     }
 }
