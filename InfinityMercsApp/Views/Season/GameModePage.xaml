@@ -1,46 +1,51 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Season.GameModePage"
-             Title="Contract"
+             Title="CONTRACT IN PROGRESS"
              BackgroundColor="#111827">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="0">
 
-        <!-- Header -->
+        <!-- Round header band -->
         <Border Grid.Row="0"
                 BackgroundColor="#1F2937"
                 Stroke="#374151"
                 StrokeThickness="1"
-                Padding="16,12"
+                Padding="16,10"
                 StrokeShape="Rectangle">
-            <Label Text="CONTRACT IN PROGRESS"
+            <Label x:Name="RoundLabel"
+                   Text="Round 1"
                    FontSize="{DynamicResource FontSizeSubHeadline}"
                    FontAttributes="Bold"
                    TextColor="#22C55E"
                    HorizontalTextAlignment="Center" />
         </Border>
 
-        <!-- Body -->
-        <VerticalStackLayout Grid.Row="1"
-                             Spacing="{DynamicResource SpacingXL}"
-                             VerticalOptions="Center"
-                             HorizontalOptions="Center"
-                             Padding="24,0">
-            <Label Text="GAME ON"
-                   FontSize="{DynamicResource FontSizeHeadline}"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   HorizontalTextAlignment="Center" />
-            <Label Text="Manage your contract. When finished, end the game to record results."
-                   FontSize="{DynamicResource FontSizeBody}"
-                   TextColor="#9CA3AF"
-                   HorizontalTextAlignment="Center"
-                   LineBreakMode="WordWrap" />
-        </VerticalStackLayout>
+        <!-- Color order icon row -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Padding="8,12,8,4">
+            <skia:SKCanvasView Grid.Column="0" x:Name="LtColorCanvas"  HeightRequest="44" PaintSurface="OnLtColorPaint" />
+            <skia:SKCanvasView Grid.Column="1" x:Name="ImpColorCanvas" HeightRequest="44" PaintSurface="OnImpColorPaint" />
+            <skia:SKCanvasView Grid.Column="2" x:Name="IrrColorCanvas" HeightRequest="44" PaintSurface="OnIrrColorPaint" />
+            <skia:SKCanvasView Grid.Column="3" x:Name="RegColorCanvas" HeightRequest="44" PaintSurface="OnRegColorPaint" />
+        </Grid>
+
+        <!-- Greyscale order icon row -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*" Padding="8,4,8,8">
+            <skia:SKCanvasView Grid.Column="0" x:Name="LtGreyCanvas"  HeightRequest="44" PaintSurface="OnLtGreyPaint" />
+            <skia:SKCanvasView Grid.Column="1" x:Name="ImpGreyCanvas" HeightRequest="44" PaintSurface="OnImpGreyPaint" />
+            <skia:SKCanvasView Grid.Column="2" x:Name="IrrGreyCanvas" HeightRequest="44" PaintSurface="OnIrrGreyPaint" />
+            <skia:SKCanvasView Grid.Column="3" x:Name="RegGreyCanvas" HeightRequest="44" PaintSurface="OnRegGreyPaint" />
+        </Grid>
+
+        <!-- Unit accordion -->
+        <ScrollView Grid.Row="3">
+            <VerticalStackLayout x:Name="AccordionStack" Spacing="0" Padding="0,8,0,0" />
+        </ScrollView>
 
         <!-- End Game button -->
-        <Button Grid.Row="2"
+        <Button Grid.Row="4"
                 Text="END GAME"
                 BackgroundColor="#DC2626"
                 TextColor="White"

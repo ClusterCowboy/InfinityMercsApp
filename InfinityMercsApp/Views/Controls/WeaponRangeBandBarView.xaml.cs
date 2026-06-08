@@ -23,6 +23,15 @@ public partial class WeaponRangeBandBarView : ContentView
             true,
             propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
 
+    public static readonly BindableProperty BarHeightRequestProperty =
+        BindableProperty.Create(
+            nameof(BarHeightRequest),
+            typeof(double),
+            typeof(WeaponRangeBandBarView),
+            88.0,
+            propertyChanged: (bindable, _, newVal) =>
+                ((WeaponRangeBandBarView)bindable).Canvas.HeightRequest = (double)newVal);
+
     public WeaponRangeBandBarView()
     {
         InitializeComponent();
@@ -38,6 +47,12 @@ public partial class WeaponRangeBandBarView : ContentView
     {
         get => (bool)GetValue(ShowUnitsInInchesProperty);
         set => SetValue(ShowUnitsInInchesProperty, value);
+    }
+
+    public double BarHeightRequest
+    {
+        get => (double)GetValue(BarHeightRequestProperty);
+        set => SetValue(BarHeightRequestProperty, value);
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

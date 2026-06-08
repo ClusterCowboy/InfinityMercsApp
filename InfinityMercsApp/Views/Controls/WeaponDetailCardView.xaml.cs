@@ -22,6 +22,14 @@ public partial class WeaponDetailCardView : ContentView
             true,
             propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
 
+    public static readonly BindableProperty RangeBandHeightRequestProperty =
+        BindableProperty.Create(
+            nameof(RangeBandHeightRequest),
+            typeof(double),
+            typeof(WeaponDetailCardView),
+            88.0,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
     public WeaponDetailCardView()
     {
         InitializeComponent();
@@ -37,6 +45,12 @@ public partial class WeaponDetailCardView : ContentView
     {
         get => (bool)GetValue(ShowUnitsInInchesProperty);
         set => SetValue(ShowUnitsInInchesProperty, value);
+    }
+
+    public double RangeBandHeightRequest
+    {
+        get => (double)GetValue(RangeBandHeightRequestProperty);
+        set => SetValue(RangeBandHeightRequestProperty, value);
     }
 
     private void RebuildContent()
@@ -101,6 +115,7 @@ public partial class WeaponDetailCardView : ContentView
             {
                 DistanceJson = weapon.DistanceJson,
                 ShowUnitsInInches = ShowUnitsInInches,
+                BarHeightRequest = RangeBandHeightRequest,
                 Margin = new Thickness(0, 6, 0, 0),
                 HorizontalOptions = LayoutOptions.Fill
             });
