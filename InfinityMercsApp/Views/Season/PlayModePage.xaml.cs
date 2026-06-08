@@ -27,6 +27,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     private bool _showUnitsInInches = true;
     private DeploymentUnitItem? _selectedUnit;
 
+
     public ObservableCollection<DeploymentUnitItem> DeploymentUnits { get; } = [];
     public ICommand SelectUnitCommand { get; }
     public ICommand TileStripPanCommand { get; }
@@ -45,6 +46,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     public bool HasSelectedUnit => _selectedUnit is not null;
     public bool NoUnitSelected => _selectedUnit is null;
+
 
     public PlayModePage(
         IArmyDataService? armyDataService = null,
@@ -137,6 +139,9 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                 var skills = ResolveSavedSkills(effectiveSourceFactionId, entry);
                 var equipment = ResolveSavedEquipment(effectiveSourceFactionId, entry);
                 var (rangedWeapons, meleeWeapons) = ResolveSavedWeapons(effectiveSourceFactionId, entry);
+                var characteristics = ResolveSavedCharacteristics(effectiveSourceFactionId, entry);
+                var isIrregular = HasOrderKeyword(characteristics, "Irregular");
+                var isImpetuous = HasOrderKeyword(characteristics, "Impetuous");
 
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
@@ -155,6 +160,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     Subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty,
                     IsLieutenant = entry.IsLieutenant,
+                    IsIrregular = isIrregular,
+                    IsImpetuous = isImpetuous,
                     CaptainIconPackagedPath = entry.IsLieutenant
                         ? "SVGCache/NonCBIcons/noun-captain-8115950.svg"
                         : string.Empty,
@@ -211,6 +218,20 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         _showUnitsInInches = showUnitsInInches;
         return changed;
     }
+
+    // ── Characteristics resolution ─────────────────────────────────────────────
+
+    private string ResolveSavedCharacteristics(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentCharacteristicCodes, "chars");
+        names.AddRange(entry.CustomCharacteristics ?? []);
+        return JoinCodesOrDash(names);
+    }
+
+    private static bool HasOrderKeyword(string characteristics, string keyword) =>
+        characteristics
+            .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries)
+            .Any(s => s.Trim().Equals(keyword, StringComparison.OrdinalIgnoreCase));
 
     private async void OnDeployClicked(object sender, EventArgs e)
     {
@@ -380,6 +401,8 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
     public int EntryIndex { get; init; }
     public string BaseUnitDisplayName { get; init; } = string.Empty;
     public bool IsLieutenant { get; init; }
+    public bool IsIrregular { get; init; }
+    public bool IsImpetuous { get; init; }
     public string CaptainIconPackagedPath { get; init; } = string.Empty;
     public string ExperienceIconPackagedPath { get; init; } = string.Empty;
 

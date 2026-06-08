@@ -164,6 +164,25 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         canvas.DrawBitmap(bmp, 0, 0, paint);
     }
 
+    // ── Order tap handlers ───────────────────────────────────────────────────
+
+    private void OnLtColorTapped (object? s, TappedEventArgs e) => TransferOrder(LtCountLabel,  LtGreyCountLabel);
+    private void OnImpColorTapped(object? s, TappedEventArgs e) => TransferOrder(ImpCountLabel, ImpGreyCountLabel);
+    private void OnIrrColorTapped(object? s, TappedEventArgs e) => TransferOrder(IrrCountLabel, IrrGreyCountLabel);
+    private void OnRegColorTapped(object? s, TappedEventArgs e) => TransferOrder(RegCountLabel, RegGreyCountLabel);
+
+    private void OnLtGreyTapped (object? s, TappedEventArgs e) => TransferOrder(LtGreyCountLabel,  LtCountLabel);
+    private void OnImpGreyTapped(object? s, TappedEventArgs e) => TransferOrder(ImpGreyCountLabel, ImpCountLabel);
+    private void OnIrrGreyTapped(object? s, TappedEventArgs e) => TransferOrder(IrrGreyCountLabel, IrrCountLabel);
+    private void OnRegGreyTapped(object? s, TappedEventArgs e) => TransferOrder(RegGreyCountLabel, RegCountLabel);
+
+    private static void TransferOrder(Label from, Label to)
+    {
+        if (!int.TryParse(from.Text, out var count) || count <= 0) return;
+        from.Text = (count - 1).ToString();
+        to.Text = (int.TryParse(to.Text, out var dest) ? dest + 1 : 1).ToString();
+    }
+
     private static void DrawScaled(SKCanvas canvas, SKImageInfo info, SKPicture picture, SKPaint? paint)
     {
         var bounds = picture.CullRect;
@@ -212,6 +231,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 .ThenBy(x => x.EntryIndex)
                 .ToList();
 
+            int ltCount = 0, regCount = 0, irrCount = 0, impCount = 0;
+
             foreach (var entry in entries)
             {
                 var effectiveSourceFactionId = ResolveEffectiveSourceFactionId(entry);
@@ -223,6 +244,14 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 var skills = ResolveSavedSkills(effectiveSourceFactionId, entry);
                 var equipment = ResolveSavedEquipment(effectiveSourceFactionId, entry);
                 var (rangedWeapons, meleeWeapons) = ResolveSavedWeapons(effectiveSourceFactionId, entry);
+                var characteristics = ResolveSavedCharacteristics(effectiveSourceFactionId, entry);
+                var isIrregular = HasOrderKeyword(characteristics, "Irregular");
+                var isImpetuous = HasOrderKeyword(characteristics, "Impetuous");
+
+                if (entry.IsLieutenant) ltCount++;
+                if (isImpetuous) impCount++;
+                if (isIrregular) irrCount++;
+                if (!isIrregular) regCount++;
 
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
@@ -242,6 +271,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                     Name = displayName,
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     IsLieutenant = entry.IsLieutenant,
+                    IsIrregular = isIrregular,
+                    IsImpetuous = isImpetuous,
                     CaptainIconPackagedPath = entry.IsLieutenant
                         ? "SVGCache/NonCBIcons/noun-captain-8115950.svg"
                         : string.Empty,
@@ -268,6 +299,11 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
                 AccordionStack.Children.Add(BuildAccordionRow(unit));
             }
+
+            LtCountLabel.Text  = ltCount.ToString();
+            ImpCountLabel.Text = impCount.ToString();
+            IrrCountLabel.Text = irrCount.ToString();
+            RegCountLabel.Text = regCount.ToString();
         }
         catch (Exception ex)
         {
@@ -510,6 +546,18 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
+
+    private string ResolveSavedCharacteristics(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentCharacteristicCodes, "chars");
+        names.AddRange(entry.CustomCharacteristics ?? []);
+        return JoinOrDash(names);
+    }
+
+    private static bool HasOrderKeyword(string characteristics, string keyword) =>
+        characteristics
+            .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries)
+            .Any(s => s.Trim().Equals(keyword, StringComparison.OrdinalIgnoreCase));
 
     private string ResolveSavedSkills(int sourceFactionId, SavedCompanyEntry entry)
     {
