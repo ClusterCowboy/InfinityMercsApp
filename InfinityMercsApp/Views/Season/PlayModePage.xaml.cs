@@ -150,6 +150,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
                 DeploymentUnits.Add(new DeploymentUnitItem
                 {
+                    EntryIndex = entry.EntryIndex,
                     Name = displayName,
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     Subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty,
@@ -214,7 +215,11 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     private async void OnDeployClicked(object sender, EventArgs e)
     {
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
-        await Shell.Current.GoToAsync($"{nameof(GameModePage)}?companyFilePath={encodedPath}");
+        var checkedIndices = string.Join(",",
+            DeploymentUnits.Where(u => u.IsChecked).Select(u => u.EntryIndex));
+        var encodedIndices = Uri.EscapeDataString(checkedIndices);
+        await Shell.Current.GoToAsync(
+            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&deployedIndices={encodedIndices}");
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
@@ -372,6 +377,7 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
     // CompanyViewerUnitTileView bindings
+    public int EntryIndex { get; init; }
     public string BaseUnitDisplayName { get; init; } = string.Empty;
     public bool IsLieutenant { get; init; }
     public string CaptainIconPackagedPath { get; init; } = string.Empty;

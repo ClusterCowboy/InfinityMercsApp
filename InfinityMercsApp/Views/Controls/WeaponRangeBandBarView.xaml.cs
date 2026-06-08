@@ -32,6 +32,14 @@ public partial class WeaponRangeBandBarView : ContentView
             propertyChanged: (bindable, _, newVal) =>
                 ((WeaponRangeBandBarView)bindable).Canvas.HeightRequest = (double)newVal);
 
+    public static readonly BindableProperty XVisorActiveProperty =
+        BindableProperty.Create(
+            nameof(XVisorActive),
+            typeof(bool),
+            typeof(WeaponRangeBandBarView),
+            false,
+            propertyChanged: (bindable, _, _) => ((WeaponRangeBandBarView)bindable).Canvas.InvalidateSurface());
+
     public WeaponRangeBandBarView()
     {
         InitializeComponent();
@@ -53,6 +61,12 @@ public partial class WeaponRangeBandBarView : ContentView
     {
         get => (double)GetValue(BarHeightRequestProperty);
         set => SetValue(BarHeightRequestProperty, value);
+    }
+
+    public bool XVisorActive
+    {
+        get => (bool)GetValue(XVisorActiveProperty);
+        set => SetValue(XVisorActiveProperty, value);
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -102,13 +116,14 @@ public partial class WeaponRangeBandBarView : ContentView
             var band = bands[i];
             float bandWidth = (band.RangeEnd - band.RangeStart) / totalRange * canvasWidth;
 
-            fillPaint.Color = GetBandColor(band.Mod);
+            var displayMod = ApplyXVisorMod(band.Mod, XVisorActive);
+            fillPaint.Color = GetBandColor(displayMod);
             canvas.DrawRect(new SKRect(x, 0, x + bandWidth, coloredHeight), fillPaint);
 
             // Modifier text centered in the colored area
             float centerX = x + bandWidth / 2f;
             float centerY = coloredHeight / 2f + modFont.Size * 0.38f;
-            canvas.DrawText(band.Mod, centerX, centerY, SKTextAlign.Center, modFont, modPaint);
+            canvas.DrawText(displayMod, centerX, centerY, SKTextAlign.Center, modFont, modPaint);
 
             x += bandWidth;
             boundaries.Add((x, band.RangeEnd));
@@ -169,6 +184,12 @@ public partial class WeaponRangeBandBarView : ContentView
         {
             return [];
         }
+    }
+
+    private static string ApplyXVisorMod(string mod, bool xVisorActive)
+    {
+        if (!xVisorActive || !int.TryParse(mod, out var val) || val >= 0) return mod;
+        return Math.Min(0, val + 3).ToString();
     }
 
     private static SKColor GetBandColor(string mod)

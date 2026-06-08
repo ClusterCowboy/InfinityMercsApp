@@ -48,6 +48,9 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     // Each entry is (expandable content view, arrow label) for exclusive-open behaviour.
     private readonly List<(View ContentArea, Label Arrow)> _accordionRows = [];
 
+    // null = show all (no filter), empty set = none checked, non-empty = filtered list
+    private HashSet<int>? _deployedEntryIndices;
+
     public GameModePage(
         IArmyDataService? armyDataService = null,
         FactionLogoCacheService? factionLogoCacheService = null,
@@ -67,6 +70,21 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
             _loadAttempted = false;
+        }
+
+        if (query.TryGetValue("deployedIndices", out var indicesRaw))
+        {
+            var decoded = Uri.UnescapeDataString(indicesRaw?.ToString() ?? string.Empty);
+            _deployedEntryIndices = decoded
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var n) ? n : (int?)null)
+                .Where(n => n.HasValue)
+                .Select(n => n!.Value)
+                .ToHashSet();
+        }
+        else
+        {
+            _deployedEntryIndices = null;
         }
     }
 
@@ -189,6 +207,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
             var entries = payload.Entries
                 .Where(e => !e.IsPeripheralUnit)
+                .Where(e => _deployedEntryIndices is null || _deployedEntryIndices.Contains(e.EntryIndex))
                 .OrderByDescending(x => x.IsLieutenant)
                 .ThenBy(x => x.EntryIndex)
                 .ToList();
@@ -363,8 +382,12 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         AddDetailSection(container, unit.Equipment, Color.FromArgb("#06B6D4"));
         AddDetailSection(container, unit.Skills,    Color.FromArgb("#F59E0B"));
 
-        AppendWeaponSection(container, unit.RangedWeapons);
-        AppendWeaponSection(container, unit.MeleeWeapons);
+        var hasXVisor = ContainsXVisor(unit.Skills) || ContainsXVisor(unit.Equipment);
+        var damageReduction = GetBsAttackDamageReduction(unit.Skills);
+
+        AppendWeaponSection(container, unit.RangedWeapons, hasXVisor, damageReduction);
+        AppendWeaponSection(container, unit.MeleeWeapons,  hasXVisor, damageReduction);
+        AppendStandardActionCards(container, hasXVisor);
 
         return container;
     }
@@ -381,7 +404,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         });
     }
 
-    private void AppendWeaponSection(VerticalStackLayout container, string? weaponsText)
+    private void AppendWeaponSection(VerticalStackLayout container, string? weaponsText, bool hasXVisor = false, int damageReduction = 0)
     {
         var lines = SplitLines(weaponsText);
         foreach (var line in lines)
@@ -412,6 +435,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                         Weapon = weapon,
                         ShowUnitsInInches = _showUnitsInInches,
                         RangeBandHeightRequest = 44,
+                        XVisorActive = hasXVisor,
+                        DamageReduction = damageReduction,
                         Margin = new Thickness(0, 0, 0, 4)
                     });
                 }
@@ -427,6 +452,43 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                     LineBreakMode = LineBreakMode.WordWrap
                 });
             }
+        }
+    }
+
+    private void AppendStandardActionCards(VerticalStackLayout container, bool hasXVisor)
+    {
+        AppendNamedWeaponCard(container, "Discover",             "Discover",                      hasXVisor);
+        AppendNamedWeaponCard(container, "Suppressive Fire Mode","Suppressive Fire Mode Weapon",   hasXVisor);
+    }
+
+    private void AppendNamedWeaponCard(VerticalStackLayout container, string displayName, string searchName, bool hasXVisor)
+    {
+        var matches = _metadataProvider?.SearchWeaponsByName(searchName) ?? [];
+        var exact = matches
+            .Where(w => string.Equals(w.Name, searchName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var weapons = exact.Count > 0 ? exact : [.. matches];
+        if (weapons.Count == 0) return;
+
+        container.Children.Add(new Label
+        {
+            Text = displayName,
+            TextColor = Colors.White,
+            FontSize = 15,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 2)
+        });
+        foreach (var weapon in weapons)
+        {
+            container.Children.Add(new WeaponDetailCardView
+            {
+                Weapon = weapon,
+                ShowUnitsInInches = _showUnitsInInches,
+                RangeBandHeightRequest = 44,
+                XVisorActive = hasXVisor,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
         }
     }
 
@@ -566,5 +628,25 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var s = System.Text.RegularExpressions.Regex.Replace(name, @"\s*\([^)]*\)\s*", " ").Trim();
         s = System.Text.RegularExpressions.Regex.Replace(s, @"\s{2,}", " ").Trim();
         return string.IsNullOrWhiteSpace(s) ? "Unit" : s;
+    }
+
+    private static bool ContainsXVisor(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        return text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Any(line => line.Contains("X Visor", StringComparison.OrdinalIgnoreCase) ||
+                         line.Contains("X-Visor", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static int GetBsAttackDamageReduction(string? skills)
+    {
+        if (string.IsNullOrWhiteSpace(skills)) return 0;
+        foreach (var line in skills.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var m = Regex.Match(line, @"BS\s+Attack\s*\(SR-(\d+)\)", RegexOptions.IgnoreCase);
+            if (m.Success && int.TryParse(m.Groups[1].Value, out var n))
+                return n;
+        }
+        return 0;
     }
 }
