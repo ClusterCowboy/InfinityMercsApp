@@ -10,10 +10,6 @@ namespace InfinityMercsApp.Views.UnitEncyclopedia;
 
 public partial class UnitEncyclopediaPage : ContentPage
 {
-	private const int MaxIconsPerRow = 3;
-	private const float IconSize = 24f;
-	private const float IconGap = 20f;
-	private const float RightPadding = 24f;
 	private readonly ViewerViewModel _viewModel;
 	private bool _loaded;
 	private double _factionDragStartScrollY;
@@ -36,12 +32,6 @@ public partial class UnitEncyclopediaPage : ContentPage
 		_viewModel = viewModel;
 		BindingContext = _viewModel;
 		_viewModel.PropertyChanged += OnViewModelPropertyChanged;
-		var topTap = new TapGestureRecognizer();
-		topTap.Tapped += OnTopIconRowTapped;
-		TopIconRowCanvas.GestureRecognizers.Add(topTap);
-		var bottomTap = new TapGestureRecognizer();
-		bottomTap.Tapped += OnBottomIconRowTapped;
-		BottomIconRowCanvas.GestureRecognizers.Add(bottomTap);
 		_ = LoadHeaderIconsAsync();
 	}
 
@@ -169,8 +159,6 @@ public partial class UnitEncyclopediaPage : ContentPage
 			Console.Error.WriteLine($"UnitEncyclopediaPage filter icon load failed: {ex.Message}");
 		}
 
-		TopIconRowCanvas.InvalidateSurface();
-		BottomIconRowCanvas.InvalidateSurface();
 		UnitSelectionFilterCanvas.InvalidateSurface();
 		UnitDisplayConfigurationsView.RegularOrderIconPicture = _regularOrderIconPicture;
 		UnitDisplayConfigurationsView.IrregularOrderIconPicture = _irregularOrderIconPicture;
@@ -184,21 +172,6 @@ public partial class UnitEncyclopediaPage : ContentPage
 
 	private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
-		if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
-			or nameof(ViewerViewModel.ShowIrregularOrderIcon)
-			or nameof(ViewerViewModel.ShowImpetuousIcon)
-			or nameof(ViewerViewModel.ShowTacticalAwarenessIcon))
-		{
-			TopIconRowCanvas.InvalidateSurface();
-		}
-
-		if (e.PropertyName is nameof(ViewerViewModel.ShowCubeIcon)
-			or nameof(ViewerViewModel.ShowCube2Icon)
-			or nameof(ViewerViewModel.ShowHackableIcon))
-		{
-			BottomIconRowCanvas.InvalidateSurface();
-		}
-
 		if (e.PropertyName is nameof(ViewerViewModel.ShowRegularOrderIcon)
 			or nameof(ViewerViewModel.ShowIrregularOrderIcon)
 			or nameof(ViewerViewModel.ShowImpetuousIcon)
@@ -360,24 +333,6 @@ public partial class UnitEncyclopediaPage : ContentPage
 		return pageHeight * 0.9;
 	}
 
-	private void OnTopIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-	{
-		var canvas = e.Surface.Canvas;
-		canvas.Clear(SKColors.Transparent);
-
-		var entries = BuildTopIconEntries();
-		DrawIconRow(canvas, e.Info, entries.Select(x => x.Picture).ToList());
-	}
-
-	private void OnBottomIconRowCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-	{
-		var canvas = e.Surface.Canvas;
-		canvas.Clear(SKColors.Transparent);
-
-		var entries = BuildBottomIconEntries();
-		DrawIconRow(canvas, e.Info, entries.Select(x => x.Picture).ToList());
-	}
-
 	private void OnUnitSelectionFilterCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
 	{
 		var canvas = e.Surface.Canvas;
@@ -388,143 +343,6 @@ public partial class UnitEncyclopediaPage : ContentPage
 		}
 
 		DrawPictureInRect(canvas, _filterIconPicture, new SKRect(0, 0, e.Info.Width, e.Info.Height));
-	}
-
-	private List<(SKPicture Picture, string? Url)> BuildTopIconEntries()
-	{
-		var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-		var orderTypePicture = _viewModel.ShowIrregularOrderIcon ? _irregularOrderIconPicture : _regularOrderIconPicture;
-		if (_viewModel.HasOrderTypeIcon && orderTypePicture is not null)
-		{
-			entries.Add((orderTypePicture, null));
-		}
-
-		if (_viewModel.ShowImpetuousIcon && _impetuousIconPicture is not null)
-		{
-			entries.Add((_impetuousIconPicture, _viewModel.ImpetuousIconUrl));
-		}
-
-		if (_viewModel.ShowTacticalAwarenessIcon && _tacticalAwarenessIconPicture is not null)
-		{
-			entries.Add((_tacticalAwarenessIconPicture, _viewModel.TacticalAwarenessIconUrl));
-		}
-
-		return entries;
-	}
-
-	private List<(SKPicture Picture, string? Url)> BuildBottomIconEntries()
-	{
-		var entries = new List<(SKPicture Picture, string? Url)>(MaxIconsPerRow);
-		if (_viewModel.ShowCubeIcon && _cubeIconPicture is not null)
-		{
-			entries.Add((_cubeIconPicture, _viewModel.CubeIconUrl));
-		}
-
-		if (_viewModel.ShowCube2Icon && _cube2IconPicture is not null)
-		{
-			entries.Add((_cube2IconPicture, _viewModel.Cube2IconUrl));
-		}
-
-		if (_viewModel.ShowHackableIcon && _hackableIconPicture is not null)
-		{
-			entries.Add((_hackableIconPicture, _viewModel.HackableIconUrl));
-		}
-
-		return entries;
-	}
-
-	private async void OnTopIconRowTapped(object? sender, TappedEventArgs args)
-	{
-		await HandleIconRowTapAsync(TopIconRowCanvas, args, BuildTopIconEntries());
-	}
-
-	private async void OnBottomIconRowTapped(object? sender, TappedEventArgs args)
-	{
-		await HandleIconRowTapAsync(BottomIconRowCanvas, args, BuildBottomIconEntries());
-	}
-
-	private static async Task HandleIconRowTapAsync(
-		SKCanvasView canvasView,
-		TappedEventArgs args,
-		IReadOnlyList<(SKPicture Picture, string? Url)> entries)
-	{
-		if (entries.Count == 0)
-		{
-			return;
-		}
-
-		var point = args.GetPosition(canvasView);
-		if (point is null)
-		{
-			return;
-		}
-
-		var slot = GetTappedIconSlot(point.Value.X, canvasView.Width);
-		if (!slot.HasValue || slot.Value < 0 || slot.Value >= entries.Count)
-		{
-			return;
-		}
-
-		var url = entries[slot.Value].Url;
-		if (string.IsNullOrWhiteSpace(url))
-		{
-			return;
-		}
-
-		try
-		{
-			await Launcher.Default.OpenAsync(url);
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"UnitEncyclopediaPage icon link open failed: {ex.Message}");
-		}
-	}
-
-	private static int? GetTappedIconSlot(double tapX, double controlWidth)
-	{
-		var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-		var startX = controlWidth - RightPadding - rowWidth;
-		if (startX < 0)
-		{
-			startX = 0;
-		}
-
-		for (var i = 0; i < MaxIconsPerRow; i++)
-		{
-			var iconLeft = startX + (i * (IconSize + IconGap));
-			var iconRight = iconLeft + IconSize;
-			if (tapX >= iconLeft && tapX <= iconRight)
-			{
-				return i;
-			}
-		}
-
-		return null;
-	}
-
-	private static void DrawIconRow(SKCanvas canvas, SKImageInfo info, IReadOnlyList<SKPicture> pictures)
-	{
-		if (pictures.Count == 0)
-		{
-			return;
-		}
-
-		var drawCount = Math.Min(MaxIconsPerRow, pictures.Count);
-		var rowWidth = (MaxIconsPerRow * IconSize) + ((MaxIconsPerRow - 1) * IconGap);
-		var startX = info.Width - RightPadding - rowWidth;
-		if (startX < 0)
-		{
-			startX = 0;
-		}
-
-		for (var i = 0; i < drawCount; i++)
-		{
-			var x = startX + (i * (IconSize + IconGap));
-			var y = (info.Height - IconSize) / 2f;
-			var destination = new SKRect(x, y, x + IconSize, y + IconSize);
-			DrawPictureInRect(canvas, pictures[i], destination);
-		}
 	}
 
 	private static void DrawPictureInRect(SKCanvas canvas, SKPicture picture, SKRect destination)

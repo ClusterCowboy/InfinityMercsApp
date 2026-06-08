@@ -26,6 +26,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     public ObservableCollection<DeploymentUnitItem> DeploymentUnits { get; } = [];
     public ICommand SelectUnitCommand { get; }
+    public ICommand TileStripPanCommand { get; }
 
     public DeploymentUnitItem? SelectedUnit
     {
@@ -51,6 +52,12 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         _factionLogoCacheService = factionLogoCacheService;
         BindingContext = this;
         SelectUnitCommand = new Command<DeploymentUnitItem>(SelectUnit);
+        TileStripPanCommand = new Command<object>(delta =>
+        {
+            if (delta is double dx)
+                UnitStripScrollView.ScrollToAsync(
+                    Math.Max(0, UnitStripScrollView.ScrollX - dx), 0, false);
+        });
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)

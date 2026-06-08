@@ -268,16 +268,7 @@
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
-                </ScrollView>
-                <Grid Grid.Row="2" IsVisible="False" HeightRequest="0" WidthRequest="0">
-                    <skia:SKCanvasView
-                        x:Name="TopIconRowCanvas"
-                        PaintSurface="OnTopIconRowCanvasPaintSurface" />
-                    <skia:SKCanvasView
-                        x:Name="BottomIconRowCanvas"
-                        PaintSurface="OnBottomIconRowCanvasPaintSurface" />
-                </Grid>
-            </Grid>
+                </ScrollView>            </Grid>
         </Border>
 
         <Border Grid.Column="2" StrokeThickness="1" Padding="12">

@@ -28,6 +28,7 @@
 
             <!-- Horizontal unit strip with checkboxes -->
             <ScrollView Grid.Row="0"
+                        x:Name="UnitStripScrollView"
                         Orientation="Horizontal"
                         HorizontalScrollBarVisibility="Never"
                         Padding="8,8,8,4">
@@ -39,7 +40,8 @@
                             <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
                                 <controls:CompanyViewerUnitTileView
                                     ItemTappedCommand="{Binding Source={x:Reference PageRoot}, Path=SelectUnitCommand}"
-                                    ItemTappedCommandParameter="{Binding .}" />
+                                    ItemTappedCommandParameter="{Binding .}"
+                                    PanScrollCommand="{Binding Source={x:Reference PageRoot}, Path=TileStripPanCommand}" />
                                 <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
                                           HorizontalOptions="Center"
                                           Color="#22C55E" />
