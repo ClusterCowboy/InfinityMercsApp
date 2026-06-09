@@ -26,6 +26,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     private bool _loadAttempted;
     private bool _showUnitsInInches = true;
     private DeploymentUnitItem? _selectedUnit;
+    private int _deployedSlotCount;
+
 
     public ObservableCollection<DeploymentUnitItem> DeploymentUnits { get; } = [];
     public ICommand SelectUnitCommand { get; }
@@ -45,6 +47,33 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
 
     public bool HasSelectedUnit => _selectedUnit is not null;
     public bool NoUnitSelected => _selectedUnit is null;
+
+    public int DeployedSlotCount
+    {
+        get => _deployedSlotCount;
+        private set
+        {
+            if (_deployedSlotCount == value) return;
+            _deployedSlotCount = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsEliteDeployment));
+            OnPropertyChanged(nameof(DeploymentStatusText));
+            OnPropertyChanged(nameof(DeploymentStatusColor));
+        }
+    }
+
+    public bool IsEliteDeployment => _deployedSlotCount > 0 && _deployedSlotCount <= 4;
+
+    public string DeploymentStatusText => _deployedSlotCount == 0
+        ? "0 / 6 slots"
+        : IsEliteDeployment
+            ? $"{_deployedSlotCount} / 6 slots · ELITE"
+            : $"{_deployedSlotCount} / 6 slots";
+
+    public Color DeploymentStatusColor => IsEliteDeployment
+        ? Color.FromArgb("#22C55E")
+        : Color.FromArgb("#9CA3AF");
+
 
     public PlayModePage(
         IArmyDataService? armyDataService = null,
@@ -89,8 +118,11 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     {
         ApplyGlobalDisplayUnitsPreference();
         _loadAttempted = true;
+        foreach (var unit in DeploymentUnits)
+            unit.PropertyChanged -= OnUnitCheckedChanged;
         DeploymentUnits.Clear();
         SelectedUnit = null;
+        DeployedSlotCount = 0;
 
         if (!File.Exists(filePath))
         {
@@ -137,6 +169,9 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                 var skills = ResolveSavedSkills(effectiveSourceFactionId, entry);
                 var equipment = ResolveSavedEquipment(effectiveSourceFactionId, entry);
                 var (rangedWeapons, meleeWeapons) = ResolveSavedWeapons(effectiveSourceFactionId, entry);
+                var characteristics = ResolveSavedCharacteristics(effectiveSourceFactionId, entry);
+                var isIrregular = HasOrderKeyword(characteristics, "Irregular");
+                var isImpetuous = HasOrderKeyword(characteristics, "Impetuous");
 
                 if (entry.IsLieutenant && captainStats.IsEnabled)
                 {
@@ -148,13 +183,21 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     equipment = AppendChoices(equipment, captainEquipmentChoices);
                 }
 
-                DeploymentUnits.Add(new DeploymentUnitItem
+                var isTagFromTagCompany =
+                    entry.UnitTypeCode?.Trim().Equals("TAG", StringComparison.OrdinalIgnoreCase) == true &&
+                    effectiveSourceFactionId == TagCompanyFactionId;
+
+                var item = new DeploymentUnitItem
                 {
                     EntryIndex = entry.EntryIndex,
+                    IsChecked = entry.IsLieutenant,
                     Name = displayName,
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     Subtitle = entry.IsLieutenant ? "Lieutenant" : string.Empty,
                     IsLieutenant = entry.IsLieutenant,
+                    IsIrregular = isIrregular,
+                    IsImpetuous = isImpetuous,
+                    IsTagFromTagCompany = isTagFromTagCompany,
                     CaptainIconPackagedPath = entry.IsLieutenant
                         ? "SVGCache/NonCBIcons/noun-captain-8115950.svg"
                         : string.Empty,
@@ -180,8 +223,12 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     Skills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(skills, _showUnitsInInches),
                     RangedWeapons = rangedWeapons,
                     MeleeWeapons = meleeWeapons
-                });
+                };
+                item.PropertyChanged += OnUnitCheckedChanged;
+                DeploymentUnits.Add(item);
             }
+
+            DeployedSlotCount = ComputeDeployedSlots();
 
             if (DeploymentUnits.Count > 0)
             {
@@ -204,6 +251,25 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         SelectedUnit = item;
     }
 
+    private void OnUnitCheckedChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DeploymentUnitItem.IsChecked)) return;
+        if (sender is DeploymentUnitItem { IsLieutenant: true, IsChecked: false } lt)
+        {
+            lt.IsChecked = true;
+            return;
+        }
+        if (sender is DeploymentUnitItem { IsChecked: true } item && ComputeDeployedSlots() > 6)
+        {
+            item.IsChecked = false;
+            return;
+        }
+        DeployedSlotCount = ComputeDeployedSlots();
+    }
+
+    private int ComputeDeployedSlots() =>
+        DeploymentUnits.Where(u => u.IsChecked).Sum(u => u.SlotCost);
+
     private bool ApplyGlobalDisplayUnitsPreference()
     {
         var showUnitsInInches = SeasonDisplayUnitFormatter.GetShowUnitsInInches(_appSettingsProvider);
@@ -212,14 +278,35 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         return changed;
     }
 
+    // ── Characteristics resolution ─────────────────────────────────────────────
+
+    private string ResolveSavedCharacteristics(int sourceFactionId, SavedCompanyEntry entry)
+    {
+        var names = ResolveCodeNames(sourceFactionId, entry.CurrentCharacteristicCodes, "chars");
+        names.AddRange(entry.CustomCharacteristics ?? []);
+        return JoinCodesOrDash(names);
+    }
+
+    private static bool HasOrderKeyword(string characteristics, string keyword) =>
+        characteristics
+            .Split(['\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries)
+            .Any(s => s.Trim().Equals(keyword, StringComparison.OrdinalIgnoreCase));
+
     private async void OnDeployClicked(object sender, EventArgs e)
     {
+        var checkedUnits = DeploymentUnits.Where(u => u.IsChecked).ToList();
+        if (checkedUnits.Count == 0)
+        {
+            await DisplayAlert("No Units Selected", "Select at least one unit to deploy.", "OK");
+            return;
+        }
+
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
-        var checkedIndices = string.Join(",",
-            DeploymentUnits.Where(u => u.IsChecked).Select(u => u.EntryIndex));
+        var checkedIndices = string.Join(",", checkedUnits.Select(u => u.EntryIndex));
         var encodedIndices = Uri.EscapeDataString(checkedIndices);
+        var eliteDeployment = IsEliteDeployment ? "1" : "0";
         await Shell.Current.GoToAsync(
-            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&deployedIndices={encodedIndices}");
+            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&deployedIndices={encodedIndices}&eliteDeployment={eliteDeployment}");
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
@@ -380,6 +467,11 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
     public int EntryIndex { get; init; }
     public string BaseUnitDisplayName { get; init; } = string.Empty;
     public bool IsLieutenant { get; init; }
+    public bool IsIrregular { get; init; }
+    public bool IsImpetuous { get; init; }
+    public bool IsTagFromTagCompany { get; init; }
+    public int SlotCost => IsTagFromTagCompany ? 2 : 1;
+    public bool IsCheckboxEnabled => !IsLieutenant;
     public string CaptainIconPackagedPath { get; init; } = string.Empty;
     public string ExperienceIconPackagedPath { get; init; } = string.Empty;
 
@@ -394,6 +486,40 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
     public string UnitVitality { get; init; } = "-";
     public string UnitS { get; init; } = "-";
     public string VitalityHeader { get; init; } = "VITA";
+
+    // Wound tracking (used by GameModePage)
+    public int StartingVitality { get; init; } = 1;
+    public bool HasNwi { get; init; }
+    public bool HasRemotePresence { get; init; }
+    public int MaxWounds => HasRemotePresence ? StartingVitality + 2 : StartingVitality + 1;
+
+    private int _woundsReceived;
+    public int WoundsReceived
+    {
+        get => _woundsReceived;
+        set
+        {
+            var clamped = Math.Clamp(value, 0, MaxWounds);
+            if (_woundsReceived == clamped) return;
+            _woundsReceived = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(WoundStateKey));
+        }
+    }
+
+    public string WoundStateKey
+    {
+        get
+        {
+            var w = _woundsReceived;
+            var sv = StartingVitality;
+            if (w == 0) return "Healthy";
+            if (w < sv) return "Wounded";
+            if (w == sv) return HasNwi ? "NwiDown" : "KnockedOut";
+            if (w == sv + 1 && HasRemotePresence) return "KnockedOutBody2";
+            return "Dead";
+        }
+    }
 
     // Resolved display text
     public string Equipment { get; init; } = "-";

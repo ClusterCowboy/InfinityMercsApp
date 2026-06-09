@@ -13,30 +13,107 @@
                 BackgroundColor="#1F2937"
                 Stroke="#374151"
                 StrokeThickness="1"
-                Padding="16,10"
+                Padding="8,6"
                 StrokeShape="Rectangle">
-            <Label x:Name="RoundLabel"
-                   Text="Round 1"
-                   FontSize="{DynamicResource FontSizeSubHeadline}"
-                   FontAttributes="Bold"
-                   TextColor="#22C55E"
-                   HorizontalTextAlignment="Center" />
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                <Button x:Name="EndRoundButton"
+                        Grid.Column="0"
+                        Text="END"
+                        BackgroundColor="#DC2626"
+                        BorderColor="#DC2626"
+                        BorderWidth="2"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        FontSize="14"
+                        HeightRequest="36"
+                        WidthRequest="60"
+                        Padding="4,0"
+                        CornerRadius="4"
+                        IsVisible="False"
+                        Clicked="OnEndRoundButtonClicked" />
+                <Label x:Name="RoundLabel"
+                       Grid.Column="1"
+                       Text="Round 1"
+                       FontSize="{DynamicResource FontSizeSubHeadline}"
+                       FontAttributes="Bold"
+                       TextColor="#22C55E"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center" />
+                <Button x:Name="NextRoundButton"
+                        Grid.Column="2"
+                        Text="➡"
+                        BackgroundColor="Transparent"
+                        TextColor="#22C55E"
+                        FontSize="20"
+                        HeightRequest="36"
+                        WidthRequest="44"
+                        Padding="0"
+                        Clicked="OnNextRoundClicked" />
+            </Grid>
         </Border>
 
-        <!-- Color order icon row -->
+        <!-- Color order icon row with counts (tap to mark as used) -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Padding="8,12,8,4">
-            <skia:SKCanvasView Grid.Column="0" x:Name="LtColorCanvas"  HeightRequest="44" PaintSurface="OnLtColorPaint" />
-            <skia:SKCanvasView Grid.Column="1" x:Name="ImpColorCanvas" HeightRequest="44" PaintSurface="OnImpColorPaint" />
-            <skia:SKCanvasView Grid.Column="2" x:Name="IrrColorCanvas" HeightRequest="44" PaintSurface="OnIrrColorPaint" />
-            <skia:SKCanvasView Grid.Column="3" x:Name="RegColorCanvas" HeightRequest="44" PaintSurface="OnRegColorPaint" />
+            <HorizontalStackLayout Grid.Column="0" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnLtColorTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="LtColorCanvas"  WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnLtColorPaint" />
+                <Label x:Name="LtCountLabel"  Text="0" TextColor="#FBBF24" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnImpColorTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="ImpColorCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnImpColorPaint" />
+                <Label x:Name="ImpCountLabel" Text="0" TextColor="#F97316" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="2" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnIrrColorTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="IrrColorCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnIrrColorPaint" />
+                <Label x:Name="IrrCountLabel" Text="0" TextColor="#F59E0B" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="3" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnRegColorTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="RegColorCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnRegColorPaint" />
+                <Label x:Name="RegCountLabel" Text="0" TextColor="#22C55E" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
         </Grid>
 
-        <!-- Greyscale order icon row -->
+        <!-- Greyscale order icon row with counts (tap to restore) -->
         <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*" Padding="8,4,8,8">
-            <skia:SKCanvasView Grid.Column="0" x:Name="LtGreyCanvas"  HeightRequest="44" PaintSurface="OnLtGreyPaint" />
-            <skia:SKCanvasView Grid.Column="1" x:Name="ImpGreyCanvas" HeightRequest="44" PaintSurface="OnImpGreyPaint" />
-            <skia:SKCanvasView Grid.Column="2" x:Name="IrrGreyCanvas" HeightRequest="44" PaintSurface="OnIrrGreyPaint" />
-            <skia:SKCanvasView Grid.Column="3" x:Name="RegGreyCanvas" HeightRequest="44" PaintSurface="OnRegGreyPaint" />
+            <HorizontalStackLayout Grid.Column="0" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnLtGreyTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="LtGreyCanvas"  WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnLtGreyPaint" />
+                <Label x:Name="LtGreyCountLabel"  Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnImpGreyTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="ImpGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnImpGreyPaint" />
+                <Label x:Name="ImpGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="2" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnIrrGreyTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="IrrGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnIrrGreyPaint" />
+                <Label x:Name="IrrGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Column="3" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnRegGreyTapped" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <skia:SKCanvasView x:Name="RegGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnRegGreyPaint" />
+                <Label x:Name="RegGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
         </Grid>
 
         <!-- Unit accordion -->
