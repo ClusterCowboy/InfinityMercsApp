@@ -50,6 +50,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     private SKPicture? _woundMadPicture;
     private SKPicture? _woundKoPicture;
     private SKPicture? _woundDeadPicture;
+    private SKPicture? _tacticalPicture;
+    private readonly List<(DeploymentUnitItem Unit, SKCanvasView Canvas, bool[] IsGrey)> _eliteTacticalIcons = [];
 
     // Each entry is (expandable content view, arrow label) for exclusive-open behaviour.
     private readonly List<(View ContentArea, Label Arrow)> _accordionRows = [];
@@ -126,6 +128,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         _woundMadPicture     = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-mad-face.svg");
         _woundKoPicture      = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-knocked-out-face.svg");
         _woundDeadPicture    = await TryLoadSvgAsync("SVGCache/NonCBIcons/noun-gravestone.svg");
+        _tacticalPicture     = await TryLoadSvgAsync("SVGCache/CBIcons/tactical.svg");
 
         foreach (var canvas in new SKCanvasView[] { LtColorCanvas, ImpColorCanvas, IrrColorCanvas, RegColorCanvas,
                                                     LtGreyCanvas,  ImpGreyCanvas,  IrrGreyCanvas,  RegGreyCanvas })
@@ -224,6 +227,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         AccordionStack.Children.Clear();
         _accordionRows.Clear();
         _unitTracker.Clear();
+        _eliteTacticalIcons.Clear();
         _currentRound = 1;
         RoundLabel.Text = "Round 1";
         EndRoundButton.IsVisible = false;
@@ -329,6 +333,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 _unitTracker.Add((unit, entry.IsLieutenant, isImpetuous, isIrregular));
                 AccordionStack.Children.Add(BuildAccordionRow(unit));
             }
+
+            regCount++;
 
             LtCountLabel.Text  = ltCount.ToString();
             ImpCountLabel.Text = impCount.ToString();
@@ -457,6 +463,36 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         contentArea.Children.Insert(0, woundButtonRow);
 
+        // Tactical icon: shown to the left of the wound icon when this is an elite deployment.
+        SKCanvasView? tacticalCanvas = null;
+        if (_isEliteDeployment && (!unit.IsLieutenant || HasSkill(unit.Skills, "Tactical Awareness")))
+        {
+            var isGrey = new bool[] { false };
+            var tc = new SKCanvasView
+            {
+                WidthRequest = 32,
+                HeightRequest = 32,
+                VerticalOptions = LayoutOptions.Center
+            };
+            tc.PaintSurface += (_, e) =>
+            {
+                if (isGrey[0])
+                    DrawGrey(e, _tacticalPicture);
+                else
+                    DrawColor(e, _tacticalPicture);
+            };
+            tc.GestureRecognizers.Add(new TapGestureRecognizer
+            {
+                Command = new Command(() =>
+                {
+                    isGrey[0] = !isGrey[0];
+                    tc.InvalidateSurface();
+                })
+            });
+            _eliteTacticalIcons.Add((unit, tc, isGrey));
+            tacticalCanvas = tc;
+        }
+
         var headerGrid = new Grid
         {
             MinimumHeightRequest = 48,
@@ -465,12 +501,23 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         };
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        if (tacticalCanvas is not null)
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
 
         headerGrid.Children.Add(arrow);
         Grid.SetColumn(nameLabel, 1);
         headerGrid.Children.Add(nameLabel);
-        Grid.SetColumn(woundIconGrid, 2);
+        if (_isEliteDeployment && tacticalCanvas is not null)
+        {
+            Grid.SetColumn(tacticalCanvas, 2);
+            headerGrid.Children.Add(tacticalCanvas);
+            Grid.SetColumn(woundIconGrid, 3);
+        }
+        else
+        {
+            Grid.SetColumn(woundIconGrid, 2);
+        }
         headerGrid.Children.Add(woundIconGrid);
 
         headerGrid.GestureRecognizers.Add(new TapGestureRecognizer
@@ -698,6 +745,9 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             if (isIrr) irrCount++;
             if (!isIrr) regCount++;
         }
+        // Mercs always generates one bonus regular order
+        regCount++;
+
         LtCountLabel.Text  = ltCount.ToString();
         ImpCountLabel.Text = impCount.ToString();
         IrrCountLabel.Text = irrCount.ToString();
@@ -706,6 +756,12 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         ImpGreyCountLabel.Text = "0";
         IrrGreyCountLabel.Text = "0";
         RegGreyCountLabel.Text = "0";
+
+        foreach (var (u, canvas, isGrey) in _eliteTacticalIcons)
+        {
+            isGrey[0] = u.WoundStateKey is not ("Healthy" or "Wounded" or "NwiDown");
+            canvas.InvalidateSurface();
+        }
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
