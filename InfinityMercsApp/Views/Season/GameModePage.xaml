@@ -6,7 +6,7 @@
              Title="CONTRACT IN PROGRESS"
              BackgroundColor="#111827">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="0">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0">
 
         <!-- Round header band -->
         <Border Grid.Row="0"
@@ -41,10 +41,13 @@
                        VerticalTextAlignment="Center" />
                 <Button x:Name="NextRoundButton"
                         Grid.Column="2"
-                        Text="➡"
+                        Text="❯"
                         BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        BorderWidth="0"
                         TextColor="#22C55E"
-                        FontSize="20"
+                        FontSize="22"
+                        FontAttributes="Bold"
                         HeightRequest="36"
                         WidthRequest="44"
                         Padding="0"
@@ -120,17 +123,6 @@
         <ScrollView Grid.Row="3">
             <VerticalStackLayout x:Name="AccordionStack" Spacing="0" Padding="0,8,0,0" />
         </ScrollView>
-
-        <!-- End Game button -->
-        <Button Grid.Row="4"
-                Text="END GAME"
-                BackgroundColor="#DC2626"
-                TextColor="White"
-                BorderColor="#DC2626"
-                FontAttributes="Bold"
-                HorizontalOptions="Fill"
-                Margin="16,8,16,16"
-                Clicked="OnEndGameClicked" />
 
     </Grid>
 

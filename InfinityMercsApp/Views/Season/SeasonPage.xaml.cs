@@ -2063,7 +2063,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private async void OnPlayRoundClicked(object? sender, EventArgs e)
     {
         var encodedPath = Uri.EscapeDataString(_companyFilePath ?? string.Empty);
-        await Shell.Current.GoToAsync($"{nameof(PlayModePage)}?companyFilePath={encodedPath}");
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath ?? string.Empty);
+        await Shell.Current.GoToAsync($"{nameof(PlayModePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}");
     }
 
     private async Task LoadPlayRoundFlagsIconAsync()

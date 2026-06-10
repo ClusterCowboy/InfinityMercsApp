@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using InfinityMercsApp.Domain.Models.Perks;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.Services.Season;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
@@ -36,6 +37,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private readonly IMetadataProvider? _metadataProvider;
     private string _companyFilePath = string.Empty;
+    private string _seasonFilePath = string.Empty;
     private bool _loadAttempted;
     private bool _showUnitsInInches = true;
 
@@ -83,6 +85,9 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
             _loadAttempted = false;
         }
+
+        if (query.TryGetValue("seasonFilePath", out var seasonRaw))
+            _seasonFilePath = Uri.UnescapeDataString(seasonRaw?.ToString() ?? string.Empty);
 
         if (query.TryGetValue("deployedIndices", out var indicesRaw))
         {
@@ -298,6 +303,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
                 var unit = new DeploymentUnitItem
                 {
+                    EntryIndex = entry.EntryIndex,
                     Name = displayName,
                     BaseUnitDisplayName = BuildUnitBaseDisplayName(baseUnitName),
                     IsLieutenant = entry.IsLieutenant,
@@ -449,6 +455,23 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             RefreshWoundDisplay();
         };
 
+        var xpBtn = new Button
+        {
+            Text = "XP",
+            FontSize = 13,
+            HeightRequest = 36,
+            Padding = new Thickness(0),
+            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Color.FromArgb("#22C55E"),
+            CornerRadius = 4
+        };
+        xpBtn.Clicked += async (_, _) =>
+        {
+            await ShowXpPopupAsync(unit);
+            var total = unit.XpData.TotalXp;
+            xpBtn.Text = total > 0 ? $"XP ({total})" : "XP";
+        };
+
         var woundButtonRow = new Grid
         {
             ColumnSpacing = 8,
@@ -456,10 +479,13 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         };
         woundButtonRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
         woundButtonRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        woundButtonRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
         Grid.SetColumn(addWoundBtn, 0);
         Grid.SetColumn(removeWoundBtn, 1);
+        Grid.SetColumn(xpBtn, 2);
         woundButtonRow.Children.Add(addWoundBtn);
         woundButtonRow.Children.Add(removeWoundBtn);
+        woundButtonRow.Children.Add(xpBtn);
 
         contentArea.Children.Insert(0, woundButtonRow);
 
@@ -721,8 +747,49 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     {
         var confirmed = await DisplayAlert("End Game", "Are you sure you want to end the game?", "Yes", "No");
         if (!confirmed) return;
+
+        // Determine which campaign mission this is (completed rounds + 1)
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var deploymentXp = SeasonFileService.ResolveCurrentRound(seasonFile) + 1;
+
+        ExperiencePageData.Units = _unitTracker
+            .Select(t => new ExperienceUnitResult
+            {
+                EntryIndex = t.Unit.EntryIndex,
+                Name = t.Unit.Name,
+                CachedLogoPath = t.Unit.CachedLogoPath,
+                PackagedLogoPath = t.Unit.PackagedLogoPath,
+                DeploymentXp = deploymentXp,
+                IsEliteDeployment = _isEliteDeployment,
+                IsConsciousAtEnd = t.Unit.WoundStateKey is "Healthy" or "Wounded" or "NwiDown",
+                GainedInjury = false,
+                XpData = t.Unit.XpData
+            })
+            .ToList();
+
+        var deadUnits = _unitTracker
+            .Where(t => t.Unit.WoundStateKey == "Dead")
+            .Select(t => new InjuryItem
+            {
+                EntryIndex = t.Unit.EntryIndex,
+                Name = t.Unit.Name,
+                PhValue = t.Unit.UnitPh,
+                CachedLogoPath = t.Unit.CachedLogoPath,
+                PackagedLogoPath = t.Unit.PackagedLogoPath
+            })
+            .ToList();
+
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
-        await Shell.Current.GoToAsync($"{nameof(ExperiencePage)}?companyFilePath={encodedPath}");
+
+        if (deadUnits.Count > 0)
+        {
+            InjuryPageData.PendingInjuries = deadUnits;
+            await Shell.Current.GoToAsync($"{nameof(InjuriesPage)}?companyFilePath={encodedPath}");
+        }
+        else
+        {
+            await Shell.Current.GoToAsync($"{nameof(ExperiencePage)}?companyFilePath={encodedPath}");
+        }
     }
 
     private void OnNextRoundClicked(object sender, EventArgs e)
@@ -732,6 +799,264 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         EndRoundButton.IsVisible = _currentRound >= 3;
         NextRoundButton.IsVisible = _currentRound < 4;
         RecalculateOrders();
+    }
+
+    private async Task ShowXpPopupAsync(DeploymentUnitItem unit)
+    {
+        var xp = unit.XpData;
+        var originalContent = Content;
+        var tcs = new TaskCompletionSource();
+
+        var totalLabel = new Label
+        {
+            TextColor = Color.FromArgb("#22C55E"),
+            FontSize = 12,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 2, 0, 0)
+        };
+        void UpdateTotal() => totalLabel.Text = $"Total XP Earned: {xp.TotalXp}";
+        UpdateTotal();
+
+        var stack = new VerticalStackLayout
+        {
+            Padding = new Thickness(12, 6, 12, 6),
+            Spacing = 0,
+            BackgroundColor = Color.FromArgb("#0F1923")
+        };
+        stack.Children.Add(new Label
+        {
+            Text = unit.Name,
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 15,
+            HorizontalTextAlignment = TextAlignment.Center
+        });
+        stack.Children.Add(totalLabel);
+
+        void AddSection(string description)
+        {
+            stack.Children.Add(new BoxView
+            {
+                HeightRequest = 1,
+                Color = Color.FromArgb("#374151"),
+                Margin = new Thickness(0, 7, 0, 4)
+            });
+            stack.Children.Add(new Label
+            {
+                Text = description,
+                TextColor = Color.FromArgb("#D1D5DB"),
+                FontSize = 12,
+                LineBreakMode = LineBreakMode.WordWrap
+            });
+        }
+
+        // Suppress the CheckedChanged that fires when IsChecked is set during initialisation.
+        CheckBox MakeCheckBox(bool current, Action<bool> onChanged)
+        {
+            var cb = new CheckBox { Color = Color.FromArgb("#22C55E") };
+            var suppress = true;
+            cb.CheckedChanged += (_, e) =>
+            {
+                if (suppress) return;
+                onChanged(e.Value);
+                UpdateTotal();
+            };
+            cb.IsChecked = current;
+            suppress = false;
+            return cb;
+        }
+
+        void AddRow(CheckBox cb, string label)
+        {
+            var lbl = new Label
+            {
+                Text = label,
+                TextColor = Color.FromArgb("#9CA3AF"),
+                FontSize = 12,
+                VerticalTextAlignment = TextAlignment.Center
+            };
+            var row = new HorizontalStackLayout { Spacing = 4, Margin = new Thickness(0, 2, 0, 0) };
+            row.Children.Add(cb);
+            row.Children.Add(lbl);
+            stack.Children.Add(row);
+        }
+
+        // Sequential multi-check with equal-width columns.
+        // Only the highest-checked and lowest-unchecked checkboxes are enabled.
+        void AddMultiChecks(bool[] arr)
+        {
+            var checkboxes = new CheckBox[arr.Length];
+
+            void RefreshStates()
+            {
+                var highestChecked = -1;
+                for (var i = arr.Length - 1; i >= 0; i--)
+                    if (arr[i]) { highestChecked = i; break; }
+
+                var lowestUnchecked = -1;
+                for (var i = 0; i < arr.Length; i++)
+                    if (!arr[i]) { lowestUnchecked = i; break; }
+
+                for (var i = 0; i < checkboxes.Length; i++)
+                    checkboxes[i].IsEnabled = i == highestChecked || i == lowestUnchecked;
+            }
+
+            var grid = new Grid { ColumnSpacing = 4, Margin = new Thickness(0, 2, 0, 0) };
+            for (var i = 0; i < arr.Length; i++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            for (var i = 0; i < arr.Length; i++)
+            {
+                var idx = i;
+                var cb = MakeCheckBox(arr[idx], v =>
+                {
+                    arr[idx] = v;
+                    RefreshStates();
+                });
+                checkboxes[idx] = cb;
+
+                var numLbl = new Label
+                {
+                    Text = $"#{idx + 1}",
+                    TextColor = Color.FromArgb("#9CA3AF"),
+                    FontSize = 12,
+                    VerticalTextAlignment = TextAlignment.Center
+                };
+                var item = new HorizontalStackLayout { Spacing = 2, HorizontalOptions = LayoutOptions.Center };
+                item.Children.Add(cb);
+                item.Children.Add(numLbl);
+                Grid.SetColumn(item, idx);
+                grid.Children.Add(item);
+            }
+            stack.Children.Add(grid);
+            RefreshStates();
+        }
+
+        // ── XP Categories ──────────────────────────────────────────────────────
+
+        AddSection("Assisting an allied unit\n(engineering / doctoring / medikit / gizmokit / casevac)");
+        AddMultiChecks(xp.Assist);
+
+        AddSection("Inflicting 1+ state(s) (stunned / spotlit / immobilized / isolated) in one order");
+        AddMultiChecks(xp.InflictState);
+
+        CheckBox? attemptButtonCb = null;
+        CheckBox? succeedButtonCb = null;
+
+        AddSection("Making a roll to accomplish an objective that is NOT attacking the opponent");
+        {
+            var cbAttempt = MakeCheckBox(xp.AttemptButton, v =>
+            {
+                xp.AttemptButton = v;
+                if (!v && xp.SucceedButton)
+                {
+                    xp.SucceedButton = false;
+                    if (succeedButtonCb is not null) succeedButtonCb.IsChecked = false;
+                }
+            });
+            var cbSucceed = MakeCheckBox(xp.SucceedButton, v =>
+            {
+                xp.SucceedButton = v;
+                if (v && !xp.AttemptButton)
+                {
+                    xp.AttemptButton = true;
+                    if (attemptButtonCb is not null) attemptButtonCb.IsChecked = true;
+                }
+            });
+            attemptButtonCb = cbAttempt;
+            succeedButtonCb = cbSucceed;
+
+            var pairGrid = new Grid { ColumnSpacing = 4, Margin = new Thickness(0, 2, 0, 0) };
+            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            var leftItem = new HorizontalStackLayout { Spacing = 4 };
+            leftItem.Children.Add(cbAttempt);
+            leftItem.Children.Add(new Label { Text = "Attempted", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            var rightItem = new HorizontalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
+            rightItem.Children.Add(cbSucceed);
+            rightItem.Children.Add(new Label { Text = "Succeeded", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            Grid.SetColumn(leftItem, 0);
+            Grid.SetColumn(rightItem, 1);
+            pairGrid.Children.Add(leftItem);
+            pairGrid.Children.Add(rightItem);
+            stack.Children.Add(pairGrid);
+        }
+
+        CheckBox? scanEnemyCb = null;
+        CheckBox? scanEnemyFoCb = null;
+
+        AddSection("Scan Enemy - LoF to target unconscious, immobilized, or shasvastii state. That unit gets the Targeted state.");
+        {
+            var cbScan = MakeCheckBox(xp.ScanEnemy, v =>
+            {
+                xp.ScanEnemy = v;
+                if (!v && xp.ScanEnemyFo)
+                {
+                    xp.ScanEnemyFo = false;
+                    if (scanEnemyFoCb is not null) scanEnemyFoCb.IsChecked = false;
+                }
+            });
+            var cbScanFo = MakeCheckBox(xp.ScanEnemyFo, v =>
+            {
+                xp.ScanEnemyFo = v;
+                if (v && !xp.ScanEnemy)
+                {
+                    xp.ScanEnemy = true;
+                    if (scanEnemyCb is not null) scanEnemyCb.IsChecked = true;
+                }
+            });
+            scanEnemyCb = cbScan;
+            scanEnemyFoCb = cbScanFo;
+
+            var pairGrid = new Grid { ColumnSpacing = 4, Margin = new Thickness(0, 2, 0, 0) };
+            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+            var leftItem = new HorizontalStackLayout { Spacing = 4 };
+            leftItem.Children.Add(cbScan);
+            leftItem.Children.Add(new Label { Text = "Scanned", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            var rightItem = new HorizontalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
+            rightItem.Children.Add(cbScanFo);
+            rightItem.Children.Add(new Label { Text = "Scanned with FO", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            Grid.SetColumn(leftItem, 0);
+            Grid.SetColumn(rightItem, 1);
+            pairGrid.Children.Add(leftItem);
+            pairGrid.Children.Add(rightItem);
+            stack.Children.Add(pairGrid);
+        }
+
+        AddSection("Tag and Bag [Mercs Skill]");
+        AddRow(MakeCheckBox(xp.TagAndBag, v => xp.TagAndBag = v), "Tagged and Bagged");
+
+        stack.Children.Add(new BoxView
+        {
+            HeightRequest = 1,
+            Color = Color.FromArgb("#374151"),
+            Margin = new Thickness(0, 8, 0, 4)
+        });
+        var doneBtn = new Button
+        {
+            Text = "Done",
+            BackgroundColor = Color.FromArgb("#22C55E"),
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold,
+            CornerRadius = 8,
+            HeightRequest = 36
+        };
+        doneBtn.Clicked += (_, _) =>
+        {
+            Content = originalContent;
+            tcs.TrySetResult();
+        };
+        stack.Children.Add(doneBtn);
+
+        Content = new ScrollView
+        {
+            BackgroundColor = Color.FromArgb("#0F1923"),
+            Content = stack
+        };
+
+        await tcs.Task;
     }
 
     private void RecalculateOrders()

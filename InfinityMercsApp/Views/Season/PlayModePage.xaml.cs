@@ -23,6 +23,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private string _companyFilePath = string.Empty;
+    private string _seasonFilePath = string.Empty;
     private bool _loadAttempted;
     private bool _showUnitsInInches = true;
     private DeploymentUnitItem? _selectedUnit;
@@ -102,6 +103,9 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
             _loadAttempted = false;
         }
+
+        if (query.TryGetValue("seasonFilePath", out var seasonRaw))
+            _seasonFilePath = Uri.UnescapeDataString(seasonRaw?.ToString() ?? string.Empty);
     }
 
     protected override async void OnAppearing()
@@ -302,11 +306,12 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         }
 
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath);
         var checkedIndices = string.Join(",", checkedUnits.Select(u => u.EntryIndex));
         var encodedIndices = Uri.EscapeDataString(checkedIndices);
         var eliteDeployment = IsEliteDeployment ? "1" : "0";
         await Shell.Current.GoToAsync(
-            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&deployedIndices={encodedIndices}&eliteDeployment={eliteDeployment}");
+            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}&deployedIndices={encodedIndices}&eliteDeployment={eliteDeployment}");
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
@@ -521,6 +526,9 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
         }
     }
 
+    // XP tracking (accumulated across rounds, never reset)
+    public UnitXpData XpData { get; } = new();
+
     // Resolved display text
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
@@ -557,4 +565,26 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
 
     public Color TileStroke => IsSelected ? Color.FromArgb("#22C55E") : Color.FromArgb("#374151");
     public double TileStrokeThickness => IsSelected ? 2.0 : 1.0;
+}
+
+public sealed class UnitXpData
+{
+    // 2 checkboxes
+    public bool[] Assist { get; } = new bool[2];
+    // 3 checkboxes
+    public bool[] InflictState { get; } = new bool[3];
+    public bool AttemptButton { get; set; }
+    public bool SucceedButton { get; set; }
+    public bool ScanEnemy { get; set; }
+    public bool ScanEnemyFo { get; set; }
+    public bool TagAndBag { get; set; }
+
+    public int TotalXp =>
+        Assist.Count(b => b) +
+        InflictState.Count(b => b) +
+        (AttemptButton ? 1 : 0) +
+        (SucceedButton ? 1 : 0) +
+        (ScanEnemy ? 1 : 0) +
+        (ScanEnemyFo ? 1 : 0) +
+        (TagAndBag ? 2 : 0);
 }
