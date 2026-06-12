@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using InfinityMercsApp.Domain.Models.Season;
 using InfinityMercsApp.Domain.Models.Stores;
 using InfinityMercsApp.Domain.Utilities;
 using MauiShapes = Microsoft.Maui.Controls.Shapes;
@@ -36,10 +37,99 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private readonly IStoreProvider? _storeProvider;
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IAppSettingsProvider? _appSettingsProvider;
-    private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
+    private static readonly HashSet<string> InventoryExcludedStores = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Medical Services",
+        "Additional Recruitment"
+    };
+    private IReadOnlyList<(string Name, string? AssociatedType, string Alignment, IReadOnlyList<string> AssociatedFactions)> _availableStores = [];
     private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (int CostCr, double CostSwc)> _inventoryItemCosts = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<Action<int, double>> _marketplaceRecolorActions = [];
+    private Button? _buyButton;
+    private string? _temporaryStoreName;
+    private int _temporaryStoreRoundIndex;
+    private string? _pendingTemporaryStoreSelection;
+
+    private static readonly Dictionary<string, string?> FactionAbbreviations = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["PanOceania"]                   = "PanO",
+        ["White Company"]                = "White Co.",
+        ["Yu Jing"]                      = "YJ",
+        ["Nomads"]                       = "Nomads",
+        ["Haqqislam"]                    = "Haqqislam",
+        ["Druze"]                        = "Druze",
+        ["Ariadna"]                      = "Ariadna",
+        ["Dashat"]                       = "Dashat",
+        ["Aleph"]                        = "ALEPH",
+        ["O-12"]                         = "O12",
+        ["Tohaa"]                        = "Tohaa",
+        ["Combined Army"]                = "CA",
+        ["Japanese Secessionist Army"]   = "JSA",
+        // Sub-factions — omitted from label (null = skip)
+        ["Shindenbutai"]                 = null,
+        ["Oban"]                         = null,
+        ["Hayabusa Jōrikusentai"]   = null,
+        ["Ikari"]                        = null,
+    };
+
+    private static string BuildStorePickerLabel(string name, string? associatedType, string alignment, IReadOnlyList<string> associatedFactions)
+    {
+        if (string.Equals(name, "Medical Services", StringComparison.OrdinalIgnoreCase))
+            return "+ Medical Services";
+
+        if (string.Equals(name, "Additional Recruitment", StringComparison.OrdinalIgnoreCase))
+            return "Additional Recruitment";
+
+        if (associatedFactions.Count == 0 && string.Equals(alignment, "Neutral", StringComparison.OrdinalIgnoreCase))
+            return $"{name} [Neutral]";
+
+        var parts = new List<string>();
+
+        var abbrevs = associatedFactions
+            .Select(f => FactionAbbreviations.TryGetValue(f, out var a) ? a : f)
+            .Where(a => a is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (abbrevs.Count > 0)
+            parts.Add(string.Join("/", abbrevs));
+
+        if (!string.IsNullOrWhiteSpace(associatedType))
+            parts.Add(associatedType.Replace(", ", " | "));
+
+        if (!string.IsNullOrWhiteSpace(alignment) &&
+            !string.Equals(alignment, "Always Available", StringComparison.OrdinalIgnoreCase))
+            parts.Add(alignment);
+
+        return parts.Count > 0 ? $"{name} [{string.Join(", ", parts)}]" : name;
+    }
+
+    private static string StripTemporaryStoreSuffix(string storeName)
+    {
+        var m = Regex.Match(storeName, @"\s*-\s*Round\s+\d+\s+Store\s*$", RegexOptions.IgnoreCase);
+        return m.Success ? storeName[..m.Index].Trim() : storeName;
+    }
+
+    // Strips picker decoration to get the canonical store name used for JSON lookup.
+    // Handles: "Name [factions, type, alignment]", "+ Medical Services", "Name - Round X Store"
+    private static string StripPickerDecoration(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return label;
+
+        // "+ Medical Services" prefix
+        var trimmed = label.TrimStart('+').Trim();
+
+        // " - Round X Store" suffix
+        trimmed = StripTemporaryStoreSuffix(trimmed);
+
+        // " [faction, type, alignment]" suffix
+        var bracketIdx = trimmed.LastIndexOf('[');
+        if (bracketIdx > 0 && trimmed.EndsWith(']'))
+            trimmed = trimmed[..bracketIdx].Trim();
+
+        return trimmed;
+    }
 
     private SKPicture? _pickerHeaderLogoPicture;
     private SKPicture? _playRoundFlagsPicture;
@@ -256,6 +346,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             await SelectCompanyUnitAsync(_selectedCompanyUnit);
         }
         await RefreshMarketplaceResourcesAsync();
+        if (InventoryTabContent.IsVisible)
+            await RefreshInventoryAsync();
+        await MaybeShowStoreSearchPopupAsync();
     }
 
     protected override void OnDisappearing()
@@ -1116,7 +1209,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     {
         var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
         var currentRound = SeasonFileService.ResolveCurrentRound(seasonFile);
-        UpdateSeasonTitleBarLabel($"Pre Round {currentRound + 1}");
+        UpdateSeasonTitleBarLabel(currentRound == 0
+            ? "Round 0"
+            : $"Round {currentRound} Marketplace");
     }
 
     private async Task RefreshMarketplaceResourcesAsync()
@@ -1144,7 +1239,317 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
         foreach (var recolor in _marketplaceRecolorActions)
             recolor(remainingCr, remainingSwc);
+
+        if (_buyButton is not null)
+        {
+            var hasItems = _inventoryCounts.Any(kvp => kvp.Value > 0);
+            _buyButton.IsEnabled = hasItems;
+            _buyButton.Opacity = hasItems ? 1.0 : 0.45;
+        }
     }
+
+    private sealed record InventoryCatalogItem(string Name, string Category, string StoreName, int CostCr = 0);
+
+    private sealed class InventoryBucket
+    {
+        public InventoryBucket(string name, string category, int costCr = 0)
+        {
+            Name = name;
+            Category = category;
+            CostCr = costCr;
+        }
+
+        public string Name { get; }
+        public string Category { get; }
+        public int CostCr { get; set; }
+        public int Count { get; set; }
+        public SortedSet<string> Sources { get; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task RefreshInventoryAsync()
+    {
+        InventoryContentArea.Children.Clear();
+
+        if (_storeProvider is null)
+        {
+            AddInventoryMessage("Inventory is unavailable.");
+            return;
+        }
+
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        if (seasonFile is null)
+        {
+            AddInventoryMessage("No season inventory found.");
+            return;
+        }
+
+        var catalogByStoreAndName = await BuildInventoryCatalogAsync();
+        var catalogByName = catalogByStoreAndName.Values
+            .GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        var buckets = new Dictionary<string, InventoryBucket>(StringComparer.OrdinalIgnoreCase);
+
+        void AddItem(string name, string category, string source, int costCr = 0)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            var normalizedCategory = NormalizeInventoryCategory(category);
+            var key = $"{normalizedCategory}|{name.Trim()}";
+            if (!buckets.TryGetValue(key, out var bucket))
+            {
+                bucket = new InventoryBucket(name.Trim(), normalizedCategory, costCr);
+                buckets[key] = bucket;
+            }
+
+            if (costCr > 0 && bucket.CostCr == 0)
+                bucket.CostCr = costCr;
+
+            bucket.Count++;
+            if (!string.IsNullOrWhiteSpace(source))
+                bucket.Sources.Add(source.Trim());
+        }
+
+        void RemoveItem(string name)
+        {
+            var matchKey = buckets.Keys.FirstOrDefault(k =>
+                k.EndsWith("|" + name.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (matchKey is not null && buckets[matchKey].Count > 0)
+                buckets[matchKey].Count--;
+        }
+
+        void AddTransaction(SeasonTransaction transaction)
+        {
+            if (transaction.IsSale)
+            {
+                RemoveItem(transaction.ItemName);
+                return;
+            }
+
+            var storeName = NormalizeInventoryStoreName(transaction.OriginStore);
+            if (InventoryExcludedStores.Contains(storeName)) return;
+
+            var storeKey = MakeInventoryCatalogKey(storeName, transaction.ItemName);
+            if (!catalogByStoreAndName.TryGetValue(storeKey, out var catalogItem) &&
+                !catalogByName.TryGetValue(transaction.ItemName, out catalogItem))
+            {
+                return;
+            }
+
+            AddItem(catalogItem.Name, catalogItem.Category, catalogItem.StoreName, catalogItem.CostCr);
+        }
+
+        foreach (var transaction in seasonFile.InitialPurchases.Transactions)
+            AddTransaction(transaction);
+
+        foreach (var round in seasonFile.Rounds.OrderBy(round => round.RoundIndex))
+        {
+            foreach (var transaction in round.Marketplace.Transactions)
+                AddTransaction(transaction);
+
+            var wonItemCount = round.Downtime.WonItems.Count;
+            foreach (var wonItem in round.Downtime.WonItems)
+            {
+                var category = wonItem.Category;
+                var wonCostCr = 0;
+                if (catalogByName.TryGetValue(wonItem.Name, out var wonCatalogItem))
+                {
+                    if (string.IsNullOrWhiteSpace(category)) category = wonCatalogItem.Category;
+                    wonCostCr = wonCatalogItem.CostCr;
+                }
+
+                AddItem(wonItem.Name, category, string.IsNullOrWhiteSpace(wonItem.Source) ? "Downtime" : wonItem.Source, wonCostCr);
+            }
+
+            if (wonItemCount == 0 &&
+                round.Downtime.OtherEffects.Contains("Random pistol", StringComparison.OrdinalIgnoreCase))
+            {
+                AddItem("Random pistol", "Sidearm", "Downtime");
+            }
+        }
+
+        if (buckets.Count == 0)
+        {
+            AddInventoryMessage("No inventory items yet.");
+            return;
+        }
+
+        foreach (var group in buckets.Values
+                     .Where(b => b.Count > 0)
+                     .OrderBy(item => InventoryCategoryOrder(item.Category))
+                     .ThenBy(item => item.Category)
+                     .ThenBy(item => item.Name)
+                     .GroupBy(item => item.Category))
+        {
+            InventoryContentArea.Children.Add(BuildSectionHeader(group.Key.ToUpperInvariant()));
+            foreach (var item in group)
+                InventoryContentArea.Children.Add(BuildInventoryRow(item));
+        }
+    }
+
+    private async Task<Dictionary<string, InventoryCatalogItem>> BuildInventoryCatalogAsync()
+    {
+        var catalog = new Dictionary<string, InventoryCatalogItem>(StringComparer.OrdinalIgnoreCase);
+        if (_storeProvider is null) return catalog;
+
+        foreach (var storeName in _storeProvider.GetAllStoreNames())
+        {
+            var normalizedStoreName = NormalizeInventoryStoreName(storeName);
+            if (InventoryExcludedStores.Contains(normalizedStoreName)) continue;
+
+            var store = await _storeProvider.GetStoreByNameAsync(normalizedStoreName);
+            if (store is null) continue;
+
+            foreach (var item in store.Items)
+            {
+                if (string.IsNullOrWhiteSpace(item.Name)) continue;
+
+                catalog[MakeInventoryCatalogKey(store.Name, item.Name)] = new InventoryCatalogItem(
+                    item.Name.Trim(),
+                    NormalizeInventoryCategory(item.Category),
+                    store.Name,
+                    item.CostCr);
+            }
+        }
+
+        return catalog;
+    }
+
+    private void AddInventoryMessage(string text)
+    {
+        InventoryContentArea.Children.Add(new Label
+        {
+            Text = text,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
+            TextColor = Color.FromArgb("#6B7280"),
+            HorizontalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 40, 0, 0)
+        });
+    }
+
+    private Border BuildInventoryRow(InventoryBucket item)
+    {
+        var sellPrice = item.CostCr > 0 ? (int)Math.Ceiling(item.CostCr / 2.0) : 0;
+
+        var nameLabel = new Label
+        {
+            Text = item.Name,
+            Style = (Style)Application.Current!.Resources["LabelBody"],
+            TextColor = Colors.White,
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.WordWrap
+        };
+
+        var sourceLabel = new Label
+        {
+            Text = item.Sources.Count > 0 ? string.Join(", ", item.Sources) : string.Empty,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            TextColor = Color.FromArgb("#9CA3AF"),
+            IsVisible = item.Sources.Count > 0
+        };
+
+        var textStack = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
+        textStack.Children.Add(nameLabel);
+        textStack.Children.Add(sourceLabel);
+
+        var countLabel = new Label
+        {
+            Text = $"x{item.Count}",
+            Style = (Style)Application.Current!.Resources["LabelBody"],
+            TextColor = Color.FromArgb("#22C55E"),
+            FontAttributes = FontAttributes.Bold,
+            VerticalTextAlignment = TextAlignment.Center,
+            HorizontalTextAlignment = TextAlignment.End,
+            MinimumWidthRequest = 32
+        };
+
+        var rightStack = new HorizontalStackLayout { Spacing = 8, VerticalOptions = LayoutOptions.Center };
+        rightStack.Children.Add(countLabel);
+
+        if (sellPrice > 0)
+        {
+            var sellBtn = new Button
+            {
+                Text = $"SELL ({sellPrice}cr)",
+                BackgroundColor = Color.FromArgb("#374151"),
+                TextColor = Color.FromArgb("#F59E0B"),
+                BorderColor = Color.FromArgb("#F59E0B"),
+                BorderWidth = 1,
+                CornerRadius = 4,
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                Padding = new Thickness(8, 4),
+                HeightRequest = 36
+            };
+            var capturedItem = item;
+            var capturedSellPrice = sellPrice;
+            sellBtn.Clicked += async (_, _) =>
+            {
+                var confirmed = await DisplayAlert(
+                    "Sell Equipment",
+                    $"Sell {capturedItem.Name} for {capturedSellPrice} CR?\n(SWC is not refunded)",
+                    "Sell", "Cancel");
+                if (!confirmed) return;
+
+                await SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
+                {
+                    round.Marketplace.Transactions.Add(new SeasonTransaction
+                    {
+                        OriginStore = capturedItem.Sources.FirstOrDefault() ?? string.Empty,
+                        ItemName = capturedItem.Name,
+                        CostCr = -capturedSellPrice,
+                        IsSale = true
+                    });
+                });
+
+                await RefreshMarketplaceResourcesAsync();
+                await RefreshInventoryAsync();
+            };
+            rightStack.Children.Add(sellBtn);
+        }
+
+        var rowGrid = new Grid { MinimumHeightRequest = 52 };
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(textStack, 0);
+        Grid.SetColumn(rightStack, 1);
+        rowGrid.Children.Add(textStack);
+        rowGrid.Children.Add(rightStack);
+
+        return new Border
+        {
+            BackgroundColor = Color.FromArgb("#1F2937"),
+            Stroke = Color.FromArgb("#374151"),
+            StrokeThickness = 1,
+            Padding = new Thickness(12, 8),
+            Margin = new Thickness(0, 0, 0, 6),
+            StrokeShape = new MauiShapes.RoundRectangle { CornerRadius = 6 },
+            Content = rowGrid
+        };
+    }
+
+    private static string MakeInventoryCatalogKey(string storeName, string itemName) =>
+        $"{NormalizeInventoryStoreName(storeName)}|{itemName.Trim()}";
+
+    private static string NormalizeInventoryStoreName(string storeName)
+    {
+        return StripPickerDecoration((storeName ?? string.Empty).Trim());
+    }
+
+    private static string NormalizeInventoryCategory(string category) =>
+        string.IsNullOrWhiteSpace(category) ? "General" : category.Trim();
+
+    private static int InventoryCategoryOrder(string category) => category switch
+    {
+        "Primary" => 0,
+        "Secondary" => 1,
+        "Sidearm" => 2,
+        "Accessories" => 3,
+        "Roles" => 4,
+        "Exchange" => 5,
+        "General" => 99,
+        _ => 50
+    };
 
     private bool ApplyGlobalDisplayUnitsPreference()
     {
@@ -1567,7 +1972,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
     private async Task PopulateMarketplaceStoresAsync(IReadOnlyList<SavedCompanyFaction> sourceFactions)
     {
-        StoreTabStrip.Children.Clear();
+        StoreSelectorPicker.Items.Clear();
         StoreContentArea.Children.Clear();
 
         if (_storeProvider is null || _armyDataService is null)
@@ -1582,67 +1987,119 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var factionNames = FactionResolver.GetExpandedFactionNames(teamFactions, allFactions);
         _availableStores = await _storeProvider.GetAvailableStoresAsync(factionNames.ToList());
 
-        foreach (var (name, _, _) in _availableStores)
+        // Split "always at end" stores from regular stores.
+        var endStoreNames = new HashSet<string>(new[] { "Medical Services", "Additional Recruitment" }, StringComparer.OrdinalIgnoreCase);
+        var regularStores = _availableStores.Where(s => !endStoreNames.Contains(s.Name)).ToList();
+        var endStores     = _availableStores.Where(s => endStoreNames.Contains(s.Name))
+                                            .OrderBy(s => s.Name.Equals("Medical Services", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                                            .ToList();
+
+        foreach (var (name, type, alignment, factions) in regularStores)
+            StoreSelectorPicker.Items.Add(BuildStorePickerLabel(name, type, alignment, factions));
+
+        // Append the latest round's temporary store as an extra entry (if any).
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var latestTempRound = seasonFile?.Rounds
+            .OrderByDescending(r => r.RoundIndex)
+            .FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.TemporaryStore));
+        var latestTemp = latestTempRound?.TemporaryStore;
+
+        if (!string.IsNullOrWhiteSpace(latestTemp) &&
+            !_availableStores.Any(s => string.Equals(s.Name, latestTemp, StringComparison.OrdinalIgnoreCase)))
         {
-            StoreTabStrip.Children.Add(BuildStoreTabButton(name));
+            _temporaryStoreName = latestTemp;
+            _temporaryStoreRoundIndex = latestTempRound?.RoundIndex ?? 0;
+            StoreSelectorPicker.Items.Add($"{latestTemp} - Round {_temporaryStoreRoundIndex} Store");
+        }
+        else
+        {
+            _temporaryStoreName = null;
+            _temporaryStoreRoundIndex = 0;
         }
 
-        if (_availableStores.Count > 0)
-        {
-            await SelectStoreAsync(_availableStores[0].Name);
-        }
+        // Medical Services and Additional Recruitment always last.
+        foreach (var (name, type, alignment, factions) in endStores)
+            StoreSelectorPicker.Items.Add(BuildStorePickerLabel(name, type, alignment, factions));
+
+        if (StoreSelectorPicker.Items.Count > 0)
+            StoreSelectorPicker.SelectedIndex = 0;
     }
 
-    private Button BuildStoreTabButton(string storeName)
+    private async void OnStoreSelectorPickerChanged(object? sender, EventArgs e)
     {
-        var btn = new Button
-        {
-            Text = storeName,
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#9CA3AF"),
-            BorderColor = Color.FromArgb("#4B5563"),
-            BorderWidth = 1,
-            CornerRadius = 6,
-            Style = (Style)Application.Current!.Resources["ButtonCaption"],
-            Padding = new Thickness(10, 4),
-            HeightRequest = 34
-        };
-        btn.Clicked += (_, _) => _ = SelectStoreAsync(storeName);
-        return btn;
+        if (StoreSelectorPicker.SelectedIndex < 0) return;
+        var storeName = StoreSelectorPicker.Items[StoreSelectorPicker.SelectedIndex];
+        await SelectStoreAsync(storeName);
     }
 
     private async Task SelectStoreAsync(string storeName)
     {
-        foreach (var child in StoreTabStrip.Children)
-        {
-            if (child is not Button btn) continue;
-            var isActive = string.Equals(btn.Text, storeName, StringComparison.OrdinalIgnoreCase);
-            btn.TextColor = isActive ? Color.FromArgb("#22C55E") : Color.FromArgb("#9CA3AF");
-            btn.BackgroundColor = isActive ? Color.FromArgb("#111827") : Color.FromArgb("#374151");
-            btn.BorderColor = isActive ? Color.FromArgb("#22C55E") : Color.FromArgb("#4B5563");
-        }
-
         StoreContentArea.Children.Clear();
         _marketplaceRecolorActions.Clear();
         MarketplacePopupOverlay.IsVisible = false;
 
-        var store = await _storeProvider!.GetStoreByNameAsync(storeName);
+        // Strip picker decorations to get the canonical store name for lookup.
+        var lookupName = StripPickerDecoration(storeName);
+
+        var store = await _storeProvider!.GetStoreByNameAsync(lookupName);
         if (store is null) return;
 
-        StoreContentArea.Children.Add(new Label
+        // Notoriety adjusts CR price for Lawful (+surcharge) and Chaotic (-discount) markets.
+        var isLawful  = string.Equals(store.Alignment, "Lawful",  StringComparison.OrdinalIgnoreCase);
+        var isChaotic = string.Equals(store.Alignment, "Chaotic", StringComparison.OrdinalIgnoreCase);
+        var notoriety = 0;
+        var rawNotoriety = 0;
+        if (isLawful || isChaotic)
+        {
+            var sf = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+            rawNotoriety = SeasonFileService.ComputeCompanyNotoriety(sf);
+            // Chaotic: positive notoriety = discount (invert sign before passing to ApplyNotorietyToCost)
+            notoriety = isChaotic ? -rawNotoriety : rawNotoriety;
+        }
+
+        var storeHeaderGrid = new Grid { Margin = new Thickness(0, 0, 0, 2) };
+        storeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+        storeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var storeNameLabel = new Label
         {
             Text = store.Name,
             Style = (Style)Application.Current!.Resources["LabelTitleSmall"],
             FontAttributes = FontAttributes.Bold,
             TextColor = Colors.White,
-            Margin = new Thickness(0, 0, 0, 2)
-        });
+            VerticalTextAlignment = TextAlignment.Center
+        };
 
-        if (!string.IsNullOrWhiteSpace(store.Alignment))
+        _buyButton = new Button
+        {
+            Text = "BUY",
+            BackgroundColor = Color.FromArgb("#166534"),
+            TextColor = Color.FromArgb("#22C55E"),
+            BorderColor = Color.FromArgb("#22C55E"),
+            BorderWidth = 1,
+            CornerRadius = 6,
+            Style = (Style)Application.Current!.Resources["ButtonCaption"],
+            Padding = new Thickness(12, 6),
+            HeightRequest = 36,
+            IsEnabled = false,
+            Opacity = 0.45
+        };
+        _buyButton.Clicked += OnBuyClicked;
+
+        Grid.SetColumn(_buyButton, 1);
+        storeHeaderGrid.Children.Add(storeNameLabel);
+        storeHeaderGrid.Children.Add(_buyButton);
+        StoreContentArea.Children.Add(storeHeaderGrid);
+
+        var alignmentText = store.Alignment;
+        if ((isLawful || isChaotic) && rawNotoriety != 0)
+            alignmentText += $"  (Notoriety: {(notoriety >= 0 ? "+" : "")}{notoriety} CR)";
+
+        if (!string.IsNullOrWhiteSpace(alignmentText))
         {
             StoreContentArea.Children.Add(new Label
             {
-                Text = store.Alignment,
+                Text = alignmentText,
                 Style = (Style)Application.Current!.Resources["LabelBody"],
                 TextColor = Color.FromArgb("#9CA3AF"),
                 Margin = new Thickness(0, 0, 0, 10)
@@ -1658,8 +2115,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(BuildSectionHeader(group.Key.ToUpperInvariant()));
             foreach (var item in group)
             {
+                var effectiveCr = ApplyNotorietyToCost(item.CostCr, notoriety);
                 StoreContentArea.Children.Add(
-                    BuildItemRow(storeName, item.Name, item.CostCr, item.CostSwc.HasValue ? (double?)(double)item.CostSwc.Value : null, () => ShowItemPopup(item)));
+                    BuildItemRow(storeName, item.Name, effectiveCr, item.CostSwc.HasValue ? (double?)(double)item.CostSwc.Value : null, () => ShowItemPopup(item)));
             }
         }
 
@@ -1668,7 +2126,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(BuildSectionHeader("ARMOR UPGRADES"));
             foreach (var troop in store.TroopTypes)
             {
-                StoreContentArea.Children.Add(BuildArmorRow(storeName, troop));
+                var effectiveTroopCr = ApplyNotorietyToCost(troop.CostCr, notoriety);
+                StoreContentArea.Children.Add(BuildArmorRow(storeName, troop, effectiveTroopCr));
             }
         }
 
@@ -1677,12 +2136,15 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(BuildSectionHeader("AUGMENTS"));
             foreach (var augment in store.Augments)
             {
+                var effectiveAugmentCr = ApplyNotorietyToCost(augment.CostCr, notoriety);
                 StoreContentArea.Children.Add(
-                    BuildItemRow(storeName, augment.Name, augment.CostCr, null, () => ShowAugmentPopup(augment)));
+                    BuildItemRow(storeName, augment.Name, effectiveAugmentCr, null, () => ShowAugmentPopup(augment)));
             }
         }
 
         await RefreshMarketplaceResourcesAsync();
+        if (InventoryTabContent.IsVisible)
+            await RefreshInventoryAsync();
     }
 
     private static Label BuildSectionHeader(string text) => new()
@@ -1705,48 +2167,52 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var nameLabel = new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
         var costLabel = new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#22C55E") };
 
-        _marketplaceRecolorActions.Add((remainingCr, remainingSwc) =>
-        {
-            var affordable = costCr <= remainingCr && (costSwc ?? 0) <= remainingSwc;
-            var color = affordable ? Colors.White : Color.FromArgb("#EF4444");
-            nameLabel.TextColor = color;
-            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
-        });
-
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
         leftStack.Children.Add(nameLabel);
         leftStack.Children.Add(costLabel);
         leftStack.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(onTap) });
 
-        return BuildRowBorder(key, leftStack);
+        var (border, plusBtn) = BuildRowBorder(key, leftStack);
+
+        _marketplaceRecolorActions.Add((remainingCr, remainingSwc) =>
+        {
+            var affordable = costCr <= remainingCr && (costSwc ?? 0) <= remainingSwc;
+            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
+            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+            plusBtn.IsEnabled = affordable;
+        });
+
+        return border;
+    }
+
+    private static int ApplyNotorietyToCost(int baseCost, int notoriety)
+    {
+        if (notoriety == 0) return baseCost;
+        var effective = baseCost + notoriety;
+        var minimum = (int)Math.Ceiling(baseCost / 2.0);
+        return Math.Max(effective, minimum);
     }
 
     // Builds an armor row: left = name + type + ARM/BTS + abilities (tappable), right = + count -
-    private Border BuildArmorRow(string storeName, StoreTroopType troop)
+    private Border BuildArmorRow(string storeName, StoreTroopType troop, int effectiveCostCr = -1)
     {
         var displayName = string.IsNullOrWhiteSpace(troop.Type)
             ? troop.ArmorName
             : $"{troop.ArmorName} ({troop.Type})";
         var armText = troop.Arm.HasValue ? troop.Arm.Value.ToString() : "—";
         var btsText = troop.Bts.HasValue ? troop.Bts.Value.ToString() : "—";
+        var costCr = effectiveCostCr >= 0 ? effectiveCostCr : troop.CostCr;
 
         var key = $"{storeName}|{displayName}";
-        _inventoryItemCosts[key] = (troop.CostCr, 0);
+        _inventoryItemCosts[key] = (costCr, 0);
 
         var nameLabel = new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
         var costLabel = new Label
         {
-            Text = $"{troop.CostCr}cr",
+            Text = $"{costCr}cr",
             Style = (Style)Application.Current!.Resources["LabelCaption"],
             TextColor = Color.FromArgb("#22C55E")
         };
-
-        _marketplaceRecolorActions.Add((remainingCr, _) =>
-        {
-            var affordable = troop.CostCr <= remainingCr;
-            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
-            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
-        });
 
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
         leftStack.Children.Add(nameLabel);
@@ -1770,11 +2236,21 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         leftStack.GestureRecognizers.Add(
             new TapGestureRecognizer { Command = new Command(() => ShowArmorPopup(troop)) });
 
-        return BuildRowBorder(key, leftStack);
+        var (border, plusBtn) = BuildRowBorder(key, leftStack);
+
+        _marketplaceRecolorActions.Add((remainingCr, _) =>
+        {
+            var affordable = costCr <= remainingCr;
+            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
+            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+            plusBtn.IsEnabled = affordable;
+        });
+
+        return border;
     }
 
     // Shared core: wraps a left-content view in a bordered row with + count - controls on the right.
-    private Border BuildRowBorder(string key, View leftContent)
+    private (Border Border, Button PlusButton) BuildRowBorder(string key, View leftContent)
     {
         var countLabel = new Label
         {
@@ -1840,7 +2316,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         Grid.SetColumn(controls, 1);
         rowGrid.Children.Add(controls);
 
-        return new Border
+        var border = new Border
         {
             Content = rowGrid,
             Stroke = Color.FromArgb("#374151"),
@@ -1849,6 +2325,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             Padding = new Thickness(12, 6, 8, 6),
             Margin = new Thickness(0, 0, 0, 3)
         };
+        return (border, plusBtn);
     }
 
     private void ShowItemPopup(StoreItem item)
@@ -2100,7 +2577,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private void OnUnitPickerDismissTapped(object? sender, TappedEventArgs e) => CloseUnitPicker();
 
     private void OnTeamTabClicked(object sender, EventArgs e) => SetActiveTab(0);
-    private void OnInventoryTabClicked(object sender, EventArgs e) => SetActiveTab(1);
+    private void OnInventoryTabClicked(object sender, EventArgs e)
+    {
+        SetActiveTab(1);
+        _ = RefreshInventoryAsync();
+    }
     private void OnMarketplaceTabClicked(object sender, EventArgs e)
     {
         SetActiveTab(2);
@@ -2151,5 +2632,237 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private void OnPlayRoundButtonSizeChanged(object? sender, EventArgs e)
     {
         PlayRoundLabel.IsVisible = true;
+    }
+
+    // ── Marketplace BUY ────────────────────────────────────────────────────
+
+    private async void OnBuyClicked(object? sender, EventArgs e)
+    {
+        var purchases = _inventoryCounts.Where(kvp => kvp.Value > 0).ToList();
+        if (purchases.Count == 0) return;
+
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var gross = SeasonFileService.ComputeAvailableResources(seasonFile);
+
+        var transactions = new List<SeasonTransaction>();
+        foreach (var (key, count) in purchases)
+        {
+            var sep = key.IndexOf('|');
+            var storeName = sep >= 0 ? key[..sep] : string.Empty;
+            var itemName = sep >= 0 ? key[(sep + 1)..] : key;
+            if (!_inventoryItemCosts.TryGetValue(key, out var cost)) continue;
+
+            for (var i = 0; i < count; i++)
+            {
+                transactions.Add(new SeasonTransaction
+                {
+                    OriginStore = storeName,
+                    ItemName = itemName,
+                    CostCr = cost.CostCr,
+                    CostSwc = cost.CostSwc > 0 ? (decimal?)(decimal)cost.CostSwc : null
+                });
+            }
+        }
+
+        var storeNames = _availableStores.Select(s => s.Name).ToList();
+        if (!string.IsNullOrWhiteSpace(_temporaryStoreName))
+            storeNames.Add(_temporaryStoreName);
+
+        await SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
+        {
+            if (round.StartingCr == 0 && round.StartingSwc == 0)
+            {
+                round.StartingCr = gross.CreditsBalance;
+                round.StartingSwc = gross.SwcBalance;
+            }
+            round.Marketplace.Transactions.AddRange(transactions);
+            round.Marketplace.Stores = storeNames;
+        });
+
+        foreach (var (key, _) in purchases)
+            _inventoryCounts[key] = 0;
+
+        await RefreshMarketplaceResourcesAsync();
+        if (InventoryTabContent.IsVisible)
+            await RefreshInventoryAsync();
+    }
+
+    // ── Store search popup ──────────────────────────────────────────────────
+
+    private static readonly (int Min, int Max, string Name)[] StoreRollTable =
+    [
+        (1,  2,  "Number One"),
+        (3,  4,  "Jade Temu"),
+        (5,  6,  "Arachne Req"),
+        (7,  8,  "Salaam Suuk"),
+        (9,  10, "Frontier General"),
+        (11, 12, "Alpha Sec"),
+        (13, 14, "Greengrocer"),
+        (15, 16, "Bantai Yamaco"),
+        (17, 18, "Exrah Surplus"),
+    ];
+
+    private static string? StoreForRoll(int roll) =>
+        StoreRollTable.FirstOrDefault(e => roll >= e.Min && roll <= e.Max).Name;
+
+    private async Task MaybeShowStoreSearchPopupAsync()
+    {
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        if (seasonFile is null || seasonFile.Rounds.Count == 0)
+        {
+            StoreSearchOverlay.IsVisible = false;
+            return;
+        }
+
+        var latest = seasonFile.Rounds.OrderByDescending(r => r.RoundIndex).First();
+        if (!string.IsNullOrWhiteSpace(latest.TemporaryStore))
+        {
+            StoreSearchOverlay.IsVisible = false;
+            return;
+        }
+
+        BuildStoreSearchPickers();
+        StoreSearchOverlay.IsVisible = true;
+    }
+
+    private void BuildStoreSearchPickers()
+    {
+        StoreRollResultLabel.Text = "—";
+        StoreRollResultLabel.TextColor = Colors.White;
+        StoreChooseArea.IsVisible = false;
+        _pendingTemporaryStoreSelection = null;
+        StoreSearchConfirmButton.IsEnabled = false;
+        StoreSearchConfirmButton.Opacity = 0.45;
+
+        StoreRollPicker.Items.Clear();
+        for (var i = 1; i <= 18; i++)
+        {
+            var store = StoreForRoll(i);
+            StoreRollPicker.Items.Add($"{i} — {store}");
+        }
+        StoreRollPicker.Items.Add("19-20 — Choose any");
+        StoreRollPicker.SelectedIndex = -1;
+
+        var ownedNames = new HashSet<string>(
+            _availableStores.Select(s => s.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        StoreChoicePicker.Items.Clear();
+        foreach (var name in (_storeProvider?.GetAllStoreNames() ?? []).Where(n => !ownedNames.Contains(n)))
+        {
+            StoreChoicePicker.Items.Add(name);
+        }
+        StoreChoicePicker.SelectedIndex = -1;
+    }
+
+    private void OnStoreRollClicked(object sender, EventArgs e)
+    {
+        var ownedNames = new HashSet<string>(
+            _availableStores.Select(s => s.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            var roll = Random.Shared.Next(1, 21);
+            if (roll >= 19)
+            {
+                StoreRollResultLabel.Text = $"Rolled {roll} — choose any store";
+                StoreRollResultLabel.TextColor = Color.FromArgb("#F59E0B");
+                StoreChooseArea.IsVisible = true;
+                _pendingTemporaryStoreSelection = null;
+                StoreSearchConfirmButton.IsEnabled = false;
+                StoreSearchConfirmButton.Opacity = 0.45;
+                return;
+            }
+
+            var store = StoreForRoll(roll);
+            if (string.IsNullOrWhiteSpace(store) || ownedNames.Contains(store)) continue;
+
+            StoreRollResultLabel.Text = $"Rolled {roll} — {store}";
+            StoreRollResultLabel.TextColor = Color.FromArgb("#22C55E");
+            StoreChooseArea.IsVisible = false;
+            _pendingTemporaryStoreSelection = store;
+            StoreSearchConfirmButton.IsEnabled = true;
+            StoreSearchConfirmButton.Opacity = 1.0;
+            return;
+        }
+
+        // All unowned exhausted — fall back to choose any.
+        StoreRollResultLabel.Text = "No unowned store reached after rerolls — choose any";
+        StoreRollResultLabel.TextColor = Color.FromArgb("#F59E0B");
+        StoreChooseArea.IsVisible = true;
+    }
+
+    private void OnStoreRollPickerChanged(object sender, EventArgs e)
+    {
+        if (StoreRollPicker.SelectedIndex < 0) return;
+
+        var ownedNames = new HashSet<string>(
+            _availableStores.Select(s => s.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        if (StoreRollPicker.SelectedIndex >= 18)
+        {
+            StoreRollResultLabel.Text = "Picked 19-20 — choose any store";
+            StoreRollResultLabel.TextColor = Color.FromArgb("#F59E0B");
+            StoreChooseArea.IsVisible = true;
+            _pendingTemporaryStoreSelection = null;
+            StoreSearchConfirmButton.IsEnabled = false;
+            StoreSearchConfirmButton.Opacity = 0.45;
+            return;
+        }
+
+        var value = StoreRollPicker.SelectedIndex + 1;
+        var store = StoreForRoll(value);
+        if (string.IsNullOrWhiteSpace(store))
+        {
+            StoreRollResultLabel.Text = "Invalid selection";
+            StoreRollResultLabel.TextColor = Color.FromArgb("#DC2626");
+            return;
+        }
+
+        if (ownedNames.Contains(store))
+        {
+            StoreRollResultLabel.Text = $"{value} — {store} (already owned — pick another)";
+            StoreRollResultLabel.TextColor = Color.FromArgb("#DC2626");
+            StoreChooseArea.IsVisible = false;
+            _pendingTemporaryStoreSelection = null;
+            StoreSearchConfirmButton.IsEnabled = false;
+            StoreSearchConfirmButton.Opacity = 0.45;
+            return;
+        }
+
+        StoreRollResultLabel.Text = $"{value} — {store}";
+        StoreRollResultLabel.TextColor = Color.FromArgb("#22C55E");
+        StoreChooseArea.IsVisible = false;
+        _pendingTemporaryStoreSelection = store;
+        StoreSearchConfirmButton.IsEnabled = true;
+        StoreSearchConfirmButton.Opacity = 1.0;
+    }
+
+    private void OnStoreChoicePickerChanged(object sender, EventArgs e)
+    {
+        if (StoreChoicePicker.SelectedIndex < 0) return;
+        _pendingTemporaryStoreSelection = StoreChoicePicker.Items[StoreChoicePicker.SelectedIndex];
+        StoreSearchConfirmButton.IsEnabled = true;
+        StoreSearchConfirmButton.Opacity = 1.0;
+    }
+
+    private async void OnStoreSearchConfirmClicked(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_pendingTemporaryStoreSelection)) return;
+
+        var chosen = _pendingTemporaryStoreSelection;
+        await SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
+        {
+            round.TemporaryStore = chosen;
+        });
+
+        _temporaryStoreName = chosen;
+        StoreSearchOverlay.IsVisible = false;
+
+        // Rebuild marketplace tabs so the new temp store appears immediately.
+        if (!string.IsNullOrWhiteSpace(_companyFilePath))
+            await LoadCompanyFromFileAsync(_companyFilePath);
     }
 }

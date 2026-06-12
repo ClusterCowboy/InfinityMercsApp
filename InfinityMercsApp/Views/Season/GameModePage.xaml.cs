@@ -782,6 +782,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 GainedInjury = false,
                 XpData = t.Unit.XpData,
                 IsCaptain = t.Unit.IsLieutenant,
+                IsLieutenant = t.Unit.IsLieutenant,
                 UnitPh = t.Unit.UnitPh,
                 UnitBs = t.Unit.UnitBs,
                 UnitCc = t.Unit.UnitCc,

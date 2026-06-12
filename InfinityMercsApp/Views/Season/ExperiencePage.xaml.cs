@@ -317,19 +317,11 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         await SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
         {
             round.MissionResults.UnitResults = ExperiencePageData.Units
+                .Where(u => u.TotalXp > 0)
                 .Select(u => new SeasonMissionUnitResult
                 {
                     UnitName = u.Name,
-                    Injury = u.GainedInjury ? (u.InjuryName ?? string.Empty) : null,
-                    TriedObjective = u.XpData.AttemptButton,
-                    CompletedObjective = u.XpData.SucceedButton,
-                    AssistCount = u.XpData.Assist.Count(b => b),
-                    StatesInflicted = u.XpData.InflictState.Count(b => b),
-                    ScannedEnemy = u.XpData.ScanEnemy,
-                    ScannedEnemyWithFO = u.XpData.ScanEnemyFo,
-                    TagAndBag = u.XpData.TagAndBag,
-                    ConsciousAtEnd = u.IsConsciousAtEnd,
-                    IsMvp = u.IsMvp
+                    XpGained = u.TotalXp
                 })
                 .ToList();
         });
@@ -354,6 +346,7 @@ public sealed class ExperienceUnitResult
     public UnitXpData XpData { get; init; } = new();
     public bool IsMvp { get; set; }
     public bool IsCaptain { get; set; }
+    public bool IsLieutenant { get; set; }
     public string UnitPh { get; set; } = "-";
     public string UnitBs { get; set; } = "-";
     public string UnitCc { get; set; } = "-";

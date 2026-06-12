@@ -8,4 +8,5 @@ public class SeasonFile
     public string CreatedDate { get; set; } = string.Empty;
     public SeasonMarketplace InitialPurchases { get; set; } = new();
     public List<SeasonRound> Rounds { get; set; } = [];
+    public SeasonStatus CurrentStatus { get; set; } = new();
 }

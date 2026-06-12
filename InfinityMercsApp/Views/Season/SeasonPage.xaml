@@ -254,26 +254,33 @@
                 </Grid>
             </Grid>
 
-            <!-- Inventory Tab (stub) -->
-            <Grid x:Name="InventoryTabContent" IsVisible="False" Padding="16,8">
+            <!-- Inventory Tab -->
+            <Grid x:Name="InventoryTabContent" IsVisible="False">
                 <Label Text="Inventory — coming soon."
                        HorizontalTextAlignment="Center"
                        VerticalTextAlignment="Center"
-                       TextColor="#6B7280" />
+                       TextColor="#6B7280"
+                       IsVisible="False" />
+                <ScrollView>
+                    <VerticalStackLayout x:Name="InventoryContentArea" Padding="16,12" Spacing="0" />
+                </ScrollView>
             </Grid>
 
             <!-- Marketplace Tab -->
             <Grid x:Name="MarketplaceTabContent" IsVisible="False" RowDefinitions="Auto,*">
-                <!-- Store tab strip -->
+                <!-- Store selector dropdown -->
                 <Border Grid.Row="0"
                         BackgroundColor="#1F2937"
                         StrokeThickness="0"
-                        Padding="0">
+                        Padding="12,6">
                     <VerticalStackLayout Spacing="0">
-                        <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                            <HorizontalStackLayout x:Name="StoreTabStrip" Spacing="6" Padding="12,6" />
-                        </ScrollView>
-                        <BoxView HeightRequest="1" Color="#374151" />
+                        <Picker x:Name="StoreSelectorPicker"
+                                Title="Select store..."
+                                TextColor="White"
+                                TitleColor="#9CA3AF"
+                                BackgroundColor="#374151"
+                                SelectedIndexChanged="OnStoreSelectorPickerChanged" />
+                        <BoxView HeightRequest="1" Color="#374151" Margin="0,6,0,0" />
                     </VerticalStackLayout>
                 </Border>
                 <!-- Store content -->
@@ -323,6 +330,101 @@
                                              Spacing="6" />
                     </ScrollView>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Store-finding popup overlay -->
+        <Grid x:Name="StoreSearchOverlay"
+              Grid.Row="0" Grid.RowSpan="3"
+              IsVisible="False"
+              BackgroundColor="#D0111827">
+            <Border BackgroundColor="#1F2937"
+                    Stroke="#374151"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8"
+                    Margin="16,60,16,24"
+                    VerticalOptions="Start">
+                <VerticalStackLayout Padding="16,14,16,14" Spacing="14">
+                    <Label Text="Finding store near you..."
+                           FontAttributes="Bold"
+                           FontSize="18"
+                           TextColor="White"
+                           HorizontalTextAlignment="Center" />
+
+                    <Border BackgroundColor="#111827" Stroke="#374151" StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6" Padding="12">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="ROLL FOR IT"
+                                   TextColor="#9CA3AF"
+                                   FontAttributes="Bold"
+                                   FontSize="12" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label x:Name="StoreRollResultLabel"
+                                       Grid.Column="0"
+                                       Text="—"
+                                       TextColor="White"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       VerticalTextAlignment="Center" />
+                                <Button x:Name="StoreRollButton"
+                                        Grid.Column="1"
+                                        Text="ROLL"
+                                        BackgroundColor="#374151"
+                                        TextColor="#22C55E"
+                                        FontAttributes="Bold"
+                                        CornerRadius="6"
+                                        Padding="14,0"
+                                        HeightRequest="38"
+                                        Clicked="OnStoreRollClicked" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="#111827" Stroke="#374151" StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6" Padding="12">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="OR PICK A ROLL"
+                                   TextColor="#9CA3AF"
+                                   FontAttributes="Bold"
+                                   FontSize="12" />
+                            <Picker x:Name="StoreRollPicker"
+                                    Title="Select 1-20..."
+                                    TextColor="White"
+                                    TitleColor="#9CA3AF"
+                                    BackgroundColor="#374151"
+                                    SelectedIndexChanged="OnStoreRollPickerChanged" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout x:Name="StoreChooseArea" IsVisible="False" Spacing="8">
+                        <Border BackgroundColor="#111827" Stroke="#F59E0B" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 6" Padding="12">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="CHOOSE ANY STORE (19-20)"
+                                       TextColor="#F59E0B"
+                                       FontAttributes="Bold"
+                                       FontSize="12" />
+                                <Picker x:Name="StoreChoicePicker"
+                                        Title="Select a store..."
+                                        TextColor="White"
+                                        TitleColor="#9CA3AF"
+                                        BackgroundColor="#374151"
+                                        SelectedIndexChanged="OnStoreChoicePickerChanged" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Button x:Name="StoreSearchConfirmButton"
+                            Text="CONFIRM"
+                            BackgroundColor="#22C55E"
+                            TextColor="Black"
+                            FontAttributes="Bold"
+                            HeightRequest="44"
+                            CornerRadius="6"
+                            IsEnabled="False"
+                            Opacity="0.45"
+                            Clicked="OnStoreSearchConfirmClicked" />
+                </VerticalStackLayout>
             </Border>
         </Grid>
 

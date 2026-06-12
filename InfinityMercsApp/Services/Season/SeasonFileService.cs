@@ -89,7 +89,83 @@ internal static class SeasonFileService
             .OrderByDescending(r => r.RoundIndex)
             .First();
         updater(latest);
+        RefreshCurrentStatus(seasonFile);
         return await SaveSeasonFileAsync(filePath, seasonFile);
+    }
+
+    internal static void RefreshCurrentStatus(SeasonFile seasonFile)
+    {
+        var status = seasonFile.CurrentStatus;
+
+        var crEarned = 0;
+        var crSpent = 0;
+        var swcEarned = 0.0;
+        var swcBought = 0.0;
+        var swcSpent = 0.0;
+        var unitXp = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var unitNotoriety = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var round in seasonFile.Rounds)
+        {
+            var missionNumber = Math.Max(1, round.RoundIndex);
+            crEarned += Math.Min(10 * missionNumber, 40);
+            crEarned += 4 * round.MissionResults.OpScored;
+            crEarned += round.MissionResults.Won ? 10 : 0;
+            crEarned += round.Downtime.CrGain;
+            crSpent += round.Downtime.SpentCr;
+
+            swcEarned += 0.5;
+            swcBought += round.Downtime.SwcGain;
+
+            foreach (var tx in round.Marketplace.Transactions)
+            {
+                crSpent += tx.CostCr;
+                if (tx.CostSwc.HasValue)
+                    swcSpent += (double)tx.CostSwc.Value;
+            }
+
+            foreach (var ur in round.MissionResults.UnitResults)
+            {
+                unitXp[ur.UnitName] = unitXp.GetValueOrDefault(ur.UnitName, 0) + ur.XpGained;
+            }
+
+            if (round.Downtime.NotorietyGain != 0 &&
+                !string.IsNullOrWhiteSpace(round.Downtime.ParticipantName))
+            {
+                var name = round.Downtime.ParticipantName;
+                unitNotoriety[name] = unitNotoriety.GetValueOrDefault(name, 0) + round.Downtime.NotorietyGain;
+            }
+        }
+
+        status.CrEarned = crEarned;
+        status.CrSpent = crSpent;
+        status.SwcEarned = swcEarned;
+        status.SwcBought = swcBought;
+        status.SwcSpent = swcSpent;
+
+        foreach (var (name, xp) in unitXp)
+        {
+            var unit = ResolveUnitStatus(status, name);
+            unit.TotalExperience = xp;
+        }
+
+        foreach (var (name, notoriety) in unitNotoriety)
+        {
+            var unit = ResolveUnitStatus(status, name);
+            unit.Notoriety = notoriety;
+        }
+    }
+
+    private static SeasonUnitStatus ResolveUnitStatus(SeasonStatus status, string name)
+    {
+        var unit = status.Units.FirstOrDefault(u =>
+            string.Equals(u.UnitName, name, StringComparison.OrdinalIgnoreCase));
+        if (unit is null)
+        {
+            unit = new SeasonUnitStatus { UnitName = name };
+            status.Units.Add(unit);
+        }
+        return unit;
     }
 
     internal readonly record struct SeasonResources(int CreditsBalance, double SwcBalance);
@@ -113,9 +189,21 @@ internal static class SeasonFileService
 
             swc += 0.5;
             swc += round.Downtime.SwcGain;
+
+            foreach (var tx in round.Marketplace.Transactions)
+            {
+                cr -= tx.CostCr;
+                swc -= tx.CostSwc.HasValue ? (double)tx.CostSwc.Value : 0;
+            }
         }
 
         return new SeasonResources(cr, swc);
+    }
+
+    internal static int ComputeCompanyNotoriety(SeasonFile? seasonFile)
+    {
+        if (seasonFile is null) return 0;
+        return seasonFile.Rounds.Sum(r => r.Downtime.NotorietyGain);
     }
 
     internal static int ResolveCurrentRound(SeasonFile? seasonFile)

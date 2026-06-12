@@ -1,3 +1,4 @@
+using InfinityMercsApp.Domain.Models.Season;
 using InfinityMercsApp.Services.Season;
 
 namespace InfinityMercsApp.Views.Season;
@@ -371,7 +372,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                 FontSize = 14
             });
 
-            var consequences = BuildConsequenceLines(choice, outcome, selectedParticipant);
+            var wonItems = new List<SeasonInventoryItem>();
+            var consequences = BuildConsequenceLines(choice, outcome, selectedParticipant, wonItems);
             if (consequences.Count == 0)
             {
                 outcomeArea.Children.Add(new Label
@@ -401,12 +403,14 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             _ = SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
             {
                 round.Downtime.Result = $"{OutcomeLabel(outcome)}{(participantName is null ? "" : $" — {participantName}")}";
+                round.Downtime.ParticipantName = participantName ?? string.Empty;
                 round.Downtime.CrGain = totals.CrGain;
                 round.Downtime.NotorietyGain = totals.NotorietyGain;
                 round.Downtime.XpGain = totals.XpGain;
                 round.Downtime.SpentCr = totals.SpentCr;
                 round.Downtime.SwcGain = totals.SwcGain;
                 round.Downtime.OtherEffects = string.Join("; ", totals.OtherEffects);
+                round.Downtime.WonItems = wonItems;
             });
 
             ScrollToBottom();
@@ -576,7 +580,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             .Where(t => t.Kind == TraitKind.Requirement && !string.IsNullOrWhiteSpace(t.Detail))
             .Select(t => t.Detail!)
             .ToList();
-        BuildParticipantSelector(participantArea, requiredParticipant, availableUnits, requirements, OnParticipantPicked);
+        BuildParticipantSelector(participantArea, requiredParticipant, availableUnits, requirements, choice.Test, OnParticipantPicked);
 
         return stack;
     }
@@ -589,6 +593,10 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         if (evt.RequiredParticipant != ParticipantKind.None)
             return evt.RequiredParticipant;
 
+        // A choice tagged with Captain must be performed by the Captain (Lieutenant).
+        if (choice.Traits.Any(t => t.Kind == TraitKind.Captain))
+            return ParticipantKind.Captain;
+
         // A merc always performs the event.
         return ParticipantKind.AnyMerc;
     }
@@ -598,6 +606,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         ParticipantKind kind,
         IReadOnlyList<ExperienceUnitResult> units,
         IReadOnlyList<string> requirements,
+        DowntimeTest? test,
         Action<ExperienceUnitResult> onPicked)
     {
         area.Children.Add(new Label
@@ -652,13 +661,27 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                 IsVisible = missing.Count > 0
             };
 
+            var target = test is not null ? ResolveTestTarget(test, unit) : null;
+            var targetLabel = new Label
+            {
+                Text = target.HasValue ? $"Target {target.Value}" : string.Empty,
+                TextColor = Color.FromArgb("#22C55E"),
+                FontAttributes = FontAttributes.Bold,
+                FontSize = 13,
+                VerticalTextAlignment = TextAlignment.Center,
+                HorizontalTextAlignment = TextAlignment.End,
+                IsVisible = target.HasValue && missing.Count == 0
+            };
+
             var rowGrid = new Grid { ColumnSpacing = 12 };
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             Grid.SetColumn(nameLabel, 0);
             Grid.SetColumn(missingLabel, 1);
+            Grid.SetColumn(targetLabel, 1);
             rowGrid.Children.Add(nameLabel);
             rowGrid.Children.Add(missingLabel);
+            rowGrid.Children.Add(targetLabel);
 
             var border = new Border
             {
@@ -709,7 +732,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             case ParticipantKind.Mvp:
                 return units.Where(u => u.IsMvp).ToList();
             case ParticipantKind.Captain:
-                return units.Where(u => u.IsCaptain).ToList();
+                return units.Where(u => u.IsLieutenant).ToList();
             case ParticipantKind.Renowned:
                 if (units.Count == 0) return new List<ExperienceUnitResult>();
                 var topRenown = units.Max(u => u.Renown);
@@ -785,7 +808,11 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
 
     // ── Consequences ─────────────────────────────────────────────────────────
 
-    private static List<string> BuildConsequenceLines(DowntimeChoice choice, PassFailOutcome outcome, ExperienceUnitResult? participant)
+    private static List<string> BuildConsequenceLines(
+        DowntimeChoice choice,
+        PassFailOutcome outcome,
+        ExperienceUnitResult? participant,
+        List<SeasonInventoryItem> wonItems)
     {
         var lines = new List<string>();
         var participantName = participant?.Name ?? "selected merc";
@@ -837,12 +864,20 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                     });
                     break;
                 case TraitKind.Weapon:
-                    lines.Add(outcome switch
+                    if (outcome is PassFailOutcome.Pass or PassFailOutcome.CritPass)
                     {
-                        PassFailOutcome.Pass => $"Roll a random pistol: {RollPistolName(0)}",
-                        PassFailOutcome.CritPass => $"Roll a random pistol (+1 SD): {RollPistolName(1)}",
-                        _ => ""
-                    });
+                        var pistol = RollPistol(outcome == PassFailOutcome.CritPass ? 1 : 0);
+                        var prefix = outcome == PassFailOutcome.CritPass
+                            ? "Roll a random pistol (+1 SD)"
+                            : "Roll a random pistol";
+                        lines.Add($"{prefix}: {pistol.Display}");
+                        wonItems.Add(new SeasonInventoryItem
+                        {
+                            Name = pistol.Name,
+                            Category = "Sidearm",
+                            Source = "Downtime"
+                        });
+                    }
                     break;
                 case TraitKind.Swc:
                     if (outcome is PassFailOutcome.Pass or PassFailOutcome.CritPass)
@@ -889,12 +924,12 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         (17, 20, "Viral Pistol"),
     ];
 
-    private static string RollPistolName(int sdBonus)
+    private static (string Name, string Display) RollPistol(int sdBonus)
     {
         var roll = Random.Shared.Next(1, 21);
         var entry = PistolTable.First(e => roll >= e.Min && roll <= e.Max);
         var suffix = sdBonus > 0 ? $" (+{sdBonus} SD)" : "";
-        return $"{entry.Name}{suffix} (rolled {roll})";
+        return (entry.Name, $"{entry.Name}{suffix} (rolled {roll})");
     }
 
     // ── Downtime totals (persistence) ────────────────────────────────────────
