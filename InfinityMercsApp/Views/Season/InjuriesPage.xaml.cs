@@ -8,6 +8,7 @@ namespace InfinityMercsApp.Views.Season;
 public partial class InjuriesPage : ContentPage, IQueryAttributable
 {
     private string _companyFilePath = string.Empty;
+    private string _seasonFilePath = string.Empty;
     private bool _built;
 
     public InjuriesPage()
@@ -19,6 +20,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
     {
         if (query.TryGetValue("companyFilePath", out var raw))
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
+        if (query.TryGetValue("seasonFilePath", out var seasonRaw))
+            _seasonFilePath = Uri.UnescapeDataString(seasonRaw?.ToString() ?? string.Empty);
     }
 
     protected override async void OnAppearing()
@@ -56,10 +59,12 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
             var idx = i;
             var injury = InjuryPageData.PendingInjuries[i];
             void OnResolved() { resolved[idx] = true; CheckAllResolved(); }
-            void OnInjured()
+            void OnInjured(string injuryLabel)
             {
                 var match = ExperiencePageData.Units.FirstOrDefault(u => u.EntryIndex == injury.EntryIndex);
-                if (match is not null) match.GainedInjury = true;
+                if (match is null) return;
+                match.GainedInjury = true;
+                match.InjuryName = injuryLabel;
             }
 
             InjuryStack.Children.Add(await BuildInjuryRowAsync(injury, OnResolved, OnInjured));
@@ -99,7 +104,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         rollVirtuallyLabel.TextColor = Color.FromArgb("#6B7280");
     }
 
-    private static async Task<View> BuildInjuryRowAsync(InjuryItem item, Action onResolved, Action? onInjured = null)
+    private static async Task<View> BuildInjuryRowAsync(InjuryItem item, Action onResolved, Action<string>? onInjured = null)
     {
         var container = new VerticalStackLayout
         {
@@ -311,7 +316,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
             if (injuryPicker.SelectedIndex >= 0 && !realityResolved)
             {
                 realityResolved = true;
-                onInjured?.Invoke();
+                var label = InjuryTable[injuryPicker.SelectedIndex].Label;
+                onInjured?.Invoke(label);
                 onResolved();
             }
         };
@@ -392,7 +398,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
     {
         InjuryPageData.PendingInjuries.Clear();
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
-        await Shell.Current.GoToAsync($"{nameof(ExperiencePage)}?companyFilePath={encodedPath}");
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath);
+        await Shell.Current.GoToAsync($"{nameof(MissionOutcomePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}");
     }
 }
 

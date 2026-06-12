@@ -61,6 +61,63 @@ internal static class SeasonFileService
         }
     }
 
+    internal static async Task<bool> SaveSeasonFileAsync(string? filePath, SeasonFile? seasonFile)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || seasonFile is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(filePath, JsonSerializer.Serialize(seasonFile, WriteOptions));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SeasonFileService failed to save season file '{filePath}': {ex.Message}");
+            return false;
+        }
+    }
+
+    internal static async Task<bool> UpdateLatestRoundAsync(string? filePath, Action<SeasonRound> updater)
+    {
+        var seasonFile = await LoadSeasonFileAsync(filePath);
+        if (seasonFile is null || seasonFile.Rounds.Count == 0) return false;
+
+        var latest = seasonFile.Rounds
+            .OrderByDescending(r => r.RoundIndex)
+            .First();
+        updater(latest);
+        return await SaveSeasonFileAsync(filePath, seasonFile);
+    }
+
+    internal readonly record struct SeasonResources(int CreditsBalance, double SwcBalance);
+
+    internal static SeasonResources ComputeAvailableResources(SeasonFile? seasonFile)
+    {
+        if (seasonFile is null) return new SeasonResources(0, 0);
+
+        var cr = 0;
+        var swc = 0.0;
+        foreach (var round in seasonFile.Rounds)
+        {
+            var missionNumber = Math.Max(1, round.RoundIndex);
+            var missionCr = Math.Min(10 * missionNumber, 40);
+            var objectiveCr = 4 * round.MissionResults.OpScored;
+            var victoryCr = round.MissionResults.Won ? 10 : 0;
+
+            cr += missionCr + objectiveCr + victoryCr;
+            cr += round.Downtime.CrGain;
+            cr -= round.Downtime.SpentCr;
+
+            swc += 0.5;
+            swc += round.Downtime.SwcGain;
+        }
+
+        return new SeasonResources(cr, swc);
+    }
+
     internal static int ResolveCurrentRound(SeasonFile? seasonFile)
     {
         var rounds = seasonFile?.Rounds ?? [];

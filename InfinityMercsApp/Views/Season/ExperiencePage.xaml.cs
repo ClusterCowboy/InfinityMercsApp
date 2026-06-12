@@ -1,3 +1,5 @@
+using InfinityMercsApp.Domain.Models.Season;
+using InfinityMercsApp.Services.Season;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -8,6 +10,7 @@ namespace InfinityMercsApp.Views.Season;
 public partial class ExperiencePage : ContentPage, IQueryAttributable
 {
     private string _companyFilePath = string.Empty;
+    private string _seasonFilePath = string.Empty;
     private bool _built;
 
     public ExperiencePage()
@@ -19,6 +22,8 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
     {
         if (query.TryGetValue("companyFilePath", out var raw))
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
+        if (query.TryGetValue("seasonFilePath", out var seasonRaw))
+            _seasonFilePath = Uri.UnescapeDataString(seasonRaw?.ToString() ?? string.Empty);
     }
 
     protected override async void OnAppearing()
@@ -36,7 +41,18 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         var units = ExperiencePageData.Units;
         if (units.Count == 0) return;
 
+        // Lock confirm until an MVP is selected.
+        ConfirmButton.IsEnabled = false;
+        ConfirmButton.Opacity = 0.45;
+
         var mvpCheckboxes = new List<(CheckBox Cb, ExperienceUnitResult Unit)>();
+
+        void UpdateConfirm()
+        {
+            var hasMvp = mvpCheckboxes.Any(x => x.Unit.IsMvp);
+            ConfirmButton.IsEnabled = hasMvp;
+            ConfirmButton.Opacity = hasMvp ? 1.0 : 0.45;
+        }
 
         for (var i = 0; i < units.Count; i++)
         {
@@ -48,13 +64,14 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
                     Color = Color.FromArgb("#374151")
                 });
             }
-            UnitStack.Children.Add(await BuildUnitCardAsync(units[i], mvpCheckboxes));
+            UnitStack.Children.Add(await BuildUnitCardAsync(units[i], mvpCheckboxes, UpdateConfirm));
         }
     }
 
     private async Task<View> BuildUnitCardAsync(
         ExperienceUnitResult unit,
-        List<(CheckBox Cb, ExperienceUnitResult Unit)> mvpCheckboxes)
+        List<(CheckBox Cb, ExperienceUnitResult Unit)> mvpCheckboxes,
+        Action onMvpChanged)
     {
         var logo = await TryLoadLogoAsync(unit.CachedLogoPath, unit.PackagedLogoPath);
 
@@ -213,6 +230,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
             }
             mvpXpRow.IsVisible = unit.IsMvp;
             totalLabel.Text = $"Total: {unit.TotalXp} XP";
+            onMvpChanged();
         };
 
         // Restore persisted MVP state (usually false on first load)
@@ -296,8 +314,29 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
 
     private async void OnConfirmExperienceClicked(object sender, EventArgs e)
     {
+        await SeasonFileService.UpdateLatestRoundAsync(_seasonFilePath, round =>
+        {
+            round.MissionResults.UnitResults = ExperiencePageData.Units
+                .Select(u => new SeasonMissionUnitResult
+                {
+                    UnitName = u.Name,
+                    Injury = u.GainedInjury ? (u.InjuryName ?? string.Empty) : null,
+                    TriedObjective = u.XpData.AttemptButton,
+                    CompletedObjective = u.XpData.SucceedButton,
+                    AssistCount = u.XpData.Assist.Count(b => b),
+                    StatesInflicted = u.XpData.InflictState.Count(b => b),
+                    ScannedEnemy = u.XpData.ScanEnemy,
+                    ScannedEnemyWithFO = u.XpData.ScanEnemyFo,
+                    TagAndBag = u.XpData.TagAndBag,
+                    ConsciousAtEnd = u.IsConsciousAtEnd,
+                    IsMvp = u.IsMvp
+                })
+                .ToList();
+        });
+
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
-        await Shell.Current.GoToAsync($"{nameof(DowntimePage)}?companyFilePath={encodedPath}");
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath);
+        await Shell.Current.GoToAsync($"{nameof(DowntimePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}");
     }
 }
 
@@ -311,8 +350,22 @@ public sealed class ExperienceUnitResult
     public bool IsEliteDeployment { get; set; }
     public bool IsConsciousAtEnd { get; set; }
     public bool GainedInjury { get; set; }
+    public string? InjuryName { get; set; }
     public UnitXpData XpData { get; init; } = new();
     public bool IsMvp { get; set; }
+    public bool IsCaptain { get; set; }
+    public string UnitPh { get; set; } = "-";
+    public string UnitBs { get; set; } = "-";
+    public string UnitCc { get; set; } = "-";
+    public string UnitWip { get; set; } = "-";
+    public string UnitArm { get; set; } = "-";
+
+    // Cost paid at purchase (includes the loadout) + accumulated XP.
+    public int Renown { get; set; }
+
+    // Free-form text — used by downtime to match requirements like "Hacker", "Trinity Program".
+    public string Skills { get; set; } = string.Empty;
+    public string Equipment { get; set; } = string.Empty;
 
     public int TotalXp =>
         DeploymentXp +

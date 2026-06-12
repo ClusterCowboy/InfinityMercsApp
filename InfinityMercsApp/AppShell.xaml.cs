@@ -14,6 +14,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(Views.Season.PlayModePage), typeof(Views.Season.PlayModePage));
         Routing.RegisterRoute(nameof(Views.Season.GameModePage), typeof(Views.Season.GameModePage));
         Routing.RegisterRoute(nameof(Views.Season.InjuriesPage), typeof(Views.Season.InjuriesPage));
+        Routing.RegisterRoute(nameof(Views.Season.MissionOutcomePage), typeof(Views.Season.MissionOutcomePage));
         Routing.RegisterRoute(nameof(Views.Season.ExperiencePage), typeof(Views.Season.ExperiencePage));
         Routing.RegisterRoute(nameof(Views.Season.DowntimePage), typeof(Views.Season.DowntimePage));
 

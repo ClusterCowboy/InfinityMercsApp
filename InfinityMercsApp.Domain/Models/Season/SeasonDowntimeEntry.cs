@@ -9,5 +9,6 @@ public class SeasonDowntimeEntry
     public int NotorietyGain { get; set; }
     public int XpGain { get; set; }
     public int SpentCr { get; set; }
+    public double SwcGain { get; set; }
     public string OtherEffects { get; set; } = string.Empty;
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfinityMercsApp.Domain.Models.Perks;
+using InfinityMercsApp.Domain.Models.Season;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Services.Season;
@@ -326,6 +327,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                     UnitBts      = entry.CurrentBts,
                     UnitVitality = entry.CurrentVitaOrStr,
                     UnitS        = entry.CurrentS,
+                    Renown       = entry.Cost + entry.ExperiencePoints,
                     VitalityHeader    = InferVitalityHeader(entry.UnitTypeCode),
                     StartingVitality  = startingVitality,
                     HasNwi            = hasNwi,
@@ -752,6 +754,21 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
         var deploymentXp = SeasonFileService.ResolveCurrentRound(seasonFile) + 1;
 
+        if (seasonFile is not null)
+        {
+            seasonFile.Rounds.Add(new SeasonRound
+            {
+                RoundIndex = deploymentXp,
+                MissionResults = new SeasonMissionResult
+                {
+                    UnitsDeployed = _unitTracker.Count,
+                    EliteDeploymentMet = _isEliteDeployment,
+                    MissionRound = _currentRound
+                }
+            });
+            await SeasonFileService.SaveSeasonFileAsync(_seasonFilePath, seasonFile);
+        }
+
         ExperiencePageData.Units = _unitTracker
             .Select(t => new ExperienceUnitResult
             {
@@ -763,7 +780,16 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 IsEliteDeployment = _isEliteDeployment,
                 IsConsciousAtEnd = t.Unit.WoundStateKey is "Healthy" or "Wounded" or "NwiDown",
                 GainedInjury = false,
-                XpData = t.Unit.XpData
+                XpData = t.Unit.XpData,
+                IsCaptain = t.Unit.IsLieutenant,
+                UnitPh = t.Unit.UnitPh,
+                UnitBs = t.Unit.UnitBs,
+                UnitCc = t.Unit.UnitCc,
+                UnitWip = t.Unit.UnitWip,
+                UnitArm = t.Unit.UnitArm,
+                Renown = t.Unit.Renown,
+                Skills = t.Unit.Skills,
+                Equipment = t.Unit.Equipment
             })
             .ToList();
 
@@ -779,16 +805,21 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             })
             .ToList();
 
+        MissionOutcomePageData.CurrentRound = deploymentXp;
+        MissionOutcomePageData.Victory = null;
+        MissionOutcomePageData.PointsScored = null;
+
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath);
 
         if (deadUnits.Count > 0)
         {
             InjuryPageData.PendingInjuries = deadUnits;
-            await Shell.Current.GoToAsync($"{nameof(InjuriesPage)}?companyFilePath={encodedPath}");
+            await Shell.Current.GoToAsync($"{nameof(InjuriesPage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}");
         }
         else
         {
-            await Shell.Current.GoToAsync($"{nameof(ExperiencePage)}?companyFilePath={encodedPath}");
+            await Shell.Current.GoToAsync($"{nameof(MissionOutcomePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}");
         }
     }
 

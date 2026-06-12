@@ -222,6 +222,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     UnitBts = entry.CurrentBts,
                     UnitVitality = entry.CurrentVitaOrStr,
                     UnitS = entry.CurrentS,
+                    Renown = entry.Cost + entry.ExperiencePoints,
                     VitalityHeader = InferVitalityHeader(entry.UnitTypeCode),
                     Equipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(equipment, _showUnitsInInches),
                     Skills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(skills, _showUnitsInInches),
@@ -529,6 +530,9 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
     // XP tracking (accumulated across rounds, never reset)
     public UnitXpData XpData { get; } = new();
 
+    // Renown — unit cost (loadout-inclusive) + accumulated XP from the saved file.
+    public int Renown { get; init; }
+
     // Resolved display text
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
@@ -578,6 +582,7 @@ public sealed class UnitXpData
     public bool ScanEnemy { get; set; }
     public bool ScanEnemyFo { get; set; }
     public bool TagAndBag { get; set; }
+    public int DowntimeBonusXp { get; set; }
 
     public int TotalXp =>
         Assist.Count(b => b) +
@@ -586,5 +591,6 @@ public sealed class UnitXpData
         (SucceedButton ? 1 : 0) +
         (ScanEnemy ? 1 : 0) +
         (ScanEnemyFo ? 1 : 0) +
-        (TagAndBag ? 2 : 0);
+        (TagAndBag ? 2 : 0) +
+        DowntimeBonusXp;
 }

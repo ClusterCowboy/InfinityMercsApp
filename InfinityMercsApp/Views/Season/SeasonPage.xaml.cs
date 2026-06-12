@@ -38,6 +38,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private IReadOnlyList<(string Name, string? AssociatedType, string Alignment)> _availableStores = [];
     private readonly Dictionary<string, int> _inventoryCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (int CostCr, double CostSwc)> _inventoryItemCosts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<Action<int, double>> _marketplaceRecolorActions = [];
 
     private SKPicture? _pickerHeaderLogoPicture;
     private SKPicture? _playRoundFlagsPicture;
@@ -253,6 +255,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             await SelectCompanyUnitAsync(_selectedCompanyUnit);
         }
+        await RefreshMarketplaceResourcesAsync();
     }
 
     protected override void OnDisappearing()
@@ -1113,9 +1116,34 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     {
         var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
         var currentRound = SeasonFileService.ResolveCurrentRound(seasonFile);
-        UpdateSeasonTitleBarLabel(currentRound <= 0
-            ? "Arming the Company"
-            : $"Round {currentRound} - Rest and Rearm");
+        UpdateSeasonTitleBarLabel($"Pre Round {currentRound + 1}");
+    }
+
+    private async Task RefreshMarketplaceResourcesAsync()
+    {
+        var seasonFile = await SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        var gross = SeasonFileService.ComputeAvailableResources(seasonFile);
+
+        var cartCr = 0;
+        var cartSwc = 0.0;
+        foreach (var (key, count) in _inventoryCounts)
+        {
+            if (count <= 0) continue;
+            if (!_inventoryItemCosts.TryGetValue(key, out var cost)) continue;
+            cartCr += cost.CostCr * count;
+            cartSwc += cost.CostSwc * count;
+        }
+
+        var remainingCr = gross.CreditsBalance - cartCr;
+        var remainingSwc = gross.SwcBalance - cartSwc;
+
+        var swcText = remainingSwc % 1 == 0
+            ? ((int)remainingSwc).ToString()
+            : remainingSwc.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        UpdateSeasonResourcesTitleBarLabel($"{remainingCr} CR - {swcText} SWC");
+
+        foreach (var recolor in _marketplaceRecolorActions)
+            recolor(remainingCr, remainingSwc);
     }
 
     private bool ApplyGlobalDisplayUnitsPreference()
@@ -1595,6 +1623,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         }
 
         StoreContentArea.Children.Clear();
+        _marketplaceRecolorActions.Clear();
         MarketplacePopupOverlay.IsVisible = false;
 
         var store = await _storeProvider!.GetStoreByNameAsync(storeName);
@@ -1629,11 +1658,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(BuildSectionHeader(group.Key.ToUpperInvariant()));
             foreach (var item in group)
             {
-                var costText = item.CostSwc.HasValue
-                    ? $"{item.CostCr}cr / {item.CostSwc}swc"
-                    : $"{item.CostCr}cr";
                 StoreContentArea.Children.Add(
-                    BuildItemRow(storeName, item.Name, costText, () => ShowItemPopup(item)));
+                    BuildItemRow(storeName, item.Name, item.CostCr, item.CostSwc.HasValue ? (double?)(double)item.CostSwc.Value : null, () => ShowItemPopup(item)));
             }
         }
 
@@ -1651,11 +1677,12 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             StoreContentArea.Children.Add(BuildSectionHeader("AUGMENTS"));
             foreach (var augment in store.Augments)
             {
-                var costText = $"{augment.CostCr}cr";
                 StoreContentArea.Children.Add(
-                    BuildItemRow(storeName, augment.Name, costText, () => ShowAugmentPopup(augment)));
+                    BuildItemRow(storeName, augment.Name, augment.CostCr, null, () => ShowAugmentPopup(augment)));
             }
         }
+
+        await RefreshMarketplaceResourcesAsync();
     }
 
     private static Label BuildSectionHeader(string text) => new()
@@ -1668,14 +1695,30 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     };
 
     // Builds a standard item/augment row: left = name + cost (tappable), right = + count -
-    private Border BuildItemRow(string storeName, string itemName, string costText, Action onTap)
+    private Border BuildItemRow(string storeName, string itemName, int costCr, double? costSwc, Action onTap)
     {
+        var key = $"{storeName}|{itemName}";
+        _inventoryItemCosts[key] = (costCr, costSwc ?? 0);
+
+        var costText = costSwc.HasValue ? $"{costCr}cr / {costSwc}swc" : $"{costCr}cr";
+
+        var nameLabel = new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
+        var costLabel = new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#22C55E") };
+
+        _marketplaceRecolorActions.Add((remainingCr, remainingSwc) =>
+        {
+            var affordable = costCr <= remainingCr && (costSwc ?? 0) <= remainingSwc;
+            var color = affordable ? Colors.White : Color.FromArgb("#EF4444");
+            nameLabel.TextColor = color;
+            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+        });
+
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
-        leftStack.Children.Add(new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White });
-        leftStack.Children.Add(new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#22C55E") });
+        leftStack.Children.Add(nameLabel);
+        leftStack.Children.Add(costLabel);
         leftStack.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(onTap) });
 
-        return BuildRowBorder($"{storeName}|{itemName}", leftStack);
+        return BuildRowBorder(key, leftStack);
     }
 
     // Builds an armor row: left = name + type + ARM/BTS + abilities (tappable), right = + count -
@@ -1687,8 +1730,26 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var armText = troop.Arm.HasValue ? troop.Arm.Value.ToString() : "—";
         var btsText = troop.Bts.HasValue ? troop.Bts.Value.ToString() : "—";
 
+        var key = $"{storeName}|{displayName}";
+        _inventoryItemCosts[key] = (troop.CostCr, 0);
+
+        var nameLabel = new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
+        var costLabel = new Label
+        {
+            Text = $"{troop.CostCr}cr",
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            TextColor = Color.FromArgb("#22C55E")
+        };
+
+        _marketplaceRecolorActions.Add((remainingCr, _) =>
+        {
+            var affordable = troop.CostCr <= remainingCr;
+            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
+            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+        });
+
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
-        leftStack.Children.Add(new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White });
+        leftStack.Children.Add(nameLabel);
         leftStack.Children.Add(new Label
         {
             Text = $"ARM {armText}  BTS {btsText}",
@@ -1705,16 +1766,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 LineBreakMode = LineBreakMode.WordWrap
             });
         }
-        leftStack.Children.Add(new Label
-        {
-            Text = $"{troop.CostCr}cr",
-            Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#22C55E")
-        });
+        leftStack.Children.Add(costLabel);
         leftStack.GestureRecognizers.Add(
             new TapGestureRecognizer { Command = new Command(() => ShowArmorPopup(troop)) });
 
-        return BuildRowBorder($"{storeName}|{displayName}", leftStack);
+        return BuildRowBorder(key, leftStack);
     }
 
     // Shared core: wraps a left-content view in a bordered row with + count - controls on the right.
@@ -1747,6 +1803,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             _inventoryCounts[key] = _inventoryCounts.GetValueOrDefault(key, 0) + 1;
             countLabel.Text = _inventoryCounts[key].ToString();
+            _ = RefreshMarketplaceResourcesAsync();
         };
 
         var minusBtn = new Button
@@ -1768,6 +1825,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             if (current <= 0) return;
             _inventoryCounts[key] = current - 1;
             countLabel.Text = _inventoryCounts[key].ToString();
+            _ = RefreshMarketplaceResourcesAsync();
         };
 
         var controls = new HorizontalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 6 };
@@ -2043,7 +2101,11 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
     private void OnTeamTabClicked(object sender, EventArgs e) => SetActiveTab(0);
     private void OnInventoryTabClicked(object sender, EventArgs e) => SetActiveTab(1);
-    private void OnMarketplaceTabClicked(object sender, EventArgs e) => SetActiveTab(2);
+    private void OnMarketplaceTabClicked(object sender, EventArgs e)
+    {
+        SetActiveTab(2);
+        _ = RefreshMarketplaceResourcesAsync();
+    }
 
     private void SetActiveTab(int index)
     {

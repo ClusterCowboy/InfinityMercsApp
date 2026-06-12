@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="InfinityMercsApp.Views.Season.MissionOutcomePage"
+             Title="Mission Outcome"
+             BackgroundColor="#111827">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="16,12,16,16">
+
+        <Label Grid.Row="0"
+               Text="MISSION OUTCOME"
+               FontSize="22"
+               FontAttributes="Bold"
+               TextColor="White"
+               Margin="0,0,0,12"/>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="16">
+
+                <!-- Victory / Defeat selection -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Mission Result"
+                           TextColor="#D1D5DB"
+                           FontSize="13"
+                           FontAttributes="Bold" />
+                    <Grid ColumnSpacing="8" ColumnDefinitions="*,*">
+                        <Button x:Name="VictoryButton"
+                                Grid.Column="0"
+                                Text="VICTORY"
+                                BackgroundColor="#374151"
+                                TextColor="#22C55E"
+                                FontAttributes="Bold"
+                                FontSize="14"
+                                HeightRequest="44"
+                                CornerRadius="6"
+                                Padding="0"
+                                Clicked="OnVictoryClicked" />
+                        <Button x:Name="DefeatButton"
+                                Grid.Column="1"
+                                Text="DEFEAT"
+                                BackgroundColor="#374151"
+                                TextColor="#DC2626"
+                                FontAttributes="Bold"
+                                FontSize="14"
+                                HeightRequest="44"
+                                CornerRadius="6"
+                                Padding="0"
+                                Clicked="OnDefeatClicked" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <!-- Points scored -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Points Scored"
+                           TextColor="#D1D5DB"
+                           FontSize="13"
+                           FontAttributes="Bold" />
+                    <Picker x:Name="PointsPicker"
+                            Title="Select points (0-10)..."
+                            TextColor="White"
+                            TitleColor="#9CA3AF"
+                            BackgroundColor="#374151"
+                            SelectedIndexChanged="OnPointsChanged" />
+                </VerticalStackLayout>
+
+                <!-- Outcome breakdown card -->
+                <Border Stroke="Transparent"
+                        BackgroundColor="#1F2937"
+                        StrokeShape="RoundRectangle 6"
+                        Padding="14">
+                    <VerticalStackLayout x:Name="BreakdownStack" Spacing="6" />
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="2"
+                x:Name="ContinueButton"
+                Text="GO TO EXPERIENCE"
+                BackgroundColor="#22C55E"
+                TextColor="Black"
+                FontAttributes="Bold"
+                Margin="0,12,0,0"
+                IsEnabled="False"
+                Opacity="0.45"
+                Clicked="OnGoToExperienceClicked"
+                HorizontalOptions="Fill" />
+    </Grid>
+</ContentPage>
