@@ -9,4 +9,6 @@ public class SeasonFile
     public SeasonMarketplace InitialPurchases { get; set; } = new();
     public List<SeasonRound> Rounds { get; set; } = [];
     public SeasonStatus CurrentStatus { get; set; } = new();
+    // Key = SavedCompanyEntry.EntryIndex; value = assigned gear slots for that unit.
+    public Dictionary<int, List<SeasonUnitGear>> UnitGear { get; set; } = new();
 }

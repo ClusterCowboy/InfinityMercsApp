@@ -117,6 +117,7 @@
                         UnitS="{Binding UnitS}"
                         UnitAva="{Binding UnitAva}"
                         ShowConfigurationsSection="False"
+                        ShowSummaryRows="False"
                         EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                         SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 

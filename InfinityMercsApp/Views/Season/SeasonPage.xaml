@@ -200,24 +200,116 @@
                             ShowConfigurationsSection="False"
                             ShowUnitName="False"
                             ShowAva="False"
+                            ShowSummaryRows="False"
                             EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                             SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />
 
-                        <!-- Weapons -->
+                        <!-- Sections: Equipment, Skills, Perks, Weapons, CC Weapons, Gear Slots -->
                         <ScrollView Grid.Row="2">
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                                    <Label Text="Weapons" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
-                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentRangedWeaponsFormatted}"
-                                           FontSize="{DynamicResource FontSizeBody}" LineBreakMode="WordWrap" />
-                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentMeleeWeaponsFormatted}"
-                                           FontSize="{DynamicResource FontSizeBody}" LineBreakMode="WordWrap" />
-                                    <Label FormattedText="{Binding Source={x:Reference SeasonRoot}, Path=CurrentPeripheralsFormatted}"
-                                           FontSize="{DynamicResource FontSizeBody}" LineBreakMode="WordWrap"
-                                           IsVisible="{Binding Source={x:Reference SeasonRoot}, Path=HasCurrentPeripherals}" />
+                            <VerticalStackLayout Spacing="14" Padding="0,2,0,24">
+
+                                <!-- Equipment -->
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="EQUIPMENT" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
+                                    <BoxView HeightRequest="1" Color="#374151" Margin="0,1,0,3" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <VerticalStackLayout Grid.Column="0" x:Name="EquipmentLeftColumn" Spacing="3" />
+                                        <VerticalStackLayout Grid.Column="1" x:Name="EquipmentRightColumn" Spacing="3" />
+                                    </Grid>
                                 </VerticalStackLayout>
-                                <Grid Grid.Column="1" />
-                            </Grid>
+
+                                <!-- Special Skills -->
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="SPECIAL SKILLS" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
+                                    <BoxView HeightRequest="1" Color="#374151" Margin="0,1,0,3" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <VerticalStackLayout Grid.Column="0" x:Name="SkillsLeftColumn" Spacing="3" />
+                                        <VerticalStackLayout Grid.Column="1" x:Name="SkillsRightColumn" Spacing="3" />
+                                    </Grid>
+                                </VerticalStackLayout>
+
+                                <!-- Perks -->
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="PERKS" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
+                                    <BoxView HeightRequest="1" Color="#374151" Margin="0,1,0,3" />
+                                    <Label Text="(coming soon)" TextColor="#fe34de" FontSize="{DynamicResource FontSizeBody}" />
+                                </VerticalStackLayout>
+
+                                <!-- Weapons -->
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="WEAPONS" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
+                                    <BoxView HeightRequest="1" Color="#374151" Margin="0,1,0,3" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <VerticalStackLayout Grid.Column="0" x:Name="WeaponsLeftColumn" Spacing="3" />
+                                        <VerticalStackLayout Grid.Column="1" x:Name="WeaponsRightColumn" Spacing="3" />
+                                    </Grid>
+                                </VerticalStackLayout>
+
+                                <!-- CC Weapons -->
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="CC WEAPONS" FontSize="{DynamicResource FontSizeSectionHeader}" FontAttributes="Bold" TextColor="White" />
+                                    <BoxView HeightRequest="1" Color="#374151" Margin="0,1,0,3" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <VerticalStackLayout Grid.Column="0" x:Name="CcWeaponsLeftColumn" Spacing="3" />
+                                        <VerticalStackLayout Grid.Column="1" x:Name="CcWeaponsRightColumn" Spacing="3" />
+                                    </Grid>
+                                </VerticalStackLayout>
+
+                                <!-- Gear Slots -->
+                                <VerticalStackLayout Spacing="6">
+
+                                    <Label Text="PRIMARY" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="PrimaryGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnPrimaryGearPickerChanged" />
+
+                                    <Label Text="SECONDARY" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="SecondaryGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnSecondaryGearPickerChanged" />
+
+                                    <Label Text="SIDEARM" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="SidearmGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnSidearmGearPickerChanged" />
+
+                                    <Label Text="ACCESSORIES" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="AccessoriesGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnAccessoriesGearPickerChanged" />
+
+                                    <Label Text="ROLES" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="RolesGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnRolesGearPickerChanged" />
+
+                                    <Label Text="ARMOR" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="ArmorGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnArmorGearPickerChanged" />
+
+                                    <Label Text="AUGMENTS" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Picker x:Name="AugmentsGearPicker"
+                                            TextColor="White"
+                                            BackgroundColor="#1F2937"
+                                            TitleColor="#9CA3AF"
+                                            SelectedIndexChanged="OnAugmentsGearPickerChanged" />
+
+                                </VerticalStackLayout>
+
+                            </VerticalStackLayout>
                         </ScrollView>
 
                     </Grid>

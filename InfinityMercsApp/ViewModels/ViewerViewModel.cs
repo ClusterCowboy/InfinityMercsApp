@@ -764,6 +764,22 @@ public class ViewerViewModel : BaseViewModel
         ShowHackableIcon = ShowHackableIcon || hasHackableFromCurrentState;
     }
 
+    public void ApplyAugmentStatOverride(string statName, string value)
+    {
+        switch (statName.ToUpperInvariant())
+        {
+            case "CC":   UnitCc       = value; break;
+            case "BS":   UnitBs       = value; break;
+            case "PH":   UnitPh       = value; break;
+            case "WIP":  UnitWip      = value; break;
+            case "ARM":  UnitArm      = value; break;
+            case "BTS":  UnitBts      = value; break;
+            case "S":    UnitS        = value; break;
+            case "VITA": UnitVitality = value; break;
+            case "STR":  UnitVitality = value; break;
+        }
+    }
+
     public void ApplyCaptainStatBonuses(
         int ccBonus,
         int bsBonus,

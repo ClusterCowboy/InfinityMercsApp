@@ -159,6 +159,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                 .ThenBy(x => x.EntryIndex)
                 .ToList();
 
+            var seasonGear = await LoadSeasonGearAsync();
+
             foreach (var entry in orderedEntries)
             {
                 var effectiveSourceFactionId = ResolveEffectiveSourceFactionId(entry);
@@ -191,6 +193,21 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     entry.UnitTypeCode?.Trim().Equals("TAG", StringComparison.OrdinalIgnoreCase) == true &&
                     effectiveSourceFactionId == TagCompanyFactionId;
 
+                // Mutable stat locals so augment overrides can change them before init.
+                var unitCc = entry.CurrentCc;
+                var unitBs = entry.CurrentBs;
+                var unitPh = entry.CurrentPh;
+                var unitWip = entry.CurrentWip;
+                var unitArm = entry.CurrentArm;
+                var unitBts = entry.CurrentBts;
+                var unitS = entry.CurrentS;
+                var unitVitality = entry.CurrentVitaOrStr;
+
+                ApplySeasonGearToUnit(entry.EntryIndex, seasonGear,
+                    ref rangedWeapons, ref meleeWeapons, ref skills,
+                    ref unitCc, ref unitBs, ref unitPh, ref unitWip,
+                    ref unitArm, ref unitBts, ref unitS, ref unitVitality);
+
                 var item = new DeploymentUnitItem
                 {
                     EntryIndex = entry.EntryIndex,
@@ -214,14 +231,14 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                         entry.CurrentMoveFirstCm,
                         entry.CurrentMoveSecondCm,
                         _showUnitsInInches),
-                    UnitCc = entry.CurrentCc,
-                    UnitBs = entry.CurrentBs,
-                    UnitPh = entry.CurrentPh,
-                    UnitWip = entry.CurrentWip,
-                    UnitArm = entry.CurrentArm,
-                    UnitBts = entry.CurrentBts,
-                    UnitVitality = entry.CurrentVitaOrStr,
-                    UnitS = entry.CurrentS,
+                    UnitCc = unitCc,
+                    UnitBs = unitBs,
+                    UnitPh = unitPh,
+                    UnitWip = unitWip,
+                    UnitArm = unitArm,
+                    UnitBts = unitBts,
+                    UnitVitality = unitVitality,
+                    UnitS = unitS,
                     Renown = entry.Cost + entry.ExperiencePoints,
                     VitalityHeader = InferVitalityHeader(entry.UnitTypeCode),
                     Equipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(equipment, _showUnitsInInches),
@@ -457,6 +474,68 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     {
         var level = CompanyUnitExperienceRanks.GetRankLevel(experiencePoints);
         return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/Experience/noun-{level}-stars.svg";
+    }
+
+    private async Task<Dictionary<int, List<InfinityMercsApp.Domain.Models.Season.SeasonUnitGear>>> LoadSeasonGearAsync()
+    {
+        var seasonFile = await InfinityMercsApp.Services.Season.SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        return seasonFile?.UnitGear ?? [];
+    }
+
+    private static void ApplySeasonGearToUnit(
+        int entryIndex,
+        Dictionary<int, List<InfinityMercsApp.Domain.Models.Season.SeasonUnitGear>> seasonGear,
+        ref string rangedWeapons, ref string meleeWeapons, ref string skills,
+        ref string unitCc, ref string unitBs, ref string unitPh, ref string unitWip,
+        ref string unitArm, ref string unitBts, ref string unitS, ref string unitVitality)
+    {
+        if (!seasonGear.TryGetValue(entryIndex, out var gearList)) return;
+
+        foreach (var gear in gearList)
+        {
+            if (string.IsNullOrWhiteSpace(gear.ItemName)) continue;
+            switch (gear.Slot)
+            {
+                case "Primary":
+                case "Secondary":
+                case "Sidearm":
+                case "Accessories":
+                    if (CompanyProfileTextService.IsMeleeWeaponName(gear.ItemName))
+                        meleeWeapons = AppendChoices(meleeWeapons, [gear.ItemName]);
+                    else
+                        rangedWeapons = AppendChoices(rangedWeapons, [gear.ItemName]);
+                    break;
+
+                case "Roles":
+                    skills = AppendChoices(skills, [gear.ItemName]);
+                    break;
+
+                case "Augments":
+                    var m = System.Text.RegularExpressions.Regex.Match(
+                        gear.ItemName.Trim(), @"^([A-Za-z]+)\s*=\s*(\d+)$");
+                    if (m.Success)
+                    {
+                        var val = m.Groups[2].Value;
+                        switch (m.Groups[1].Value.ToUpperInvariant())
+                        {
+                            case "CC":   unitCc       = val; break;
+                            case "BS":   unitBs       = val; break;
+                            case "PH":   unitPh       = val; break;
+                            case "WIP":  unitWip      = val; break;
+                            case "ARM":  unitArm      = val; break;
+                            case "BTS":  unitBts      = val; break;
+                            case "S":    unitS        = val; break;
+                            case "VITA": unitVitality = val; break;
+                            case "STR":  unitVitality = val; break;
+                        }
+                    }
+                    else
+                    {
+                        skills = AppendChoices(skills, [gear.ItemName]);
+                    }
+                    break;
+            }
+        }
     }
 }
 

@@ -128,7 +128,7 @@
 
         <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
         <!-- Reusable unit header + profiles panel shared with vanilla faction selection page. -->
-            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" />
+            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" ShowSummaryRows="False" />
 
             <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
                 <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">

@@ -122,6 +122,8 @@ internal static class SeasonFileService
                 crSpent += tx.CostCr;
                 if (tx.CostSwc.HasValue)
                     swcSpent += (double)tx.CostSwc.Value;
+                if (tx.SwcGrant.HasValue)
+                    swcBought += (double)tx.SwcGrant.Value;
             }
 
             foreach (var ur in round.MissionResults.UnitResults)
@@ -194,6 +196,7 @@ internal static class SeasonFileService
             {
                 cr -= tx.CostCr;
                 swc -= tx.CostSwc.HasValue ? (double)tx.CostSwc.Value : 0;
+                swc += tx.SwcGrant.HasValue ? (double)tx.SwcGrant.Value : 0;
             }
         }
 

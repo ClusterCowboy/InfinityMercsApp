@@ -198,14 +198,16 @@
                             IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=HasPeripheralSkills}" />
                     </VerticalStackLayout>
                 </Border>
-                <Border Grid.Row="4" Grid.ColumnSpan="3" BackgroundColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
+                <Border Grid.Row="4" Grid.ColumnSpan="3" BackgroundColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2"
+                        IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowSummaryRows}">
                     <Label FormattedText="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=EquipmentSummaryFormatted}" TextColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryTextColor}" LineBreakMode="WordWrap">
                         <Label.Shadow>
                             <Shadow Brush="#CC000000" Offset="1,1" Radius="2" Opacity="0.9" />
                         </Label.Shadow>
                     </Label>
                 </Border>
-                <Border Grid.Row="5" Grid.ColumnSpan="3" BackgroundColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2">
+                <Border Grid.Row="5" Grid.ColumnSpan="3" BackgroundColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryColor}" StrokeThickness="0" Padding="6,2"
+                        IsVisible="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=ShowSummaryRows}">
                     <Label FormattedText="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=SpecialSkillsSummaryFormatted}" TextColor="{Binding Source={x:Reference UnitDisplayConfigurationsRoot}, Path=UnitHeaderSecondaryTextColor}" LineBreakMode="WordWrap">
                         <Label.Shadow>
                             <Shadow Brush="#CC000000" Offset="1,1" Radius="2" Opacity="0.9" />
