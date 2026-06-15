@@ -50,5 +50,11 @@ public interface IMetadataProvider
     /// </summary>
     /// <returns></returns>
     IReadOnlyList<Skill> GetSkills();
+
+    /// <summary>
+    /// Gets ammunition entries from metadata, ordered by name.
+    /// </summary>
+    /// <returns></returns>
+    IReadOnlyList<Ammunition> GetAmmunitions();
 }
 
