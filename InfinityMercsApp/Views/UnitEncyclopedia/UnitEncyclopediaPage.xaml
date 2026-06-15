@@ -202,6 +202,7 @@
                     UnitVitality="{Binding UnitVitality}"
                     UnitS="{Binding UnitS}"
                     UnitAva="{Binding UnitAva}"
+                    ShowSummaryRows="False"
                     EquipmentSummaryFormatted="{Binding EquipmentSummaryFormatted}"
                     SpecialSkillsSummaryFormatted="{Binding SpecialSkillsSummaryFormatted}" />            </Grid>
         </Border>

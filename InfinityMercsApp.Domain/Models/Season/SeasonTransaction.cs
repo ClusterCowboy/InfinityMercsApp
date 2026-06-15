@@ -6,4 +6,6 @@ public class SeasonTransaction
     public string ItemName { get; set; } = string.Empty;
     public int CostCr { get; set; }
     public decimal? CostSwc { get; set; }
+    public decimal? SwcGrant { get; set; }
+    public bool IsSale { get; set; }
 }

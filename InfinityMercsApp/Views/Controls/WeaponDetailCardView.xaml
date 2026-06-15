@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Controls.WeaponDetailCardView">
 
-    <Border BackgroundColor="#111827"
+    <Border x:Name="CardBorder"
+            BackgroundColor="#111827"
             Stroke="#4B5563"
             StrokeThickness="1"
             Padding="10,8">

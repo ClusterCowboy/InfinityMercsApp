@@ -22,7 +22,7 @@
   ],
   "augments": [
     { "name": "BS=11", "requirement": "Cannot have the BS Attack (+#) skill", "costCr": 10, "costNote": null },
-    { "name": "BS Attack (-1 SR)", "requirement": null, "costCr": 10, "costNote": null },
+    { "name": "BS Attack (SR-1)", "requirement": null, "costCr": 10, "costNote": null },
     { "name": "Armed Turret (MMR)", "requirement": "Engineer", "costCr": 10, "costNote": null, "wikiUrl": "https://infinitythewiki.com/Armed_Turret", "wikiSection": "ARMED TURRET" },
     { "name": "Discoballer + Deactivator", "requirement": "Forward Observer", "costCr": 10, "costNote": null }
   ]

@@ -4,6 +4,7 @@ using DomainMetadataDocument = InfinityMercsApp.Domain.Models.Metadata.MetadataD
 using DomainFaction = InfinityMercsApp.Domain.Models.Metadata.Faction;
 using DomainSkill = InfinityMercsApp.Domain.Models.Metadata.Skill;
 using DomainWeapon = InfinityMercsApp.Domain.Models.Metadata.Weapon;
+using DomainAmmunition = InfinityMercsApp.Domain.Models.Metadata.Ammunition;
 using InfinityMercsApp.Infrastructure.Repositories;
 using DbAmmunition = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Ammunition;
 using DbBooty = InfinityMercsApp.Infrastructure.Models.Database.Metadata.Booty;
@@ -176,6 +177,14 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
             .ToList();
     }
 
+    /// <inheritdoc/>
+    public IReadOnlyList<DomainAmmunition> GetAmmunitions()
+    {
+        return sqliteRepository.GetAll<DbAmmunition>(x => true, x => x.Name)
+            .Select(MapAmmunition)
+            .ToList();
+    }
+
     private static DomainFaction MapFaction(DbFaction source)
     {
         return new DomainFaction
@@ -213,6 +222,16 @@ public sealed class MetadataProvider(ISQLiteRepository sqliteRepository) : IMeta
     private static DomainSkill MapSkill(DbSkill source)
     {
         return new DomainSkill
+        {
+            Id = source.Id,
+            Name = source.Name,
+            Wiki = source.Wiki
+        };
+    }
+
+    private static DomainAmmunition MapAmmunition(DbAmmunition source)
+    {
+        return new DomainAmmunition
         {
             Id = source.Id,
             Name = source.Name,

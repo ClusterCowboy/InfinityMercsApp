@@ -8,7 +8,7 @@ public interface IStoreProvider
     /// against the supplied names (case-insensitive).
     /// </summary>
     /// <param name="factionNames">Faction names to match against store availability.</param>
-    Task<IReadOnlyList<(string Name, string? AssociatedType, string Alignment)>> GetAvailableStoresAsync(
+    Task<IReadOnlyList<(string Name, string? AssociatedType, string Alignment, IReadOnlyList<string> AssociatedFactions)>> GetAvailableStoresAsync(
         IReadOnlyList<string> factionNames,
         CancellationToken cancellationToken = default);
 

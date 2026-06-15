@@ -190,6 +190,8 @@ public partial class UnitDisplayConfigurationsView : ContentView
             propertyChanged: OnShowConfigurationsSectionChanged);
     public static readonly BindableProperty ShowUnitNameProperty =
         BindableProperty.Create(nameof(ShowUnitName), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
+    public static readonly BindableProperty ShowSummaryRowsProperty =
+        BindableProperty.Create(nameof(ShowSummaryRows), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
     public static readonly BindableProperty ShowAvaProperty =
         BindableProperty.Create(nameof(ShowAva), typeof(bool), typeof(UnitDisplayConfigurationsView), true,
             propertyChanged: OnShowAvaChanged);
@@ -584,6 +586,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         get => (bool)GetValue(ShowUnitNameProperty);
         set => SetValue(ShowUnitNameProperty, value);
+    }
+
+    public bool ShowSummaryRows
+    {
+        get => (bool)GetValue(ShowSummaryRowsProperty);
+        set => SetValue(ShowSummaryRowsProperty, value);
     }
 
     public bool ShowAva

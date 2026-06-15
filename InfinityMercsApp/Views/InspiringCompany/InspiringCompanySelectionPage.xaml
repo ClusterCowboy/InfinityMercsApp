@@ -115,7 +115,7 @@
             </Grid>
 
         <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
-            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" />
+            <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" ShowSummaryRows="False" />
 
             <HorizontalStackLayout Grid.Row="2" Spacing="8" VerticalOptions="Center">
                 <Label

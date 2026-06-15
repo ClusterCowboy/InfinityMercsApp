@@ -187,6 +187,7 @@
                     Grid.Row="0"
                     x:Name="UnitDisplayConfigurationsView"
                     ShowConfigurationsSection="False"
+                    ShowSummaryRows="False"
                     UnitNameHeading="{Binding UnitNameHeading}"
                     ShowRegularOrderIcon="{Binding ShowRegularOrderIcon}"
                     ShowIrregularOrderIcon="{Binding ShowIrregularOrderIcon}"

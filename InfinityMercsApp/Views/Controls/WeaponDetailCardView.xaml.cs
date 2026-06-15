@@ -1,4 +1,5 @@
 using InfinityMercsApp.Domain.Models.Metadata;
+using Microsoft.Maui.Controls.Shapes;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -46,9 +47,56 @@ public partial class WeaponDetailCardView : ContentView
             0,
             propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
 
+    public static readonly BindableProperty BurstBonusProperty =
+        BindableProperty.Create(
+            nameof(BurstBonus),
+            typeof(int),
+            typeof(WeaponDetailCardView),
+            0,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    public static readonly BindableProperty AmmoTypeProperty =
+        BindableProperty.Create(
+            nameof(AmmoType),
+            typeof(string),
+            typeof(WeaponDetailCardView),
+            null,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    public static readonly BindableProperty CompactProperty =
+        BindableProperty.Create(
+            nameof(Compact),
+            typeof(bool),
+            typeof(WeaponDetailCardView),
+            false,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    // The label shown in the top-left of the compact card — typically the weapon name or mode name,
+    // set by the host so the card can be self-contained (no external header label needed).
+    public static readonly BindableProperty DisplayNameProperty =
+        BindableProperty.Create(
+            nameof(DisplayName),
+            typeof(string),
+            typeof(WeaponDetailCardView),
+            string.Empty,
+            propertyChanged: (b, _, _) => ((WeaponDetailCardView)b).RebuildContent());
+
+    /// <summary>
+    /// Raised when the card is tapped while in <see cref="Compact"/> mode, signalling that the
+    /// host should reveal the full weapon detail (e.g. in a popup).
+    /// </summary>
+    public event EventHandler? DetailRequested;
+
     public WeaponDetailCardView()
     {
         InitializeComponent();
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) =>
+        {
+            if (Compact) DetailRequested?.Invoke(this, EventArgs.Empty);
+        };
+        CardBorder.GestureRecognizers.Add(tap);
     }
 
     public Weapon? Weapon
@@ -81,12 +129,44 @@ public partial class WeaponDetailCardView : ContentView
         set => SetValue(DamageReductionProperty, value);
     }
 
+    public int BurstBonus
+    {
+        get => (int)GetValue(BurstBonusProperty);
+        set => SetValue(BurstBonusProperty, value);
+    }
+
+    public string? AmmoType
+    {
+        get => (string?)GetValue(AmmoTypeProperty);
+        set => SetValue(AmmoTypeProperty, value);
+    }
+
+    public bool Compact
+    {
+        get => (bool)GetValue(CompactProperty);
+        set => SetValue(CompactProperty, value);
+    }
+
+    public string DisplayName
+    {
+        get => (string)GetValue(DisplayNameProperty);
+        set => SetValue(DisplayNameProperty, value);
+    }
+
     private void RebuildContent()
     {
         ContentStack.Children.Clear();
         var weapon = Weapon;
         if (weapon is null) return;
 
+        if (Compact)
+            BuildCompact(weapon);
+        else
+            BuildFull(weapon);
+    }
+
+    private void BuildFull(Weapon weapon)
+    {
         // Firing mode header — shown when a weapon has multiple modes
         if (!string.IsNullOrWhiteSpace(weapon.Mode))
         {
@@ -100,8 +180,8 @@ public partial class WeaponDetailCardView : ContentView
             });
         }
 
-        // Two-column stats: Burst/Damage on the left, Saving/Saving Rolls on the right
-        var statsView = BuildStatsView(weapon, DamageReduction);
+        // Two-column stats: Burst/Damage/Ammo on the left, Saving/Saving Rolls on the right
+        var statsView = BuildStatsView(weapon, DamageReduction, AmmoType, BurstBonus);
         if (statsView is not null)
             ContentStack.Children.Add(statsView);
 
@@ -147,29 +227,157 @@ public partial class WeaponDetailCardView : ContentView
             ContentStack.Children.Add(propGrid);
         }
 
-        // Range band bar
-        if (!string.IsNullOrWhiteSpace(weapon.DistanceJson))
-        {
-            ContentStack.Children.Add(new WeaponRangeBandBarView
-            {
-                DistanceJson = weapon.DistanceJson,
-                ShowUnitsInInches = ShowUnitsInInches,
-                BarHeightRequest = RangeBandHeightRequest,
-                XVisorActive = XVisorActive,
-                Margin = new Thickness(0, 6, 0, 0),
-                HorizontalOptions = LayoutOptions.Fill
-            });
-        }
+        AddRangeBar(weapon);
     }
 
-    private static View? BuildStatsView(Weapon weapon, int damageReduction = 0)
+    // Compact glance view: a single tappable row (Burst / Damage / ammo pill / chevron) plus the
+    // range bar. Saving, Saving Rolls and Special Rules are deferred to the detail popup.
+    // Compact single-row card:
+    //   [DisplayName — left/Star]  [B chip] [DAM chip] [ammo pill] [›]  — all at 3 px spacing
+    //   range bar below (when present)
+    private void BuildCompact(Weapon weapon)
+    {
+        var row = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition { Width = GridLength.Star }, // weapon / mode label
+                new ColumnDefinition { Width = GridLength.Auto }  // stats + ammo + chevron
+            },
+            ColumnSpacing = 8,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        var nameLabel = new Label
+        {
+            Text = DisplayName,
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+        Grid.SetColumn(nameLabel, 0);
+        row.Children.Add(nameLabel);
+
+        var rightStack = new HorizontalStackLayout { Spacing = 3, VerticalOptions = LayoutOptions.Center };
+
+        if (!IsDash(weapon.Burst))
+        {
+            var burst = weapon.Burst!;
+            if (BurstBonus > 0 && int.TryParse(burst.Trim(), out var bv))
+                burst = (bv + BurstBonus).ToString();
+            rightStack.Children.Add(BuildStatChip("B", burst));
+        }
+
+        var damageDisplay = ApplyDamageReduction(weapon.Damage, DamageReduction);
+        if (!IsDash(damageDisplay))
+            rightStack.Children.Add(BuildStatChip("DAM", damageDisplay!));
+
+        if (!string.IsNullOrWhiteSpace(AmmoType))
+            rightStack.Children.Add(BuildAmmoPill(AmmoType!));
+
+        rightStack.Children.Add(new Label
+        {
+            Text = "›",
+            TextColor = Color.FromArgb("#6B7280"),
+            FontSize = 18,
+            VerticalTextAlignment = TextAlignment.Center
+        });
+
+        Grid.SetColumn(rightStack, 1);
+        row.Children.Add(rightStack);
+
+        ContentStack.Children.Add(row);
+        AddRangeBar(weapon);
+    }
+
+    private void AddRangeBar(Weapon weapon)
+    {
+        if (string.IsNullOrWhiteSpace(weapon.DistanceJson)) return;
+
+        ContentStack.Children.Add(new WeaponRangeBandBarView
+        {
+            DistanceJson = weapon.DistanceJson,
+            ShowUnitsInInches = ShowUnitsInInches,
+            BarHeightRequest = RangeBandHeightRequest,
+            XVisorActive = XVisorActive,
+            Margin = new Thickness(0, 6, 0, 0),
+            HorizontalOptions = LayoutOptions.Fill
+        });
+    }
+
+    // Compact pill-button chip: dimmed label prefix + bold white value, dark bordered background.
+    private static View BuildStatChip(string label, string value)
+    {
+        var inner = new HorizontalStackLayout { Spacing = 3, VerticalOptions = LayoutOptions.Center };
+        inner.Children.Add(new Label
+        {
+            Text = label,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            TextColor = Color.FromArgb("#9CA3AF"),
+            VerticalTextAlignment = TextAlignment.Center
+        });
+        inner.Children.Add(new Label
+        {
+            Text = value,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Colors.White,
+            VerticalTextAlignment = TextAlignment.Center
+        });
+
+        return new Border
+        {
+            BackgroundColor = Color.FromArgb("#1F2937"),
+            Stroke = Color.FromArgb("#374151"),
+            StrokeThickness = 1,
+            Padding = new Thickness(6, 2),
+            VerticalOptions = LayoutOptions.Center,
+            StrokeShape = new RoundRectangle { CornerRadius = 6 },
+            Content = inner
+        };
+    }
+
+    // Coloured pill conveying the ammunition / damage type, e.g. "AP+Exp".
+    private static View BuildAmmoPill(string ammo)
+    {
+        var border = new Border
+        {
+            BackgroundColor = Color.FromArgb("#1F2937"),
+            Stroke = Color.FromArgb("#F59E0B"),
+            StrokeThickness = 1,
+            Padding = new Thickness(6, 1),
+            HorizontalOptions = LayoutOptions.Start,
+            VerticalOptions = LayoutOptions.Center,
+            StrokeShape = new RoundRectangle { CornerRadius = 8 }
+        };
+        border.Content = new Label
+        {
+            Text = ammo,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Color.FromArgb("#F59E0B"),
+            VerticalTextAlignment = TextAlignment.Center
+        };
+        return border;
+    }
+
+    private static View? BuildStatsView(Weapon weapon, int damageReduction = 0, string? ammoType = null, int burstBonus = 0)
     {
         var leftStats = new List<(string Label, string Value)>();
         var rightStats = new List<(string Label, string Value)>();
 
-        if (!IsDash(weapon.Burst)) leftStats.Add(("Burst", weapon.Burst!));
+        if (!IsDash(weapon.Burst))
+        {
+            var burst = weapon.Burst!;
+            if (burstBonus > 0 && int.TryParse(burst.Trim(), out var bv))
+                burst = (bv + burstBonus).ToString();
+            leftStats.Add(("Burst", burst));
+        }
         var damageDisplay = ApplyDamageReduction(weapon.Damage, damageReduction);
         if (!IsDash(damageDisplay)) leftStats.Add(("Damage", damageDisplay!));
+        if (!string.IsNullOrWhiteSpace(ammoType)) leftStats.Add(("Ammo", ammoType!));
         if (!IsDash(weapon.Saving)) rightStats.Add(("Saving", weapon.Saving!));
         if (!IsDash(weapon.SavingNum)) rightStats.Add(("Saving Rolls", weapon.SavingNum!));
 

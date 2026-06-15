@@ -22,7 +22,7 @@
     { "type": "HI", "costCr": 38, "armorName": "Hsien Armor", "arm": 4, "bts": 6, "abilities": "MSV2" }
   ],
   "augments": [
-    { "name": "CC Attack (-1 SR)", "requirement": null, "costCr": 6, "costNote": null },
+    { "name": "CC Attack (SR-1)", "requirement": null, "costCr": 6, "costNote": null },
     { "name": "Armed Turret (Combi)", "requirement": "Engineer", "costCr": 5, "costNote": null }
   ]
 }

@@ -23,6 +23,7 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
     private readonly FactionLogoCacheService? _factionLogoCacheService;
     private readonly IAppSettingsProvider? _appSettingsProvider;
     private string _companyFilePath = string.Empty;
+    private string _seasonFilePath = string.Empty;
     private bool _loadAttempted;
     private bool _showUnitsInInches = true;
     private DeploymentUnitItem? _selectedUnit;
@@ -102,6 +103,9 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
             _companyFilePath = Uri.UnescapeDataString(raw?.ToString() ?? string.Empty);
             _loadAttempted = false;
         }
+
+        if (query.TryGetValue("seasonFilePath", out var seasonRaw))
+            _seasonFilePath = Uri.UnescapeDataString(seasonRaw?.ToString() ?? string.Empty);
     }
 
     protected override async void OnAppearing()
@@ -155,6 +159,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                 .ThenBy(x => x.EntryIndex)
                 .ToList();
 
+            var seasonGear = await LoadSeasonGearAsync();
+
             foreach (var entry in orderedEntries)
             {
                 var effectiveSourceFactionId = ResolveEffectiveSourceFactionId(entry);
@@ -187,6 +193,21 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                     entry.UnitTypeCode?.Trim().Equals("TAG", StringComparison.OrdinalIgnoreCase) == true &&
                     effectiveSourceFactionId == TagCompanyFactionId;
 
+                // Mutable stat locals so augment overrides can change them before init.
+                var unitCc = entry.CurrentCc;
+                var unitBs = entry.CurrentBs;
+                var unitPh = entry.CurrentPh;
+                var unitWip = entry.CurrentWip;
+                var unitArm = entry.CurrentArm;
+                var unitBts = entry.CurrentBts;
+                var unitS = entry.CurrentS;
+                var unitVitality = entry.CurrentVitaOrStr;
+
+                ApplySeasonGearToUnit(entry.EntryIndex, seasonGear,
+                    ref rangedWeapons, ref meleeWeapons, ref skills,
+                    ref unitCc, ref unitBs, ref unitPh, ref unitWip,
+                    ref unitArm, ref unitBts, ref unitS, ref unitVitality);
+
                 var item = new DeploymentUnitItem
                 {
                     EntryIndex = entry.EntryIndex,
@@ -210,14 +231,15 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
                         entry.CurrentMoveFirstCm,
                         entry.CurrentMoveSecondCm,
                         _showUnitsInInches),
-                    UnitCc = entry.CurrentCc,
-                    UnitBs = entry.CurrentBs,
-                    UnitPh = entry.CurrentPh,
-                    UnitWip = entry.CurrentWip,
-                    UnitArm = entry.CurrentArm,
-                    UnitBts = entry.CurrentBts,
-                    UnitVitality = entry.CurrentVitaOrStr,
-                    UnitS = entry.CurrentS,
+                    UnitCc = unitCc,
+                    UnitBs = unitBs,
+                    UnitPh = unitPh,
+                    UnitWip = unitWip,
+                    UnitArm = unitArm,
+                    UnitBts = unitBts,
+                    UnitVitality = unitVitality,
+                    UnitS = unitS,
+                    Renown = entry.Cost + entry.ExperiencePoints,
                     VitalityHeader = InferVitalityHeader(entry.UnitTypeCode),
                     Equipment = SeasonDisplayUnitFormatter.ConvertExplicitDistances(equipment, _showUnitsInInches),
                     Skills = SeasonDisplayUnitFormatter.ConvertExplicitDistances(skills, _showUnitsInInches),
@@ -302,11 +324,12 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         }
 
         var encodedPath = Uri.EscapeDataString(_companyFilePath);
+        var encodedSeasonPath = Uri.EscapeDataString(_seasonFilePath);
         var checkedIndices = string.Join(",", checkedUnits.Select(u => u.EntryIndex));
         var encodedIndices = Uri.EscapeDataString(checkedIndices);
         var eliteDeployment = IsEliteDeployment ? "1" : "0";
         await Shell.Current.GoToAsync(
-            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&deployedIndices={encodedIndices}&eliteDeployment={eliteDeployment}");
+            $"{nameof(GameModePage)}?companyFilePath={encodedPath}&seasonFilePath={encodedSeasonPath}&deployedIndices={encodedIndices}&eliteDeployment={eliteDeployment}");
     }
 
     // ── Resolution helpers ────────────────────────────────────────────────────
@@ -452,6 +475,68 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
         var level = CompanyUnitExperienceRanks.GetRankLevel(experiencePoints);
         return level <= 0 ? string.Empty : $"SVGCache/NonCBIcons/Experience/noun-{level}-stars.svg";
     }
+
+    private async Task<Dictionary<int, List<InfinityMercsApp.Domain.Models.Season.SeasonUnitGear>>> LoadSeasonGearAsync()
+    {
+        var seasonFile = await InfinityMercsApp.Services.Season.SeasonFileService.LoadSeasonFileAsync(_seasonFilePath);
+        return seasonFile?.UnitGear ?? [];
+    }
+
+    private static void ApplySeasonGearToUnit(
+        int entryIndex,
+        Dictionary<int, List<InfinityMercsApp.Domain.Models.Season.SeasonUnitGear>> seasonGear,
+        ref string rangedWeapons, ref string meleeWeapons, ref string skills,
+        ref string unitCc, ref string unitBs, ref string unitPh, ref string unitWip,
+        ref string unitArm, ref string unitBts, ref string unitS, ref string unitVitality)
+    {
+        if (!seasonGear.TryGetValue(entryIndex, out var gearList)) return;
+
+        foreach (var gear in gearList)
+        {
+            if (string.IsNullOrWhiteSpace(gear.ItemName)) continue;
+            switch (gear.Slot)
+            {
+                case "Primary":
+                case "Secondary":
+                case "Sidearm":
+                case "Accessories":
+                    if (CompanyProfileTextService.IsMeleeWeaponName(gear.ItemName))
+                        meleeWeapons = AppendChoices(meleeWeapons, [gear.ItemName]);
+                    else
+                        rangedWeapons = AppendChoices(rangedWeapons, [gear.ItemName]);
+                    break;
+
+                case "Roles":
+                    skills = AppendChoices(skills, [gear.ItemName]);
+                    break;
+
+                case "Augments":
+                    var m = System.Text.RegularExpressions.Regex.Match(
+                        gear.ItemName.Trim(), @"^([A-Za-z]+)\s*=\s*(\d+)$");
+                    if (m.Success)
+                    {
+                        var val = m.Groups[2].Value;
+                        switch (m.Groups[1].Value.ToUpperInvariant())
+                        {
+                            case "CC":   unitCc       = val; break;
+                            case "BS":   unitBs       = val; break;
+                            case "PH":   unitPh       = val; break;
+                            case "WIP":  unitWip      = val; break;
+                            case "ARM":  unitArm      = val; break;
+                            case "BTS":  unitBts      = val; break;
+                            case "S":    unitS        = val; break;
+                            case "VITA": unitVitality = val; break;
+                            case "STR":  unitVitality = val; break;
+                        }
+                    }
+                    else
+                    {
+                        skills = AppendChoices(skills, [gear.ItemName]);
+                    }
+                    break;
+            }
+        }
+    }
 }
 
 public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
@@ -521,6 +606,12 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
         }
     }
 
+    // XP tracking (accumulated across rounds, never reset)
+    public UnitXpData XpData { get; } = new();
+
+    // Renown — unit cost (loadout-inclusive) + accumulated XP from the saved file.
+    public int Renown { get; init; }
+
     // Resolved display text
     public string Equipment { get; init; } = "-";
     public string Skills { get; init; } = "-";
@@ -557,4 +648,28 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
 
     public Color TileStroke => IsSelected ? Color.FromArgb("#22C55E") : Color.FromArgb("#374151");
     public double TileStrokeThickness => IsSelected ? 2.0 : 1.0;
+}
+
+public sealed class UnitXpData
+{
+    // 2 checkboxes
+    public bool[] Assist { get; } = new bool[2];
+    // 3 checkboxes
+    public bool[] InflictState { get; } = new bool[3];
+    public bool AttemptButton { get; set; }
+    public bool SucceedButton { get; set; }
+    public bool ScanEnemy { get; set; }
+    public bool ScanEnemyFo { get; set; }
+    public bool TagAndBag { get; set; }
+    public int DowntimeBonusXp { get; set; }
+
+    public int TotalXp =>
+        Assist.Count(b => b) +
+        InflictState.Count(b => b) +
+        (AttemptButton ? 1 : 0) +
+        (SucceedButton ? 1 : 0) +
+        (ScanEnemy ? 1 : 0) +
+        (ScanEnemyFo ? 1 : 0) +
+        (TagAndBag ? 2 : 0) +
+        DowntimeBonusXp;
 }
