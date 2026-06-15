@@ -22,6 +22,8 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+				fonts.AddFont("Ethnocentric-Regular.otf", "EthnocentricRegular");
+				fonts.AddFont("Conthrax-SemiBold.otf", "ConthraxSemiBold");
 			});
 
 		builder.Services.AddSingleton(sp =>

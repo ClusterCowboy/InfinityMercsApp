@@ -26,6 +26,7 @@
     <Style TargetType="Button">
         <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}"/>
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="BorderColor" Value="#22C55E"/>
@@ -72,6 +73,7 @@
     <Style TargetType="DatePicker">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}"/>
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
@@ -93,6 +95,7 @@
     <Style TargetType="Editor">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
@@ -115,6 +118,7 @@
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
@@ -166,6 +170,7 @@
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -184,10 +189,12 @@
 
     <Style TargetType="Span">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
     </Style>
 
     <Style TargetType="Label" x:Key="Headline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
+        <Setter Property="FontFamily" Value="EthnocentricRegular" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeHeadline}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="HorizontalOptions" Value="Center" />
@@ -196,6 +203,7 @@
 
     <Style TargetType="Label" x:Key="SubHeadline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
+        <Setter Property="FontFamily" Value="EthnocentricRegular" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeSubHeadline}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="HorizontalOptions" Value="Center" />
@@ -208,41 +216,49 @@
         FontSize binding lives in XAML and resolves through DynamicResource.
     -->
     <Style TargetType="Label" x:Key="LabelMicro">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeMicro}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Label" x:Key="LabelCaption">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Label" x:Key="LabelBody">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Label" x:Key="LabelSubHeadline">
+        <Setter Property="FontFamily" Value="EthnocentricRegular" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeSubHeadline}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Label" x:Key="LabelTitleSmall">
+        <Setter Property="FontFamily" Value="EthnocentricRegular" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeTitleSmall}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Entry" x:Key="EntryTitleSmall">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeTitleSmall}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Button" x:Key="ButtonCaption">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
 
     <Style TargetType="Button" x:Key="ButtonSubHeadline">
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeSubHeadline}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
     </Style>
@@ -256,6 +272,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="TitleColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
@@ -294,6 +311,7 @@
     <Style TargetType="RadioButton">
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}"/>
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
@@ -321,6 +339,7 @@
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
         <Setter Property="CancelButtonColor" Value="{StaticResource Gray500}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
@@ -344,6 +363,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -424,6 +444,7 @@
     <Style TargetType="TimePicker">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent"/>
+        <Setter Property="FontFamily" Value="ConthraxSemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}"/>
         <Setter Property="FontAutoScalingEnabled" Value="True"/>
         <Setter Property="MinimumHeightRequest" Value="{DynamicResource MinTouchTarget}"/>
