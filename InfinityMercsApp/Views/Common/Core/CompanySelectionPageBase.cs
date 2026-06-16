@@ -590,13 +590,11 @@ public abstract partial class CompanySelectionPageBase : ContentPage
     /// Handles a tap on a team-allowed-profile item, scrolling the unit list to the matching unit
     /// and optionally restricting the profile selection to a subset of eligible profiles.
     /// </summary>
-    protected void HandleTeamAllowedProfileSelected<TTeamItem, TUnit>(
-        TTeamItem? teamItem,
-        IEnumerable<TUnit> units,
-        Action<TUnit, bool> applySelection,
-        Func<TTeamItem, bool>? shouldRestrictProfiles = null)
-        where TTeamItem : CompanyTeamUnitLimitItemBase
-        where TUnit : CompanyUnitSelectionItemBase
+    protected void HandleTeamAllowedProfileSelected(
+        ArmyTeamUnitLimitItem? teamItem,
+        IEnumerable<ArmyUnitSelectionItem> units,
+        Action<ArmyUnitSelectionItem, bool> applySelection,
+        Func<ArmyTeamUnitLimitItem, bool>? shouldRestrictProfiles = null)
     {
         CompanySelectionPageInteractionWorkflow.HandleTeamAllowedProfileSelected(
             teamItem,

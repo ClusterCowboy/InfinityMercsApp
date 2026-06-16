@@ -2,7 +2,7 @@ using InfinityMercsApp.ViewModels;
 
 namespace InfinityMercsApp.Views.Common;
 
-public abstract class CompanyTeamUnitLimitItemBase : BaseViewModel, IViewerListItem
+public class ArmyTeamUnitLimitItem : BaseViewModel, IViewerListItem
 {
     public string Name { get; init; } = string.Empty;
     public string Min { get; init; } = "0";

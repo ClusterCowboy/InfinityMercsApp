@@ -48,15 +48,14 @@ public abstract partial class CompanySelectionPageBase
     /// Evaluates each unit in the list and updates its <c>IsVisible</c> flag based on
     /// the active filter criteria, lieutenant restriction, and remaining points budget.
     /// </summary>
-    protected static void ApplyUnitVisibilityCore<TUnit>(
-        IEnumerable<TUnit> units,
+    protected static void ApplyUnitVisibilityCore(
+        IEnumerable<ArmyUnitSelectionItem> units,
         CompanyUnitVisibilityLookupContext lookupContext,
         UnitFilterCriteria activeUnitFilter,
         bool lieutenantOnlyUnits,
         int pointsRemaining,
         Func<int, int, CancellationToken, ArmyUnitRecord?> getUnitByFactionAndId,
         CancellationToken cancellationToken)
-        where TUnit : CompanyUnitSelectionItemBase
     {
         CompanySelectionVisibilityWorkflow.ApplyUnitVisibility(
             units,
@@ -73,11 +72,10 @@ public abstract partial class CompanySelectionPageBase
     /// If hidden, resets the unit details panel and re-applies lieutenant visual states.
     /// Returns the selected unit unchanged if it is still visible, or <c>null</c> if it was hidden.
     /// </summary>
-    protected static TUnit? RefreshSelectedUnitVisibilityCore<TUnit>(
-        TUnit? selectedUnit,
+    protected static ArmyUnitSelectionItem? RefreshSelectedUnitVisibilityCore(
+        ArmyUnitSelectionItem? selectedUnit,
         Action resetUnitDetails,
         Action applyLieutenantVisualStates)
-        where TUnit : CompanyUnitSelectionItemBase
     {
         return CompanySelectionVisibilityWorkflow.RefreshSelectedUnitVisibility(
             selectedUnit,
@@ -89,14 +87,11 @@ public abstract partial class CompanySelectionPageBase
     /// Updates the visible unit count on each team entry by cross-referencing the current
     /// unit visibility states, allowing the team list to reflect the active filter.
     /// </summary>
-    protected static void RefreshTeamEntryVisibilityCore<TTeam, TAllowed, TUnit>(
-        IEnumerable<TTeam> teamEntries,
-        IEnumerable<TUnit> units)
-        where TTeam : CompanyTeamListItemBase<TAllowed>
-        where TAllowed : CompanyTeamUnitLimitItemBase
-        where TUnit : CompanyUnitSelectionItemBase
+    protected static void RefreshTeamEntryVisibilityCore(
+        IEnumerable<ArmyTeamListItem> teamEntries,
+        IEnumerable<ArmyUnitSelectionItem> units)
     {
-        CompanySelectionVisibilityWorkflow.RefreshTeamEntryVisibility<TTeam, TAllowed, TUnit>(
+        CompanySelectionVisibilityWorkflow.RefreshTeamEntryVisibility(
             teamEntries,
             units);
     }

@@ -25,11 +25,10 @@ internal static class CompanyTeamProfilesWorkflow
         return filtered;
     }
 
-    internal static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterCharacterUnitLimits<TUnit>(
+    internal static Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> FilterCharacterUnitLimits(
         Dictionary<string, (int Min, int Max, string? Slug, bool MinAsterisk)> unitLimits,
-        IEnumerable<TUnit> sourceUnits,
-        Func<TUnit, bool> readIsCharacter)
-        where TUnit : CompanyUnitSelectionItemBase
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits,
+        Func<ArmyUnitSelectionItem, bool> readIsCharacter)
     {
         return FilterCharacterUnitLimits(
             unitLimits,
@@ -124,7 +123,7 @@ internal static class CompanyTeamProfilesWorkflow
         return createItem(displayName, min, max, slug, matched);
     }
 
-    internal static TTeamUnitLimitItem BuildTeamUnitLimitItem<TUnit, TTeamUnitLimitItem>(
+    internal static ArmyTeamUnitLimitItem BuildTeamUnitLimitItem<TUnit>(
         string displayName,
         string min,
         string max,
@@ -138,10 +137,9 @@ internal static class CompanyTeamProfilesWorkflow
         Func<TUnit, int> readUnitId,
         Func<TUnit, int> readSourceFactionId)
         where TUnit : class
-        where TTeamUnitLimitItem : CompanyTeamUnitLimitItemBase, new()
     {
         var matched = resolveUnitForTeamEntry(displayName, slug, sourceUnits);
-        return new TTeamUnitLimitItem
+        return new ArmyTeamUnitLimitItem
         {
             Name = displayName,
             Min = min,
@@ -156,16 +154,14 @@ internal static class CompanyTeamProfilesWorkflow
         };
     }
 
-    internal static TTeamUnitLimitItem BuildTeamUnitLimitItem<TUnit, TTeamUnitLimitItem>(
+    internal static ArmyTeamUnitLimitItem BuildTeamUnitLimitItem(
         string displayName,
         string min,
         string max,
         string? slug,
-        IEnumerable<TUnit> sourceUnits)
-        where TUnit : CompanyUnitSelectionItemBase
-        where TTeamUnitLimitItem : CompanyTeamUnitLimitItemBase, new()
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
     {
-        return BuildTeamUnitLimitItem<TUnit, TTeamUnitLimitItem>(
+        return BuildTeamUnitLimitItem<ArmyUnitSelectionItem>(
             displayName,
             min,
             max,

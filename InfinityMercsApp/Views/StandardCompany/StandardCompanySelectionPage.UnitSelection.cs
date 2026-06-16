@@ -218,14 +218,14 @@ public partial class StandardCompanySelectionPage
             Console.WriteLine(
                 $"[StandardCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}. " +
                 $"Factions=[{string.Join(",", factions.Select(faction => faction.Id))}]");
-            BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+            BuildTeamEntriesFromMerged(
                 merged,
                 TeamEntries,
                 includeTeam: _ => true,
                 readTeamCount: team => team.Duo,
                 buildTeamCountText: team => $"D: {team.Duo}",
                 buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
-                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem(
                         name, min, max, slug, sourceUnits),
                 createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {

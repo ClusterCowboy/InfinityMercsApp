@@ -42,7 +42,7 @@ public abstract partial class GeneratedFactionCompanySelectionPageBase
         var captainSkills = ApplyCaptainSkills(commonSkills, profile);
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
-        var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
+        var entry = BuildMercsCompanyEntryCore(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonEquipment,

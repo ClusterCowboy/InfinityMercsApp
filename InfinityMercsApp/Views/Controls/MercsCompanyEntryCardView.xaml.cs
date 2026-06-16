@@ -65,7 +65,7 @@ public partial class MercsCompanyEntryCardView : ContentView
 
     private async void OnToggleDetailsButtonClicked(object? sender, EventArgs e)
     {
-        if (BindingContext is not CompanyMercsCompanyEntryBase entry)
+        if (BindingContext is not MercsCompanyEntry entry)
         {
             return;
         }
@@ -81,7 +81,7 @@ public partial class MercsCompanyEntryCardView : ContentView
 
     private async Task SyncChevronRotationAsync(bool animated)
     {
-        if (BindingContext is not CompanyMercsCompanyEntryBase entry)
+        if (BindingContext is not MercsCompanyEntry entry)
         {
             return;
         }

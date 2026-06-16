@@ -89,8 +89,8 @@ internal static class CompanySelectionRosterWorkflow
         return visibleProfiles;
     }
 
-    internal static TEntry BuildMercsCompanyEntry<TEntry, TUnit, TPeripheralStats>(
-        TUnit selectedUnit,
+    internal static MercsCompanyEntry BuildMercsCompanyEntry(
+        ArmyUnitSelectionItem selectedUnit,
         ViewerProfileItem profile,
         IReadOnlyCollection<string> selectedUnitCommonEquipment,
         IReadOnlyCollection<string> selectedUnitCommonSkills,
@@ -107,10 +107,7 @@ internal static class CompanySelectionRosterWorkflow
         int? unitMoveFirstCm,
         int? unitMoveSecondCm,
         Func<int?, int?, string> formatMoveValue,
-        TPeripheralStats? peripheralStats)
-        where TEntry : CompanyMercsCompanyEntryBase, new()
-        where TUnit : CompanyUnitSelectionItemBase
-        where TPeripheralStats : CompanyPeripheralMercsCompanyStatsBase
+        PeripheralMercsCompanyStats? peripheralStats)
     {
         var combinedEquipment = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonEquipment, profile.UniqueEquipment);
         var combinedSkills = CompanyProfileTextService.MergeCommonAndUnique(selectedUnitCommonSkills, profile.UniqueSkills);
@@ -172,7 +169,7 @@ internal static class CompanySelectionRosterWorkflow
         var statline =
             $"MOV {unitMov} | CC {unitCc} | BS {unitBs} | PH {unitPh} | WIP {unitWip} | ARM {unitArm} | BTS {unitBts} | {unitVitalityHeader} {unitVitality} | S {unitS}";
 
-        return new TEntry
+        return new MercsCompanyEntry
         {
             Name = profile.Name,
             BaseUnitName = selectedUnit.Name,
@@ -270,14 +267,13 @@ internal static class CompanySelectionRosterWorkflow
                text.Contains("cyberplug", StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static TUnit SetSelectedUnit<TUnit>(
-        TUnit item,
-        TUnit? currentSelectedUnit,
+    internal static ArmyUnitSelectionItem SetSelectedUnit(
+        ArmyUnitSelectionItem item,
+        ArmyUnitSelectionItem? currentSelectedUnit,
         bool selectionContextChanged,
         Action onContextChangedForSameSelection,
-        Action<TUnit> loadSelectedUnitLogo,
-        Action<TUnit> loadSelectedUnitDetails)
-        where TUnit : CompanyUnitSelectionItemBase
+        Action<ArmyUnitSelectionItem> loadSelectedUnitLogo,
+        Action<ArmyUnitSelectionItem> loadSelectedUnitDetails)
     {
         Console.WriteLine($"CompanySelectionPage SetSelectedUnit requested: id={item.Id}, faction={item.SourceFactionId}, name='{item.Name}'.");
         if (currentSelectedUnit == item)
@@ -307,16 +303,15 @@ internal static class CompanySelectionRosterWorkflow
         return item;
     }
 
-    internal static TUnit SetSelectedUnitWithContext<TUnit, TContext>(
-        TUnit item,
-        TUnit? currentSelectedUnit,
+    internal static ArmyUnitSelectionItem SetSelectedUnitWithContext<TContext>(
+        ArmyUnitSelectionItem item,
+        ArmyUnitSelectionItem? currentSelectedUnit,
         TContext currentContext,
         TContext requestedContext,
         Action<TContext> setContext,
         Action onContextChangedForSameSelection,
-        Action<TUnit> loadSelectedUnitLogo,
-        Action<TUnit> loadSelectedUnitDetails)
-        where TUnit : CompanyUnitSelectionItemBase
+        Action<ArmyUnitSelectionItem> loadSelectedUnitLogo,
+        Action<ArmyUnitSelectionItem> loadSelectedUnitDetails)
         where TContext : IEquatable<TContext>
     {
         var selectionContextChanged = !currentContext.Equals(requestedContext);
@@ -404,16 +399,15 @@ internal static class CompanySelectionRosterWorkflow
         applyUnitVisibilityFilters();
     }
 
-    internal static async Task SelectMercsCompanyEntryAsync<TEntry, TUnit>(
+    internal static async Task SelectMercsCompanyEntryAsync<TEntry>(
         TEntry? entry,
-        IReadOnlyList<TUnit> units,
+        IReadOnlyList<ArmyUnitSelectionItem> units,
         Func<int, int, CancellationToken, ArmyUnitRecord?> getUnitFromProvider,
-        Func<int, int, string, string?, string?, TUnit> createFallbackUnit,
-        Action<TUnit> setSelectedUnit,
+        Func<int, int, string, string?, string?, ArmyUnitSelectionItem> createFallbackUnit,
+        Action<ArmyUnitSelectionItem> setSelectedUnit,
         Func<CancellationToken, Task> loadSelectedUnitDetailsAsync,
         CancellationToken cancellationToken = default)
         where TEntry : class, ICompanyMercsEntry
-        where TUnit : CompanyUnitSelectionItemBase
     {
         if (entry is null)
         {

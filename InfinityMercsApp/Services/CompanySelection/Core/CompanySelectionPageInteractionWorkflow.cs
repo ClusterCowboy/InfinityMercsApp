@@ -71,13 +71,11 @@ internal static class CompanySelectionPageInteractionWorkflow
         _ = loadHeaderIconsAsync();
     }
 
-    internal static void HandleTeamAllowedProfileSelected<TTeamItem, TUnit>(
-        TTeamItem? teamItem,
-        IEnumerable<TUnit> units,
-        Action<TUnit, bool> applySelection,
-        Func<TTeamItem, bool>? shouldRestrictProfiles = null)
-        where TTeamItem : CompanyTeamUnitLimitItemBase
-        where TUnit : CompanyUnitSelectionItemBase
+    internal static void HandleTeamAllowedProfileSelected(
+        ArmyTeamUnitLimitItem? teamItem,
+        IEnumerable<ArmyUnitSelectionItem> units,
+        Action<ArmyUnitSelectionItem, bool> applySelection,
+        Func<ArmyTeamUnitLimitItem, bool>? shouldRestrictProfiles = null)
     {
         if (teamItem is null)
         {
@@ -85,8 +83,8 @@ internal static class CompanySelectionPageInteractionWorkflow
             return;
         }
 
-        var unitList = units as IReadOnlyList<TUnit> ?? units.ToList();
-        var resolved = CompanyTeamSelectionWorkflow.ResolveSelectedTeamUnit<TUnit>(
+        var unitList = units as IReadOnlyList<ArmyUnitSelectionItem> ?? units.ToList();
+        var resolved = CompanyTeamSelectionWorkflow.ResolveSelectedTeamUnit<ArmyUnitSelectionItem>(
             unitList,
             teamItem.ResolvedUnitId,
             teamItem.ResolvedSourceFactionId,

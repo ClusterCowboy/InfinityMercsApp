@@ -105,7 +105,7 @@ public abstract partial class GeneratedFactionCompanySelectionPageBase
                 () => ResetUnitDetails(),
                 ApplyLieutenantVisualStates);
 
-            RefreshTeamEntryVisibilityCore<ArmyTeamListItem, ArmyTeamUnitLimitItem, ArmyUnitSelectionItem>(
+            RefreshTeamEntryVisibilityCore(
                 TeamEntries,
                 Units);
         }

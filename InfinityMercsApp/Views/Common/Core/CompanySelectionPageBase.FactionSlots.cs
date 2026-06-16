@@ -7,11 +7,10 @@ public abstract partial class CompanySelectionPageBase
     /// <summary>
     /// Delegates to the workflow to apply a faction selection to the current slot state.
     /// </summary>
-    protected static void SetSelectedFactionCore<TFaction>(
-        FactionSlotSelectionState<TFaction> factionSelectionState,
-        TFaction item,
-        Action<TFaction> assignSelectedFactionToActiveSlot)
-        where TFaction : CompanyFactionSelectionItemBase
+    protected static void SetSelectedFactionCore(
+        FactionSlotSelectionState<ArmyFactionSelectionItem> factionSelectionState,
+        ArmyFactionSelectionItem item,
+        Action<ArmyFactionSelectionItem> assignSelectedFactionToActiveSlot)
     {
         CompanySelectionFactionSlotsWorkflow.SetSelectedFaction(
             factionSelectionState,
@@ -23,13 +22,12 @@ public abstract partial class CompanySelectionPageBase
     /// Returns <c>true</c> if the chosen faction is already assigned to the active slot,
     /// preventing the user from selecting the same faction twice in the same slot.
     /// </summary>
-    protected static bool IsDuplicateSelectionForActiveSlotCore<TFaction>(
+    protected static bool IsDuplicateSelectionForActiveSlotCore(
         bool showRightSelectionBox,
         int activeSlotIndex,
-        TFaction? leftSlotFaction,
-        TFaction? rightSlotFaction,
-        TFaction item)
-        where TFaction : CompanyFactionSelectionItemBase
+        ArmyFactionSelectionItem? leftSlotFaction,
+        ArmyFactionSelectionItem? rightSlotFaction,
+        ArmyFactionSelectionItem item)
     {
         return CompanySelectionFactionSlotsWorkflow.IsDuplicateSelectionForActiveSlot(
             showRightSelectionBox,
@@ -44,15 +42,14 @@ public abstract partial class CompanySelectionPageBase
     /// Returns <c>true</c> when the assignment succeeds; sets <paramref name="factionChanged"/>
     /// to indicate whether the slot actually changed so callers can trigger side-effects accordingly.
     /// </summary>
-    protected static bool TryAssignSelectedFactionToActiveSlotCore<TFaction>(
+    protected static bool TryAssignSelectedFactionToActiveSlotCore(
         bool showRightSelectionBox,
         int activeSlotIndex,
-        FactionSlotSelectionState<TFaction> factionSelectionState,
-        TFaction item,
+        FactionSlotSelectionState<ArmyFactionSelectionItem> factionSelectionState,
+        ArmyFactionSelectionItem item,
         Action<int, string?, string?> loadSlotIcon,
         bool blockCrossSlotDuplicateSelection,
         out bool factionChanged)
-        where TFaction : CompanyFactionSelectionItemBase
     {
         return CompanySelectionFactionSlotsWorkflow.TryAssignSelectedFactionToActiveSlot(
             showRightSelectionBox,

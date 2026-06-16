@@ -63,8 +63,8 @@ public abstract partial class CompanySelectionPageBase
     /// Constructs a fully populated roster entry from the selected unit, chosen profile,
     /// equipment/skills lists, and computed stat strings.
     /// </summary>
-    protected static TEntry BuildMercsCompanyEntryCore<TEntry, TUnit, TPeripheralStats>(
-        TUnit selectedUnit,
+    protected static MercsCompanyEntry BuildMercsCompanyEntryCore(
+        ArmyUnitSelectionItem selectedUnit,
         ViewerProfileItem profile,
         IReadOnlyCollection<string> selectedUnitCommonEquipment,
         IReadOnlyCollection<string> selectedUnitCommonSkills,
@@ -81,12 +81,9 @@ public abstract partial class CompanySelectionPageBase
         int? unitMoveFirstCm,
         int? unitMoveSecondCm,
         Func<int?, int?, string> formatMoveValue,
-        TPeripheralStats? peripheralStats)
-        where TEntry : CompanyMercsCompanyEntryBase, new()
-        where TUnit : CompanyUnitSelectionItemBase
-        where TPeripheralStats : CompanyPeripheralMercsCompanyStatsBase
+        PeripheralMercsCompanyStats? peripheralStats)
     {
-        return CompanySelectionRosterWorkflow.BuildMercsCompanyEntry<TEntry, TUnit, TPeripheralStats>(
+        return CompanySelectionRosterWorkflow.BuildMercsCompanyEntry(
             selectedUnit,
             profile,
             selectedUnitCommonEquipment,
@@ -112,14 +109,13 @@ public abstract partial class CompanySelectionPageBase
     /// When the same unit is re-selected but the context has changed,
     /// <paramref name="onContextChangedForSameSelection"/> is invoked instead.
     /// </summary>
-    protected static TUnit SetSelectedUnitCore<TUnit>(
-        TUnit item,
-        TUnit? currentSelectedUnit,
+    protected static ArmyUnitSelectionItem SetSelectedUnitCore(
+        ArmyUnitSelectionItem item,
+        ArmyUnitSelectionItem? currentSelectedUnit,
         bool selectionContextChanged,
         Action onContextChangedForSameSelection,
-        Action<TUnit> loadSelectedUnitLogo,
-        Action<TUnit> loadSelectedUnitDetails)
-        where TUnit : CompanyUnitSelectionItemBase
+        Action<ArmyUnitSelectionItem> loadSelectedUnitLogo,
+        Action<ArmyUnitSelectionItem> loadSelectedUnitDetails)
     {
         return CompanySelectionRosterWorkflow.SetSelectedUnit(
             item,
@@ -134,16 +130,15 @@ public abstract partial class CompanySelectionPageBase
     /// Variant of <see cref="SetSelectedUnitCore{TUnit}"/> that also tracks a typed context value
     /// (e.g. fireteam slot index), updating it and triggering reload when it differs from the current context.
     /// </summary>
-    protected static TUnit SetSelectedUnitWithContextCore<TUnit, TContext>(
-        TUnit item,
-        TUnit? currentSelectedUnit,
+    protected static ArmyUnitSelectionItem SetSelectedUnitWithContextCore<TContext>(
+        ArmyUnitSelectionItem item,
+        ArmyUnitSelectionItem? currentSelectedUnit,
         TContext currentContext,
         TContext requestedContext,
         Action<TContext> setContext,
         Action onContextChangedForSameSelection,
-        Action<TUnit> loadSelectedUnitLogo,
-        Action<TUnit> loadSelectedUnitDetails)
-        where TUnit : CompanyUnitSelectionItemBase
+        Action<ArmyUnitSelectionItem> loadSelectedUnitLogo,
+        Action<ArmyUnitSelectionItem> loadSelectedUnitDetails)
         where TContext : IEquatable<TContext>
     {
         return CompanySelectionRosterWorkflow.SetSelectedUnitWithContext(
@@ -239,16 +234,15 @@ public abstract partial class CompanySelectionPageBase
     /// unit list or falling back to a freshly fetched unit record when not found.
     /// Loads the full unit details for the resolved unit.
     /// </summary>
-    protected static async Task SelectMercsCompanyEntryAsyncCore<TEntry, TUnit>(
+    protected static async Task SelectMercsCompanyEntryAsyncCore<TEntry>(
         TEntry? entry,
-        IReadOnlyList<TUnit> units,
+        IReadOnlyList<ArmyUnitSelectionItem> units,
         Func<int, int, CancellationToken, ArmyUnitRecord?> getUnitFromProvider,
-        Func<int, int, string, string?, string?, TUnit> createFallbackUnit,
-        Action<TUnit> setSelectedUnit,
+        Func<int, int, string, string?, string?, ArmyUnitSelectionItem> createFallbackUnit,
+        Action<ArmyUnitSelectionItem> setSelectedUnit,
         Func<CancellationToken, Task> loadSelectedUnitDetailsAsync,
         CancellationToken cancellationToken = default)
         where TEntry : class, ICompanyMercsEntry
-        where TUnit : CompanyUnitSelectionItemBase
     {
         await CompanySelectionRosterWorkflow.SelectMercsCompanyEntryAsync(
             entry,

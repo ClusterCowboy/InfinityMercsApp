@@ -48,15 +48,14 @@ internal static class CompanySelectionVisibilityWorkflow
         return context;
     }
 
-    internal static void ApplyUnitVisibility<TUnit>(
-        IEnumerable<TUnit> units,
+    internal static void ApplyUnitVisibility(
+        IEnumerable<ArmyUnitSelectionItem> units,
         CompanyUnitVisibilityLookupContext lookupContext,
         UnitFilterCriteria activeUnitFilter,
         bool lieutenantOnlyUnits,
         int pointsRemaining,
         Func<int, int, CancellationToken, ArmyUnitRecord?> getUnitByFactionAndId,
         CancellationToken cancellationToken)
-        where TUnit : CompanyUnitSelectionItemBase
     {
         foreach (var unit in units)
         {
@@ -104,11 +103,10 @@ internal static class CompanySelectionVisibilityWorkflow
         }
     }
 
-    internal static TUnit? RefreshSelectedUnitVisibility<TUnit>(
-        TUnit? selectedUnit,
+    internal static ArmyUnitSelectionItem? RefreshSelectedUnitVisibility(
+        ArmyUnitSelectionItem? selectedUnit,
         Action resetUnitDetails,
         Action applyLieutenantVisualStates)
-        where TUnit : CompanyUnitSelectionItemBase
     {
         if (selectedUnit is not null && !selectedUnit.IsVisible)
         {
@@ -125,16 +123,13 @@ internal static class CompanySelectionVisibilityWorkflow
         return selectedUnit;
     }
 
-    internal static void RefreshTeamEntryVisibility<TTeam, TAllowed, TUnit>(
-        IEnumerable<TTeam> teamEntries,
-        IEnumerable<TUnit> units)
-        where TTeam : CompanyTeamListItemBase<TAllowed>
-        where TAllowed : CompanyTeamUnitLimitItemBase
-        where TUnit : CompanyUnitSelectionItemBase
+    internal static void RefreshTeamEntryVisibility(
+        IEnumerable<ArmyTeamListItem> teamEntries,
+        IEnumerable<ArmyUnitSelectionItem> units)
     {
-        var teamList = teamEntries as IReadOnlyList<TTeam> ?? teamEntries.ToList();
-        var unitList = units as IReadOnlyList<TUnit> ?? units.ToList();
-        CompanyTeamVisibilityWorkflow.RefreshTeamEntryVisibility<TTeam, TAllowed, TUnit>(
+        var teamList = teamEntries as IReadOnlyList<ArmyTeamListItem> ?? teamEntries.ToList();
+        var unitList = units as IReadOnlyList<ArmyUnitSelectionItem> ?? units.ToList();
+        CompanyTeamVisibilityWorkflow.RefreshTeamEntryVisibility<ArmyTeamListItem, ArmyTeamUnitLimitItem, ArmyUnitSelectionItem>(
             teamList,
             unitList,
             team => team.AllowedProfiles,

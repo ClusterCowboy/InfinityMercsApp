@@ -7,7 +7,7 @@ namespace InfinityMercsApp.Views.Common;
 internal static class CompanySelectionUnitDetailsWorkflow
 {
     internal static IEnumerable<string?> BuildUnitCachedPathCandidates(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         int? leftSlotFactionId,
         int? rightSlotFactionId,
         Func<int, int, string?>? getCachedUnitLogoPath,
@@ -29,7 +29,7 @@ internal static class CompanySelectionUnitDetailsWorkflow
     }
 
     internal static IEnumerable<string?> BuildUnitPackagedPathCandidates(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         int? leftSlotFactionId,
         int? rightSlotFactionId,
         Func<int, int, string?>? getPackagedUnitLogoPath,
@@ -94,7 +94,7 @@ internal static class CompanySelectionUnitDetailsWorkflow
     }
 
     internal static async Task LoadSelectedUnitLogoAsync(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         UnitDisplayConfigurationsView unitDisplayView,
         Func<Task<Stream?>> openBestUnitLogoStreamAsync)
     {

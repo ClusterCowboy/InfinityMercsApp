@@ -2,7 +2,7 @@ using InfinityMercsApp.ViewModels;
 
 namespace InfinityMercsApp.Views.Common;
 
-public abstract class CompanyUnitSelectionItemBase : BaseViewModel, IViewerListItem
+public class ArmyUnitSelectionItem : BaseViewModel, IViewerListItem
 {
     public int Id { get; init; }
     public int SourceFactionId { get; init; }

@@ -101,14 +101,14 @@ public partial class CohesiveCompanySelectionPage
                 }
             }
 
-            BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+            BuildTeamEntriesFromMerged(
                 merged,
                 TeamEntries,
                 includeTeam: team => validCoreTeamNames.Count == 0 || validCoreTeamNames.Contains(team.Name),
                 readTeamCount: team => team.Core,
                 buildTeamCountText: team => $"C: {team.Core}",
                 buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
-                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem(
                         name, NormalizeCohesiveDisplayedMinimum(min), max, slug, sourceUnits),
                 createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {

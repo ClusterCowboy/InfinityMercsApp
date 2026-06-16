@@ -206,14 +206,14 @@ public abstract partial class GeneratedFactionCompanySelectionPageBase
                 return;
             }
 
-            BuildTeamEntriesFromMerged<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem, ArmyTeamListItem>(
+            BuildTeamEntriesFromMerged(
                 merged,
                 TeamEntries,
                 includeTeam: _ => true,
                 readTeamCount: team => team.Duo,
                 buildTeamCountText: team => $"D: {team.Duo}",
                 buildTeamUnitLimitItem: (name, min, max, slug, sourceUnits) =>
-                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem<ArmyUnitSelectionItem, ArmyTeamUnitLimitItem>(
+                    CompanyTeamProfilesWorkflow.BuildTeamUnitLimitItem(
                         name, min, max, slug, sourceUnits),
                 createTeam: (name, teamCountsText, isWildcardBucket, isExpanded, allowedProfiles) => new ArmyTeamListItem
                 {

@@ -4,7 +4,7 @@ using InfinityMercsApp.Services;
 
 namespace InfinityMercsApp.Views.Common;
 
-public abstract class CompanyMercsCompanyEntryBase : BaseViewModel, IViewerListItem, ICompanyMercsEntry
+public class MercsCompanyEntry : BaseViewModel, IViewerListItem, ICompanyMercsEntry
 {
     public string Name { get; init; } = string.Empty;
     public string BaseUnitName { get; init; } = string.Empty;
