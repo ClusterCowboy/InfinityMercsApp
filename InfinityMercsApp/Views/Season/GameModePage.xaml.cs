@@ -9,7 +9,6 @@ using InfinityMercsApp.Services.Season;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
-using InfinityMercsApp.Views.StandardCompany;
 using Microsoft.Maui.Controls.Shapes;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;

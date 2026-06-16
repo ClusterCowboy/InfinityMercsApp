@@ -5,7 +5,6 @@ using InfinityMercsApp.Domain.Models.Perks;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
-using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Infrastructure.Providers;
 
 namespace InfinityMercsApp.Views.Season;
