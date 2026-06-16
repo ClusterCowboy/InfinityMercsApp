@@ -35,7 +35,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly CompanyProfileCoordinator _profileCoordinator;
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private readonly string? _companyTypeLabelOverride;
@@ -85,7 +84,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
-        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = CreateSelectFactionCommand<ArmyFactionSelectionItem>(SetSelectedFaction);
         SelectUnitCommand = CreateSelectUnitCommand<ArmyUnitSelectionItem>(
