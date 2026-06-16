@@ -75,7 +75,7 @@
                         Padding="10,5"
                         WidthRequest="112"
                         MinimumWidthRequest="112"
-                        HeightRequest="66"
+                        HeightRequest="82"
                         VerticalOptions="Center"
                         SizeChanged="OnPlayRoundButtonSizeChanged">
                     <Border.GestureRecognizers>
@@ -92,8 +92,8 @@
                                FontAttributes="Bold"
                                FontSize="{DynamicResource FontSizeCaption}"
                                HorizontalTextAlignment="Center"
-                               MaxLines="1"
-                               LineBreakMode="NoWrap" />
+                               MaxLines="2"
+                               LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
                 </Border>
             </Grid>
@@ -105,7 +105,7 @@
             <!-- Team Tab — mirrors CompanyViewerPage layout -->
             <Grid x:Name="TeamTabContent"
                   IsVisible="True"
-                  Padding="16,8,16,0"
+                  Padding="5,8,5,0"
                   RowDefinitions="Auto,*"
                   RowSpacing="6">
 
@@ -114,7 +114,7 @@
                         x:Name="UnitPickerHeader"
                         BackgroundColor="#1F2937"
                         Stroke="#374151"
-                        StrokeThickness="1"
+                        StrokeThickness="3"
                         Padding="8,6">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="6" />
@@ -547,7 +547,7 @@
                         Clicked="OnInventoryTabClicked" />
                 <Button x:Name="MarketplaceTabButton"
                         Grid.Column="2"
-                        Text="MARKETPLACE"
+                        Text="MARKETS"
                         BackgroundColor="Transparent"
                         BorderColor="Transparent"
                         BorderWidth="0"
