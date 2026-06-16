@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Windows.Input;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
@@ -7,14 +5,6 @@ using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyF
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
-using SkiaSharp.Views.Maui;
-using SkiaSharp.Views.Maui.Controls;
-using ArmyFactionRecord = InfinityMercsApp.Domain.Models.Army.Faction;
-using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
-using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
-using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
-using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
-using InfinityMercsApp.Views.Common.UICommon;
 
 namespace InfinityMercsApp.Views.InspiringCompany;
 

@@ -1,32 +1,10 @@
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Windows.Input;
-using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
-using Microsoft.Maui.Devices;
-using SkiaSharp;
-using SkiaSharp.Views.Maui;
-using SkiaSharp.Views.Maui.Controls;
-using Svg.Skia;
-using ArmyFactionRecord = InfinityMercsApp.Domain.Models.Army.Faction;
-using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
-using ArmySpecopsEquipRecord = InfinityMercsApp.Domain.Models.Army.SpecopsEquipment;
-using ArmySpecopsSkillRecord = InfinityMercsApp.Domain.Models.Army.SpecopsSkill;
-using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
-using ArmySpecopsWeaponRecord = InfinityMercsApp.Domain.Models.Army.SpecopsWeapon;
-using ArmyUnitRecord = InfinityMercsApp.Domain.Models.Army.Unit;
-using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
-using MercsArmyListEntry = InfinityMercsApp.Domain.Models.Army.MercsArmyListEntry;
-using InfinityMercsApp.Views.Common.UICommon;
 
 namespace InfinityMercsApp.Views.AirborneCompany;
 
