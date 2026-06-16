@@ -18,22 +18,9 @@ using InfinityMercsApp.Views.Common.UICommon;
 
 namespace InfinityMercsApp.Views.InspiringCompany;
 
-public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, ICompanySelectionVisibilityState
+public partial class InspiringCompanySelectionPage : GeneratedFactionCompanySelectionPageBase
 {
     private readonly IArmyDataService _armyDataService;
-    private readonly ISpecOpsProvider _specOpsProvider;
-    private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly CompanyProfileCoordinator _profileCoordinator;
-    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
-    private string _companyName = "Company Name";
-    private readonly Command _startCompanyCommand;
-    private bool _showCompanyNameValidationError;
-    private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
-    private bool _loaded;
-    private ArmyUnitSelectionItem? _selectedUnit;
-    private bool _summaryHighlightLieutenant;
-    private int _activeSlotIndex;
-    private readonly CompanySelectionFilterState _filterState = new();
 
     public InspiringCompanySelectionPage(
         IMetadataProvider? metadataProvider,
@@ -53,9 +40,6 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
         Title = "Choose your sectorial";
 
         _armyDataService = armyDataService;
-        _specOpsProvider = SpecOpsProvider;
-        _factionLogoCacheService = FactionLogoCacheService;
-        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = CreateSelectFactionCommand<ArmyFactionSelectionItem>(SetSelectedFaction);
         SelectUnitCommand = CreateSelectUnitCommand<ArmyUnitSelectionItem>(
@@ -78,11 +62,6 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
         FinalizePageInitialization(() => SetActiveSlot(0));
     }
 
-    public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
-    public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
-    public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
-    public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
-    public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
 
     public ICommand SelectFactionCommand { get; }
     public ICommand SelectUnitCommand { get; }
@@ -91,120 +70,6 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
     public ICommand SelectMercsCompanyEntryCommand { get; }
     public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
-
-    public string SelectedStartSeasonPoints
-    {
-        get => SeasonStartPointsView.SelectedStartSeasonPoints;
-        set
-        {
-            if (SeasonStartPointsView.SelectedStartSeasonPoints == value)
-            {
-                return;
-            }
-
-            SeasonStartPointsView.SelectedStartSeasonPoints = value;
-            OnPropertyChanged();
-        }
-    }
-
-    private void OnSelectedStartSeasonPointsChanged(object? sender, EventArgs e)
-    {
-        UpdateSeasonValidationState();
-        _ = RefreshSeasonPointsDependentUnitStateAsync();
-    }
-
-    public string SeasonPointsCapText
-    {
-        get => SeasonStartPointsView.SeasonPointsCapText;
-        set
-        {
-            if (SeasonStartPointsView.SeasonPointsCapText == value)
-            {
-                return;
-            }
-
-            SeasonStartPointsView.SeasonPointsCapText = value;
-            OnPropertyChanged();
-            UpdateSeasonValidationState();
-            ApplyLieutenantVisualStates();
-            _ = ApplyUnitVisibilityFiltersAsync();
-        }
-    }
-
-    public string CompanyName
-    {
-        get => _companyName;
-        set
-        {
-            if (_companyName == value)
-            {
-                return;
-            }
-
-            _companyName = value;
-            OnPropertyChanged();
-            if (_showCompanyNameValidationError && CompanyStartSharedState.IsCompanyNameValid(value))
-            {
-                SetCompanyNameValidationError(false);
-            }
-        }
-    }
-
-    public bool IsCompanyValid
-    {
-        get => SeasonStartPointsView.IsCompanyValid;
-        private set
-        {
-            if (SeasonStartPointsView.IsCompanyValid == value)
-            {
-                return;
-            }
-
-            SeasonStartPointsView.IsCompanyValid = value;
-            OnPropertyChanged();
-            _startCompanyCommand.ChangeCanExecute();
-        }
-    }
-
-    public bool ShowCompanyNameValidationError
-    {
-        get => _showCompanyNameValidationError;
-        private set
-        {
-            if (_showCompanyNameValidationError == value)
-            {
-                return;
-            }
-
-            _showCompanyNameValidationError = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public Color CompanyNameBorderColor
-    {
-        get => _companyNameBorderColor;
-        private set
-        {
-            if (_companyNameBorderColor == value)
-            {
-                return;
-            }
-
-            _companyNameBorderColor = value;
-            OnPropertyChanged();
-        }
-    }
-
-    protected override void ApplyLieutenantVisualStatesFromBase()
-    {
-        ApplyLieutenantVisualStates();
-    }
-
-    protected override Task ApplyUnitVisibilityFiltersFromBaseAsync()
-    {
-        return ApplyUnitVisibilityFiltersAsync();
-    }
 
     protected override async void OnAppearing()
     {
@@ -262,54 +127,4 @@ public partial class InspiringCompanySelectionPage : CompanySelectionPageBase, I
     }
 
     private const string InspiringCompanyLogoPath = "SVGCache/MercsIcons/noun-leadership-7195245.svg";
-
-    protected override Task LoadFactionsAsync()
-    {
-        return LoadFactionsAsync(CancellationToken.None);
-    }
-
-    protected override Task LoadUnitsForActiveSlotAsync()
-    {
-        return LoadUnitsForActiveSlotAsync(CancellationToken.None);
-    }
-
-    private async Task RefreshSeasonPointsDependentUnitStateAsync(CancellationToken cancellationToken = default)
-    {
-        _filterState.PreparedUnitFilterPopupOptions = null;
-        await ApplyUnitVisibilityFiltersAsync(cancellationToken);
-        await BuildUnitFilterPopupOptionsAsync(cancellationToken);
-    }
-
-    protected override Task LoadSelectedUnitDetailsAsync()
-    {
-        return LoadSelectedUnitDetailsAsync(CancellationToken.None);
-    }
-
-    UnitFilterCriteria ICompanySelectionVisibilityState.ActiveUnitFilter => _filterState.ActiveUnitFilter;
-
-    private void SwitchToLeftSlot()
-    {
-        _activeSlotIndex = 0;
-        FactionSlotSelectorView.ApplyActiveSlotBorders(0);
-        _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = true };
-        LieutenantOnlyUnits = true;
-        SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
-    }
-
-    private void SetActiveSlot(int index)
-    {
-        var previousSlot = _activeSlotIndex;
-        _activeSlotIndex = ResolveActiveSlotIndexCore(index, true);
-        FactionSlotSelectorView.ApplyActiveSlotBorders(_activeSlotIndex);
-
-        var isLeftSlot = _activeSlotIndex == 0;
-        _filterState.ActiveUnitFilter = new UnitFilterCriteria { LieutenantOnlyUnits = isLeftSlot };
-        LieutenantOnlyUnits = isLeftSlot;
-        SetIsUnitFilterActive(_filterState.ActiveUnitFilter.IsActive);
-
-        if (previousSlot != _activeSlotIndex && _loaded)
-        {
-            _ = LoadUnitsForActiveSlotAsync();
-        }
-    }
 }

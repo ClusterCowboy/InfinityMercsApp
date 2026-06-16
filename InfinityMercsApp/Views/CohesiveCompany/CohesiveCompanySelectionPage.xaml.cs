@@ -37,20 +37,15 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
     private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
-    private int _activeSlotIndex;
     private bool _loaded;
     private string _pageHeading = string.Empty;
-    private ArmyUnitSelectionItem? _selectedUnit;
     private bool _restrictSelectedUnitProfilesToFto;
     private bool _autoSelectUnitAfterFactionLoad;
-    private bool _summaryHighlightLieutenant;
     private bool _areTeamEntriesReady;
-    private readonly CompanySelectionFilterState _filterState = new();
     private readonly Dictionary<int, HashSet<string>> _validCoreFireteamsByFaction = new();
     private string _trackedFireteamName = string.Empty;
     private int _trackedFireteamLevel;
@@ -101,11 +96,6 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
         FinalizePageInitialization(() => SetActiveSlot(0));
     }
 
-    public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
-    public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
-    public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
-    public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
-    public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
 
     public ICommand SelectFactionCommand { get; }
     public ICommand SelectUnitCommand { get; }

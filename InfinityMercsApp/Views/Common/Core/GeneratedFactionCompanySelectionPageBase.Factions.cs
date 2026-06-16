@@ -2,11 +2,11 @@ using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
 using FactionRecord = InfinityMercsApp.Domain.Models.Metadata.Faction;
 
-namespace InfinityMercsApp.Views.InspiringCompany;
+namespace InfinityMercsApp.Views.Common;
 
-public partial class InspiringCompanySelectionPage
+public abstract partial class GeneratedFactionCompanySelectionPageBase
 {
-    private async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
+    protected async Task LoadFactionsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -31,20 +31,20 @@ public partial class InspiringCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"InspiringCompanySelectionPage LoadFactionsAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"GeneratedFactionCompanyPage LoadFactionsAsync failed: {ex.Message}");
         }
     }
 
-    private async Task<List<FactionRecord>> FilterFactionsWithLieutenantAsync(
+    protected async Task<List<FactionRecord>> FilterFactionsWithLieutenantAsync(
         List<FactionRecord> factions,
         CancellationToken cancellationToken = default)
     {
         var result = new List<FactionRecord>();
         foreach (var faction in factions)
         {
-            var snapshot = _armyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
+            var snapshot = ArmyDataService.GetFactionSnapshot(faction.Id, cancellationToken);
             var skillsLookup = CompanySelectionSharedUtilities.BuildIdNameLookup(snapshot?.FiltersJson, "skills");
-            var mercsEntries = await _armyDataService.GetMergedMercsArmyListAsync([faction.Id], cancellationToken);
+            var mercsEntries = await ArmyDataService.GetMergedMercsArmyListAsync([faction.Id], cancellationToken);
 
             var hasLieutenant = mercsEntries.Any(entry =>
                 CompanySelectionSharedUtilities.UnitHasLieutenantOption(entry.ProfileGroupsJson, skillsLookup));
@@ -58,7 +58,7 @@ public partial class InspiringCompanySelectionPage
         return result;
     }
 
-    private void SetSelectedFaction(ArmyFactionSelectionItem item)
+    protected void SetSelectedFaction(ArmyFactionSelectionItem item)
     {
         SetSelectedFactionCore(
             _factionSelectionState,
@@ -66,7 +66,7 @@ public partial class InspiringCompanySelectionPage
             AssignSelectedFactionToActiveSlot);
     }
 
-    private void AssignSelectedFactionToActiveSlot(ArmyFactionSelectionItem item)
+    protected void AssignSelectedFactionToActiveSlot(ArmyFactionSelectionItem item)
     {
         if (!TryAssignSelectedFactionToActiveSlotCore(
                 true,
@@ -77,7 +77,7 @@ public partial class InspiringCompanySelectionPage
                 blockCrossSlotDuplicateSelection: true,
                 out var factionChanged))
         {
-            Console.WriteLine($"[InspiringCompanySelectionPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
+            Console.WriteLine($"[GeneratedFactionCompanyPage] Duplicate selection blocked for faction {item.Id} ({item.Name}).");
             return;
         }
 
@@ -95,7 +95,7 @@ public partial class InspiringCompanySelectionPage
             });
     }
 
-    private void ResetMercsCompany()
+    protected void ResetMercsCompany()
     {
         ResetMercsCompanyCore(
             MercsCompanyEntries,

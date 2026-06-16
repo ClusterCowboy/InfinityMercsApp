@@ -4,21 +4,20 @@ using InfinityMercsApp.Domain.Utilities;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
-using AirborneGen = InfinityMercsApp.Infrastructure.Providers.AirborneCompanyFactionGenerator;
 
-namespace InfinityMercsApp.Views.AirborneCompany;
+namespace InfinityMercsApp.Views.Common;
 
 /// <summary>
 /// UI-level unit/faction selection flow: tab switching, filter popup, and source-unit list assembly.
 /// </summary>
-public partial class AirborneCompanySelectionPage
+public abstract partial class GeneratedFactionCompanySelectionPageBase
 {
-    private void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
+    protected void OnToggleFactionStripTapped(object? sender, TappedEventArgs e)
     {
         ToggleFactionStrip(sender);
     }
 
-    private void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
+    protected void OnUnitSelectionFilterButtonTapped(object? sender, TappedEventArgs e)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.TryOpenUnitFilterPopup(
             GetPreparedPopupOptionsForCurrentPoints(),
@@ -28,13 +27,13 @@ public partial class AirborneCompanySelectionPage
             ResolveUnitFilterPopupHeight(),
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
-            UnitFilterPopupHost,
-            UnitFilterOverlay,
+            UnitFilterPopupHostControl,
+            UnitFilterOverlayControl,
             message => Console.Error.WriteLine(message),
             teamsViewEnabled: false);
     }
 
-    private void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
+    protected void OnFilterArmyApplied(object? sender, UnitFilterCriteria criteria)
     {
         _filterState.ActiveUnitFilter = CompanySelectionUnitFilterWorkflow.ApplyCriteriaFromPopup(
             criteria,
@@ -58,39 +57,39 @@ public partial class AirborneCompanySelectionPage
         _ = ApplyUnitVisibilityFiltersAsync();
     }
 
-    private void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
+    protected void OnUnitFilterPopupCloseRequested(object? sender, EventArgs e)
     {
         CloseUnitFilterPopup(sender as UnitFilterPopupView);
     }
 
-    private void CloseUnitFilterPopup(UnitFilterPopupView? popup)
+    protected void CloseUnitFilterPopup(UnitFilterPopupView? popup)
     {
         _filterState.ActiveUnitFilterPopup = CompanySelectionUnitFilterWorkflow.CloseUnitFilterPopup(
             popup,
             _filterState.ActiveUnitFilterPopup,
             OnFilterArmyApplied,
             OnUnitFilterPopupCloseRequested,
-            UnitFilterPopupHost,
-            UnitFilterOverlay);
+            UnitFilterPopupHostControl,
+            UnitFilterOverlayControl);
     }
 
-    private double ResolveUnitFilterPopupHeight()
+    protected double ResolveUnitFilterPopupHeight()
     {
         return CompanySelectionUnitFilterWorkflow.ResolveUnitFilterPopupHeight(this);
     }
 
-    private void OnUnitSelectionHeaderBorderSizeChanged(object? sender, EventArgs e)
+    protected void OnUnitSelectionHeaderBorderSizeChanged(object? sender, EventArgs e)
     {
         CompanySelectionUnitSelectionUiWorkflow.ApplyHeaderFilterButtonSizes(
             sender,
-            UnitSelectionPanel.FilterButton,
-            UnitSelectionPanel.FilterCanvas,
-            UnitSelectionPanel.FilterButton,
-            UnitSelectionPanel.FilterCanvas,
+            UnitSelectionPanelControl.FilterButton,
+            UnitSelectionPanelControl.FilterCanvas,
+            UnitSelectionPanelControl.FilterButton,
+            UnitSelectionPanelControl.FilterCanvas,
             ApplyFilterButtonSize);
     }
 
-    private async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
+    protected async Task<UnitFilterPopupOptions> BuildUnitFilterPopupOptionsAsync(CancellationToken cancellationToken = default)
     {
         var activeSlotFaction = _activeSlotIndex == 0
             ? _factionSelectionState.LeftSlotFaction
@@ -100,15 +99,15 @@ public partial class AirborneCompanySelectionPage
             activeSlotFaction,
             null,
             faction => faction.Id,
-            (factionId, ct) => _armyDataService.GetFactionSnapshot(factionId, ct)?.FiltersJson,
-            (factionIds, ct) => _armyDataService.GetMergedMercsArmyListAsync(factionIds, ct),
+            (factionId, ct) => ArmyDataService.GetFactionSnapshot(factionId, ct)?.FiltersJson,
+            (factionIds, ct) => ArmyDataService.GetMergedMercsArmyListAsync(factionIds, ct),
             ResolveFilterPopupMaxPoints(),
             value => _filterState.PreparedUnitFilterPopupOptions = value,
             message => Console.WriteLine(message),
             cancellationToken);
     }
 
-    private async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
+    protected async Task LoadUnitsForActiveSlotAsync(CancellationToken cancellationToken = default)
     {
         _filterState.PreparedUnitFilterPopupOptions = null;
         Units.Clear();
@@ -130,15 +129,15 @@ public partial class AirborneCompanySelectionPage
             var merged = await BuildMergedUnitsAndTeamsAsync(
                 factions,
                 faction => faction.Id,
-                _armyDataService.GetResumeByFactionMercsOnly,
-                _specOpsProvider.GetSpecopsUnitsByFactionAsync,
-                _armyDataService.GetFactionSnapshot,
+                ArmyDataService.GetResumeByFactionMercsOnly,
+                SpecOpsProvider.GetSpecopsUnitsByFactionAsync,
+                ArmyDataService.GetFactionSnapshot,
                 async (factionId, units, ct) =>
                 {
-                    // Skip logo caching for Airborne Company — logos are resolved via source metadata.
-                    if (_factionLogoCacheService is not null && factionId != AirborneGen.AirborneCompanyFactionId)
+                    // Skip logo caching for the generated company faction — logos are resolved via source metadata.
+                    if (FactionLogoCacheService is not null && factionId != CompanyFactionId)
                     {
-                        await _factionLogoCacheService.CacheUnitLogosFromRecordsAsync(factionId, units, ct);
+                        await FactionLogoCacheService.CacheUnitLogosFromRecordsAsync(factionId, units, ct);
                     }
                 },
                 MergeFireteamEntries,
@@ -159,8 +158,8 @@ public partial class AirborneCompanySelectionPage
                         IsCharacter = IsCharacterCategory(unit, categoryLookup),
                         Subtitle = BuildUnitSubtitle(unit, typeLookup, categoryLookup),
                         IsSpecOps = false,
-                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
-                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
+                        CachedLogoPath = FactionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
+                        PackagedLogoPath = FactionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
                             ?? $"SVGCache/units/{logoFactionId}-{logoUnitId}.svg"
                     };
                 },
@@ -187,15 +186,15 @@ public partial class AirborneCompanySelectionPage
                             ? BuildUnitSubtitle(subtitleUnit, typeLookup, categoryLookup)
                             : "Spec Ops",
                         IsSpecOps = true,
-                        CachedLogoPath = _factionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
-                        PackagedLogoPath = _factionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
+                        CachedLogoPath = FactionLogoCacheService?.TryGetCachedUnitLogoPath(logoFactionId, logoUnitId),
+                        PackagedLogoPath = FactionLogoCacheService?.GetPackagedUnitLogoPath(logoFactionId, logoUnitId)
                             ?? $"SVGCache/units/{logoFactionId}-{logoUnitId}.svg"
                     };
                 },
                 cancellationToken);
 
             PopulateUnitsCollection(Units, merged.UnitsByKey.Values);
-            Console.WriteLine($"[AirborneCompanySelectionPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}.");
+            Console.WriteLine($"[GeneratedFactionCompanyPage] Loaded {Units.Count} unit(s) for active slot {_activeSlotIndex}.");
             if (Units.Count == 0 &&
                 _activeSlotIndex == 1 &&
                 _factionSelectionState.LeftSlotFaction is not null)
@@ -230,16 +229,16 @@ public partial class AirborneCompanySelectionPage
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"AirborneCompanySelectionPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"GeneratedFactionCompanyPage LoadUnitsForActiveSlotAsync failed: {ex.Message}");
         }
     }
 
-    private int ResolveFilterPopupMaxPoints()
+    protected int ResolveFilterPopupMaxPoints()
     {
         return CompanySelectionUnitFilterWorkflow.ResolveFilterPopupMaxPoints(SelectedStartSeasonPoints);
     }
 
-    private UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
+    protected UnitFilterPopupOptions GetPreparedPopupOptionsForCurrentPoints()
     {
         return CompanySelectionUnitFilterWorkflow.GetPreparedPopupOptionsForCurrentPoints(
             _filterState.PreparedUnitFilterPopupOptions,
@@ -247,16 +246,16 @@ public partial class AirborneCompanySelectionPage
     }
 
     /// <summary>
-    /// For Airborne Company synthetic units, the Resume's Logo field stores
+    /// For the generated company faction synthetic units, the Resume's Logo field stores
     /// the original source IDs as "{sourceFactionId}-{sourceUnitId}".
     /// Parse these to resolve the correct cached logo path.
     /// </summary>
-    private static void ResolveUnitLogoIds(int factionId, int unitId, string? logoField, out int logoFactionId, out int logoUnitId)
+    protected void ResolveUnitLogoIds(int factionId, int unitId, string? logoField, out int logoFactionId, out int logoUnitId)
     {
         logoFactionId = factionId;
         logoUnitId = unitId;
 
-        if (factionId != AirborneGen.AirborneCompanyFactionId || string.IsNullOrWhiteSpace(logoField))
+        if (factionId != CompanyFactionId || string.IsNullOrWhiteSpace(logoField))
         {
             return;
         }
