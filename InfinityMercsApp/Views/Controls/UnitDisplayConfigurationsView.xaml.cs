@@ -197,6 +197,8 @@ public partial class UnitDisplayConfigurationsView : ContentView
             propertyChanged: OnShowAvaChanged);
     public static readonly BindableProperty StatFontSizeProperty =
         BindableProperty.Create(nameof(StatFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
+    public static readonly BindableProperty StatHeaderFontSizeProperty =
+        BindableProperty.Create(nameof(StatHeaderFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
 
     public string UnitMov
     {
@@ -604,6 +606,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
     {
         get => (double)GetValue(StatFontSizeProperty);
         set => SetValue(StatFontSizeProperty, value);
+    }
+
+    public double StatHeaderFontSize
+    {
+        get => (double)GetValue(StatHeaderFontSizeProperty);
+        set => SetValue(StatHeaderFontSizeProperty, value);
     }
 
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
@@ -1103,14 +1111,17 @@ public partial class UnitDisplayConfigurationsView : ContentView
         // Height constraint: labels should fill the row without overflowing vertically.
         var fontFromHeight = (view.Height - 4) * 0.75;
 
-        // Width constraint: "VITA" / "ARM" are the widest headers (4 bold chars).
-        // Bold character width is roughly 0.65× the font size, so 4 chars ≈ 2.6× font size.
-        // ColumnSpacing=6 with 9 or 10 columns, Border padding=8 each side.
+        // Width constraint: ColumnSpacing=6 with 9 or 10 columns, Border padding=8 each side.
         var numCols = ShowAva ? 10 : 9;
         var colSpacing = 6 * (numCols - 1);
         var colWidth = (view.Width - 16 - colSpacing) / numCols;
-        var fontFromWidth = colWidth / 2.6;
 
+        // Headers: use 3.2× to account for wide unicode symbols like ▲ in the vitality header.
+        var headerFontFromWidth = colWidth / 3.2;
+        StatHeaderFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, headerFontFromWidth), 1));
+
+        // Values: bold character width ≈ 0.65× font size, so 4 chars ≈ 2.6× font size.
+        var fontFromWidth = colWidth / 2.6;
         StatFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, fontFromWidth), 1));
     }
 
