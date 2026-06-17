@@ -35,20 +35,14 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private readonly IArmyDataService _armyDataService;
     private readonly ISpecOpsProvider _specOpsProvider;
     private readonly FactionLogoCacheService? _factionLogoCacheService;
-    private readonly CompanyProfileCoordinator _profileCoordinator;
-    private readonly FactionSlotSelectionState<ArmyFactionSelectionItem> _factionSelectionState = new();
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private readonly string? _companyTypeLabelOverride;
     private bool _showCompanyNameValidationError;
     private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
-    private int _activeSlotIndex;
     private bool _loaded;
     private string _pageHeading = string.Empty;
-    private ArmyUnitSelectionItem? _selectedUnit;
-    private bool _summaryHighlightLieutenant;
     private bool _autoSelectUnitAfterFactionLoad;
-    private readonly CompanySelectionFilterState _filterState = new();
     private const string TagCompanyLogoPath = "SVGCache/MercsIcons/noun-battle-mech-1731140.svg";
 
     private bool IsTagCompanyMode =>
@@ -90,7 +84,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         _armyDataService = armyDataService;
         _specOpsProvider = SpecOpsProvider;
         _factionLogoCacheService = FactionLogoCacheService;
-        _profileCoordinator = new CompanyProfileCoordinator();
 
         SelectFactionCommand = CreateSelectFactionCommand<ArmyFactionSelectionItem>(SetSelectedFaction);
         SelectUnitCommand = CreateSelectUnitCommand<ArmyUnitSelectionItem>(
@@ -112,11 +105,6 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
         FinalizePageInitialization(() => SetActiveSlot(0));
     }
 
-    public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
-    public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
-    public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
-    public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];
-    public ObservableCollection<MercsCompanyEntry> MercsCompanyEntries { get; } = [];
 
     public ICommand SelectFactionCommand { get; }
     public ICommand SelectUnitCommand { get; }

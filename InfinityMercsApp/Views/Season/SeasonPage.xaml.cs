@@ -10,7 +10,6 @@ using MauiShapes = Microsoft.Maui.Controls.Shapes;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Services.Season;
 using InfinityMercsApp.ViewModels;
-using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Infrastructure.Providers;

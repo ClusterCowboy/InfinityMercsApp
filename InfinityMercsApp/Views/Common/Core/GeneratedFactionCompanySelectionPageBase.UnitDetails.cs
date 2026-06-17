@@ -1,23 +1,29 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views.Controls;
 using InfinityMercsApp.Views.Common;
 using static InfinityMercsApp.Views.Common.CompanyUnitDetailsShared;
-using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
+using Svg.Skia;
 using ArmyResumeRecord = InfinityMercsApp.Domain.Models.Army.Resume;
+using ArmySpecopsUnitRecord = InfinityMercsApp.Domain.Models.Army.SpecopsUnit;
 
-namespace InfinityMercsApp.Views.InspiringCompany;
+namespace InfinityMercsApp.Views.Common;
 
-public partial class InspiringCompanySelectionPage
+/// <summary>
+/// Selected-unit detail pipeline: profile parsing, stat projection, and peripheral/trait extraction.
+/// </summary>
+public abstract partial class GeneratedFactionCompanySelectionPageBase
 {
-    private async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
+    protected async Task LoadSelectedUnitDetailsAsync(CancellationToken cancellationToken = default)
     {
         ResetUnitDetails(clearLogo: false, resetHeaderColors: false);
         if (_selectedUnit is null)
         {
-            Console.Error.WriteLine("InspiringCompanySelectionPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
+            Console.Error.WriteLine("GeneratedFactionCompanyPage LoadSelectedUnitDetailsAsync aborted: selected unit or accessor missing.");
             return;
         }
 
@@ -34,7 +40,7 @@ public partial class InspiringCompanySelectionPage
                     ShowUnitsInInches = ShowUnitsInInches,
                     GetUnit = GetUnitFromProvider,
                     GetFactionSnapshot = GetFactionSnapshotFromProvider,
-                    GetSpecopsUnitsByFactionAsync = (factionId, token) => _specOpsProvider.GetSpecopsUnitsByFactionAsync(factionId, token),
+                    GetSpecopsUnitsByFactionAsync = (factionId, token) => SpecOpsProvider.GetSpecopsUnitsByFactionAsync(factionId, token),
                     ApplyUnitHeaderColorsAsync = ApplyUnitHeaderColorsAsync,
                     BuildIdNameLookup = BuildIdNameLookup,
                     TryParseId = TryParseId,
@@ -69,8 +75,8 @@ public partial class InspiringCompanySelectionPage
                     EnsureLieutenantSkill = CompanyProfileTextService.EnsureLieutenantSkill,
                     SetCommonEquipmentSkills = (equipment, skills, highlightLieutenant) =>
                     {
-                        UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = equipment.ToList();
-                        UnitDisplayConfigurationsView.SelectedUnitCommonSkills = skills.ToList();
+                        UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonEquipment = equipment.ToList();
+                        UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonSkills = skills.ToList();
                         _summaryHighlightLieutenant = highlightLieutenant;
                     },
                     SetSummaryText = (equipmentSummary, specialSkillsSummary) =>
@@ -81,31 +87,31 @@ public partial class InspiringCompanySelectionPage
                     RefreshSummaryFormatted = RefreshSummaryFormatted,
                     PopulateProfilesFromProfileGroups = PopulateProfilesFromProfileGroups,
                     UpdatePeripheralStatBlockFromVisibleProfiles = UpdatePeripheralStatBlockFromVisibleProfiles,
-                    SetSelectedUnitProfileGroupsJson = value => UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = value,
-                    SetSelectedUnitFiltersJson = value => UnitDisplayConfigurationsView.SelectedUnitFiltersJson = value,
+                    SetSelectedUnitProfileGroupsJson = value => UnitDisplayConfigurationsViewForVisuals.SelectedUnitProfileGroupsJson = value,
+                    SetSelectedUnitFiltersJson = value => UnitDisplayConfigurationsViewForVisuals.SelectedUnitFiltersJson = value,
                     SetUnitNameHeading = value => UnitNameHeading = value,
                     SetSummaryHighlightLieutenant = value => _summaryHighlightLieutenant = value,
                     LogInfo = Console.WriteLine,
                     LogError = Console.Error.WriteLine
                 },
                 cancellationToken);
-            Console.WriteLine($"InspiringCompanySelectionPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
+            Console.WriteLine($"GeneratedFactionCompanyPage LoadSelectedUnitDetailsAsync completed: heading='{UnitNameHeading}', MOV='{UnitMov}', equipment='{EquipmentSummary}'.");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"InspiringCompanySelectionPage LoadSelectedUnitDetailsAsync failed: {ex}");
+            Console.Error.WriteLine($"GeneratedFactionCompanyPage LoadSelectedUnitDetailsAsync failed: {ex}");
         }
     }
 
-    private async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
+    protected async Task LoadSelectedUnitLogoAsync(ArmyUnitSelectionItem item)
     {
         await LoadSelectedUnitLogoCoreAsync(
             item,
-            UnitDisplayConfigurationsView,
+            UnitDisplayConfigurationsViewForVisuals,
             () => OpenBestUnitLogoStreamAsync(item));
     }
 
-    private void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson, bool forceLieutenant = false)
+    protected void PopulateProfilesFromProfileGroups(JsonElement profileGroupsRoot, string? filtersJson, bool forceLieutenant = false)
     {
         Profiles.Clear();
         ProfilesStatus = "Loading profiles...";
@@ -178,7 +184,7 @@ public partial class InspiringCompanySelectionPage
         ApplyLieutenantVisualStates();
     }
 
-    private async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)
+    protected async Task<Stream?> OpenBestUnitLogoStreamAsync(ArmyUnitSelectionItem item)
     {
         return await CompanyUnitDetailsShared.OpenBestUnitLogoStreamAsync(
             item.Name, item.Id, item.SourceFactionId,
@@ -186,42 +192,42 @@ public partial class InspiringCompanySelectionPage
             BuildUnitPackagedPathCandidates(item));
     }
 
-    private IEnumerable<string?> BuildUnitCachedPathCandidates(ArmyUnitSelectionItem item)
+    protected IEnumerable<string?> BuildUnitCachedPathCandidates(ArmyUnitSelectionItem item)
     {
         return BuildUnitCachedPathCandidatesCore(
             item,
             _factionSelectionState.LeftSlotFaction?.Id,
             null,
-            _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetCachedUnitLogoPath(factionId, unitId),
-            _factionLogoCacheService is null
+            FactionLogoCacheService is null ? null : (factionId, unitId) => FactionLogoCacheService.GetCachedUnitLogoPath(factionId, unitId),
+            FactionLogoCacheService is null
                 ? null
-                : factionId => factionId == InspiringGen.InspiringCompanyFactionId
+                : factionId => factionId == CompanyFactionId
                     ? null
-                    : _factionLogoCacheService.GetCachedLogoPath(factionId));
+                    : FactionLogoCacheService.GetCachedLogoPath(factionId));
     }
 
-    private IEnumerable<string?> BuildUnitPackagedPathCandidates(ArmyUnitSelectionItem item)
+    protected IEnumerable<string?> BuildUnitPackagedPathCandidates(ArmyUnitSelectionItem item)
     {
         return BuildUnitPackagedPathCandidatesCore(
             item,
             _factionSelectionState.LeftSlotFaction?.Id,
             null,
-            _factionLogoCacheService is null ? null : (factionId, unitId) => _factionLogoCacheService.GetPackagedUnitLogoPath(factionId, unitId),
-            _factionLogoCacheService is null
+            FactionLogoCacheService is null ? null : (factionId, unitId) => FactionLogoCacheService.GetPackagedUnitLogoPath(factionId, unitId),
+            FactionLogoCacheService is null
                 ? null
-                : factionId => factionId == InspiringGen.InspiringCompanyFactionId
-                    ? InspiringCompanyLogoPath
-                    : _factionLogoCacheService.GetPackagedFactionLogoPath(factionId));
+                : factionId => factionId == CompanyFactionId
+                    ? CompanyLogoPath
+                    : FactionLogoCacheService.GetPackagedFactionLogoPath(factionId));
     }
 
-    private static void MergeFireteamEntries(
+    protected static void MergeFireteamEntries(
         string? fireteamChartJson,
         Dictionary<string, CompanyTeamAggregate> target)
     {
         MergeFireteamEntriesCore(fireteamChartJson, target);
     }
 
-    private static string BuildUnitSubtitle(
+    protected static string BuildUnitSubtitle(
         ArmyResumeRecord unit,
         IReadOnlyDictionary<int, string> typeLookup,
         IReadOnlyDictionary<int, string> categoryLookup)
@@ -229,12 +235,12 @@ public partial class InspiringCompanySelectionPage
         return BuildUnitSubtitleCore(unit, typeLookup, categoryLookup);
     }
 
-    private static bool IsCharacterCategory(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
+    protected static bool IsCharacterCategory(ArmyResumeRecord unit, IReadOnlyDictionary<int, string> categoryLookup)
     {
         return IsCharacterCategoryCore(unit, categoryLookup);
     }
 
-    private void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
+    protected void ResetUnitDetails(bool clearLogo = true, bool resetHeaderColors = true)
     {
         UnitNameHeading = "Select a unit";
         if (resetHeaderColors)
@@ -244,16 +250,16 @@ public partial class InspiringCompanySelectionPage
         if (clearLogo)
         {
             ClearSelectedUnitLogoCore(
-                UnitDisplayConfigurationsView,
-                "InspiringCompanySelectionPage ResetUnitDetails: clearing selected unit logo.");
+                UnitDisplayConfigurationsViewForVisuals,
+                "GeneratedFactionCompanyPage ResetUnitDetails: clearing selected unit logo.");
         }
-        UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson = null;
-        UnitDisplayConfigurationsView.SelectedUnitFiltersJson = null;
+        UnitDisplayConfigurationsViewForVisuals.SelectedUnitProfileGroupsJson = null;
+        UnitDisplayConfigurationsViewForVisuals.SelectedUnitFiltersJson = null;
         ResetUnitStatsOnly();
         EquipmentSummary = "Equipment: -";
         SpecialSkillsSummary = "Special Skills: -";
-        UnitDisplayConfigurationsView.SelectedUnitCommonEquipment = [];
-        UnitDisplayConfigurationsView.SelectedUnitCommonSkills = [];
+        UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonEquipment = [];
+        UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonSkills = [];
         _summaryHighlightLieutenant = false;
         RefreshSummaryFormatted();
         Profiles.Clear();
@@ -267,7 +273,7 @@ public partial class InspiringCompanySelectionPage
         ShowHackableIcon = false;
     }
 
-    private void ResetUnitStatsOnly()
+    protected void ResetUnitStatsOnly()
     {
         UnitMoveFirstCm = null;
         UnitMoveSecondCm = null;
@@ -285,7 +291,7 @@ public partial class InspiringCompanySelectionPage
         ResetPeripheralStatsOnly();
     }
 
-    private void ResetPeripheralStatsOnly()
+    protected void ResetPeripheralStatsOnly()
     {
         PeripheralMoveFirstCm = null;
         PeripheralMoveSecondCm = null;
@@ -308,16 +314,16 @@ public partial class InspiringCompanySelectionPage
         PeripheralSkillsFormatted = CompanyProfileTextService.BuildNamedSummaryFormatted("Skills", Array.Empty<string>(), Color.FromArgb("#F59E0B"));
     }
 
-    private void PopulateUnitStatsFromFirstProfile(JsonElement profileGroupsArray)
+    protected void PopulateUnitStatsFromFirstProfile(JsonElement profileGroupsArray)
     {
         CompanyUnitDetailsShared.PopulateUnitStatsFromFirstProfile(profileGroupsArray, ResetUnitStatsOnly, PopulateUnitStatsFromElement);
     }
 
-    private void PopulateUnitStatsFromElement(JsonElement selectedElement)
+    protected void PopulateUnitStatsFromElement(JsonElement selectedElement)
     {
         var projection = CompanyUnitDetailsShared.BuildUnitStatProjection(
             selectedElement,
-            _armyDataService.ReadMoveValue,
+            ArmyDataService.ReadMoveValue,
             ReadIntAsString,
             ReadAvaAsString,
             ReadVitality);
@@ -336,24 +342,24 @@ public partial class InspiringCompanySelectionPage
         UnitVitality = projection.Vitality;
     }
 
-    private string FormatMoveValue(int? firstCm, int? secondCm)
+    protected string FormatMoveValue(int? firstCm, int? secondCm)
     {
-        return _armyDataService.FormatMoveValue(firstCm, secondCm);
+        return ArmyDataService.FormatMoveValue(firstCm, secondCm);
     }
 
-    private void UpdateUnitMoveDisplay()
+    protected void UpdateUnitMoveDisplay()
     {
-        UnitMov = _armyDataService.FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
+        UnitMov = ArmyDataService.FormatMoveValue(UnitMoveFirstCm, UnitMoveSecondCm);
     }
 
-    private void UpdatePeripheralMoveDisplay()
+    protected void UpdatePeripheralMoveDisplay()
     {
-        PeripheralMov = _armyDataService.FormatMoveValue(PeripheralMoveFirstCm, PeripheralMoveSecondCm);
+        PeripheralMov = ArmyDataService.FormatMoveValue(PeripheralMoveFirstCm, PeripheralMoveSecondCm);
     }
 
-    private void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
+    protected void PopulatePeripheralStatsFromElement(JsonElement selectedElement, string peripheralName)
     {
-        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, UnitDisplayConfigurationsView.SelectedUnitFiltersJson);
+        var peripheralStats = BuildPeripheralStatBlock(peripheralName, selectedElement, UnitDisplayConfigurationsViewForVisuals.SelectedUnitFiltersJson);
         if (peripheralStats is null)
         {
             return;
@@ -362,10 +368,10 @@ public partial class InspiringCompanySelectionPage
         ApplyPeripheralStatBlock(peripheralStats);
     }
 
-    private void UpdatePeripheralStatBlockFromVisibleProfiles()
+    protected void UpdatePeripheralStatBlockFromVisibleProfiles()
     {
         CompanyUnitDetailsShared.UpdatePeripheralStatBlockFromVisibleProfiles(
-            UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson,
+            UnitDisplayConfigurationsViewForVisuals.SelectedUnitProfileGroupsJson,
             Profiles,
             profile => profile.IsVisible,
             profile => profile.HasPeripherals,
@@ -382,7 +388,7 @@ public partial class InspiringCompanySelectionPage
             peripheralName, peripheralProfile, filtersJson, ShowUnitsInInches,
             element =>
             {
-                var move = _armyDataService.ReadMoveValue(element);
+                var move = ArmyDataService.ReadMoveValue(element);
                 return (move.FirstCm, move.SecondCm);
             },
             commonResult => new PeripheralMercsCompanyStats

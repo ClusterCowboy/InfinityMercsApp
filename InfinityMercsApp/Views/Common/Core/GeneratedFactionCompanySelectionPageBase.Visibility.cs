@@ -1,11 +1,11 @@
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Controls;
 
-namespace InfinityMercsApp.Views.AirborneCompany;
+namespace InfinityMercsApp.Views.Common;
 
-public partial class AirborneCompanySelectionPage
+public abstract partial class GeneratedFactionCompanySelectionPageBase
 {
-    private async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
+    protected async Task ApplyUnitVisibilityFiltersAsync(CancellationToken cancellationToken = default)
     {
         if (Units.Count == 0)
         {
@@ -24,7 +24,7 @@ public partial class AirborneCompanySelectionPage
                 factions,
                 faction => faction.Id,
                 GetFactionSnapshotFromProvider,
-                _specOpsProvider.GetSpecopsUnitsByFactionAsync,
+                SpecOpsProvider.GetSpecopsUnitsByFactionAsync,
                 cancellationToken);
 
             ApplyUnitVisibilityCore(
@@ -86,7 +86,7 @@ public partial class AirborneCompanySelectionPage
 
             if (visibleCount == 0 && Units.Count > 0)
             {
-                Console.WriteLine("[AirborneCompanySelectionPage] No visible units after filtering. Forcing available units visible.");
+                Console.WriteLine("[GeneratedFactionCompanyPage] No visible units after filtering. Forcing available units visible.");
                 var hasLeftSlotEntry = HasLeftSlotEntry();
                 foreach (var unit in Units)
                 {
@@ -97,7 +97,7 @@ public partial class AirborneCompanySelectionPage
             }
 
             Console.WriteLine(
-                $"[AirborneCompanySelectionPage] Visibility result: {visibleCount}/{Units.Count} visible " +
+                $"[GeneratedFactionCompanyPage] Visibility result: {visibleCount}/{Units.Count} visible " +
                 $"(pointsRemaining={pointsRemaining}, activeSlot={_activeSlotIndex}, filterActive={_filterState.ActiveUnitFilter.IsActive}, lieutenantOnly={LieutenantOnlyUnits}).");
 
             _selectedUnit = RefreshSelectedUnitVisibilityCore(
@@ -105,13 +105,13 @@ public partial class AirborneCompanySelectionPage
                 () => ResetUnitDetails(),
                 ApplyLieutenantVisualStates);
 
-            RefreshTeamEntryVisibilityCore<ArmyTeamListItem, ArmyTeamUnitLimitItem, ArmyUnitSelectionItem>(
+            RefreshTeamEntryVisibilityCore(
                 TeamEntries,
                 Units);
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"AirborneCompanySelectionPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
+            Console.Error.WriteLine($"GeneratedFactionCompanyPage ApplyUnitVisibilityFiltersAsync failed: {ex.Message}");
         }
     }
 }

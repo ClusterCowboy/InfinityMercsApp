@@ -69,7 +69,7 @@ public partial class StandardCompanySelectionPage
                 () => ResetUnitDetails(),
                 ApplyLieutenantVisualStates);
 
-            RefreshTeamEntryVisibilityCore<ArmyTeamListItem, ArmyTeamUnitLimitItem, ArmyUnitSelectionItem>(
+            RefreshTeamEntryVisibilityCore(
                 TeamEntries,
                 Units);
         }

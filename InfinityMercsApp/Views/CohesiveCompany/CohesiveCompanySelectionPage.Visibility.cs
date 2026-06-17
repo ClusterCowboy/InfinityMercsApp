@@ -56,7 +56,7 @@ public partial class CohesiveCompanySelectionPage
                 () => ResetUnitDetails(),
                 ApplyLieutenantVisualStates);
 
-            RefreshTeamEntryVisibilityCore<ArmyTeamListItem, ArmyTeamUnitLimitItem, ArmyUnitSelectionItem>(
+            RefreshTeamEntryVisibilityCore(
                 TeamEntries,
                 Units);
             AreTeamEntriesReady = true;

@@ -1,14 +1,12 @@
 using InfinityMercsApp.ViewModels;
 using InfinityMercsApp.Views.Common;
-using InspiringGen = InfinityMercsApp.Infrastructure.Providers.InspiringCompanyFactionGenerator;
+using InfinityMercsApp.Services;
 
-namespace InfinityMercsApp.Views.InspiringCompany;
+namespace InfinityMercsApp.Views.Common;
 
-public partial class InspiringCompanySelectionPage
+public abstract partial class GeneratedFactionCompanySelectionPageBase
 {
-    private const string InspiringLeadershipSkillName = "Inspiring Leadership";
-
-    private void SetSelectedUnit(ArmyUnitSelectionItem item)
+    protected void SetSelectedUnit(ArmyUnitSelectionItem item)
     {
         _selectedUnit = SetSelectedUnitCore(
             item,
@@ -23,7 +21,7 @@ public partial class InspiringCompanySelectionPage
             });
     }
 
-    private void AddProfileToMercsCompany(ViewerProfileItem? profile)
+    protected void AddProfileToMercsCompany(ViewerProfileItem? profile)
     {
         if (profile is null || _selectedUnit is null)
         {
@@ -40,16 +38,14 @@ public partial class InspiringCompanySelectionPage
             return;
         }
 
-        var commonSkills = UnitDisplayConfigurationsView.SelectedUnitCommonSkills;
-        var captainSkills = profile.IsLieutenant
-            ? EnsureInspiringLeadershipSkill(commonSkills)
-            : commonSkills;
+        var commonSkills = UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonSkills;
+        var captainSkills = ApplyCaptainSkills(commonSkills, profile);
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
-        var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
+        var entry = BuildMercsCompanyEntryCore(
             _selectedUnit,
             profile,
-            UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,
+            UnitDisplayConfigurationsViewForVisuals.SelectedUnitCommonEquipment,
             captainSkills,
             UnitMov,
             UnitCc,
@@ -86,13 +82,13 @@ public partial class InspiringCompanySelectionPage
     {
         return BuildMercsCompanyPeripheralStatsCore(
             profile,
-            UnitDisplayConfigurationsView.SelectedUnitProfileGroupsJson,
-            UnitDisplayConfigurationsView.SelectedUnitFiltersJson,
+            UnitDisplayConfigurationsViewForVisuals.SelectedUnitProfileGroupsJson,
+            UnitDisplayConfigurationsViewForVisuals.SelectedUnitFiltersJson,
             (peripheralName, peripheralProfile, selectedUnitFiltersJson) =>
                 BuildPeripheralStatBlock(peripheralName, peripheralProfile, selectedUnitFiltersJson));
     }
 
-    private void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
+    protected void RemoveMercsCompanyEntry(MercsCompanyEntry? entry)
     {
         RemoveMercsCompanyEntryCore(
             entry,
@@ -102,7 +98,7 @@ public partial class InspiringCompanySelectionPage
             () => _ = ApplyUnitVisibilityFiltersAsync());
     }
 
-    private async Task SelectMercsCompanyEntryAsync(MercsCompanyEntry? entry, CancellationToken cancellationToken = default)
+    protected async Task SelectMercsCompanyEntryAsync(MercsCompanyEntry? entry, CancellationToken cancellationToken = default)
     {
         await SelectMercsCompanyEntryAsyncCore(
             entry,
@@ -123,7 +119,7 @@ public partial class InspiringCompanySelectionPage
             cancellationToken);
     }
 
-    private void ApplyLieutenantVisualStates()
+    protected void ApplyLieutenantVisualStates()
     {
         var visibleProfiles = ApplyLieutenantVisualStatesCore(
             MercsCompanyEntries,
@@ -158,28 +154,13 @@ public partial class InspiringCompanySelectionPage
         UpdateSeasonValidationState();
     }
 
-    private static bool IsLeftSlotUnit(ArmyUnitSelectionItem? unit)
+    protected bool IsLeftSlotUnit(ArmyUnitSelectionItem? unit)
     {
-        return unit is not null && unit.SourceFactionId != InspiringGen.InspiringCompanyFactionId;
+        return unit is not null && unit.SourceFactionId != CompanyFactionId;
     }
 
-    private bool HasLeftSlotEntry()
+    protected bool HasLeftSlotEntry()
     {
-        return MercsCompanyEntries.Any(e => e.SourceFactionId != InspiringGen.InspiringCompanyFactionId);
-    }
-
-    private static IReadOnlyCollection<string> EnsureInspiringLeadershipSkill(IReadOnlyCollection<string> skills)
-    {
-        if (skills.Any(x => string.Equals(x?.Trim(), InspiringLeadershipSkillName, StringComparison.OrdinalIgnoreCase)))
-        {
-            return skills;
-        }
-
-        var merged = skills
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .ToList();
-        merged.Add(InspiringLeadershipSkillName);
-        return merged;
+        return MercsCompanyEntries.Any(e => e.SourceFactionId != CompanyFactionId);
     }
 }

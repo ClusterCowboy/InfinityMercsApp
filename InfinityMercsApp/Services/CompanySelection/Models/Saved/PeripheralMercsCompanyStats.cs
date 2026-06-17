@@ -1,6 +1,6 @@
 namespace InfinityMercsApp.Views.Common;
 
-public abstract class CompanyPeripheralMercsCompanyStatsBase
+public class PeripheralMercsCompanyStats
 {
     public string NameHeading { get; init; } = string.Empty;
     public int? MoveFirstCm { get; init; }

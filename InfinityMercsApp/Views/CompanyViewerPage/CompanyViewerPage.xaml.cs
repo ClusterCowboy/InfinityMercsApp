@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Windows.Input;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels;
-using InfinityMercsApp.Views.StandardCompany;
 using InfinityMercsApp.Views.Common;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;

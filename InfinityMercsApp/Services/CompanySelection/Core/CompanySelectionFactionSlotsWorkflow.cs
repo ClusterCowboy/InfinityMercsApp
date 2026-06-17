@@ -4,11 +4,10 @@ namespace InfinityMercsApp.Views.Common;
 
 internal static class CompanySelectionFactionSlotsWorkflow
 {
-    internal static void SetSelectedFaction<TFaction>(
-        FactionSlotSelectionState<TFaction> factionSelectionState,
-        TFaction item,
-        Action<TFaction> assignSelectedFactionToActiveSlot)
-        where TFaction : CompanyFactionSelectionItemBase
+    internal static void SetSelectedFaction(
+        FactionSlotSelectionState<ArmyFactionSelectionItem> factionSelectionState,
+        ArmyFactionSelectionItem item,
+        Action<ArmyFactionSelectionItem> assignSelectedFactionToActiveSlot)
     {
         if (factionSelectionState.SelectedFaction == item)
         {
@@ -26,13 +25,12 @@ internal static class CompanySelectionFactionSlotsWorkflow
         assignSelectedFactionToActiveSlot(item);
     }
 
-    internal static bool IsDuplicateSelectionForActiveSlot<TFaction>(
+    internal static bool IsDuplicateSelectionForActiveSlot(
         bool showRightSelectionBox,
         int activeSlotIndex,
-        TFaction? leftSlotFaction,
-        TFaction? rightSlotFaction,
-        TFaction item)
-        where TFaction : CompanyFactionSelectionItemBase
+        ArmyFactionSelectionItem? leftSlotFaction,
+        ArmyFactionSelectionItem? rightSlotFaction,
+        ArmyFactionSelectionItem item)
     {
         if (!showRightSelectionBox)
         {
@@ -51,15 +49,14 @@ internal static class CompanySelectionFactionSlotsWorkflow
             && (rightSlotFaction is null || rightSlotFaction.Id != item.Id);
     }
 
-    internal static bool TryAssignSelectedFactionToActiveSlot<TFaction>(
+    internal static bool TryAssignSelectedFactionToActiveSlot(
         bool showRightSelectionBox,
         int activeSlotIndex,
-        FactionSlotSelectionState<TFaction> factionSelectionState,
-        TFaction item,
+        FactionSlotSelectionState<ArmyFactionSelectionItem> factionSelectionState,
+        ArmyFactionSelectionItem item,
         Action<int, string?, string?> loadSlotIcon,
         bool blockCrossSlotDuplicateSelection,
         out bool factionChanged)
-        where TFaction : CompanyFactionSelectionItemBase
     {
         if (blockCrossSlotDuplicateSelection &&
             IsDuplicateSelectionForActiveSlot(

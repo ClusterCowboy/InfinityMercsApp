@@ -38,7 +38,7 @@ public partial class CohesiveCompanySelectionPage
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
         var cohesiveCommonSkills = EnsureCohesiveDefaultSkills(UnitDisplayConfigurationsView.SelectedUnitCommonSkills, profile.IsLieutenant);
-        var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
+        var entry = BuildMercsCompanyEntryCore(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,

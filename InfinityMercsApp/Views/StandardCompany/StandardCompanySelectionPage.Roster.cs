@@ -36,7 +36,7 @@ public partial class StandardCompanySelectionPage
         }
 
         var peripheralStats = BuildMercsCompanyPeripheralStats(profile);
-        var entry = BuildMercsCompanyEntryCore<MercsCompanyEntry, ArmyUnitSelectionItem, PeripheralMercsCompanyStats>(
+        var entry = BuildMercsCompanyEntryCore(
             _selectedUnit,
             profile,
             UnitDisplayConfigurationsView.SelectedUnitCommonEquipment,

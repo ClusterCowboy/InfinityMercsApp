@@ -202,11 +202,10 @@ internal static class CompanyTeamMatchingWorkflow
         return null;
     }
 
-    internal static TUnit? ResolveUnitForTeamEntry<TUnit>(
+    internal static ArmyUnitSelectionItem? ResolveUnitForTeamEntry(
         string? allowedProfileName,
         string? allowedProfileSlug,
-        IEnumerable<TUnit> sourceUnits)
-        where TUnit : CompanyUnitSelectionItemBase
+        IEnumerable<ArmyUnitSelectionItem> sourceUnits)
     {
         return ResolveUnitForTeamEntry(
             allowedProfileName,

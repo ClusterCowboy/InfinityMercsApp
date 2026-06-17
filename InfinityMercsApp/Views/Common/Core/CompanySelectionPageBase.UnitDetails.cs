@@ -11,7 +11,7 @@ public abstract partial class CompanySelectionPageBase
     /// checking the unit's own cached path as well as both slot faction paths as fallbacks.
     /// </summary>
     protected static IEnumerable<string?> BuildUnitCachedPathCandidatesCore(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         int? leftSlotFactionId,
         int? rightSlotFactionId,
         Func<int, int, string?>? getCachedUnitLogoPath,
@@ -30,7 +30,7 @@ public abstract partial class CompanySelectionPageBase
     /// used as a fallback when the on-disk cache does not have a suitable image.
     /// </summary>
     protected static IEnumerable<string?> BuildUnitPackagedPathCandidatesCore(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         int? leftSlotFactionId,
         int? rightSlotFactionId,
         Func<int, int, string?>? getPackagedUnitLogoPath,
@@ -92,7 +92,7 @@ public abstract partial class CompanySelectionPageBase
     /// and rendering the SVG into the unit display canvas.
     /// </summary>
     protected static async Task LoadSelectedUnitLogoCoreAsync(
-        CompanyUnitSelectionItemBase item,
+        ArmyUnitSelectionItem item,
         UnitDisplayConfigurationsView unitDisplayView,
         Func<Task<Stream?>> openBestUnitLogoStreamAsync)
     {
