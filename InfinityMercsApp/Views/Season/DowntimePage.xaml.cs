@@ -101,7 +101,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             EventStack.Children.Add(new Label
             {
                 Text = evt.Description,
-                TextColor = Color.FromArgb("#D1D5DB"),
+                TextColor = Color.FromArgb("#B5C0CE"),
                 FontSize = 14,
                 Margin = new Thickness(0, 8, 0, 4)
             });
@@ -109,7 +109,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             EventStack.Children.Add(new Label
             {
                 Text = "SELECT AN EVENT",
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 FontSize = 12,
                 FontAttributes = FontAttributes.Bold,
                 Margin = new Thickness(0, 4, 0, 6)
@@ -132,8 +132,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var noEventBtn = new Button
             {
                 Text = "NO EVENT",
-                BackgroundColor = Color.FromArgb("#374151"),
-                TextColor = Color.FromArgb("#9CA3AF"),
+                BackgroundColor = Color.FromArgb("#3A4554"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 FontAttributes = FontAttributes.Bold,
                 CornerRadius = 6,
                 HeightRequest = 40,
@@ -163,7 +163,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         EventStack.Children.Add(new Label
         {
             Text = evt.Description,
-            TextColor = Color.FromArgb("#D1D5DB"),
+            TextColor = Color.FromArgb("#B5C0CE"),
             FontSize = 14,
             Margin = new Thickness(0, 0, 0, 8)
         });
@@ -198,15 +198,15 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         var label = new Label
         {
             Text = $"{option.RollRange}  —  {option.Description}",
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontSize = 13,
             LineBreakMode = LineBreakMode.WordWrap
         };
 
         var border = new Border
         {
-            BackgroundColor = Color.FromArgb("#1A2332"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(12, 10, 12, 10),
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 },
@@ -227,8 +227,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
     {
         var border = new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
-            Stroke = Color.FromArgb("#22C55E"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#34D399"),
             StrokeThickness = 1,
             Padding = new Thickness(12, 8, 12, 8),
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 }
@@ -236,7 +236,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         border.Content = new Label
         {
             Text = $"Rolled {roll}  →  Event {evt.RollRange}",
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 15,
             HorizontalTextAlignment = TextAlignment.Center
@@ -251,7 +251,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         var header = new Label
         {
             Text = $"CHOICE {choiceNumber}{(string.IsNullOrEmpty(choice.TestLabel) ? "" : $"  ({choice.TestLabel})")}",
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             FontSize = 12,
             FontAttributes = FontAttributes.Bold
         };
@@ -260,7 +260,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         stack.Children.Add(new Label
         {
             Text = choice.Description,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontSize = 14
         });
 
@@ -278,8 +278,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         var pickBtn = new Button
         {
             Text = "PICK",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             CornerRadius = 6,
             HeightRequest = 36,
@@ -294,8 +294,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
 
         var border = new Border
         {
-            BackgroundColor = Color.FromArgb("#1A2332"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(0),
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 }
@@ -331,7 +331,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         stack.Children.Add(new Label
         {
             Text = "RESOLUTION",
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             FontSize = 12,
             FontAttributes = FontAttributes.Bold
         });
@@ -363,10 +363,10 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                 Text = $"OUTCOME: {OutcomeLabel(outcome)}",
                 TextColor = outcome switch
                 {
-                    PassFailOutcome.Fail => Color.FromArgb("#DC2626"),
-                    PassFailOutcome.Pass => Color.FromArgb("#22C55E"),
+                    PassFailOutcome.Fail => Color.FromArgb("#F87171"),
+                    PassFailOutcome.Pass => Color.FromArgb("#34D399"),
                     PassFailOutcome.CritPass => Color.FromArgb("#FBBF24"),
-                    _ => Colors.White
+                    _ => Color.FromArgb("#E6EBF2")
                 },
                 FontAttributes = FontAttributes.Bold,
                 FontSize = 14
@@ -379,7 +379,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                 outcomeArea.Children.Add(new Label
                 {
                     Text = "No mechanical effect.",
-                    TextColor = Color.FromArgb("#9CA3AF"),
+                    TextColor = Color.FromArgb("#8A97A8"),
                     FontSize = 13
                 });
             }
@@ -390,7 +390,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                     outcomeArea.Children.Add(new Label
                     {
                         Text = "• " + line,
-                        TextColor = Color.FromArgb("#D1D5DB"),
+                        TextColor = Color.FromArgb("#B5C0CE"),
                         FontSize = 13
                     });
                 }
@@ -435,7 +435,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                 rollArea.Children.Add(new Label
                 {
                     Text = $"Test: {test.Display} — target could not be resolved.",
-                    TextColor = Color.FromArgb("#DC2626"),
+                    TextColor = Color.FromArgb("#F87171"),
                     FontSize = 13
                 });
                 DisarmPendingRoll("Unable to resolve test target.");
@@ -450,7 +450,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             rollArea.Children.Add(new Label
             {
                 Text = $"Test: {test.Display}  target {effectiveTarget}{critHint}",
-                TextColor = Color.FromArgb("#D1D5DB"),
+                TextColor = Color.FromArgb("#B5C0CE"),
                 FontSize = 13
             });
 
@@ -462,7 +462,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                     rollArea.Children.Add(new Label
                     {
                         Text = $"Rolled: {rolled} vs {effectiveTarget}",
-                        TextColor = Colors.White,
+                        TextColor = Color.FromArgb("#E6EBF2"),
                         FontSize = 13,
                         FontAttributes = FontAttributes.Bold
                     });
@@ -479,7 +479,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             rollArea.Children.Add(new Label
             {
                 Text = "P2P — Spend CR to boost target (optional):",
-                TextColor = Color.FromArgb("#D1D5DB"),
+                TextColor = Color.FromArgb("#B5C0CE"),
                 FontSize = 13,
                 FontAttributes = FontAttributes.Bold
             });
@@ -487,7 +487,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var targetLabel = new Label
             {
                 Text = $"Target: {baseTarget}",
-                TextColor = Color.FromArgb("#22C55E"),
+                TextColor = Color.FromArgb("#34D399"),
                 FontSize = 14,
                 FontAttributes = FontAttributes.Bold
             };
@@ -518,7 +518,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var crLabel = new Label
             {
                 Text = "CR to spend:",
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 FontSize = 13,
                 VerticalTextAlignment = TextAlignment.Center
             };
@@ -533,8 +533,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var confirmBtn = new Button
             {
                 Text = "CONFIRM SPEND",
-                BackgroundColor = Color.FromArgb("#374151"),
-                TextColor = Colors.White,
+                BackgroundColor = Color.FromArgb("#3A4554"),
+                TextColor = Color.FromArgb("#E6EBF2"),
                 FontAttributes = FontAttributes.Bold,
                 CornerRadius = 6,
                 HeightRequest = 36
@@ -557,7 +557,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             participantArea.Children.Add(new Label
             {
                 Text = $"Performed by: {unit.Name}",
-                TextColor = Color.FromArgb("#22C55E"),
+                TextColor = Color.FromArgb("#34D399"),
                 FontSize = 13,
                 FontAttributes = FontAttributes.Bold
             });
@@ -612,7 +612,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
         area.Children.Add(new Label
         {
             Text = $"Select {ParticipantKindLabel(kind)}:",
-            TextColor = Color.FromArgb("#D1D5DB"),
+            TextColor = Color.FromArgb("#B5C0CE"),
             FontSize = 13,
             FontAttributes = FontAttributes.Bold
         });
@@ -623,7 +623,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             area.Children.Add(new Label
             {
                 Text = "No eligible mercs found.",
-                TextColor = Color.FromArgb("#DC2626"),
+                TextColor = Color.FromArgb("#F87171"),
                 FontSize = 13
             });
             return;
@@ -643,7 +643,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var nameLabel = new Label
             {
                 Text = kind == ParticipantKind.Renowned ? $"{unit.Name}  ({unit.Renown} renown)" : unit.Name,
-                TextColor = Colors.White,
+                TextColor = Color.FromArgb("#E6EBF2"),
                 FontSize = 14,
                 FontAttributes = FontAttributes.Bold,
                 VerticalTextAlignment = TextAlignment.Center,
@@ -653,7 +653,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var missingLabel = new Label
             {
                 Text = missing.Count > 0 ? $"Missing: {string.Join(", ", missing)}" : string.Empty,
-                TextColor = Color.FromArgb("#DC2626"),
+                TextColor = Color.FromArgb("#F87171"),
                 FontAttributes = FontAttributes.Bold,
                 FontSize = 13,
                 VerticalTextAlignment = TextAlignment.Center,
@@ -665,7 +665,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
             var targetLabel = new Label
             {
                 Text = target.HasValue ? $"Target {target.Value}" : string.Empty,
-                TextColor = Color.FromArgb("#22C55E"),
+                TextColor = Color.FromArgb("#34D399"),
                 FontAttributes = FontAttributes.Bold,
                 FontSize = 13,
                 VerticalTextAlignment = TextAlignment.Center,
@@ -685,8 +685,8 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
 
             var border = new Border
             {
-                BackgroundColor = Color.FromArgb("#374151"),
-                Stroke = Color.FromArgb("#4B5563"),
+                BackgroundColor = Color.FromArgb("#3A4554"),
+                Stroke = Color.FromArgb("#3A4554"),
                 StrokeThickness = 1,
                 Padding = new Thickness(12, 10, 12, 10),
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 },
@@ -706,7 +706,7 @@ public partial class DowntimePage : ContentPage, IQueryAttributable
                         b.GestureRecognizers.Remove(t);
                         if (!ReferenceEquals(b, border)) b.Opacity = 0.45;
                     }
-                    border.Stroke = Color.FromArgb("#22C55E");
+                    border.Stroke = Color.FromArgb("#34D399");
                     border.StrokeThickness = 2;
                     onPicked(capturedUnit);
                 };

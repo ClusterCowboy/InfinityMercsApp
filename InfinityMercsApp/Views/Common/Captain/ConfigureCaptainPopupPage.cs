@@ -19,10 +19,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
     private const double UnifiedPickerWidth = 280;
 
     // Green highlight applied to a stat value when it has been improved above its base.
-    private static readonly Color ModifiedStatColor = Color.FromArgb("#22C55E");
-    private static readonly Color DefaultStatColor = Colors.White;
+    private static readonly Color ModifiedStatColor = Color.FromArgb("#34D399");
+    private static readonly Color DefaultStatColor = Color.FromArgb("#E6EBF2");
     private static readonly Color SkillsDefaultColor = Color.FromArgb("#F59E0B");
-    private static readonly Color LieutenantHighlightColor = Color.FromArgb("#C084FC");
+    private static readonly Color LieutenantHighlightColor = Color.FromArgb("#34D399");
 
     /// <summary>
     /// Defines the available upgrade tiers, bonuses, and costs for each upgradeable stat.
@@ -161,15 +161,15 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         var cancelButton = new Button
         {
             Text = "BACK",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             Command = new Command(async () => await CloseAsync(false))
         };
         _foundCompanyButton = new Button
         {
             Text = string.IsNullOrWhiteSpace(context.ConfirmButtonText) ? "FOUND COMPANY" : context.ConfirmButtonText.Trim(),
-            BackgroundColor = Color.FromArgb("#7C3AED"),
-            TextColor = Colors.Black,
+            BackgroundColor = Color.FromArgb("#34D399"),
+            TextColor = Color.FromArgb("#0E1116"),
             Command = new Command(async () => await CloseAsync(true))
         };
 
@@ -188,10 +188,10 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         Grid.SetColumn(cancelButton, 0);
         Grid.SetColumn(_foundCompanyButton, 2);
 
-        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#EF4444"), out _rangedValueLabel);
-        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#22C55E"), out _ccValueLabel);
+        var rangedBlock = BuildProfileDetailBlock("Ranged", Color.FromArgb("#F87171"), out _rangedValueLabel);
+        var ccBlock = BuildProfileDetailBlock("CC", Color.FromArgb("#34D399"), out _ccValueLabel);
         var skillsBlock = BuildProfileDetailBlock("Skills", Color.FromArgb("#F59E0B"), out _skillsValueLabel);
-        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#06B6D4"), out _equipmentValueLabel);
+        var equipmentBlock = BuildProfileDetailBlock("Equipment", Color.FromArgb("#B5C0CE"), out _equipmentValueLabel);
 
         _captainNameCommitted = string.IsNullOrWhiteSpace(context.DefaultUnitCustomName)
             ? "Captain"
@@ -264,13 +264,13 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         {
             FontAttributes = FontAttributes.Bold,
             Style = (Style)Application.Current!.Resources["LabelSubHeadline"],
-            TextColor = Colors.White
+            TextColor = Color.FromArgb("#E6EBF2")
         };
         _experienceRemainingLabel = new Label
         {
             FontAttributes = FontAttributes.Bold,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Colors.White
+            TextColor = Color.FromArgb("#E6EBF2")
         };
 
         var rightColumnBody = new VerticalStackLayout
@@ -348,8 +348,8 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
 
         var card = new Border
         {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(16),
             HorizontalOptions = LayoutOptions.Center,
@@ -790,9 +790,9 @@ public sealed class ConfigureCaptainPopupPage : ContentPage
         _experienceRemainingLabel.Text = $"Exp Remaining: {experienceRemaining}";
 
         // Turn the remaining exp label red and disable the confirm button when overspent.
-        _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Colors.Red : Colors.White;
+        _experienceRemainingLabel.TextColor = experienceRemaining < 0 ? Color.FromArgb("#F87171") : Color.FromArgb("#E6EBF2");
         _foundCompanyButton.IsEnabled = experienceRemaining >= 0;
-        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#6B7280") : Color.FromArgb("#7C3AED");
+        _foundCompanyButton.BackgroundColor = experienceRemaining < 0 ? Color.FromArgb("#8A97A8") : Color.FromArgb("#34D399");
     }
 
     // Thin wrapper kept for consistency; may expand to include additional preview logic later.

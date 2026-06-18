@@ -4,7 +4,7 @@
              xmlns:views="clr-namespace:InfinityMercsApp.Views"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.SplashPage"
-             BackgroundColor="#111827">
+             BackgroundColor="#0E1116">
 
     <Grid>
         <VerticalStackLayout
@@ -23,19 +23,19 @@
                 Text="Infinity Mercs"
                 FontSize="{DynamicResource FontSizeTitleLarge}"
                 FontAttributes="Bold"
-                TextColor="White"
+                TextColor="#E6EBF2"
                 HorizontalTextAlignment="Center" />
 
             <ActivityIndicator
                 IsRunning="True"
-                Color="#9CA3AF"
+                Color="#34D399"
                 HorizontalOptions="Center" />
 
             <Label
                 x:Name="StatusLabel"
                 Text="{Binding UpdateProgressMessage}"
                 FontSize="{DynamicResource FontSizeSectionHeader}"
-                TextColor="#9CA3AF"
+                TextColor="#8A97A8"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
     </Grid>

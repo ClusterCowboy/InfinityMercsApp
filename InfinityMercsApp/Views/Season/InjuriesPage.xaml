@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Season.InjuriesPage"
              Title="INJURIES"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="*,Auto" Padding="0">
 
@@ -16,10 +16,10 @@
         <Button x:Name="ContinueButton"
                 Grid.Row="1"
                 Text="CONTINUE"
-                BackgroundColor="#22C55E"
-                TextColor="White"
+                BackgroundColor="{StaticResource Signal}"
+                TextColor="{StaticResource TextPrimary}"
                 FontAttributes="Bold"
-                FontSize="16"
+                FontSize="{DynamicResource FontSizeSectionHeader}"
                 HeightRequest="52"
                 CornerRadius="0"
                 Margin="0"

@@ -61,7 +61,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
                 UnitStack.Children.Add(new BoxView
                 {
                     HeightRequest = 1,
-                    Color = Color.FromArgb("#374151")
+                    Color = Color.FromArgb("#3A4554")
                 });
             }
             UnitStack.Children.Add(await BuildUnitCardAsync(units[i], mvpCheckboxes, UpdateConfirm));
@@ -105,7 +105,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         var nameLabel = new Label
         {
             Text = unit.Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 16,
             VerticalTextAlignment = TextAlignment.Center,
@@ -120,7 +120,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         content.Children.Add(new BoxView
         {
             HeightRequest = 1,
-            Color = Color.FromArgb("#374151"),
+            Color = Color.FromArgb("#3A4554"),
             Margin = new Thickness(0, 0, 0, 2)
         });
 
@@ -132,14 +132,14 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
             var lbl = new Label
             {
                 Text = label,
-                TextColor = labelColor ?? Color.FromArgb("#D1D5DB"),
+                TextColor = labelColor ?? Color.FromArgb("#B5C0CE"),
                 FontSize = 13,
                 VerticalTextAlignment = TextAlignment.Center
             };
             var xpLbl = new Label
             {
                 Text = $"+{xp} XP",
-                TextColor = Color.FromArgb("#22C55E"),
+                TextColor = Color.FromArgb("#34D399"),
                 FontSize = 13,
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.End
@@ -196,13 +196,13 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         content.Children.Add(new BoxView
         {
             HeightRequest = 1,
-            Color = Color.FromArgb("#374151"),
+            Color = Color.FromArgb("#3A4554"),
             Margin = new Thickness(0, 4, 0, 0)
         });
         var totalLabel = new Label
         {
             Text = $"Total: {unit.TotalXp} XP",
-            TextColor = Color.FromArgb("#22C55E"),
+            TextColor = Color.FromArgb("#34D399"),
             FontSize = 14,
             FontAttributes = FontAttributes.Bold,
             HorizontalTextAlignment = TextAlignment.End
@@ -241,7 +241,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         {
             Spacing = 6,
             Padding = new Thickness(8, 12, 8, 12),
-            BackgroundColor = Color.FromArgb("#111827"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
             VerticalOptions = LayoutOptions.Fill
         };
         mvpCol.Children.Add(new Label
@@ -258,7 +258,7 @@ public partial class ExperiencePage : ContentPage, IQueryAttributable
         var card = new Grid
         {
             ColumnSpacing = 0,
-            BackgroundColor = Color.FromArgb("#1F2937")
+            BackgroundColor = Color.FromArgb("#161B22")
         };
         card.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
         card.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });

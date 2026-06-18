@@ -3,15 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Season.ExperiencePage"
              Title="Experience"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="16,12,16,16">
 
         <Label Grid.Row="0"
                Text="EXPERIENCE"
-               FontSize="22"
+               FontSize="{DynamicResource FontSizeTitleSmall}"
                FontAttributes="Bold"
-               TextColor="White"
+               TextColor="{StaticResource TextPrimary}"
                Margin="0,0,0,12"/>
 
         <ScrollView Grid.Row="1">
@@ -21,8 +21,8 @@
         <Button Grid.Row="2"
                 x:Name="ConfirmButton"
                 Text="CONFIRM EXPERIENCE GAINS"
-                BackgroundColor="#22C55E"
-                TextColor="Black"
+                BackgroundColor="{StaticResource Signal}"
+                TextColor="{StaticResource Void}"
                 FontAttributes="Bold"
                 Margin="0,12,0,0"
                 Clicked="OnConfirmExperienceClicked"

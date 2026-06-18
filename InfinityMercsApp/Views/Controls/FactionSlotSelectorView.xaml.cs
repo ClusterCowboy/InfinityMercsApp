@@ -9,8 +9,8 @@ namespace InfinityMercsApp.Views.Controls;
 /// </summary>
 public partial class FactionSlotSelectorView : ContentView
 {
-    private static readonly Color ActiveBorder = Color.FromArgb("#2563EB");
-    private static readonly Color InactiveBorder = Color.FromArgb("#9CA3AF");
+    private static readonly Color ActiveBorder = Color.FromArgb("#34D399");
+    private static readonly Color InactiveBorder = Color.FromArgb("#3A4554");
     private SKPicture? _leftSlotPicture;
     private SKPicture? _rightSlotPicture;
 

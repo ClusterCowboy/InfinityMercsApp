@@ -7,7 +7,7 @@ public abstract partial class GeneratedFactionCompanySelectionPageBase
     protected string _companyName = "Company Name";
     protected Command _startCompanyCommand = null!;
     protected bool _showCompanyNameValidationError;
-    protected Color _companyNameBorderColor = Color.FromArgb("#6B7280");
+    protected Color _companyNameBorderColor = Color.FromArgb("#8A97A8");
     protected bool _loaded;
 
     public string SelectedStartSeasonPoints

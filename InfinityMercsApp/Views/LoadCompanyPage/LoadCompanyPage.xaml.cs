@@ -464,15 +464,15 @@ public sealed class DeleteCompanyConfirmationPage : ContentPage
         var backButton = new Button
         {
             Text = "BACK",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             Command = new Command(async () => await CloseAsync(false))
         };
         var confirmButton = new Button
         {
             Text = "CONFIRM",
-            BackgroundColor = Color.FromArgb("#DC2626"),
-            TextColor = Colors.Black,
+            BackgroundColor = Color.FromArgb("#F87171"),
+            TextColor = Color.FromArgb("#0E1116"),
             Command = new Command(async () => await CloseAsync(true))
         };
 
@@ -492,8 +492,8 @@ public sealed class DeleteCompanyConfirmationPage : ContentPage
 
         var card = new Border
         {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(16),
             HorizontalOptions = LayoutOptions.Center,

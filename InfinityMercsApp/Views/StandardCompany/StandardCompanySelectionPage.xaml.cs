@@ -39,7 +39,7 @@ public partial class StandardCompanySelectionPage : CompanySelectionPageBase, IC
     private readonly Command _startCompanyCommand;
     private readonly string? _companyTypeLabelOverride;
     private bool _showCompanyNameValidationError;
-    private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
+    private Color _companyNameBorderColor = Color.FromArgb("#8A97A8");
     private bool _loaded;
     private string _pageHeading = string.Empty;
     private bool _autoSelectUnitAfterFactionLoad;

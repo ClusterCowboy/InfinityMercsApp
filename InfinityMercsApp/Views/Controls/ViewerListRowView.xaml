@@ -6,11 +6,11 @@
              x:Name="Root">
     <Border Padding="8,6" StrokeThickness="0">
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="6" />
+            <RoundRectangle CornerRadius="4" />
         </Border.StrokeShape>
         <Border.Triggers>
             <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                <Setter Property="BackgroundColor" Value="#334155" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PlateRaised}" />
             </DataTrigger>
             <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
                 <Setter Property="BackgroundColor" Value="Transparent" />
@@ -27,8 +27,8 @@
                 VerticalOptions="Center"
                 PaintSurface="OnLogoCanvasPaintSurface" />
             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                <Label Text="{Binding Name}" TextColor="White" LineBreakMode="TailTruncation" />
-                <Label Text="{Binding Subtitle}" TextColor="#6B7280" FontSize="{DynamicResource FontSizeCaption}" IsVisible="{Binding HasSubtitle}" LineBreakMode="TailTruncation" />
+                <Label Text="{Binding Name}" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                <Label Text="{Binding Subtitle}" TextColor="{StaticResource TextMuted}" FontSize="{DynamicResource FontSizeCaption}" IsVisible="{Binding HasSubtitle}" LineBreakMode="TailTruncation" />
             </VerticalStackLayout>
         </Grid>
     </Border>

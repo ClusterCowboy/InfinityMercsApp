@@ -34,9 +34,9 @@
                         Text=""
                         Command="{Binding OpenStandardCompanyPopupCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
@@ -68,9 +68,9 @@
                         Text=""
                         Command="{Binding OpenCohesiveCompanyPageCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
@@ -102,9 +102,9 @@
                         Text=""
                         Command="{Binding OpenInspiringLeadershipPageCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
@@ -136,9 +136,9 @@
                         Text=""
                         Command="{Binding OpenAirborneCompanyPageCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
@@ -170,9 +170,9 @@
                         Text=""
                         Command="{Binding OpenTAGCompanyPageCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>
@@ -204,9 +204,9 @@
                         Text=""
                         Command="{Binding OpenLoneWolfCompanyPopupCommand}"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="2"
-                        CornerRadius="8"
+                        CornerRadius="4"
                         VerticalOptions="FillAndExpand" />
                 <Grid InputTransparent="False" RowDefinitions="*,Auto" RowSpacing="6" Padding="10">
                     <Grid.GestureRecognizers>

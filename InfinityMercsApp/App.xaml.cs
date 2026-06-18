@@ -13,6 +13,10 @@ public partial class App : Application
 		_splashPage = splashPage;
 		CrashLog.Initialize();
 
+		// Datapad identity is dark-only; pin the theme so system-drawn
+		// controls (pickers, dialogs) don't flip to a light variant.
+		UserAppTheme = AppTheme.Dark;
+
 		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
 		{
 			CrashLog.Write("AppDomain.CurrentDomain.UnhandledException", args.ExceptionObject as Exception);

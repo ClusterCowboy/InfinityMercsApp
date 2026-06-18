@@ -3,23 +3,23 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Season.DowntimePage"
              Title="Downtime"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="16,12,16,16">
 
         <Label Grid.Row="0"
                Text="DOWNTIME EVENT"
-               FontSize="22"
+               FontSize="{DynamicResource FontSizeTitleSmall}"
                FontAttributes="Bold"
-               TextColor="White"
+               TextColor="{StaticResource TextPrimary}"
                Margin="0,0,0,12"/>
 
         <ScrollView Grid.Row="1" x:Name="EventScrollView">
             <VerticalStackLayout x:Name="EventStack" Spacing="12">
                 <Label x:Name="EmptyLabel"
                        Text="Press Roll for a random event, or pick a number and press Real."
-                       TextColor="#6B7280"
-                       FontSize="14"
+                       TextColor="{StaticResource TextMuted}"
+                       FontSize="{DynamicResource FontSizeBody}"
                        HorizontalTextAlignment="Center"
                        Margin="0,40,0,0"/>
             </VerticalStackLayout>
@@ -29,30 +29,30 @@
         <VerticalStackLayout Grid.Row="2" Spacing="6" Margin="0,12,0,0">
             <Label x:Name="RollContextLabel"
                    Text="Press ROLL for a random event, or pick a value and press REAL."
-                   TextColor="#9CA3AF"
-                   FontSize="12"
+                   TextColor="{StaticResource TextMuted}"
+                   FontSize="{DynamicResource FontSizeCaption}"
                    HorizontalTextAlignment="Center"/>
             <Grid x:Name="RollBar" ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
                 <Button Grid.Column="0"
                         x:Name="RollButton"
                         Text="ROLL"
-                        BackgroundColor="#22C55E"
-                        TextColor="Black"
+                        BackgroundColor="{StaticResource Signal}"
+                        TextColor="{StaticResource Void}"
                         FontAttributes="Bold"
                         Clicked="OnRollClicked"/>
                 <Picker Grid.Column="1"
                         x:Name="RealPicker"
                         Title="1-20"
                         WidthRequest="90"
-                        TextColor="White"
-                        BackgroundColor="#374151"/>
+                        TextColor="{StaticResource TextPrimary}"
+                        BackgroundColor="{StaticResource HairlineBright}"/>
                 <Button Grid.Column="2"
                         x:Name="RealButton"
                         Text="REAL"
                         BackgroundColor="Transparent"
-                        BorderColor="#22C55E"
+                        BorderColor="{StaticResource Signal}"
                         BorderWidth="1"
-                        TextColor="White"
+                        TextColor="{StaticResource TextPrimary}"
                         FontAttributes="Bold"
                         Clicked="OnRealClicked"/>
             </Grid>
@@ -60,8 +60,8 @@
             <Button x:Name="ContinueButton"
                     Text="BACK TO BASE"
                     BackgroundColor="Transparent"
-                    TextColor="White"
-                    BorderColor="#22C55E"
+                    TextColor="{StaticResource TextPrimary}"
+                    BorderColor="{StaticResource Signal}"
                     BorderWidth="1"
                     FontAttributes="Bold"
                     IsVisible="False"

@@ -49,7 +49,7 @@
                     <Label Text="Select a weapon from the list."
                            HorizontalTextAlignment="Center"
                            VerticalTextAlignment="Center"
-                           TextColor="#6B7280"
+                           TextColor="{StaticResource TextMuted}"
                            IsVisible="{Binding Source={x:Reference ArmoryRoot}, Path=NoWeaponSelected}" />
                     <ScrollView VerticalOptions="Fill"
                                 IsVisible="{Binding Source={x:Reference ArmoryRoot}, Path=HasSelectedWeapon}">
