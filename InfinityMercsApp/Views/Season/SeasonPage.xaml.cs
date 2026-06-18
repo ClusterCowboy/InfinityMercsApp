@@ -164,9 +164,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private CompanyViewerUnitListItem? _selectedCompanyUnit;
     private SavedImprovedCaptainStats _loadedCaptainStats = new();
 
-    private FormattedString _currentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#EF4444"));
-    private FormattedString _currentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#22C55E"));
-    private FormattedString _currentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
+    private FormattedString _currentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#F87171"));
+    private FormattedString _currentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#34D399"));
+    private FormattedString _currentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#F59E0B"));
     private bool _hasCurrentPeripherals;
     private string _selectedCaptainNameHeading = string.Empty;
     private string _selectedProfileBaseNameHeading = string.Empty;
@@ -853,17 +853,17 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var profile = _viewerViewModel.Profiles.FirstOrDefault();
         if (profile is null)
         {
-            CurrentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#EF4444"));
-            CurrentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#22C55E"));
-            CurrentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#FACC15"));
+            CurrentRangedWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#F87171"));
+            CurrentMeleeWeaponsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#34D399"));
+            CurrentPeripheralsFormatted = BuildSimpleFormatted("-", Color.FromArgb("#F59E0B"));
             HasCurrentPeripherals = false;
             return;
         }
 
-        CurrentRangedWeaponsFormatted = BuildWeaponsFormatted(profile.RangedWeapons, Color.FromArgb("#EF4444"));
-        CurrentMeleeWeaponsFormatted = BuildWeaponsFormatted(profile.MeleeWeapons, Color.FromArgb("#22C55E"));
+        CurrentRangedWeaponsFormatted = BuildWeaponsFormatted(profile.RangedWeapons, Color.FromArgb("#F87171"));
+        CurrentMeleeWeaponsFormatted = BuildWeaponsFormatted(profile.MeleeWeapons, Color.FromArgb("#34D399"));
         CurrentPeripheralsFormatted = profile.PeripheralsFormatted
-            ?? BuildSimpleFormatted(profile.Peripherals, Color.FromArgb("#FACC15"));
+            ?? BuildSimpleFormatted(profile.Peripherals, Color.FromArgb("#F59E0B"));
         HasCurrentPeripherals = !IsDashOrEmpty(profile.Peripherals);
     }
 
@@ -895,15 +895,15 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             RangedWeapons = rangedWeapons,
             RangedWeaponsFormatted = keepLoadedRangedFormatting && loadedProfile?.RangedWeaponsFormatted is not null
                 ? loadedProfile.RangedWeaponsFormatted
-                : BuildSimpleFormatted(rangedWeapons, Color.FromArgb("#EF4444")),
+                : BuildSimpleFormatted(rangedWeapons, Color.FromArgb("#F87171")),
             MeleeWeapons = meleeWeapons,
             MeleeWeaponsFormatted = keepLoadedMeleeFormatting && loadedProfile?.MeleeWeaponsFormatted is not null
                 ? loadedProfile.MeleeWeaponsFormatted
-                : BuildSimpleFormatted(meleeWeapons, Color.FromArgb("#22C55E")),
+                : BuildSimpleFormatted(meleeWeapons, Color.FromArgb("#34D399")),
             UniqueEquipment = uniqueEquipment,
             UniqueEquipmentFormatted = keepLoadedEquipmentFormatting && loadedProfile?.UniqueEquipmentFormatted is not null
                 ? loadedProfile.UniqueEquipmentFormatted
-                : BuildSimpleFormatted(uniqueEquipment, Color.FromArgb("#06B6D4")),
+                : BuildSimpleFormatted(uniqueEquipment, Color.FromArgb("#B5C0CE")),
             UniqueSkills = uniqueSkills,
             UniqueSkillsFormatted = keepLoadedSkillsFormatting && loadedProfile?.UniqueSkillsFormatted is not null
                 ? loadedProfile.UniqueSkillsFormatted
@@ -1283,6 +1283,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         public int CostCr { get; set; }
         public int Count { get; set; }
         public SortedSet<string> Sources { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public SortedSet<int> Rounds { get; } = new();
     }
 
     private async Task RefreshInventoryAsync()
@@ -1309,7 +1310,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
         var buckets = new Dictionary<string, InventoryBucket>(StringComparer.OrdinalIgnoreCase);
 
-        void AddItem(string name, string category, string source, int costCr = 0)
+        void AddItem(string name, string category, string source, int costCr = 0, int? roundIndex = null)
         {
             if (string.IsNullOrWhiteSpace(name)) return;
 
@@ -1328,6 +1329,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             bucket.Count++;
             if (!string.IsNullOrWhiteSpace(source))
                 bucket.Sources.Add(source.Trim());
+            if (roundIndex.HasValue)
+                bucket.Rounds.Add(roundIndex.Value);
         }
 
         void RemoveItem(string name)
@@ -1338,7 +1341,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 buckets[matchKey].Count--;
         }
 
-        void AddTransaction(SeasonTransaction transaction)
+        void AddTransaction(SeasonTransaction transaction, int roundIndex)
         {
             if (transaction.IsSale)
             {
@@ -1356,16 +1359,17 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 return;
             }
 
-            AddItem(catalogItem.Name, catalogItem.Category, catalogItem.StoreName, catalogItem.CostCr);
+            AddItem(catalogItem.Name, catalogItem.Category, catalogItem.StoreName, catalogItem.CostCr, roundIndex);
         }
 
+        // Round 0 = the company's initial/setup purchases.
         foreach (var transaction in seasonFile.InitialPurchases.Transactions)
-            AddTransaction(transaction);
+            AddTransaction(transaction, 0);
 
         foreach (var round in seasonFile.Rounds.OrderBy(round => round.RoundIndex))
         {
             foreach (var transaction in round.Marketplace.Transactions)
-                AddTransaction(transaction);
+                AddTransaction(transaction, round.RoundIndex);
 
             var wonItemCount = round.Downtime.WonItems.Count;
             foreach (var wonItem in round.Downtime.WonItems)
@@ -1378,13 +1382,13 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     wonCostCr = wonCatalogItem.CostCr;
                 }
 
-                AddItem(wonItem.Name, category, string.IsNullOrWhiteSpace(wonItem.Source) ? "Downtime" : wonItem.Source, wonCostCr);
+                AddItem(wonItem.Name, category, string.IsNullOrWhiteSpace(wonItem.Source) ? "Downtime" : wonItem.Source, wonCostCr, round.RoundIndex);
             }
 
             if (wonItemCount == 0 &&
                 round.Downtime.OtherEffects.Contains("Random pistol", StringComparison.OrdinalIgnoreCase))
             {
-                AddItem("Random pistol", "Sidearm", "Downtime");
+                AddItem("Random pistol", "Sidearm", "Downtime", roundIndex: round.RoundIndex);
             }
         }
 
@@ -1430,6 +1434,35 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                     store.Name,
                     item.CostCr);
             }
+
+            // Troop types are sold as armour; a purchase records the "{ArmorName} ({Type})"
+            // display name, so index them under the "Armor" category with that same name.
+            foreach (var troop in store.TroopTypes)
+            {
+                if (string.IsNullOrWhiteSpace(troop.ArmorName)) continue;
+
+                var armorName = string.IsNullOrWhiteSpace(troop.Type)
+                    ? troop.ArmorName.Trim()
+                    : $"{troop.ArmorName.Trim()} ({troop.Type})";
+                catalog[MakeInventoryCatalogKey(store.Name, armorName)] = new InventoryCatalogItem(
+                    armorName,
+                    "Armor",
+                    store.Name,
+                    troop.CostCr);
+            }
+
+            // Augments are a separate store list with no category field; index them as the
+            // "Augments" gear category so purchased augments show up in the inventory.
+            foreach (var augment in store.Augments)
+            {
+                if (string.IsNullOrWhiteSpace(augment.Name)) continue;
+
+                catalog[MakeInventoryCatalogKey(store.Name, augment.Name)] = new InventoryCatalogItem(
+                    augment.Name.Trim(),
+                    "Augments",
+                    store.Name,
+                    augment.CostCr);
+            }
         }
 
         return catalog;
@@ -1441,7 +1474,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = text,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Color.FromArgb("#6B7280"),
+            TextColor = Color.FromArgb("#8A97A8"),
             HorizontalTextAlignment = TextAlignment.Center,
             Margin = new Thickness(0, 40, 0, 0)
         });
@@ -1455,7 +1488,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = item.Name,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.WordWrap
         };
@@ -1464,19 +1497,31 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = item.Sources.Count > 0 ? string.Join(", ", item.Sources) : string.Empty,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             IsVisible = item.Sources.Count > 0
+        };
+
+        var roundsNote = item.Rounds.Count == 0
+            ? string.Empty
+            : "Bought: " + (item.Rounds.Count == 1 ? "Round " : "Rounds ") + string.Join(", ", item.Rounds);
+        var roundsLabel = new Label
+        {
+            Text = roundsNote,
+            Style = (Style)Application.Current!.Resources["LabelCaption"],
+            TextColor = Color.FromArgb("#B5C0CE"),
+            IsVisible = item.Rounds.Count > 0
         };
 
         var textStack = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center };
         textStack.Children.Add(nameLabel);
         textStack.Children.Add(sourceLabel);
+        textStack.Children.Add(roundsLabel);
 
         var countLabel = new Label
         {
             Text = $"x{item.Count}",
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Color.FromArgb("#22C55E"),
+            TextColor = Color.FromArgb("#34D399"),
             FontAttributes = FontAttributes.Bold,
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.End,
@@ -1491,7 +1536,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             var sellBtn = new Button
             {
                 Text = $"SELL ({sellPrice}cr)",
-                BackgroundColor = Color.FromArgb("#374151"),
+                BackgroundColor = Color.FromArgb("#3A4554"),
                 TextColor = Color.FromArgb("#F59E0B"),
                 BorderColor = Color.FromArgb("#F59E0B"),
                 BorderWidth = 1,
@@ -1539,8 +1584,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
         return new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(12, 8),
             Margin = new Thickness(0, 0, 0, 6),
@@ -1567,7 +1612,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         "Sidearm" => 2,
         "Accessories" => 3,
         "Roles" => 4,
-        "Exchange" => 5,
+        "Armor" => 5,
+        "Augments" => 6,
+        "Exchange" => 7,
         "General" => 99,
         _ => 50
     };
@@ -2089,16 +2136,16 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             Text = store.Name,
             Style = (Style)Application.Current!.Resources["LabelTitleSmall"],
             FontAttributes = FontAttributes.Bold,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center
         };
 
         _buyButton = new Button
         {
             Text = "BUY",
-            BackgroundColor = Color.FromArgb("#166534"),
-            TextColor = Color.FromArgb("#22C55E"),
-            BorderColor = Color.FromArgb("#22C55E"),
+            BackgroundColor = Color.FromArgb("#2A6B57"),
+            TextColor = Color.FromArgb("#34D399"),
+            BorderColor = Color.FromArgb("#34D399"),
             BorderWidth = 1,
             CornerRadius = 6,
             Style = (Style)Application.Current!.Resources["ButtonCaption"],
@@ -2124,7 +2171,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             {
                 Text = alignmentText,
                 Style = (Style)Application.Current!.Resources["LabelBody"],
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 Margin = new Thickness(0, 0, 0, 10)
             });
         }
@@ -2175,7 +2222,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         Text = text,
         Style = (Style)Application.Current!.Resources["LabelCaption"],
         FontAttributes = FontAttributes.Bold,
-        TextColor = Color.FromArgb("#6B7280"),
+        TextColor = Color.FromArgb("#8A97A8"),
         Margin = new Thickness(0, 10, 0, 2)
     };
 
@@ -2187,8 +2234,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
 
         var costText = costSwc.HasValue ? $"{costCr}cr / {costSwc}swc" : $"{costCr}cr";
 
-        var nameLabel = new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
-        var costLabel = new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#22C55E") };
+        var nameLabel = new Label { Text = itemName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Color.FromArgb("#E6EBF2") };
+        var costLabel = new Label { Text = costText, Style = (Style)Application.Current!.Resources["LabelCaption"], TextColor = Color.FromArgb("#34D399") };
 
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
         leftStack.Children.Add(nameLabel);
@@ -2200,8 +2247,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         _marketplaceRecolorActions.Add((remainingCr, remainingSwc) =>
         {
             var affordable = costCr <= remainingCr && (costSwc ?? 0) <= remainingSwc;
-            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
-            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+            nameLabel.TextColor = affordable ? Color.FromArgb("#E6EBF2") : Color.FromArgb("#F87171");
+            costLabel.TextColor = affordable ? Color.FromArgb("#34D399") : Color.FromArgb("#F87171");
             plusBtn.IsEnabled = affordable;
         });
 
@@ -2229,12 +2276,12 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var key = $"{storeName}|{displayName}";
         _inventoryItemCosts[key] = (costCr, 0);
 
-        var nameLabel = new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Colors.White };
+        var nameLabel = new Label { Text = displayName, Style = (Style)Application.Current!.Resources["LabelBody"], TextColor = Color.FromArgb("#E6EBF2") };
         var costLabel = new Label
         {
             Text = $"{costCr}cr",
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#22C55E")
+            TextColor = Color.FromArgb("#34D399")
         };
 
         var leftStack = new VerticalStackLayout { VerticalOptions = LayoutOptions.Center, Spacing = 2 };
@@ -2243,7 +2290,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = $"ARM {armText}  BTS {btsText}",
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#9CA3AF")
+            TextColor = Color.FromArgb("#8A97A8")
         });
         if (!string.IsNullOrWhiteSpace(troop.Abilities))
         {
@@ -2251,7 +2298,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             {
                 Text = troop.Abilities,
                 Style = (Style)Application.Current!.Resources["LabelCaption"],
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 LineBreakMode = LineBreakMode.WordWrap
             });
         }
@@ -2264,8 +2311,8 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         _marketplaceRecolorActions.Add((remainingCr, _) =>
         {
             var affordable = costCr <= remainingCr;
-            nameLabel.TextColor = affordable ? Colors.White : Color.FromArgb("#EF4444");
-            costLabel.TextColor = affordable ? Color.FromArgb("#22C55E") : Color.FromArgb("#EF4444");
+            nameLabel.TextColor = affordable ? Color.FromArgb("#E6EBF2") : Color.FromArgb("#F87171");
+            costLabel.TextColor = affordable ? Color.FromArgb("#34D399") : Color.FromArgb("#F87171");
             plusBtn.IsEnabled = affordable;
         });
 
@@ -2279,7 +2326,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = _inventoryCounts.GetValueOrDefault(key, 0).ToString(),
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
             MinimumWidthRequest = 28
@@ -2288,9 +2335,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var plusBtn = new Button
         {
             Text = "+",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#22C55E"),
-            BorderColor = Color.FromArgb("#4B5563"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#34D399"),
+            BorderColor = Color.FromArgb("#3A4554"),
             BorderWidth = 1,
             CornerRadius = 4,
             Style = (Style)Application.Current!.Resources["ButtonSubHeadline"],
@@ -2308,9 +2355,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var minusBtn = new Button
         {
             Text = "−",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#EF4444"),
-            BorderColor = Color.FromArgb("#4B5563"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#F87171"),
+            BorderColor = Color.FromArgb("#3A4554"),
             BorderWidth = 1,
             CornerRadius = 4,
             Style = (Style)Application.Current!.Resources["ButtonSubHeadline"],
@@ -2342,7 +2389,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var border = new Border
         {
             Content = rowGrid,
-            Stroke = Color.FromArgb("#374151"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             StrokeShape = new MauiShapes.RoundRectangle { CornerRadius = new CornerRadius(4) },
             Padding = new Thickness(12, 6, 8, 6),
@@ -2385,7 +2432,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 Text = "ABILITIES & EQUIPMENT",
                 Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#6B7280"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 Margin = new Thickness(0, 8, 0, 4)
             });
 
@@ -2401,7 +2448,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
                 {
                     Text = $"• {ability}",
                     Style = (Style)Application.Current!.Resources["LabelBody"],
-                    TextColor = isSkill ? Color.FromArgb("#60A5FA") : Colors.White,
+                    TextColor = isSkill ? Color.FromArgb("#B5C0CE") : Color.FromArgb("#E6EBF2"),
                     TextDecorations = isSkill ? TextDecorations.Underline : TextDecorations.None,
                     LineBreakMode = LineBreakMode.WordWrap
                 };
@@ -2446,14 +2493,14 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         {
             Text = label,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             VerticalTextAlignment = TextAlignment.Center
         };
         var valueView = new Label
         {
             Text = value,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.WordWrap
         };
@@ -2517,7 +2564,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         var nameLabel = new Label
         {
             Text = unit.Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.TailTruncation
         };
@@ -2533,7 +2580,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         tap.Tapped += (_, _) => { _ = SelectCompanyUnitAsync(unit); CloseUnitPicker(); };
         rowGrid.GestureRecognizers.Add(tap);
 
-        var separator = new BoxView { HeightRequest = 1, Color = Color.FromArgb("#374151") };
+        var separator = new BoxView { HeightRequest = 1, Color = Color.FromArgb("#3A4554") };
         var item = new VerticalStackLayout { Spacing = 0 };
         item.Children.Add(rowGrid);
         item.Children.Add(separator);
@@ -2617,13 +2664,21 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         InventoryTabContent.IsVisible = index == 1;
         MarketplaceTabContent.IsVisible = index == 2;
 
-        TeamTabButton.TextColor = index == 0 ? Color.FromArgb("#22C55E") : Color.FromArgb("#6B7280");
-        InventoryTabButton.TextColor = index == 1 ? Color.FromArgb("#22C55E") : Color.FromArgb("#6B7280");
-        MarketplaceTabButton.TextColor = index == 2 ? Color.FromArgb("#22C55E") : Color.FromArgb("#6B7280");
+        var activeColor = (Color)Application.Current!.Resources["Signal"];
+        var inactiveColor = (Color)Application.Current!.Resources["TextMuted"];
+
+        TeamTabButton.TextColor = index == 0 ? activeColor : inactiveColor;
+        InventoryTabButton.TextColor = index == 1 ? activeColor : inactiveColor;
+        MarketplaceTabButton.TextColor = index == 2 ? activeColor : inactiveColor;
 
         TeamTabButton.FontAttributes = index == 0 ? FontAttributes.Bold : FontAttributes.None;
         InventoryTabButton.FontAttributes = index == 1 ? FontAttributes.Bold : FontAttributes.None;
         MarketplaceTabButton.FontAttributes = index == 2 ? FontAttributes.Bold : FontAttributes.None;
+
+        // Command rail lights under the active mode key.
+        TeamTabRail.IsVisible = index == 0;
+        InventoryTabRail.IsVisible = index == 1;
+        MarketplaceTabRail.IsVisible = index == 2;
     }
 
     private async void OnPlayRoundClicked(object? sender, EventArgs e)
@@ -2757,7 +2812,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     private void BuildStoreSearchPickers()
     {
         StoreRollResultLabel.Text = "—";
-        StoreRollResultLabel.TextColor = Colors.White;
+        StoreRollResultLabel.TextColor = Color.FromArgb("#E6EBF2");
         StoreChooseArea.IsVisible = false;
         _pendingTemporaryStoreSelection = null;
         StoreSearchConfirmButton.IsEnabled = false;
@@ -2808,7 +2863,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             if (string.IsNullOrWhiteSpace(store) || ownedNames.Contains(store)) continue;
 
             StoreRollResultLabel.Text = $"Rolled {roll} — {store}";
-            StoreRollResultLabel.TextColor = Color.FromArgb("#22C55E");
+            StoreRollResultLabel.TextColor = Color.FromArgb("#34D399");
             StoreChooseArea.IsVisible = false;
             _pendingTemporaryStoreSelection = store;
             StoreSearchConfirmButton.IsEnabled = true;
@@ -2846,14 +2901,14 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         if (string.IsNullOrWhiteSpace(store))
         {
             StoreRollResultLabel.Text = "Invalid selection";
-            StoreRollResultLabel.TextColor = Color.FromArgb("#DC2626");
+            StoreRollResultLabel.TextColor = Color.FromArgb("#F87171");
             return;
         }
 
         if (ownedNames.Contains(store))
         {
             StoreRollResultLabel.Text = $"{value} — {store} (already owned — pick another)";
-            StoreRollResultLabel.TextColor = Color.FromArgb("#DC2626");
+            StoreRollResultLabel.TextColor = Color.FromArgb("#F87171");
             StoreChooseArea.IsVisible = false;
             _pendingTemporaryStoreSelection = null;
             StoreSearchConfirmButton.IsEnabled = false;
@@ -2862,7 +2917,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         }
 
         StoreRollResultLabel.Text = $"{value} — {store}";
-        StoreRollResultLabel.TextColor = Color.FromArgb("#22C55E");
+        StoreRollResultLabel.TextColor = Color.FromArgb("#34D399");
         StoreChooseArea.IsVisible = false;
         _pendingTemporaryStoreSelection = store;
         StoreSearchConfirmButton.IsEnabled = true;
@@ -2901,7 +2956,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
     {
         var equipItems = SplitProfileText(mergedProfile.UniqueEquipment);
         PopulateTwoColumnLayout(EquipmentLeftColumn, EquipmentRightColumn, equipItems,
-            Color.FromArgb("#06B6D4"));
+            Color.FromArgb("#B5C0CE"));
 
         var skillItems = SplitProfileText(mergedProfile.UniqueSkills);
         OrderSkillsLieutenantFirst(skillItems);
@@ -2941,9 +2996,9 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
         }
 
         PopulateTwoColumnLayout(WeaponsLeftColumn, WeaponsRightColumn, rangedItems,
-            Color.FromArgb("#EF4444"), name => ShowWeaponPopup(name));
+            Color.FromArgb("#F87171"), name => ShowWeaponPopup(name));
         PopulateTwoColumnLayout(CcWeaponsLeftColumn, CcWeaponsRightColumn, ccItems,
-            Color.FromArgb("#22C55E"), name => ShowWeaponPopup(name));
+            Color.FromArgb("#34D399"), name => ShowWeaponPopup(name));
     }
 
     private static void OrderSkillsLieutenantFirst(List<string> skills)
@@ -2974,7 +3029,7 @@ public partial class SeasonPage : ContentPage, IQueryAttributable
             {
                 Text = "(none)",
                 Style = (Style)Application.Current!.Resources["LabelBody"],
-                TextColor = Color.FromArgb("#6B7280")
+                TextColor = Color.FromArgb("#8A97A8")
             });
             return;
         }

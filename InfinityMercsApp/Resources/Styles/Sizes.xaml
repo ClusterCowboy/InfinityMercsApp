@@ -110,7 +110,9 @@
     <!-- Minimum tappable height (accessibility) -->
     <OnIdiom x:Key="MinTouchTarget" x:TypeArguments="x:Double" Phone="44" Tablet="48" Desktop="44" />
 
-    <!-- Corner radius for cards, buttons, borders -->
-    <OnIdiom x:Key="CornerRadiusDefault" x:TypeArguments="x:Int32" Phone="6" Tablet="8" Desktop="8" />
+    <!-- Corner radius for cards, buttons, borders. Kept crisp for the
+         terminal/datapad feel — sharp enough to read as hardware, not
+         soft consumer-app rounding. -->
+    <OnIdiom x:Key="CornerRadiusDefault" x:TypeArguments="x:Int32" Phone="3" Tablet="4" Desktop="4" />
 
 </ResourceDictionary>

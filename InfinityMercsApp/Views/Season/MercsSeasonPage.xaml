@@ -4,7 +4,7 @@
              x:Class="InfinityMercsApp.Views.Season.MercsSeasonPage"
              Title="Home"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="*,Auto">
 
@@ -21,12 +21,12 @@
             <Label Text="MERCS SEASON"
                    FontSize="{DynamicResource FontSizeHeadline}"
                    FontAttributes="Bold"
-                   TextColor="White"
+                   TextColor="{StaticResource TextPrimary}"
                    HorizontalTextAlignment="Center" />
 
             <Label Text="Campaigns, downtime, and the long war."
                    FontSize="{DynamicResource FontSizeBody}"
-                   TextColor="#6B7280"
+                   TextColor="{StaticResource TextMuted}"
                    HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
 
@@ -39,9 +39,9 @@
                         Clicked="OnLoadSeasonClicked"
                         HorizontalOptions="Fill" />
                 <Button Text="START NEW SEASON"
-                        BackgroundColor="#22C55E"
-                        TextColor="Black"
-                        BorderColor="#22C55E"
+                        BackgroundColor="{StaticResource Signal}"
+                        TextColor="{StaticResource Void}"
+                        BorderColor="{StaticResource Signal}"
                         FontAttributes="Bold"
                         Clicked="OnStartNewSeasonClicked"
                         HorizontalOptions="Fill" />
@@ -53,16 +53,16 @@
                                  Spacing="{DynamicResource SpacingMedium}">
                 <Label Text="Choose your starting point:"
                        FontSize="{DynamicResource FontSizeBody}"
-                       TextColor="#9CA3AF"
+                       TextColor="{StaticResource TextMuted}"
                        HorizontalTextAlignment="Center"
                        Margin="0,0,0,4" />
                 <Button Text="LOAD A COMPANY"
                         Clicked="OnLoadCompanyClicked"
                         HorizontalOptions="Fill" />
                 <Button Text="CREATE A NEW TEAM"
-                        BackgroundColor="#22C55E"
-                        TextColor="Black"
-                        BorderColor="#22C55E"
+                        BackgroundColor="{StaticResource Signal}"
+                        TextColor="{StaticResource Void}"
+                        BorderColor="{StaticResource Signal}"
                         FontAttributes="Bold"
                         Clicked="OnCreateNewTeamClicked"
                         HorizontalOptions="Fill" />
@@ -70,7 +70,7 @@
                         BackgroundColor="Transparent"
                         BorderColor="Transparent"
                         BorderWidth="0"
-                        TextColor="#6B7280"
+                        TextColor="{StaticResource TextMuted}"
                         Clicked="OnCancelNewSeasonClicked"
                         HorizontalOptions="Fill" />
             </VerticalStackLayout>

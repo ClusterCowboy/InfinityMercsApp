@@ -10,11 +10,11 @@
             <TapGestureRecognizer Tapped="OnItemTapped" />
         </Border.GestureRecognizers>
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="6" />
+            <RoundRectangle CornerRadius="4" />
         </Border.StrokeShape>
         <Border.Triggers>
             <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                <Setter Property="BackgroundColor" Value="#334155" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PlateRaised}" />
             </DataTrigger>
             <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
                 <Setter Property="BackgroundColor" Value="Transparent" />
@@ -38,17 +38,17 @@
                     <Label
                         x:Name="HorizontalNameLabel"
                         Text="{Binding Name}"
-                        TextColor="White" />
+                        TextColor="{StaticResource TextPrimary}" />
                     <Label
                         x:Name="HorizontalFormattedNameLabel"
                         FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
-                        TextColor="White"
+                        TextColor="{StaticResource TextPrimary}"
                         IsVisible="False" />
                 </Grid>
                 <Label
                     Text="{Binding Subtitle}"
                     FontSize="{DynamicResource FontSizeCaption}"
-                    TextColor="#6B7280"
+                    TextColor="{StaticResource TextMuted}"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
             <skia:SKCanvasView
@@ -71,7 +71,7 @@
                 Grid.Column="4"
                 Text="{Binding Source={x:Reference FactionListItemRoot}, Path=TrailingText}"
                 FontAttributes="Bold"
-                TextColor="White"
+                TextColor="{StaticResource TextPrimary}"
                 VerticalOptions="Start"
                 IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=HasTrailingText}" />
         </Grid>
@@ -96,7 +96,7 @@
                     x:Name="VerticalNameLabel"
                     Text="{Binding Name}"
                     FontSize="{DynamicResource FontSizeBody}"
-                    TextColor="White"
+                    TextColor="{StaticResource TextPrimary}"
                     LineBreakMode="WordWrap"
                     MaxLines="3"
                     HorizontalTextAlignment="Center"
@@ -105,7 +105,7 @@
                     x:Name="VerticalFormattedNameLabel"
                     FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
                     FontSize="{DynamicResource FontSizeBody}"
-                    TextColor="White"
+                    TextColor="{StaticResource TextPrimary}"
                     LineBreakMode="WordWrap"
                     MaxLines="3"
                     HorizontalTextAlignment="Center"

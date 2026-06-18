@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Season.LoadSeasonPage"
              Title="Load Season"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="12">
 
@@ -11,11 +11,11 @@
             <Label Text="Load Season"
                    FontSize="{DynamicResource FontSizeDisplay}"
                    FontAttributes="Bold"
-                   TextColor="White"
+                   TextColor="{StaticResource TextPrimary}"
                    HorizontalTextAlignment="Start" />
             <Label Text="All saved seasons are listed below."
                    FontSize="{DynamicResource FontSizeBody}"
-                   TextColor="#9CA3AF"
+                   TextColor="{StaticResource TextMuted}"
                    HorizontalTextAlignment="Start" />
         </VerticalStackLayout>
 
@@ -27,8 +27,8 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border StrokeThickness="1"
-                                Stroke="#374151"
-                                BackgroundColor="#1F2937"
+                                Stroke="{StaticResource Hairline}"
+                                BackgroundColor="{StaticResource Plate}"
                                 Padding="14,12"
                                 Margin="0,0,0,8">
                             <Border.StrokeShape>
@@ -41,10 +41,10 @@
                                 <Label Text="{Binding DisplayName}"
                                        FontSize="{DynamicResource FontSizeSubHeadline}"
                                        FontAttributes="Bold"
-                                       TextColor="White" />
+                                       TextColor="{StaticResource TextPrimary}" />
                                 <Label Text="{Binding Subtitle}"
                                        FontSize="{DynamicResource FontSizeCaption}"
-                                       TextColor="#9CA3AF" />
+                                       TextColor="{StaticResource TextMuted}" />
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
@@ -52,8 +52,8 @@
             </CollectionView>
 
             <Border IsVisible="{Binding ShowEmptyState}"
-                    BackgroundColor="#1F2937"
-                    Stroke="#374151"
+                    BackgroundColor="{StaticResource Plate}"
+                    Stroke="{StaticResource Hairline}"
                     StrokeThickness="1"
                     Padding="{DynamicResource PaddingSection}"
                     VerticalOptions="Center"
@@ -63,7 +63,7 @@
                 </Border.StrokeShape>
                 <Label Text="No saved seasons yet. Start a new season to begin your campaign."
                        FontSize="{DynamicResource FontSizeBody}"
-                       TextColor="#6B7280"
+                       TextColor="{StaticResource TextMuted}"
                        HorizontalTextAlignment="Center" />
             </Border>
 

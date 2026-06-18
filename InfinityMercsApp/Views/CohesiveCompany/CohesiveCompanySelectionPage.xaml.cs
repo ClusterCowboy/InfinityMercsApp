@@ -40,7 +40,7 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
     private string _companyName = "Company Name";
     private readonly Command _startCompanyCommand;
     private bool _showCompanyNameValidationError;
-    private Color _companyNameBorderColor = Color.FromArgb("#6B7280");
+    private Color _companyNameBorderColor = Color.FromArgb("#8A97A8");
     private bool _loaded;
     private string _pageHeading = string.Empty;
     private bool _restrictSelectedUnitProfilesToFto;

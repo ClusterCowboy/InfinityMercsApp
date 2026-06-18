@@ -4,7 +4,7 @@
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Controls.AddFactionButtonView"
              x:Name="AddFactionButtonRoot">
-    <Border Stroke="#22C55E"
+    <Border Stroke="{StaticResource Signal}"
             StrokeThickness="2"
             WidthRequest="40"
             HeightRequest="40"

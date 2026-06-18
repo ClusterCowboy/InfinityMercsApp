@@ -382,7 +382,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var arrow = new Label
         {
             Text = "▶",
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             FontSize = 12,
             WidthRequest = 20,
             VerticalTextAlignment = TextAlignment.Center,
@@ -392,7 +392,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var nameLabel = new Label
         {
             Text = unit.Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.TailTruncation
@@ -420,7 +420,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var woundBadge = new Label
         {
             Text = "2",
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontSize = 9,
             FontAttributes = FontAttributes.Bold,
             HorizontalTextAlignment = TextAlignment.End,
@@ -451,8 +451,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             FontSize = 13,
             HeightRequest = 36,
             Padding = new Thickness(0),
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             CornerRadius = 4
         };
         addWoundBtn.Clicked += (_, _) =>
@@ -467,8 +467,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             FontSize = 13,
             HeightRequest = 36,
             Padding = new Thickness(0),
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             CornerRadius = 4
         };
         removeWoundBtn.Clicked += (_, _) =>
@@ -483,8 +483,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             FontSize = 13,
             HeightRequest = 36,
             Padding = new Thickness(0),
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#22C55E"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#34D399"),
             CornerRadius = 4
         };
         xpBtn.Clicked += async (_, _) =>
@@ -589,7 +589,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var row = new VerticalStackLayout { Spacing = 0 };
         row.Children.Add(headerGrid);
         row.Children.Add(contentArea);
-        row.Children.Add(new BoxView { HeightRequest = 1, Color = Color.FromArgb("#374151") });
+        row.Children.Add(new BoxView { HeightRequest = 1, Color = Color.FromArgb("#3A4554") });
         return row;
     }
 
@@ -599,7 +599,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             Padding = new Thickness(16, 4, 16, 12),
             Spacing = 8,
-            BackgroundColor = Color.FromArgb("#1A2332")
+            BackgroundColor = Color.FromArgb("#161B22")
         };
 
         // Stats table
@@ -619,7 +619,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             {
                 Text = statHeaders[i],
                 FontSize = 10,
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 HorizontalTextAlignment = TextAlignment.Center,
                 FontAttributes = FontAttributes.Bold
             };
@@ -627,7 +627,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             {
                 Text = statValues[i],
                 FontSize = 13,
-                TextColor = Colors.White,
+                TextColor = Color.FromArgb("#E6EBF2"),
                 HorizontalTextAlignment = TextAlignment.Center
             };
             Grid.SetColumn(h, i); Grid.SetRow(h, 0);
@@ -639,7 +639,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         var normalizedSkills = NormalizeBsAttackText(unit.Skills);
 
-        AddTwoColumnDetailSection(container, unit.Equipment, Color.FromArgb("#06B6D4"));
+        AddTwoColumnDetailSection(container, unit.Equipment, Color.FromArgb("#B5C0CE"));
         AddTwoColumnDetailSection(container, normalizedSkills, Color.FromArgb("#F59E0B"));
 
         var hasXVisor = ContainsXVisor(normalizedSkills) || ContainsXVisor(unit.Equipment);
@@ -779,8 +779,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     {
         return new Border
         {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#4B5563"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(10, 8),
             StrokeShape = new RoundRectangle { CornerRadius = 6 },
@@ -788,7 +788,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             Content = new Label
             {
                 Text = displayName,
-                TextColor = Colors.White,
+                TextColor = Color.FromArgb("#E6EBF2"),
                 FontAttributes = FontAttributes.Bold,
                 FontSize = 13,
                 VerticalTextAlignment = TextAlignment.Center
@@ -812,7 +812,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         stack.Children.Add(new Label
         {
             Text = displayName,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontSize = 15,
             FontAttributes = FontAttributes.Bold,
             HorizontalTextAlignment = TextAlignment.Center,
@@ -827,7 +827,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 stack.Children.Add(new BoxView
                 {
                     HeightRequest = 1,
-                    Color = Color.FromArgb("#374151"),
+                    Color = Color.FromArgb("#3A4554"),
                     Margin = new Thickness(0, 5, 0, 5)
                 });
 
@@ -845,7 +845,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             var modeLabel = new Label
             {
                 Text = string.IsNullOrWhiteSpace(weapon.Mode) ? weapon.Name : weapon.Mode,
-                TextColor = Colors.White,
+                TextColor = Color.FromArgb("#E6EBF2"),
                 FontAttributes = FontAttributes.Bold,
                 Style = (Style)Application.Current!.Resources["LabelCaption"],
                 VerticalTextAlignment = TextAlignment.Center,
@@ -900,7 +900,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             rightStack.Children.Add(new Label
             {
                 Text = "›",
-                TextColor = Color.FromArgb("#6B7280"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 FontSize = 18,
                 VerticalTextAlignment = TextAlignment.Center
             });
@@ -925,8 +925,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         var border = new Border
         {
-            BackgroundColor = Color.FromArgb("#111827"),
-            Stroke = Color.FromArgb("#4B5563"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(10, 8),
             StrokeShape = new RoundRectangle { CornerRadius = 6 },
@@ -954,13 +954,13 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             Padding = new Thickness(12, 8, 12, 8),
             Spacing = 8,
-            BackgroundColor = Color.FromArgb("#0F1923")
+            BackgroundColor = Color.FromArgb("#161B22")
         };
 
         stack.Children.Add(new Label
         {
             Text = title ?? weapons[0].Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 16,
             HorizontalTextAlignment = TextAlignment.Center
@@ -1008,8 +1008,8 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         var doneBtn = new Button
         {
             Text = "Done",
-            BackgroundColor = Color.FromArgb("#22C55E"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#34D399"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             CornerRadius = 8,
             HeightRequest = 36,
@@ -1024,7 +1024,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         Content = new ScrollView
         {
-            BackgroundColor = Color.FromArgb("#0F1923"),
+            BackgroundColor = Color.FromArgb("#161B22"),
             Content = stack
         };
 
@@ -1051,7 +1051,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             Text = label,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             VerticalTextAlignment = TextAlignment.Center
         });
         inner.Children.Add(new Label
@@ -1059,13 +1059,13 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             Text = value,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
             FontAttributes = FontAttributes.Bold,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center
         });
         return new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#3A4554"),
             StrokeThickness = 1,
             Padding = new Thickness(6, 2),
             VerticalOptions = LayoutOptions.Center,
@@ -1078,7 +1078,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
     {
         return new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
+            BackgroundColor = Color.FromArgb("#161B22"),
             Stroke = Color.FromArgb("#F59E0B"),
             StrokeThickness = 1,
             Padding = new Thickness(6, 1),
@@ -1238,7 +1238,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         var totalLabel = new Label
         {
-            TextColor = Color.FromArgb("#22C55E"),
+            TextColor = Color.FromArgb("#34D399"),
             FontSize = 12,
             FontAttributes = FontAttributes.Bold,
             HorizontalTextAlignment = TextAlignment.Center,
@@ -1251,12 +1251,12 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         {
             Padding = new Thickness(12, 6, 12, 6),
             Spacing = 0,
-            BackgroundColor = Color.FromArgb("#0F1923")
+            BackgroundColor = Color.FromArgb("#161B22")
         };
         stack.Children.Add(new Label
         {
             Text = unit.Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 15,
             HorizontalTextAlignment = TextAlignment.Center
@@ -1268,13 +1268,13 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             stack.Children.Add(new BoxView
             {
                 HeightRequest = 1,
-                Color = Color.FromArgb("#374151"),
+                Color = Color.FromArgb("#3A4554"),
                 Margin = new Thickness(0, 7, 0, 4)
             });
             stack.Children.Add(new Label
             {
                 Text = description,
-                TextColor = Color.FromArgb("#D1D5DB"),
+                TextColor = Color.FromArgb("#B5C0CE"),
                 FontSize = 12,
                 LineBreakMode = LineBreakMode.WordWrap
             });
@@ -1283,7 +1283,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         // Suppress the CheckedChanged that fires when IsChecked is set during initialisation.
         CheckBox MakeCheckBox(bool current, Action<bool> onChanged)
         {
-            var cb = new CheckBox { Color = Color.FromArgb("#22C55E") };
+            var cb = new CheckBox { Color = Color.FromArgb("#34D399") };
             var suppress = true;
             cb.CheckedChanged += (_, e) =>
             {
@@ -1301,7 +1301,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             var lbl = new Label
             {
                 Text = label,
-                TextColor = Color.FromArgb("#9CA3AF"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 FontSize = 12,
                 VerticalTextAlignment = TextAlignment.Center
             };
@@ -1348,7 +1348,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
                 var numLbl = new Label
                 {
                     Text = $"#{idx + 1}",
-                    TextColor = Color.FromArgb("#9CA3AF"),
+                    TextColor = Color.FromArgb("#8A97A8"),
                     FontSize = 12,
                     VerticalTextAlignment = TextAlignment.Center
                 };
@@ -1401,10 +1401,10 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
             var leftItem = new HorizontalStackLayout { Spacing = 4 };
             leftItem.Children.Add(cbAttempt);
-            leftItem.Children.Add(new Label { Text = "Attempted", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            leftItem.Children.Add(new Label { Text = "Attempted", TextColor = Color.FromArgb("#8A97A8"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
             var rightItem = new HorizontalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
             rightItem.Children.Add(cbSucceed);
-            rightItem.Children.Add(new Label { Text = "Succeeded", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            rightItem.Children.Add(new Label { Text = "Succeeded", TextColor = Color.FromArgb("#8A97A8"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
             Grid.SetColumn(leftItem, 0);
             Grid.SetColumn(rightItem, 1);
             pairGrid.Children.Add(leftItem);
@@ -1443,10 +1443,10 @@ public partial class GameModePage : ContentPage, IQueryAttributable
             pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
             var leftItem = new HorizontalStackLayout { Spacing = 4 };
             leftItem.Children.Add(cbScan);
-            leftItem.Children.Add(new Label { Text = "Scanned", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            leftItem.Children.Add(new Label { Text = "Scanned", TextColor = Color.FromArgb("#8A97A8"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
             var rightItem = new HorizontalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.End };
             rightItem.Children.Add(cbScanFo);
-            rightItem.Children.Add(new Label { Text = "Scanned with FO", TextColor = Color.FromArgb("#9CA3AF"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
+            rightItem.Children.Add(new Label { Text = "Scanned with FO", TextColor = Color.FromArgb("#8A97A8"), FontSize = 12, VerticalTextAlignment = TextAlignment.Center });
             Grid.SetColumn(leftItem, 0);
             Grid.SetColumn(rightItem, 1);
             pairGrid.Children.Add(leftItem);
@@ -1460,14 +1460,14 @@ public partial class GameModePage : ContentPage, IQueryAttributable
         stack.Children.Add(new BoxView
         {
             HeightRequest = 1,
-            Color = Color.FromArgb("#374151"),
+            Color = Color.FromArgb("#3A4554"),
             Margin = new Thickness(0, 8, 0, 4)
         });
         var doneBtn = new Button
         {
             Text = "Done",
-            BackgroundColor = Color.FromArgb("#22C55E"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#34D399"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             CornerRadius = 8,
             HeightRequest = 36
@@ -1481,7 +1481,7 @@ public partial class GameModePage : ContentPage, IQueryAttributable
 
         Content = new ScrollView
         {
-            BackgroundColor = Color.FromArgb("#0F1923"),
+            BackgroundColor = Color.FromArgb("#161B22"),
             Content = stack
         };
 

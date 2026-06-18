@@ -26,7 +26,7 @@
                        HorizontalTextAlignment="Center"
                        Margin="0,24,0,0"
                        FontSize="{DynamicResource FontSizeSectionHeader}"
-                       TextColor="#6B7280" />
+                       TextColor="{StaticResource TextMuted}" />
 
                 <!-- Store detail, hidden until a store is selected -->
                 <VerticalStackLayout x:Name="StoreContentLayout"
@@ -41,10 +41,10 @@
                                    FontAttributes="Bold" />
                             <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreFactionsDisplay}"
                                    FontSize="{DynamicResource FontSizeBody}"
-                                   TextColor="#9CA3AF" />
+                                   TextColor="{StaticResource TextMuted}" />
                             <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreMetaDisplay}"
                                    FontSize="{DynamicResource FontSizeBody}"
-                                   TextColor="#9CA3AF" />
+                                   TextColor="{StaticResource TextMuted}" />
                         </VerticalStackLayout>
                     </Border>
 
@@ -65,7 +65,7 @@
                                             <Label Text="{Binding Category}"
                                                    FontSize="{DynamicResource FontSizeBody}"
                                                    FontAttributes="Bold,Italic"
-                                                   TextColor="#60A5FA"
+                                                   TextColor="{StaticResource TextSecondary}"
                                                    Padding="2,4,2,0" />
 
                                             <!-- Item button cards -->
@@ -73,10 +73,10 @@
                                                                  Spacing="4">
                                                 <BindableLayout.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Stroke="#374151"
+                                                        <Border Stroke="{StaticResource Hairline}"
                                                                 StrokeThickness="1"
                                                                 StrokeShape="RoundRectangle 4"
-                                                                BackgroundColor="#1F2937"
+                                                                BackgroundColor="{StaticResource Plate}"
                                                                 Padding="12,10"
                                                                 Margin="0,0,0,0"
                                                                 MinimumHeightRequest="52">
@@ -92,19 +92,19 @@
                                                                     <Label Text="{Binding Name}"
                                                                            FontSize="{DynamicResource FontSizeBody}"
                                                                            FontAttributes="Bold"
-                                                                           TextColor="White" />
+                                                                           TextColor="{StaticResource TextPrimary}" />
                                                                     <Label Text="{Binding CostDisplay}"
                                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                                           TextColor="#22C55E" />
+                                                                           TextColor="{StaticResource Signal}" />
                                                                 </VerticalStackLayout>
                                                                 <HorizontalStackLayout Grid.Column="1"
                                                                                        IsVisible="{Binding Source={x:Reference MarketplacesRoot}, Path=ShowQuantityControls}"
                                                                                        Spacing="6"
                                                                                        VerticalOptions="Center">
                                                                     <Button Text="−"
-                                                                            BackgroundColor="#374151"
-                                                                            TextColor="#EF4444"
-                                                                            BorderColor="#4B5563"
+                                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                                            TextColor="{StaticResource Danger}"
+                                                                            BorderColor="{StaticResource HairlineBright}"
                                                                             BorderWidth="1"
                                                                             CornerRadius="4"
                                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -115,14 +115,14 @@
                                                                             Clicked="OnItemDecrement" />
                                                                     <Label Text="{Binding Quantity}"
                                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                                           TextColor="White"
+                                                                           TextColor="{StaticResource TextPrimary}"
                                                                            VerticalTextAlignment="Center"
                                                                            HorizontalTextAlignment="Center"
                                                                            MinimumWidthRequest="28" />
                                                                     <Button Text="+"
-                                                                            BackgroundColor="#374151"
-                                                                            TextColor="#22C55E"
-                                                                            BorderColor="#4B5563"
+                                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                                            TextColor="{StaticResource Signal}"
+                                                                            BorderColor="{StaticResource HairlineBright}"
                                                                             BorderWidth="1"
                                                                             CornerRadius="4"
                                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -156,10 +156,10 @@
                                                  Spacing="4">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Stroke="#374151"
+                                        <Border Stroke="{StaticResource Hairline}"
                                                 StrokeThickness="1"
                                                 StrokeShape="RoundRectangle 4"
-                                                BackgroundColor="#1F2937"
+                                                BackgroundColor="{StaticResource Plate}"
                                                 Padding="12,10"
                                                 MinimumHeightRequest="52">
                                             <Border.GestureRecognizers>
@@ -174,16 +174,16 @@
                                                     <Label Text="{Binding DisplayName}"
                                                            FontSize="{DynamicResource FontSizeBody}"
                                                            FontAttributes="Bold"
-                                                           TextColor="White" />
+                                                           TextColor="{StaticResource TextPrimary}" />
                                                     <Label Text="{Binding StatDisplay}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="#9CA3AF" />
+                                                           TextColor="{StaticResource TextMuted}" />
                                                     <Label Text="{Binding CostDisplay}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="#22C55E" />
+                                                           TextColor="{StaticResource Signal}" />
                                                     <Label Text="{Binding Abilities}"
                                                            FontSize="{DynamicResource FontSizeCaption}"
-                                                           TextColor="#6B7280"
+                                                           TextColor="{StaticResource TextMuted}"
                                                            LineBreakMode="WordWrap"
                                                            IsVisible="{Binding HasAbilities}" />
                                                 </VerticalStackLayout>
@@ -192,9 +192,9 @@
                                                                        Spacing="6"
                                                                        VerticalOptions="Center">
                                                     <Button Text="−"
-                                                            BackgroundColor="#374151"
-                                                            TextColor="#EF4444"
-                                                            BorderColor="#4B5563"
+                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                            TextColor="{StaticResource Danger}"
+                                                            BorderColor="{StaticResource HairlineBright}"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -205,14 +205,14 @@
                                                             Clicked="OnTroopDecrement" />
                                                     <Label Text="{Binding Quantity}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="White"
+                                                           TextColor="{StaticResource TextPrimary}"
                                                            VerticalTextAlignment="Center"
                                                            HorizontalTextAlignment="Center"
                                                            MinimumWidthRequest="28" />
                                                     <Button Text="+"
-                                                            BackgroundColor="#374151"
-                                                            TextColor="#22C55E"
-                                                            BorderColor="#4B5563"
+                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                            TextColor="{StaticResource Signal}"
+                                                            BorderColor="{StaticResource HairlineBright}"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -242,10 +242,10 @@
                                                  Spacing="4">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Stroke="#374151"
+                                        <Border Stroke="{StaticResource Hairline}"
                                                 StrokeThickness="1"
                                                 StrokeShape="RoundRectangle 4"
-                                                BackgroundColor="#1F2937"
+                                                BackgroundColor="{StaticResource Plate}"
                                                 Padding="12,10"
                                                 MinimumHeightRequest="52">
                                             <Border.GestureRecognizers>
@@ -260,23 +260,23 @@
                                                     <Label Text="{Binding Name}"
                                                            FontSize="{DynamicResource FontSizeBody}"
                                                            FontAttributes="Bold"
-                                                           TextColor="White" />
+                                                           TextColor="{StaticResource TextPrimary}" />
                                                     <Label Text="{Binding RequirementDisplay}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="#9CA3AF"
+                                                           TextColor="{StaticResource TextMuted}"
                                                            IsVisible="{Binding HasRequirement}" />
                                                     <Label Text="{Binding CostDisplay}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="#22C55E" />
+                                                           TextColor="{StaticResource Signal}" />
                                                 </VerticalStackLayout>
                                                 <HorizontalStackLayout Grid.Column="1"
                                                                        IsVisible="{Binding Source={x:Reference MarketplacesRoot}, Path=ShowQuantityControls}"
                                                                        Spacing="6"
                                                                        VerticalOptions="Center">
                                                     <Button Text="−"
-                                                            BackgroundColor="#374151"
-                                                            TextColor="#EF4444"
-                                                            BorderColor="#4B5563"
+                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                            TextColor="{StaticResource Danger}"
+                                                            BorderColor="{StaticResource HairlineBright}"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -287,14 +287,14 @@
                                                             Clicked="OnAugmentDecrement" />
                                                     <Label Text="{Binding Quantity}"
                                                            FontSize="{DynamicResource FontSizeBody}"
-                                                           TextColor="White"
+                                                           TextColor="{StaticResource TextPrimary}"
                                                            VerticalTextAlignment="Center"
                                                            HorizontalTextAlignment="Center"
                                                            MinimumWidthRequest="28" />
                                                     <Button Text="+"
-                                                            BackgroundColor="#374151"
-                                                            TextColor="#22C55E"
-                                                            BorderColor="#4B5563"
+                                                            BackgroundColor="{StaticResource HairlineBright}"
+                                                            TextColor="{StaticResource Signal}"
+                                                            BorderColor="{StaticResource HairlineBright}"
                                                             BorderWidth="1"
                                                             CornerRadius="4"
                                                             FontSize="{DynamicResource FontSizeSubHeadline}"
@@ -320,23 +320,23 @@
         <Grid x:Name="MarketplacePopupOverlay"
               Grid.Row="0" Grid.RowSpan="2"
               IsVisible="False"
-              BackgroundColor="#D0111827">
-            <Border BackgroundColor="#1F2937"
-                    Stroke="#374151"
+              BackgroundColor="#D00E1116">
+            <Border BackgroundColor="{StaticResource Plate}"
+                    Stroke="{StaticResource Hairline}"
                     StrokeThickness="1"
-                    StrokeShape="RoundRectangle 8"
+                    StrokeShape="RoundRectangle 4"
                     Margin="16,60,16,24">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0"
                           ColumnDefinitions="Auto,*"
-                          BackgroundColor="#374151"
+                          BackgroundColor="{StaticResource HairlineBright}"
                           Padding="4,4">
                         <Button x:Name="PopupBackButton"
                                 Grid.Column="0"
                                 Text="← Back"
                                 BackgroundColor="Transparent"
                                 BorderColor="Transparent"
-                                TextColor="#22C55E"
+                                TextColor="{StaticResource Signal}"
                                 FontAttributes="Bold"
                                 Padding="8,0"
                                 Clicked="OnPopupBackClicked" />
@@ -344,7 +344,7 @@
                                Grid.Column="1"
                                FontSize="{DynamicResource FontSizeBody}"
                                FontAttributes="Bold"
-                               TextColor="White"
+                               TextColor="{StaticResource TextPrimary}"
                                VerticalTextAlignment="Center"
                                Padding="4,0,8,0"
                                LineBreakMode="TailTruncation" />

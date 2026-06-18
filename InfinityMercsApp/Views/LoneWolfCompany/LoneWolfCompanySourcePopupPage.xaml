@@ -4,15 +4,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:InfinityMercsApp.Views"
     x:Class="InfinityMercsApp.Views.LoneWolfCompanySourcePopupPage"
-    BackgroundColor="#80000000"
+    BackgroundColor="#800E1116"
     Shell.NavBarIsVisible="False">
 
     <Grid Padding="32">
         <Border
-            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F2937}"
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#161B22}"
             StrokeThickness="0"
             Padding="24"
-            StrokeShape="RoundRectangle 16"
+            StrokeShape="RoundRectangle 4"
             HorizontalOptions="Fill"
             VerticalOptions="Center">
             <Grid RowSpacing="20">

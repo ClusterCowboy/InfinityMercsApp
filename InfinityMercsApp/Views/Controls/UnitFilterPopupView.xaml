@@ -8,8 +8,8 @@
     <Grid Padding="20">
         <Border
             x:Name="PopupContainer"
-            BackgroundColor="#1F1F23"
-            Stroke="#4B5563"
+            BackgroundColor="{StaticResource Plate}"
+            Stroke="{StaticResource HairlineBright}"
             StrokeThickness="1"
             Padding="16"
             VerticalOptions="Center"
@@ -22,25 +22,25 @@
                     Text="Choose criteria to filter units by"
                     FontSize="{DynamicResource FontSizeSubHeadline}"
                     FontAttributes="Bold"
-                    TextColor="White" />
+                    TextColor="{StaticResource TextPrimary}" />
 
                 <Grid Grid.Row="1"
                       ColumnDefinitions="1.1*,1.4*"
                       ColumnSpacing="14"
                       VerticalOptions="FillAndExpand"
                       MinimumHeightRequest="320">
-                    <Border Grid.Column="0" Stroke="#374151" StrokeThickness="1" Padding="10">
+                    <Border Grid.Column="0" Stroke="{StaticResource Hairline}" StrokeThickness="1" Padding="10">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Criteria" TextColor="White" FontAttributes="Bold" />
+                            <Label Text="Criteria" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
                             <CollectionView ItemsSource="{Binding CriteriaItems}"
                                             SelectionMode="Single"
                                             SelectedItem="{Binding SelectedCriterion}">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Stroke="#4B5563" StrokeThickness="1" Padding="8" Margin="0,0,0,6">
+                                        <Border Stroke="{StaticResource HairlineBright}" StrokeThickness="1" Padding="8" Margin="0,0,0,6">
                                             <VerticalStackLayout Spacing="3">
-                                                <Label Text="{Binding Title}" TextColor="White" FontAttributes="Bold" />
-                                                <Label Text="{Binding Summary}" TextColor="#9CA3AF" FontSize="{DynamicResource FontSizeCaption}" />
+                                                <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                                <Label Text="{Binding Summary}" TextColor="{StaticResource TextMuted}" FontSize="{DynamicResource FontSizeCaption}" />
                                             </VerticalStackLayout>
                                         </Border>
                                     </DataTemplate>
@@ -49,11 +49,11 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Border Grid.Column="1" Stroke="#374151" StrokeThickness="1" Padding="10">
+                    <Border Grid.Column="1" Stroke="{StaticResource Hairline}" StrokeThickness="1" Padding="10">
                         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Grid.Column="0" Text="{Binding SelectedCriterionTitle}" TextColor="White" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" />
-                                <Picker Grid.Column="1" WidthRequest="110" TextColor="White" ItemsSource="{Binding MatchModeOptions}" SelectedItem="{Binding SelectedActiveMatchMode}" />
+                                <Label Grid.Column="0" Text="{Binding SelectedCriterionTitle}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" />
+                                <Picker Grid.Column="1" WidthRequest="110" TextColor="{StaticResource TextPrimary}" ItemsSource="{Binding MatchModeOptions}" SelectedItem="{Binding SelectedActiveMatchMode}" />
                             </Grid>
 
                             <CollectionView Grid.Row="1"
@@ -69,7 +69,7 @@
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" />
                                             <Label Grid.Column="1"
                                                    Text="{Binding Value}"
-                                                   TextColor="White"
+                                                   TextColor="{StaticResource TextPrimary}"
                                                    VerticalTextAlignment="Center"
                                                    LineBreakMode="WordWrap" />
                                         </Grid>
@@ -118,18 +118,18 @@
                       RowDefinitions="Auto,Auto,Auto"
                       ColumnSpacing="12"
                       RowSpacing="10">
-                    <Label Grid.Row="0" Grid.Column="0" Text="Points" VerticalTextAlignment="Center" TextColor="White" />
+                    <Label Grid.Row="0" Grid.Column="0" Text="Points" VerticalTextAlignment="Center" TextColor="{StaticResource TextPrimary}" />
                     <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8">
-                        <Picker WidthRequest="120" TextColor="White" ItemsSource="{Binding PointsOptions}" SelectedItem="{Binding SelectedMinPoints}" />
-                        <Label Text="to" VerticalTextAlignment="Center" TextColor="White" />
-                        <Picker WidthRequest="120" TextColor="White" ItemsSource="{Binding PointsOptions}" SelectedItem="{Binding SelectedMaxPoints}" />
+                        <Picker WidthRequest="120" TextColor="{StaticResource TextPrimary}" ItemsSource="{Binding PointsOptions}" SelectedItem="{Binding SelectedMinPoints}" />
+                        <Label Text="to" VerticalTextAlignment="Center" TextColor="{StaticResource TextPrimary}" />
+                        <Picker WidthRequest="120" TextColor="{StaticResource TextPrimary}" ItemsSource="{Binding PointsOptions}" SelectedItem="{Binding SelectedMaxPoints}" />
                     </HorizontalStackLayout>
 
                     <Label Grid.Row="1"
                            Grid.Column="0"
                            Text="Lieutenant Only Units"
                            VerticalTextAlignment="Center"
-                           TextColor="White"
+                           TextColor="{StaticResource TextPrimary}"
                            IsVisible="{Binding LieutenantOnlyUnitsEnabled}" />
                     <CheckBox Grid.Row="1"
                               Grid.Column="1"
@@ -142,11 +142,11 @@
                            Grid.Column="0"
                            Text="Fireteam View"
                            VerticalTextAlignment="Center"
-                           TextColor="White"
+                           TextColor="{StaticResource TextPrimary}"
                            IsVisible="{Binding TeamsViewEnabled}">
                         <Label.Triggers>
                             <DataTrigger TargetType="Label" Binding="{Binding TeamsViewEnabled}" Value="False">
-                                <Setter Property="TextColor" Value="#6B7280" />
+                                <Setter Property="TextColor" Value="{StaticResource TextMuted}" />
                             </DataTrigger>
                         </Label.Triggers>
                     </Label>

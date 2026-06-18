@@ -3,15 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="InfinityMercsApp.Views.Season.MissionOutcomePage"
              Title="Mission Outcome"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="16,12,16,16">
 
         <Label Grid.Row="0"
                Text="MISSION OUTCOME"
-               FontSize="22"
+               FontSize="{DynamicResource FontSizeTitleSmall}"
                FontAttributes="Bold"
-               TextColor="White"
+               TextColor="{StaticResource TextPrimary}"
                Margin="0,0,0,12"/>
 
         <ScrollView Grid.Row="1">
@@ -20,30 +20,30 @@
                 <!-- Victory / Defeat selection -->
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Mission Result"
-                           TextColor="#D1D5DB"
-                           FontSize="13"
+                           TextColor="{StaticResource TextSecondary}"
+                           FontSize="{DynamicResource FontSizeBody}"
                            FontAttributes="Bold" />
                     <Grid ColumnSpacing="8" ColumnDefinitions="*,*">
                         <Button x:Name="VictoryButton"
                                 Grid.Column="0"
                                 Text="VICTORY"
-                                BackgroundColor="#374151"
-                                TextColor="#22C55E"
+                                BackgroundColor="{StaticResource HairlineBright}"
+                                TextColor="{StaticResource Signal}"
                                 FontAttributes="Bold"
-                                FontSize="14"
+                                FontSize="{DynamicResource FontSizeBody}"
                                 HeightRequest="44"
-                                CornerRadius="6"
+                                CornerRadius="4"
                                 Padding="0"
                                 Clicked="OnVictoryClicked" />
                         <Button x:Name="DefeatButton"
                                 Grid.Column="1"
                                 Text="DEFEAT"
-                                BackgroundColor="#374151"
-                                TextColor="#DC2626"
+                                BackgroundColor="{StaticResource HairlineBright}"
+                                TextColor="{StaticResource Danger}"
                                 FontAttributes="Bold"
-                                FontSize="14"
+                                FontSize="{DynamicResource FontSizeBody}"
                                 HeightRequest="44"
-                                CornerRadius="6"
+                                CornerRadius="4"
                                 Padding="0"
                                 Clicked="OnDefeatClicked" />
                     </Grid>
@@ -52,21 +52,21 @@
                 <!-- Points scored -->
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Points Scored"
-                           TextColor="#D1D5DB"
-                           FontSize="13"
+                           TextColor="{StaticResource TextSecondary}"
+                           FontSize="{DynamicResource FontSizeBody}"
                            FontAttributes="Bold" />
                     <Picker x:Name="PointsPicker"
                             Title="Select points (0-10)..."
-                            TextColor="White"
-                            TitleColor="#9CA3AF"
-                            BackgroundColor="#374151"
+                            TextColor="{StaticResource TextPrimary}"
+                            TitleColor="{StaticResource TextMuted}"
+                            BackgroundColor="{StaticResource HairlineBright}"
                             SelectedIndexChanged="OnPointsChanged" />
                 </VerticalStackLayout>
 
                 <!-- Outcome breakdown card -->
                 <Border Stroke="Transparent"
-                        BackgroundColor="#1F2937"
-                        StrokeShape="RoundRectangle 6"
+                        BackgroundColor="{StaticResource Plate}"
+                        StrokeShape="RoundRectangle 4"
                         Padding="14">
                     <VerticalStackLayout x:Name="BreakdownStack" Spacing="6" />
                 </Border>
@@ -77,8 +77,8 @@
         <Button Grid.Row="2"
                 x:Name="ContinueButton"
                 Text="GO TO EXPERIENCE"
-                BackgroundColor="#22C55E"
-                TextColor="Black"
+                BackgroundColor="{StaticResource Signal}"
+                TextColor="{StaticResource Void}"
                 FontAttributes="Bold"
                 Margin="0,12,0,0"
                 IsEnabled="False"

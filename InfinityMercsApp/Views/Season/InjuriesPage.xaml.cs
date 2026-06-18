@@ -71,7 +71,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
             InjuryStack.Children.Add(new BoxView
             {
                 HeightRequest = 1,
-                Color = Color.FromArgb("#374151"),
+                Color = Color.FromArgb("#3A4554"),
                 Margin = new Thickness(0)
             });
         }
@@ -96,12 +96,12 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
                                         Button rollBtn, Label rollVirtuallyLabel)
     {
         avoidLabel.Text = "Injury Incurred";
-        avoidLabel.TextColor = Color.FromArgb("#DC2626");
+        avoidLabel.TextColor = Color.FromArgb("#F87171");
         passFailRow.IsVisible = false;
         injuryPicker.IsVisible = true;
         rollBtn.IsEnabled = false;
         rollBtn.Opacity = 0.38;
-        rollVirtuallyLabel.TextColor = Color.FromArgb("#6B7280");
+        rollVirtuallyLabel.TextColor = Color.FromArgb("#8A97A8");
     }
 
     private static async Task<View> BuildInjuryRowAsync(InjuryItem item, Action onResolved, Action<string>? onInjured = null)
@@ -110,7 +110,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         {
             Padding = new Thickness(16, 16, 16, 16),
             Spacing = 10,
-            BackgroundColor = Color.FromArgb("#1A2332")
+            BackgroundColor = Color.FromArgb("#161B22")
         };
 
         // Unit header: [icon] [name (star)] [Avoid Injury (right)]
@@ -131,7 +131,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var nameLabel = new Label
         {
             Text = item.Name,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 16,
             VerticalTextAlignment = TextAlignment.Center,
@@ -141,7 +141,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var avoidLabel = new Label
         {
             Text = $"Avoid Injury: {ComputePhMinusThree(item.PhValue)}",
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             FontSize = 14,
             FontAttributes = FontAttributes.Bold,
             VerticalTextAlignment = TextAlignment.Center,
@@ -175,7 +175,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var rollVirtuallyLabel = new Label
         {
             Text = "Roll Virtually",
-            TextColor = Color.FromArgb("#D1D5DB"),
+            TextColor = Color.FromArgb("#B5C0CE"),
             FontSize = 14,
             VerticalTextAlignment = TextAlignment.Center
         };
@@ -186,7 +186,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         // Row 0, Col 1 — Roll button + result label stacked vertically
         var resultLabel = new Label
         {
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontSize = 13,
             FontAttributes = FontAttributes.Bold,
             HorizontalTextAlignment = TextAlignment.Center,
@@ -196,8 +196,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var rollBtn = new Button
         {
             Text = "Roll",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Colors.White,
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#E6EBF2"),
             CornerRadius = 6,
             FontSize = 14,
             HeightRequest = 36,
@@ -212,8 +212,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var injuryPicker = new Picker
         {
             Title = "Select Injury…",
-            TextColor = Colors.White,
-            BackgroundColor = Color.FromArgb("#374151"),
+            TextColor = Color.FromArgb("#E6EBF2"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
             HorizontalOptions = LayoutOptions.Fill,
             IsVisible = false
         };
@@ -223,8 +223,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var passBtn = new Button
         {
             Text = "PASS",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#22C55E"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#34D399"),
             CornerRadius = 6,
             FontSize = 14,
             FontAttributes = FontAttributes.Bold,
@@ -236,8 +236,8 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var failBtn = new Button
         {
             Text = "FAIL",
-            BackgroundColor = Color.FromArgb("#374151"),
-            TextColor = Color.FromArgb("#DC2626"),
+            BackgroundColor = Color.FromArgb("#3A4554"),
+            TextColor = Color.FromArgb("#F87171"),
             CornerRadius = 6,
             FontSize = 14,
             FontAttributes = FontAttributes.Bold,
@@ -271,7 +271,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
             resultLabel.Text = targetNum >= 0
                 ? $"Rolled: {roll} — {(passed ? "PASS" : "FAIL")}"
                 : $"Rolled: {roll}";
-            resultLabel.TextColor = passed ? Color.FromArgb("#22C55E") : Color.FromArgb("#DC2626");
+            resultLabel.TextColor = passed ? Color.FromArgb("#34D399") : Color.FromArgb("#F87171");
             resultLabel.IsVisible = true;
 
             rollBtn.IsEnabled = false;
@@ -297,11 +297,11 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
 
         passBtn.Clicked += (_, _) =>
         {
-            passBtn.BackgroundColor = Color.FromArgb("#166534");
+            passBtn.BackgroundColor = Color.FromArgb("#2A6B57");
             failBtn.IsEnabled = false;
             rollBtn.IsEnabled = false;
             rollBtn.Opacity = 0.38;
-            rollVirtuallyLabel.TextColor = Color.FromArgb("#6B7280");
+            rollVirtuallyLabel.TextColor = Color.FromArgb("#8A97A8");
             if (!realityResolved) { realityResolved = true; onResolved(); }
         };
 
@@ -333,7 +333,7 @@ public partial class InjuriesPage : ContentPage, IQueryAttributable
         var rollRealityLabel = new Label
         {
             Text = "Roll In Reality",
-            TextColor = Color.FromArgb("#D1D5DB"),
+            TextColor = Color.FromArgb("#B5C0CE"),
             FontSize = 14,
             VerticalTextAlignment = TextAlignment.Center
         };

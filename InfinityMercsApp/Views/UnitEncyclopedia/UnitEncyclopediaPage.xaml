@@ -35,7 +35,7 @@
                     <Label
                         Text="{Binding Status}"
                         FontSize="{DynamicResource FontSizeCaption}"
-                        TextColor="#6B7280" />
+                        TextColor="{StaticResource TextMuted}" />
                 </VerticalStackLayout>
 
                 <ScrollView Grid.Row="3" x:Name="FactionScrollView">
@@ -61,13 +61,13 @@
                     <Button Grid.Column="0" Text="Units" Command="{Binding ShowUnitsTabCommand}" CornerRadius="8">
                         <Button.Triggers>
                             <DataTrigger TargetType="Button" Binding="{Binding ShowUnitsTab}" Value="True">
-                                <Setter Property="TextColor" Value="White" />
-                                <Setter Property="BorderColor" Value="#22C55E" />
+                                <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+                                <Setter Property="BorderColor" Value="{StaticResource Signal}" />
                                 <Setter Property="BorderWidth" Value="3" />
                             </DataTrigger>
                             <DataTrigger TargetType="Button" Binding="{Binding ShowUnitsTab}" Value="False">
-                                <Setter Property="TextColor" Value="White" />
-                                <Setter Property="BorderColor" Value="#22C55E" />
+                                <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+                                <Setter Property="BorderColor" Value="{StaticResource Signal}" />
                                 <Setter Property="BorderWidth" Value="2" />
                             </DataTrigger>
                         </Button.Triggers>
@@ -75,13 +75,13 @@
                     <Button Grid.Column="1" Text="Fireteams" Command="{Binding ShowFireteamsTabCommand}" CornerRadius="8">
                         <Button.Triggers>
                             <DataTrigger TargetType="Button" Binding="{Binding ShowFireteamsTab}" Value="True">
-                                <Setter Property="TextColor" Value="White" />
-                                <Setter Property="BorderColor" Value="#22C55E" />
+                                <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+                                <Setter Property="BorderColor" Value="{StaticResource Signal}" />
                                 <Setter Property="BorderWidth" Value="3" />
                             </DataTrigger>
                             <DataTrigger TargetType="Button" Binding="{Binding ShowFireteamsTab}" Value="False">
-                                <Setter Property="TextColor" Value="White" />
-                                <Setter Property="BorderColor" Value="#22C55E" />
+                                <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+                                <Setter Property="BorderColor" Value="{StaticResource Signal}" />
                                 <Setter Property="BorderWidth" Value="2" />
                             </DataTrigger>
                         </Button.Triggers>
@@ -111,7 +111,7 @@
                                 PaintSurface="OnUnitSelectionFilterCanvasPaintSurface" />
                         </Border>
                     </Grid>
-                    <Label Grid.Row="1" Text="{Binding UnitsStatus}" TextColor="#6B7280" />
+                    <Label Grid.Row="1" Text="{Binding UnitsStatus}" TextColor="{StaticResource TextMuted}" />
                     <ScrollView Grid.Row="2" x:Name="UnitScrollView">
                         <ScrollView.GestureRecognizers>
                             <PanGestureRecognizer PanUpdated="OnUnitListPanUpdated" />
@@ -144,7 +144,7 @@
                             <Label Text="{Binding FireteamCoreCount}" FontSize="{DynamicResource FontSizeSubHeadline}" HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
                     </Grid>
-                    <Label Grid.Row="2" Text="{Binding FireteamsStatus}" TextColor="#6B7280" />
+                    <Label Grid.Row="2" Text="{Binding FireteamsStatus}" TextColor="{StaticResource TextMuted}" />
                     <ScrollView Grid.Row="3">
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Fireteams}" Spacing="8">
                             <BindableLayout.ItemTemplate>
@@ -211,7 +211,7 @@
             x:Name="UnitFilterOverlay"
             Grid.ColumnSpan="3"
             IsVisible="False"
-            BackgroundColor="#88000000"
+            BackgroundColor="#880E1116"
             InputTransparent="False"
             ZIndex="100">
             <ContentView

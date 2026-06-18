@@ -9,7 +9,7 @@
             <TapGestureRecognizer Tapped="OnItemTapped" />
         </Border.GestureRecognizers>
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="6" />
+            <RoundRectangle CornerRadius="4" />
         </Border.StrokeShape>
 
         <Grid
@@ -26,11 +26,11 @@
             <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
                 <Label
                     Text="{Binding Name}"
-                    TextColor="White" />
+                    TextColor="{StaticResource TextPrimary}" />
                 <Label
                     Text="{Binding Subtitle}"
                     FontSize="{DynamicResource FontSizeCaption}"
-                    TextColor="#6B7280"
+                    TextColor="{StaticResource TextMuted}"
                     IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
         </Grid>

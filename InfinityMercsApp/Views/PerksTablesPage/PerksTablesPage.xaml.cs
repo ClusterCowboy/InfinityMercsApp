@@ -330,7 +330,7 @@ public partial class PerksTablesPage : ContentPage
         return new Border
         {
             StrokeThickness = 1,
-            BackgroundColor = Color.FromArgb("#1F2937"),
+            BackgroundColor = Color.FromArgb("#161B22"),
             Padding = 8,
             Content = new Label
             {
@@ -338,7 +338,7 @@ public partial class PerksTablesPage : ContentPage
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
-                TextColor = Colors.White
+                TextColor = Color.FromArgb("#E6EBF2")
             }
         };
     }
@@ -348,7 +348,7 @@ public partial class PerksTablesPage : ContentPage
         return new Border
         {
             StrokeThickness = 1,
-            BackgroundColor = Color.FromArgb("#111827"),
+            BackgroundColor = Color.FromArgb("#0E1116"),
             Padding = new Thickness(8, 10),
             MinimumWidthRequest = 70,
             Content = new Label
@@ -357,7 +357,7 @@ public partial class PerksTablesPage : ContentPage
                 FontAttributes = FontAttributes.Bold,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
-                TextColor = Colors.White
+                TextColor = Color.FromArgb("#E6EBF2")
             }
         };
     }
@@ -368,8 +368,8 @@ public partial class PerksTablesPage : ContentPage
         {
             StrokeThickness = 1,
             BackgroundColor = hasText
-                ? Color.FromArgb("#3322C55E")
-                : Color.FromArgb("#0B1220"),
+                ? Color.FromArgb("#3334D399")
+                : Color.FromArgb("#161B22"),
             Padding = new Thickness(10, 8),
             HorizontalOptions = LayoutOptions.Fill,
             Content = new Label
@@ -379,7 +379,7 @@ public partial class PerksTablesPage : ContentPage
                 LineBreakMode = LineBreakMode.WordWrap,
                 VerticalTextAlignment = TextAlignment.Center,
                 HorizontalTextAlignment = TextAlignment.Center,
-                TextColor = Colors.White
+                TextColor = Color.FromArgb("#E6EBF2")
             }
         };
     }
@@ -512,7 +512,7 @@ public partial class PerksTablesPage : ContentPage
 
         public void Draw(ICanvas canvas, RectF dirtyRect)
         {
-            canvas.StrokeColor = Color.FromArgb("#22C55E");
+            canvas.StrokeColor = Color.FromArgb("#34D399");
             canvas.StrokeSize = 2f;
 
             foreach (var line in _lines)

@@ -134,7 +134,7 @@
                 </Border>
                 <Label
                     Text="Enter Company Name"
-                    TextColor="#EF4444"
+                    TextColor="{StaticResource Danger}"
                     VerticalOptions="Center"
                     IsVisible="{Binding ShowCompanyNameValidationError}" />
             </HorizontalStackLayout>
@@ -164,7 +164,7 @@
             Grid.RowSpan="2"
             Grid.ColumnSpan="2"
             IsVisible="False"
-            BackgroundColor="#88000000"
+            BackgroundColor="#880E1116"
             InputTransparent="False"
             ZIndex="100">
             <ContentView

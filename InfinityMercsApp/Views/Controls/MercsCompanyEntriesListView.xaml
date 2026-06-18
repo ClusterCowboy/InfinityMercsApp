@@ -24,7 +24,7 @@
         <CollectionView.EmptyView>
             <Label
                 Text="{Binding Source={x:Reference MercsEntriesListRoot}, Path=EmptyText}"
-                TextColor="#6B7280" />
+                TextColor="{StaticResource TextMuted}" />
         </CollectionView.EmptyView>
     </CollectionView>
 

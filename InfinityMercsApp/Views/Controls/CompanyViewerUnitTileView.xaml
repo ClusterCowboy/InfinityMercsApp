@@ -5,7 +5,7 @@
              x:Class="InfinityMercsApp.Views.Controls.CompanyViewerUnitTileView">
 
     <Border x:Name="TileBorder"
-            Padding="6"
+            Padding="0"
             Stroke="{Binding TileStroke}"
             StrokeThickness="{Binding TileStrokeThickness}"
             MinimumWidthRequest="126"
@@ -15,18 +15,26 @@
             <PanGestureRecognizer PanUpdated="OnTilePanUpdated" />
         </Border.GestureRecognizers>
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="8" />
+            <RoundRectangle CornerRadius="4" />
         </Border.StrokeShape>
         <Border.Triggers>
+            <!-- Rank reads as elevation: the captain's dossier sits on a raised plate, not a colour wash. -->
             <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="False">
-                <Setter Property="BackgroundColor" Value="#1F2937" />
+                <Setter Property="BackgroundColor" Value="{StaticResource Plate}" />
             </DataTrigger>
             <DataTrigger TargetType="Border" Binding="{Binding IsLieutenant}" Value="True">
-                <Setter Property="BackgroundColor" Value="#803A8E3A" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PlateRaised}" />
             </DataTrigger>
         </Border.Triggers>
 
-        <VerticalStackLayout Spacing="4" HorizontalOptions="Center" VerticalOptions="Center">
+        <Grid RowDefinitions="3,*" RowSpacing="0">
+            <!-- Command rail: lights in the unit's faction accent when this dossier is the active selection. -->
+            <BoxView Grid.Row="0"
+                     HeightRequest="3"
+                     VerticalOptions="Start"
+                     BackgroundColor="{Binding SelectionAccentColor}"
+                     IsVisible="{Binding IsSelected}" />
+            <VerticalStackLayout Grid.Row="1" Padding="6" Spacing="4" HorizontalOptions="Center" VerticalOptions="Center">
             <Label Text="{Binding Name}"
                    HorizontalTextAlignment="Center"
                    FontAttributes="Bold"
@@ -63,11 +71,12 @@
             <Label Text="{Binding BaseUnitDisplayName}"
                    HorizontalTextAlignment="Center"
                    FontSize="{DynamicResource FontSizeCaption}"
-                   TextColor="#D1D5DB"
+                   TextColor="{StaticResource TextSecondary}"
                    MaxLines="3"
                    WidthRequest="112"
                    LineBreakMode="WordWrap" />
-        </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Grid>
     </Border>
 
 </ContentView>

@@ -203,7 +203,7 @@ public partial class MarketplacesPage : ContentPage
             {
                 Text = "Loading…",
                 Style = (Style)Application.Current!.Resources["LabelBody"],
-                TextColor = Color.FromArgb("#6B7280"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 Margin = new Thickness(0, 2, 0, 0)
             });
             PopupContentArea.Children.Add(wikiContainer);
@@ -223,7 +223,7 @@ public partial class MarketplacesPage : ContentPage
                 {
                     Text = "(No description available)",
                     Style = (Style)Application.Current!.Resources["LabelBody"],
-                    TextColor = Color.FromArgb("#6B7280")
+                    TextColor = Color.FromArgb("#8A97A8")
                 });
             }
             else
@@ -252,7 +252,7 @@ public partial class MarketplacesPage : ContentPage
                 Text = "ABILITIES & EQUIPMENT",
                 Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#6B7280"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 Margin = new Thickness(0, 8, 0, 4)
             });
 
@@ -268,7 +268,7 @@ public partial class MarketplacesPage : ContentPage
                 {
                     Text = $"• {ability}",
                     Style = (Style)Application.Current!.Resources["LabelBody"],
-                    TextColor = isSkill ? Color.FromArgb("#60A5FA") : Colors.White,
+                    TextColor = isSkill ? Color.FromArgb("#B5C0CE") : Color.FromArgb("#E6EBF2"),
                     TextDecorations = isSkill ? TextDecorations.Underline : TextDecorations.None,
                     LineBreakMode = LineBreakMode.WordWrap
                 };
@@ -318,7 +318,7 @@ public partial class MarketplacesPage : ContentPage
                 case Services.WikiBlockType.SectionHeader:
                     container.Children.Add(new Border
                     {
-                        BackgroundColor = Color.FromArgb("#4B5563"),
+                        BackgroundColor = Color.FromArgb("#3A4554"),
                         StrokeThickness = 0,
                         Padding = new Thickness(10, 6),
                         Margin = new Thickness(0, 8, 0, 2),
@@ -327,7 +327,7 @@ public partial class MarketplacesPage : ContentPage
                             Text = block.Text,
                             Style = (Style)Application.Current!.Resources["LabelBody"],
                             FontAttributes = FontAttributes.Bold,
-                            TextColor = Colors.White
+                            TextColor = Color.FromArgb("#E6EBF2")
                         }
                     });
                     break;
@@ -337,7 +337,7 @@ public partial class MarketplacesPage : ContentPage
                     {
                         Text = block.Text,
                         Style = (Style)Application.Current!.Resources["LabelBody"],
-                        TextColor = Color.FromArgb("#D1D5DB"),
+                        TextColor = Color.FromArgb("#B5C0CE"),
                         LineBreakMode = LineBreakMode.WordWrap,
                         Margin = new Thickness(0, 4, 0, 0)
                     });
@@ -358,7 +358,7 @@ public partial class MarketplacesPage : ContentPage
                     {
                         Text = "▶",
                         Style = (Style)Application.Current!.Resources["LabelMicro"],
-                        TextColor = Color.FromArgb("#6B7280"),
+                        TextColor = Color.FromArgb("#8A97A8"),
                         VerticalTextAlignment = TextAlignment.Start,
                         Margin = new Thickness(0, 3, 0, 0)
                     });
@@ -368,7 +368,7 @@ public partial class MarketplacesPage : ContentPage
                         Text = block.Text,
                         Style = (Style)Application.Current!.Resources["LabelBody"],
                         FontAttributes = block.Bold ? FontAttributes.Bold : FontAttributes.None,
-                        TextColor = block.Bold ? Colors.White : Color.FromArgb("#D1D5DB"),
+                        TextColor = block.Bold ? Color.FromArgb("#E6EBF2") : Color.FromArgb("#B5C0CE"),
                         LineBreakMode = LineBreakMode.WordWrap
                     };
                     Grid.SetColumn(textLabel, 1);
@@ -392,14 +392,14 @@ public partial class MarketplacesPage : ContentPage
         {
             Text = labelText,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             VerticalTextAlignment = TextAlignment.Center
         };
         var valueView = new Label
         {
             Text = value,
             Style = (Style)Application.Current!.Resources["LabelBody"],
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             LineBreakMode = LineBreakMode.WordWrap
         };

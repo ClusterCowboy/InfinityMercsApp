@@ -1845,7 +1845,7 @@ public sealed class CompanyViewerUnitListItem : BaseViewModel, IViewerListItem
     public string UnitVitality { get; init; } = "-";
     public string UnitS { get; init; } = "-";
     public Color SelectionAccentColor { get; init; } = Color.FromArgb("#93C5FD");
-    public Color TileStroke => IsSelected ? SelectionAccentColor : Color.FromArgb("#4B5563");
+    public Color TileStroke => IsSelected ? SelectionAccentColor : Color.FromArgb("#3A4554");
     public double TileStrokeThickness => IsSelected ? 2d : 1d;
     public int ExperiencePoints { get; init; }
     public int ExperienceLevel => CompanyUnitExperienceRanks.GetRankLevel(ExperiencePoints);

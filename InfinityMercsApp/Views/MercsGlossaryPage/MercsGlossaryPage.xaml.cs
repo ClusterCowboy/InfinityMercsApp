@@ -271,8 +271,8 @@ public partial class MercsGlossaryPage : ContentPage
         html, body {
             margin: 0;
             padding: 0;
-            background: #1e1e1e;
-            color: #f3f4f6;
+            background: #0E1116;
+            color: #E6EBF2;
             font-family: Segoe UI, Arial, sans-serif;
             font-size: 18px;
             line-height: 1.4;
@@ -281,7 +281,7 @@ public partial class MercsGlossaryPage : ContentPage
             padding: 6px;
         }
         h1, h2, h3, h4, h5, h6 {
-            color: #f9fafb;
+            color: #E6EBF2;
             margin-top: 0.6em;
             margin-bottom: 0.3em;
         }
@@ -291,8 +291,8 @@ public partial class MercsGlossaryPage : ContentPage
         }
         code, pre {
             font-family: Consolas, "Courier New", monospace;
-            background: #111827;
-            color: #e5e7eb;
+            background: #161B22;
+            color: #B5C0CE;
         }
         pre {
             padding: 0.4em;
@@ -300,7 +300,7 @@ public partial class MercsGlossaryPage : ContentPage
             overflow-x: auto;
         }
         a {
-            color: #60a5fa;
+            color: #34D399;
         }
     </style>
 </head>

@@ -173,7 +173,7 @@ public partial class WeaponDetailCardView : ContentView
             ContentStack.Children.Add(new Label
             {
                 Text = weapon.Mode,
-                TextColor = Colors.White,
+                TextColor = Color.FromArgb("#E6EBF2"),
                 FontAttributes = FontAttributes.Bold,
                 Style = (Style)Application.Current!.Resources["LabelBody"],
                 Margin = new Thickness(0, 0, 0, 4)
@@ -194,7 +194,7 @@ public partial class WeaponDetailCardView : ContentView
                 Text = "SPECIAL RULES",
                 Style = (Style)Application.Current!.Resources["LabelCaption"],
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#6B7280"),
+                TextColor = Color.FromArgb("#8A97A8"),
                 Margin = new Thickness(0, 6, 0, 2)
             });
 
@@ -213,7 +213,7 @@ public partial class WeaponDetailCardView : ContentView
                 {
                     Text = prop,
                     Style = (Style)Application.Current!.Resources["LabelBody"],
-                    TextColor = Color.FromArgb("#60A5FA"),
+                    TextColor = Color.FromArgb("#34D399"),
                     TextDecorations = TextDecorations.Underline,
                     LineBreakMode = LineBreakMode.WordWrap
                 };
@@ -251,7 +251,7 @@ public partial class WeaponDetailCardView : ContentView
         var nameLabel = new Label
         {
             Text = DisplayName,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             FontAttributes = FontAttributes.Bold,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
             VerticalTextAlignment = TextAlignment.Center,
@@ -280,7 +280,7 @@ public partial class WeaponDetailCardView : ContentView
         rightStack.Children.Add(new Label
         {
             Text = "›",
-            TextColor = Color.FromArgb("#6B7280"),
+            TextColor = Color.FromArgb("#8A97A8"),
             FontSize = 18,
             VerticalTextAlignment = TextAlignment.Center
         });
@@ -315,7 +315,7 @@ public partial class WeaponDetailCardView : ContentView
         {
             Text = label,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             VerticalTextAlignment = TextAlignment.Center
         });
         inner.Children.Add(new Label
@@ -323,14 +323,14 @@ public partial class WeaponDetailCardView : ContentView
             Text = value,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
             FontAttributes = FontAttributes.Bold,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center
         });
 
         return new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
-            Stroke = Color.FromArgb("#374151"),
+            BackgroundColor = Color.FromArgb("#161B22"),
+            Stroke = Color.FromArgb("#2C3440"),
             StrokeThickness = 1,
             Padding = new Thickness(6, 2),
             VerticalOptions = LayoutOptions.Center,
@@ -344,7 +344,7 @@ public partial class WeaponDetailCardView : ContentView
     {
         var border = new Border
         {
-            BackgroundColor = Color.FromArgb("#1F2937"),
+            BackgroundColor = Color.FromArgb("#161B22"),
             Stroke = Color.FromArgb("#F59E0B"),
             StrokeThickness = 1,
             Padding = new Thickness(6, 1),
@@ -424,7 +424,7 @@ public partial class WeaponDetailCardView : ContentView
         {
             Text = label,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
-            TextColor = Color.FromArgb("#9CA3AF"),
+            TextColor = Color.FromArgb("#8A97A8"),
             VerticalTextAlignment = TextAlignment.Center,
             Margin = new Thickness(0, 0, 6, 0)
         });
@@ -434,7 +434,7 @@ public partial class WeaponDetailCardView : ContentView
             Text = value,
             Style = (Style)Application.Current!.Resources["LabelCaption"],
             FontAttributes = FontAttributes.Bold,
-            TextColor = Colors.White,
+            TextColor = Color.FromArgb("#E6EBF2"),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.End,
             HorizontalOptions = LayoutOptions.Fill

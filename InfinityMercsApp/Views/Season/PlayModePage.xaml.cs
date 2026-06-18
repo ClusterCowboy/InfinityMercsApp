@@ -71,8 +71,8 @@ public partial class PlayModePage : ContentPage, IQueryAttributable
             : $"{_deployedSlotCount} / 6 slots";
 
     public Color DeploymentStatusColor => IsEliteDeployment
-        ? Color.FromArgb("#22C55E")
-        : Color.FromArgb("#9CA3AF");
+        ? Color.FromArgb("#34D399")
+        : Color.FromArgb("#8A97A8");
 
 
     public PlayModePage(
@@ -645,7 +645,7 @@ public sealed class DeploymentUnitItem : BaseViewModel, IViewerListItem
         }
     }
 
-    public Color TileStroke => IsSelected ? Color.FromArgb("#22C55E") : Color.FromArgb("#374151");
+    public Color TileStroke => IsSelected ? Color.FromArgb("#34D399") : Color.FromArgb("#3A4554");
     public double TileStrokeThickness => IsSelected ? 2.0 : 1.0;
 }
 

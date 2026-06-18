@@ -4,14 +4,14 @@
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.Season.GameModePage"
              Title="CONTRACT IN PROGRESS"
-             BackgroundColor="#111827">
+             BackgroundColor="{StaticResource Void}">
 
     <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0">
 
         <!-- Round header band -->
         <Border Grid.Row="0"
-                BackgroundColor="#1F2937"
-                Stroke="#374151"
+                BackgroundColor="{StaticResource Plate}"
+                Stroke="{StaticResource Hairline}"
                 StrokeThickness="1"
                 Padding="8,6"
                 StrokeShape="Rectangle">
@@ -19,12 +19,12 @@
                 <Button x:Name="EndRoundButton"
                         Grid.Column="0"
                         Text="END"
-                        BackgroundColor="#DC2626"
-                        BorderColor="#DC2626"
+                        BackgroundColor="{StaticResource Danger}"
+                        BorderColor="{StaticResource Danger}"
                         BorderWidth="2"
-                        TextColor="White"
+                        TextColor="{StaticResource TextPrimary}"
                         FontAttributes="Bold"
-                        FontSize="14"
+                        FontSize="{DynamicResource FontSizeBody}"
                         HeightRequest="36"
                         WidthRequest="60"
                         Padding="4,0"
@@ -36,7 +36,7 @@
                        Text="Round 1"
                        FontSize="{DynamicResource FontSizeSubHeadline}"
                        FontAttributes="Bold"
-                       TextColor="#22C55E"
+                       TextColor="{StaticResource Signal}"
                        HorizontalTextAlignment="Center"
                        VerticalTextAlignment="Center" />
                 <Button x:Name="NextRoundButton"
@@ -45,7 +45,7 @@
                         BackgroundColor="Transparent"
                         BorderColor="Transparent"
                         BorderWidth="0"
-                        TextColor="#22C55E"
+                        TextColor="{StaticResource Signal}"
                         FontSize="22"
                         FontAttributes="Bold"
                         HeightRequest="36"
@@ -83,7 +83,7 @@
                     <TapGestureRecognizer Tapped="OnRegColorTapped" />
                 </HorizontalStackLayout.GestureRecognizers>
                 <skia:SKCanvasView x:Name="RegColorCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnRegColorPaint" />
-                <Label x:Name="RegCountLabel" Text="0" TextColor="#22C55E" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+                <Label x:Name="RegCountLabel" Text="0" TextColor="{StaticResource Signal}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
             </HorizontalStackLayout>
         </Grid>
 
@@ -94,28 +94,28 @@
                     <TapGestureRecognizer Tapped="OnLtGreyTapped" />
                 </HorizontalStackLayout.GestureRecognizers>
                 <skia:SKCanvasView x:Name="LtGreyCanvas"  WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnLtGreyPaint" />
-                <Label x:Name="LtGreyCountLabel"  Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+                <Label x:Name="LtGreyCountLabel"  Text="0" TextColor="{StaticResource TextMuted}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
                 <HorizontalStackLayout.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnImpGreyTapped" />
                 </HorizontalStackLayout.GestureRecognizers>
                 <skia:SKCanvasView x:Name="ImpGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnImpGreyPaint" />
-                <Label x:Name="ImpGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+                <Label x:Name="ImpGreyCountLabel" Text="0" TextColor="{StaticResource TextMuted}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Grid.Column="2" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
                 <HorizontalStackLayout.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnIrrGreyTapped" />
                 </HorizontalStackLayout.GestureRecognizers>
                 <skia:SKCanvasView x:Name="IrrGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnIrrGreyPaint" />
-                <Label x:Name="IrrGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+                <Label x:Name="IrrGreyCountLabel" Text="0" TextColor="{StaticResource TextMuted}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Grid.Column="3" HorizontalOptions="Center" VerticalOptions="Center" Spacing="4">
                 <HorizontalStackLayout.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnRegGreyTapped" />
                 </HorizontalStackLayout.GestureRecognizers>
                 <skia:SKCanvasView x:Name="RegGreyCanvas" WidthRequest="44" HeightRequest="44" VerticalOptions="Center" PaintSurface="OnRegGreyPaint" />
-                <Label x:Name="RegGreyCountLabel" Text="0" TextColor="#9CA3AF" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
+                <Label x:Name="RegGreyCountLabel" Text="0" TextColor="{StaticResource TextMuted}" FontAttributes="Bold" FontSize="{DynamicResource FontSizeSubHeadline}" VerticalTextAlignment="Center" />
             </HorizontalStackLayout>
         </Grid>
 

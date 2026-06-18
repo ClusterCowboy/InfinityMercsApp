@@ -35,10 +35,10 @@ public partial class MissionOutcomePage : ContentPage, IQueryAttributable
     private void OnVictoryClicked(object sender, EventArgs e)
     {
         _victory = true;
-        VictoryButton.BackgroundColor = Color.FromArgb("#166534");
-        VictoryButton.TextColor = Colors.White;
-        DefeatButton.BackgroundColor = Color.FromArgb("#374151");
-        DefeatButton.TextColor = Color.FromArgb("#DC2626");
+        VictoryButton.BackgroundColor = Color.FromArgb("#2A6B57");
+        VictoryButton.TextColor = Color.FromArgb("#E6EBF2");
+        DefeatButton.BackgroundColor = Color.FromArgb("#3A4554");
+        DefeatButton.TextColor = Color.FromArgb("#F87171");
         MissionOutcomePageData.Victory = true;
         RebuildBreakdown();
         UpdateContinueState();
@@ -48,9 +48,9 @@ public partial class MissionOutcomePage : ContentPage, IQueryAttributable
     {
         _victory = false;
         DefeatButton.BackgroundColor = Color.FromArgb("#7F1D1D");
-        DefeatButton.TextColor = Colors.White;
-        VictoryButton.BackgroundColor = Color.FromArgb("#374151");
-        VictoryButton.TextColor = Color.FromArgb("#22C55E");
+        DefeatButton.TextColor = Color.FromArgb("#E6EBF2");
+        VictoryButton.BackgroundColor = Color.FromArgb("#3A4554");
+        VictoryButton.TextColor = Color.FromArgb("#34D399");
         MissionOutcomePageData.Victory = false;
         RebuildBreakdown();
         UpdateContinueState();
@@ -89,7 +89,7 @@ public partial class MissionOutcomePage : ContentPage, IQueryAttributable
         BreakdownStack.Children.Add(new BoxView
         {
             HeightRequest = 1,
-            Color = Color.FromArgb("#374151"),
+            Color = Color.FromArgb("#3A4554"),
             Margin = new Thickness(0, 4, 0, 4)
         });
         BreakdownStack.Children.Add(MakeRow("Mission Credits", missionCredits.ToString(CultureInfo.InvariantCulture)));
@@ -100,7 +100,7 @@ public partial class MissionOutcomePage : ContentPage, IQueryAttributable
         BreakdownStack.Children.Add(new BoxView
         {
             HeightRequest = 1,
-            Color = Color.FromArgb("#374151"),
+            Color = Color.FromArgb("#3A4554"),
             Margin = new Thickness(0, 4, 0, 4)
         });
         BreakdownStack.Children.Add(MakeRow("SUM", sum.ToString(CultureInfo.InvariantCulture), boldRight: true));
@@ -121,14 +121,14 @@ public partial class MissionOutcomePage : ContentPage, IQueryAttributable
         var left = new Label
         {
             Text = label,
-            TextColor = Color.FromArgb("#D1D5DB"),
+            TextColor = Color.FromArgb("#B5C0CE"),
             FontSize = 14,
             VerticalTextAlignment = TextAlignment.Center
         };
         var right = new Label
         {
             Text = value,
-            TextColor = rightColor ?? Colors.White,
+            TextColor = rightColor ?? Color.FromArgb("#E6EBF2"),
             FontSize = 14,
             FontAttributes = boldRight ? FontAttributes.Bold : FontAttributes.None,
             HorizontalTextAlignment = TextAlignment.End,

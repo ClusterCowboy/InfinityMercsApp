@@ -4,12 +4,12 @@
              x:Class="InfinityMercsApp.Views.Controls.WeaponDetailCardView">
 
     <Border x:Name="CardBorder"
-            BackgroundColor="#111827"
-            Stroke="#4B5563"
+            BackgroundColor="{StaticResource Void}"
+            Stroke="{StaticResource HairlineBright}"
             StrokeThickness="1"
             Padding="10,8">
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="6" />
+            <RoundRectangle CornerRadius="4" />
         </Border.StrokeShape>
         <VerticalStackLayout x:Name="ContentStack" Spacing="4" />
     </Border>
