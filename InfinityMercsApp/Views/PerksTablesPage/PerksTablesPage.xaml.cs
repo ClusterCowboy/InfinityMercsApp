@@ -1,14 +1,21 @@
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using InfinityMercsApp.Views.Adaptive;
 
 namespace InfinityMercsApp.Views;
 
-public partial class PerksTablesPage : ContentPage
+public partial class PerksTablesPage : AdaptiveContentPage
 {
     private readonly Dictionary<(int Track, int Tier), Border> _perkCellByTrackTier = [];
     private readonly List<DependencyLink> _dependencyLinks = [];
     private readonly DependencyLinesDrawable _dependencyLinesDrawable = new();
     private PerkTableOption? _selectedPerkTableOption;
+
+    // When true (compact / medium) the table keeps a readable minimum size and pans inside the
+    // viewport instead of squishing to fit.
+    private bool _panTable = true;
+    private double _minTableWidth;
+    private double _minTableHeight;
 
     public ObservableCollection<PerkTableOption> PerkTableOptions { get; } = [];
 
@@ -37,6 +44,7 @@ public partial class PerksTablesPage : ContentPage
         PerksTableGrid.SizeChanged += OnPerksTableGridSizeChanged;
         DependencyLinesView.SizeChanged += OnDependencyLinesViewSizeChanged;
         PerksGridHost.SizeChanged += OnPerksGridHostSizeChanged;
+        TableViewport.SizeChanged += OnTableViewportSizeChanged;
 
         var discoveredNames = CompanyPerkCatalog
             .GetPerkNodeLists()
@@ -79,12 +87,44 @@ public partial class PerksTablesPage : ContentPage
         }
 
         SelectedPerkTableOption = PerkTableOptions.FirstOrDefault();
+        ApplyLayout();
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        _panTable = IsCompact || IsMedium;
+        InlineLegend.IsVisible = _panTable;
+        LegendRail.IsVisible = IsExpandedOrWider;
+
+        if (IsExpandedOrWider)
+        {
+            var railWidth = IsWide ? 300d : 240d;
+            BodyGrid.ColumnDefinitions =
+            [
+                new ColumnDefinition(new GridLength(railWidth)),
+                new ColumnDefinition(GridLength.Star)
+            ];
+            Grid.SetColumn(LegendRail, 0);
+            Grid.SetColumn(TableViewport, 1);
+        }
+        else
+        {
+            BodyGrid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+            Grid.SetColumn(TableViewport, 0);
+        }
+
+        ApplyResponsiveGridSize();
+        ScheduleOverlayRefresh();
     }
 
     private void BuildPerksTableGrid()
     {
         _perkCellByTrackTier.Clear();
         _dependencyLinks.Clear();
+        _minTableWidth = 0;
+        _minTableHeight = 0;
         PerksTableGrid.Children.Clear();
         PerksTableGrid.RowDefinitions.Clear();
         PerksTableGrid.ColumnDefinitions.Clear();
@@ -255,6 +295,11 @@ public partial class PerksTablesPage : ContentPage
             }
         }
 
+        // Keep the table readable when it must pan (compact / medium): a wide perk tree should
+        // scroll horizontally rather than crush every tier column.
+        _minTableWidth = rollColumnWidth + (displayedTierCount * 120d);
+        _minTableHeight = headerRowHeight + (orderedTrackNumbers.Count * 64d);
+
         ApplyResponsiveGridSize();
         UpdateLineOverlay();
         ScheduleOverlayRefresh();
@@ -398,6 +443,12 @@ public partial class PerksTablesPage : ContentPage
 
     private void OnPerksGridHostSizeChanged(object? sender, EventArgs e)
     {
+        UpdateLineOverlay();
+        ScheduleOverlayRefresh();
+    }
+
+    private void OnTableViewportSizeChanged(object? sender, EventArgs e)
+    {
         ApplyResponsiveGridSize();
         UpdateLineOverlay();
         ScheduleOverlayRefresh();
@@ -405,16 +456,24 @@ public partial class PerksTablesPage : ContentPage
 
     private void ApplyResponsiveGridSize()
     {
-        if (PerksGridHost.Width <= 0 || PerksGridHost.Height <= 0)
+        var viewportWidth = TableViewport.Width;
+        var viewportHeight = TableViewport.Height;
+        if (viewportWidth <= 0 || viewportHeight <= 0)
         {
             return;
         }
 
-        // Force the table to match viewport size so star rows/columns reflow.
-        PerksTableGrid.WidthRequest = PerksGridHost.Width;
-        PerksTableGrid.HeightRequest = PerksGridHost.Height;
-        DependencyLinesView.WidthRequest = PerksGridHost.Width;
-        DependencyLinesView.HeightRequest = PerksGridHost.Height;
+        // Expanded / wide: fit the viewport so star rows/columns reflow. Compact / medium: never
+        // shrink below the readable minimum, letting the Both-orientation ScrollView pan instead.
+        var targetWidth = _panTable ? Math.Max(viewportWidth, _minTableWidth) : viewportWidth;
+        var targetHeight = _panTable ? Math.Max(viewportHeight, _minTableHeight) : viewportHeight;
+
+        PerksGridHost.WidthRequest = targetWidth;
+        PerksGridHost.HeightRequest = targetHeight;
+        PerksTableGrid.WidthRequest = targetWidth;
+        PerksTableGrid.HeightRequest = targetHeight;
+        DependencyLinesView.WidthRequest = targetWidth;
+        DependencyLinesView.HeightRequest = targetHeight;
     }
 
     private void ScheduleOverlayRefresh()

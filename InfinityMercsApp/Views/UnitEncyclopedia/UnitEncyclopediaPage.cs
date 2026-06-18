@@ -1,4 +1,5 @@
 using InfinityMercsApp.ViewModels;
+using InfinityMercsApp.Views.Adaptive;
 using InfinityMercsApp.Views.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
@@ -8,10 +9,13 @@ using System.ComponentModel;
 
 namespace InfinityMercsApp.Views.UnitEncyclopedia;
 
-public partial class UnitEncyclopediaPage : ContentPage
+public partial class UnitEncyclopediaPage : AdaptiveContentPage
 {
 	private readonly ViewerViewModel _viewModel;
 	private bool _loaded;
+
+	// Compact step navigation: 0 = factions, 1 = units/fireteams, 2 = selected unit detail.
+	private int _compactStep;
 	private double _factionDragStartScrollY;
 	private double _unitDragStartScrollY;
 	private SKPicture? _regularOrderIconPicture;
@@ -32,8 +36,119 @@ public partial class UnitEncyclopediaPage : ContentPage
 		_viewModel = viewModel;
 		BindingContext = _viewModel;
 		_viewModel.PropertyChanged += OnViewModelPropertyChanged;
+		ApplyLayout();
 		_ = LoadHeaderIconsAsync();
 	}
+
+	protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+	private void ApplyLayout()
+	{
+		switch (LayoutMode)
+		{
+			case AdaptiveLayoutMode.Compact:
+				// Single workspace; one step visible at a time.
+				RootGrid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+				RootGrid.RowDefinitions = [new RowDefinition(GridLength.Star)];
+				RootGrid.ColumnSpacing = 0;
+				RootGrid.RowSpacing = 0;
+				PlacePane(FactionsPane, 0, 0, 1, 1);
+				PlacePane(BrowsePane, 0, 0, 1, 1);
+				PlacePane(DetailPane, 0, 0, 1, 1);
+				FactionsPane.IsVisible = _compactStep == 0;
+				BrowsePane.IsVisible = _compactStep == 1;
+				DetailPane.IsVisible = _compactStep == 2;
+				BrowseBackButton.IsVisible = true;
+				DetailBackButton.IsVisible = true;
+				SetOverlaySpan(1, 1);
+				break;
+
+			case AdaptiveLayoutMode.Medium:
+				// Two-pane: faction/unit navigation stacked on the left, detail on the right.
+				RootGrid.ColumnDefinitions =
+				[
+					new ColumnDefinition(new GridLength(300)),
+					new ColumnDefinition(GridLength.Star)
+				];
+				RootGrid.RowDefinitions =
+				[
+					new RowDefinition(GridLength.Star),
+					new RowDefinition(GridLength.Star)
+				];
+				RootGrid.ColumnSpacing = 12;
+				RootGrid.RowSpacing = 12;
+				PlacePane(FactionsPane, 0, 0, 1, 1);
+				PlacePane(BrowsePane, 1, 0, 1, 1);
+				PlacePane(DetailPane, 0, 1, 2, 1);
+				ShowAllPanes();
+				SetOverlaySpan(2, 2);
+				break;
+
+			case AdaptiveLayoutMode.Expanded:
+				ApplyThreeColumn(260, new GridLength(0.7, GridUnitType.Star), new GridLength(1.3, GridUnitType.Star));
+				break;
+
+			default: // Wide
+				ApplyThreeColumn(280, new GridLength(340), GridLength.Star);
+				break;
+		}
+	}
+
+	private void ApplyThreeColumn(double factionWidth, GridLength browseWidth, GridLength detailWidth)
+	{
+		RootGrid.ColumnDefinitions =
+		[
+			new ColumnDefinition(new GridLength(factionWidth)),
+			new ColumnDefinition(browseWidth),
+			new ColumnDefinition(detailWidth)
+		];
+		RootGrid.RowDefinitions = [new RowDefinition(GridLength.Star)];
+		RootGrid.ColumnSpacing = 12;
+		RootGrid.RowSpacing = 0;
+		PlacePane(FactionsPane, 0, 0, 1, 1);
+		PlacePane(BrowsePane, 0, 1, 1, 1);
+		PlacePane(DetailPane, 0, 2, 1, 1);
+		ShowAllPanes();
+		SetOverlaySpan(1, 3);
+	}
+
+	private void ShowAllPanes()
+	{
+		FactionsPane.IsVisible = true;
+		BrowsePane.IsVisible = true;
+		DetailPane.IsVisible = true;
+		BrowseBackButton.IsVisible = false;
+		DetailBackButton.IsVisible = false;
+	}
+
+	private static void PlacePane(View pane, int row, int column, int rowSpan, int columnSpan)
+	{
+		Grid.SetRow(pane, row);
+		Grid.SetColumn(pane, column);
+		Grid.SetRowSpan(pane, rowSpan);
+		Grid.SetColumnSpan(pane, columnSpan);
+	}
+
+	private void SetOverlaySpan(int rowSpan, int columnSpan)
+	{
+		Grid.SetRow(UnitFilterOverlay, 0);
+		Grid.SetColumn(UnitFilterOverlay, 0);
+		Grid.SetRowSpan(UnitFilterOverlay, rowSpan);
+		Grid.SetColumnSpan(UnitFilterOverlay, columnSpan);
+	}
+
+	private void GoToCompactStep(int step)
+	{
+		_compactStep = step;
+		if (IsCompact)
+		{
+			ApplyLayout();
+		}
+	}
+
+	private void OnBrowseBackClicked(object? sender, EventArgs e) => GoToCompactStep(0);
+
+	private void OnDetailBackClicked(object? sender, EventArgs e) => GoToCompactStep(1);
 
 	protected override async void OnAppearing()
 	{
@@ -183,9 +298,21 @@ public partial class UnitEncyclopediaPage : ContentPage
 			UnitDisplayConfigurationsView.InvalidateHeaderIconsCanvas();
 		}
 
+		if (e.PropertyName == nameof(ViewerViewModel.SelectedFaction))
+		{
+			// Selecting a faction advances the compact flow to the unit/fireteam browser;
+			// clearing it returns to the faction list.
+			GoToCompactStep(_viewModel.SelectedFaction is not null ? 1 : 0);
+		}
+
 		if (e.PropertyName == nameof(ViewerViewModel.SelectedUnit))
 		{
 			_ = LoadSelectedUnitLogoAsync(_viewModel.SelectedUnit);
+
+			if (_viewModel.SelectedUnit is not null)
+			{
+				GoToCompactStep(2);
+			}
 		}
 	}
 

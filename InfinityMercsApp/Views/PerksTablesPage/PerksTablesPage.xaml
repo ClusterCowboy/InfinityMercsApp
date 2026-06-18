@@ -1,29 +1,72 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              x:Class="InfinityMercsApp.Views.PerksTablesPage"
              x:Name="PerksTablesRoot"
              Title="Perks Tables">
 
-    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="12">
+    <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="12">
         <Picker Grid.Row="0"
                 x:Name="PerkTablePicker"
                 ItemsSource="{Binding PerkTableOptions}"
                 ItemDisplayBinding="{Binding DisplayName}"
                 SelectedItem="{Binding SelectedPerkTableOption, Mode=TwoWay}" />
 
-        <Grid Grid.Row="1"
-              x:Name="PerksGridHost"
-              HorizontalOptions="Fill"
-              VerticalOptions="Fill">
-            <Grid x:Name="PerksTableGrid"
-                  HorizontalOptions="Fill"
-                  VerticalOptions="Fill"
-                  RowSpacing="2"
-                  ColumnSpacing="2" />
-            <GraphicsView x:Name="DependencyLinesView"
-                          InputTransparent="True" />
+        <!-- Inline legend strip (compact / medium) -->
+        <HorizontalStackLayout x:Name="InlineLegend" Grid.Row="1" Spacing="18" IsVisible="False">
+            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                <BoxView WidthRequest="16" HeightRequest="16" CornerRadius="3" Color="{StaticResource Signal}" VerticalOptions="Center" />
+                <Label Text="Perk available" FontSize="{DynamicResource FontSizeCaption}" TextColor="{StaticResource TextMuted}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                <BoxView WidthRequest="24" HeightRequest="2" Color="{StaticResource Signal}" VerticalOptions="Center" />
+                <Label Text="Track dependency" FontSize="{DynamicResource FontSizeCaption}" TextColor="{StaticResource TextMuted}" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+        </HorizontalStackLayout>
+
+        <Grid x:Name="BodyGrid" Grid.Row="2" ColumnSpacing="12" ColumnDefinitions="*">
+
+            <!-- Legend / dependency notes rail (expanded / wide) -->
+            <Border x:Name="LegendRail"
+                    Grid.Column="0"
+                    IsVisible="False"
+                    StrokeThickness="1"
+                    Padding="12"
+                    VerticalOptions="Start">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Legend" FontSize="{DynamicResource FontSizeTitleSmall}" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <BoxView WidthRequest="16" HeightRequest="16" CornerRadius="3" Color="{StaticResource Signal}" VerticalOptions="Center" />
+                        <Label Text="Perk available" FontSize="{DynamicResource FontSizeBody}" TextColor="{StaticResource TextSecondary}" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <BoxView WidthRequest="24" HeightRequest="2" Color="{StaticResource Signal}" VerticalOptions="Center" />
+                        <Label Text="Track dependency" FontSize="{DynamicResource FontSizeBody}" TextColor="{StaticResource TextSecondary}" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <Label Text="The Roll column shows the d20 range that opens each track."
+                           FontSize="{DynamicResource FontSizeCaption}"
+                           TextColor="{StaticResource TextMuted}"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+
+            <ScrollView x:Name="TableViewport"
+                        Grid.Column="0"
+                        Orientation="Both">
+                <Grid x:Name="PerksGridHost"
+                      HorizontalOptions="Start"
+                      VerticalOptions="Start">
+                    <Grid x:Name="PerksTableGrid"
+                          HorizontalOptions="Fill"
+                          VerticalOptions="Fill"
+                          RowSpacing="2"
+                          ColumnSpacing="2" />
+                    <GraphicsView x:Name="DependencyLinesView"
+                                  InputTransparent="True" />
+                </Grid>
+            </ScrollView>
         </Grid>
     </Grid>
 
-</ContentPage>
+</layout:AdaptiveContentPage>

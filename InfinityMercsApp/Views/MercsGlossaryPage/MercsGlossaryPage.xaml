@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
              x:Class="InfinityMercsApp.Views.MercsGlossaryPage"
              x:Name="MercsGlossaryRoot"
              Title="Mercs Glossary">
 
-    <Grid Padding="16" ColumnDefinitions="3*,7*" ColumnSpacing="16">
-        <Border Grid.Column="0" StrokeThickness="1" Padding="12">
+    <Grid x:Name="RootGrid" Padding="16" ColumnDefinitions="*" ColumnSpacing="16">
+        <Border x:Name="IndexPane" Grid.Column="0" StrokeThickness="1" Padding="12">
             <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
                 <Label Grid.Row="0"
                        Text="Rules Index"
@@ -20,7 +21,10 @@
                                        HeightRequest="20"
                                        VerticalOptions="Center"
                                        PaintSurface="OnLegendDeltaCanvasPaintSurface" />
-                    <Label Text=" - Rules Changed From Base" VerticalTextAlignment="Center" FontSize="{DynamicResource FontSizeTitleSmall}" />
+                    <Label Text=" - Rules Changed From Base"
+                           VerticalTextAlignment="Center"
+                           LineBreakMode="WordWrap"
+                           FontSize="{Binding Source={x:Reference MercsGlossaryRoot}, Path=ListFontSize}" />
                 </HorizontalStackLayout>
                 <CollectionView Grid.Row="2"
                                 VerticalOptions="FillAndExpand"
@@ -30,12 +34,30 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="6,4">
-                                <Label Grid.Column="0" Text="{Binding Title}" VerticalTextAlignment="Center" FontSize="{DynamicResource FontSizeTitleSmall}" />
+                                <Grid.Triggers>
+                                    <DataTrigger TargetType="Grid" Binding="{Binding IsHeader}" Value="True">
+                                        <Setter Property="Padding" Value="2,14,2,6" />
+                                        <Setter Property="ColumnSpacing" Value="0" />
+                                    </DataTrigger>
+                                </Grid.Triggers>
+                                <Label Grid.Column="0"
+                                       Text="{Binding Title}"
+                                       VerticalTextAlignment="Center"
+                                       LineBreakMode="WordWrap"
+                                       FontSize="{Binding Source={x:Reference MercsGlossaryRoot}, Path=ListFontSize}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsHeader}" Value="True">
+                                            <Setter Property="FontAttributes" Value="Bold" />
+                                            <Setter Property="TextColor" Value="{StaticResource Signal}" />
+                                            <Setter Property="CharacterSpacing" Value="2" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                                 <skia:SKCanvasView Grid.Column="1"
                                                    WidthRequest="18"
                                                    HeightRequest="18"
                                                    VerticalOptions="Center"
-                                                   IsVisible="{Binding HasDelta}"
+                                                   IsVisible="{Binding ShowDeltaIcon}"
                                                    PaintSurface="OnListDeltaCanvasPaintSurface" />
                             </Grid>
                         </DataTemplate>
@@ -44,18 +66,32 @@
             </Grid>
         </Border>
 
-        <Border Grid.Column="1" StrokeThickness="1" Padding="14">
-            <Grid RowDefinitions="Auto,*" RowSpacing="10">
-                <Label Grid.Row="0"
+        <Border x:Name="DetailPane" Grid.Column="1" StrokeThickness="1" Padding="14">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                <!-- Compact-only return to the rules index -->
+                <Button x:Name="DetailBackButton"
+                        Grid.Row="0"
+                        Text="← Rules Index"
+                        IsVisible="False"
+                        HorizontalOptions="Start"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        TextColor="{StaticResource Signal}"
+                        FontAttributes="Bold"
+                        Padding="0"
+                        Clicked="OnDetailBackClicked" />
+                <Label Grid.Row="1"
                        Text="{Binding Source={x:Reference MercsGlossaryRoot}, Path=SelectedTitle}"
                        FontSize="{DynamicResource FontSizeSubHeadline}"
                        FontAttributes="Bold" />
-                <WebView Grid.Row="1"
-                         x:Name="GlossaryWebView"
-                         VerticalOptions="Fill"
-                         HorizontalOptions="Fill" />
+                <Grid Grid.Row="2" x:Name="DetailWebHost">
+                    <WebView Grid.Row="0"
+                             x:Name="GlossaryWebView"
+                             VerticalOptions="Fill"
+                             HorizontalOptions="Fill" />
+                </Grid>
             </Grid>
         </Border>
     </Grid>
 
-</ContentPage>
+</layout:AdaptiveContentPage>

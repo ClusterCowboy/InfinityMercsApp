@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              xmlns:domain="clr-namespace:InfinityMercsApp.Domain.Models.Metadata;assembly=InfinityMercsApp.Domain"
              x:Class="InfinityMercsApp.Views.ArmoryPage"
              x:Name="ArmoryRoot"
              Title="Armory">
 
-    <Grid Padding="16" ColumnDefinitions="3*,7*" ColumnSpacing="16">
+    <Grid x:Name="RootGrid" Padding="16" ColumnDefinitions="*" ColumnSpacing="16">
 
         <!-- Left: weapon list -->
-        <Border Grid.Column="0" StrokeThickness="1" Padding="12">
+        <Border x:Name="ListPane" Grid.Column="0" StrokeThickness="1" Padding="12">
             <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
                 <Label Grid.Row="0"
                        Text="Weapons"
@@ -39,13 +40,25 @@
         </Border>
 
         <!-- Right: weapon detail -->
-        <Border Grid.Column="1" StrokeThickness="1" Padding="14">
-            <Grid RowDefinitions="Auto,*" RowSpacing="10">
-                <Label Grid.Row="0"
+        <Border x:Name="DetailPane" Grid.Column="1" StrokeThickness="1" Padding="14">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                <!-- Compact-only return to the weapon list -->
+                <Button x:Name="DetailBackButton"
+                        Grid.Row="0"
+                        Text="← Weapons"
+                        IsVisible="False"
+                        HorizontalOptions="Start"
+                        BackgroundColor="Transparent"
+                        BorderColor="Transparent"
+                        TextColor="{StaticResource Signal}"
+                        FontAttributes="Bold"
+                        Padding="0"
+                        Clicked="OnDetailBackClicked" />
+                <Label Grid.Row="1"
                        Text="{Binding Source={x:Reference ArmoryRoot}, Path=SelectedWeaponName}"
                        FontSize="{DynamicResource FontSizeSubHeadline}"
                        FontAttributes="Bold" />
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2">
                     <Label Text="Select a weapon from the list."
                            HorizontalTextAlignment="Center"
                            VerticalTextAlignment="Center"
@@ -53,7 +66,8 @@
                            IsVisible="{Binding Source={x:Reference ArmoryRoot}, Path=NoWeaponSelected}" />
                     <ScrollView VerticalOptions="Fill"
                                 IsVisible="{Binding Source={x:Reference ArmoryRoot}, Path=HasSelectedWeapon}">
-                        <VerticalStackLayout Spacing="8"
+                        <VerticalStackLayout x:Name="DetailWeaponList"
+                                             Spacing="8"
                                              BindableLayout.ItemsSource="{Binding Source={x:Reference ArmoryRoot}, Path=SelectedWeaponGroup.Modes}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="domain:Weapon">
@@ -68,4 +82,4 @@
 
     </Grid>
 
-</ContentPage>
+</layout:AdaptiveContentPage>

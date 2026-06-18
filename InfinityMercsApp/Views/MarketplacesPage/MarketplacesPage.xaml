@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              x:Class="InfinityMercsApp.Views.MarketplacesPage"
              x:Name="MarketplacesRoot"
              Title="Marketplaces">
@@ -16,42 +17,46 @@
                     FontSize="{DynamicResource FontSizeSectionHeader}" />
         </Border>
 
-        <!-- Content area -->
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Spacing="12">
+        <!-- Content area: rail / sections / cart placement is reflowed per width mode -->
+        <Grid x:Name="ContentGrid" Grid.Row="1">
 
-                <!-- Placeholder shown before any selection -->
-                <Label x:Name="PlaceholderLabel"
-                       Text="Select a marketplace from the dropdown above."
-                       HorizontalTextAlignment="Center"
-                       Margin="0,24,0,0"
-                       FontSize="{DynamicResource FontSizeSectionHeader}"
-                       TextColor="{StaticResource TextMuted}" />
+            <!-- Placeholder shown before any selection -->
+            <Label x:Name="PlaceholderLabel"
+                   Text="Select a marketplace from the dropdown above."
+                   HorizontalTextAlignment="Center"
+                   VerticalOptions="Start"
+                   Margin="0,24,0,0"
+                   FontSize="{DynamicResource FontSizeSectionHeader}"
+                   TextColor="{StaticResource TextMuted}" />
 
-                <!-- Store detail, hidden until a store is selected -->
-                <VerticalStackLayout x:Name="StoreContentLayout"
-                                     IsVisible="False"
-                                     Spacing="12">
+            <!-- Store info header / metadata rail -->
+            <Border x:Name="StoreInfoBorder"
+                    IsVisible="False"
+                    VerticalOptions="Start"
+                    StrokeThickness="1"
+                    Padding="12">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreName}"
+                           FontSize="{DynamicResource FontSizeTitleSmall}"
+                           FontAttributes="Bold" />
+                    <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreFactionsDisplay}"
+                           FontSize="{DynamicResource FontSizeBody}"
+                           TextColor="{StaticResource TextMuted}" />
+                    <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreMetaDisplay}"
+                           FontSize="{DynamicResource FontSizeBody}"
+                           TextColor="{StaticResource TextMuted}" />
+                </VerticalStackLayout>
+            </Border>
 
-                    <!-- Store info header -->
-                    <Border StrokeThickness="1" Padding="12">
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreName}"
-                                   FontSize="{DynamicResource FontSizeTitleSmall}"
-                                   FontAttributes="Bold" />
-                            <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreFactionsDisplay}"
-                                   FontSize="{DynamicResource FontSizeBody}"
-                                   TextColor="{StaticResource TextMuted}" />
-                            <Label Text="{Binding Source={x:Reference MarketplacesRoot}, Path=StoreMetaDisplay}"
-                                   FontSize="{DynamicResource FontSizeBody}"
-                                   TextColor="{StaticResource TextMuted}" />
-                        </VerticalStackLayout>
-                    </Border>
+            <!-- Marketplace sections -->
+            <ScrollView x:Name="SectionsScroll" IsVisible="False">
+                <Grid x:Name="SectionsHost" RowSpacing="12" ColumnSpacing="12">
 
                     <!-- Items section -->
                     <Border x:Name="ItemsBorder"
                             StrokeThickness="1"
                             Padding="12"
+                            VerticalOptions="Start"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Items" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
@@ -148,6 +153,7 @@
                     <Border x:Name="TroopTypesBorder"
                             StrokeThickness="1"
                             Padding="12"
+                            VerticalOptions="Start"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Troop Types" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
@@ -234,6 +240,7 @@
                     <Border x:Name="AugmentsBorder"
                             StrokeThickness="1"
                             Padding="12"
+                            VerticalOptions="Start"
                             IsVisible="False">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Augments" FontSize="{DynamicResource FontSizeSubHeadline}" FontAttributes="Bold" />
@@ -312,9 +319,59 @@
                         </VerticalStackLayout>
                     </Border>
 
-                </VerticalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
+                </Grid>
+            </ScrollView>
+
+            <!-- Wide-only cart / quantity summary rail -->
+            <Border x:Name="CartBorder"
+                    IsVisible="False"
+                    StrokeThickness="1"
+                    Padding="12">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                    <Label Grid.Row="0"
+                           Text="Cart"
+                           FontSize="{DynamicResource FontSizeSubHeadline}"
+                           FontAttributes="Bold" />
+                    <Label Grid.Row="1"
+                           Text="Tap + on any item to add it here."
+                           VerticalOptions="Start"
+                           FontSize="{DynamicResource FontSizeBody}"
+                           TextColor="{StaticResource TextMuted}"
+                           IsVisible="{Binding Source={x:Reference MarketplacesRoot}, Path=IsCartEmpty}" />
+                    <ScrollView Grid.Row="1"
+                                IsVisible="{Binding Source={x:Reference MarketplacesRoot}, Path=HasCartLines}">
+                        <VerticalStackLayout Spacing="6"
+                                             BindableLayout.ItemsSource="{Binding Source={x:Reference MarketplacesRoot}, Path=CartLines}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding Name}"
+                                               FontSize="{DynamicResource FontSizeBody}"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               LineBreakMode="TailTruncation" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding QuantityDisplay}"
+                                               FontSize="{DynamicResource FontSizeBody}"
+                                               TextColor="{StaticResource TextMuted}" />
+                                        <Label Grid.Column="2"
+                                               Text="{Binding CostDisplay}"
+                                               FontSize="{DynamicResource FontSizeBody}"
+                                               TextColor="{StaticResource Signal}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                    <Label Grid.Row="2"
+                           Text="{Binding Source={x:Reference MarketplacesRoot}, Path=CartTotalDisplay}"
+                           FontSize="{DynamicResource FontSizeBody}"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}" />
+                </Grid>
+            </Border>
+
+        </Grid>
 
         <!-- Item detail popup overlay — covers the full page -->
         <Grid x:Name="MarketplacePopupOverlay"
@@ -360,4 +417,4 @@
 
     </Grid>
 
-</ContentPage>
+</layout:AdaptiveContentPage>
