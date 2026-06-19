@@ -1,9 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using SkiaSharp;
-using SkiaSharp.Views.Maui;
-using Svg.Skia;
 
 namespace InfinityMercsApp.Views.Controls;
 
@@ -141,6 +138,8 @@ public sealed class SelectableFilterOption : INotifyPropertyChanged
 public sealed class FilterCriterionItem : INotifyPropertyChanged
 {
     private string _summary = "Any";
+    private bool _isCurrent;
+    private bool _hasSelections;
 
     public FilterCriterionItem(UnitFilterField field, string title)
     {
@@ -167,6 +166,38 @@ public sealed class FilterCriterionItem : INotifyPropertyChanged
         }
     }
 
+    /// <summary>The criterion whose value chips are currently shown in the editor.</summary>
+    public bool IsCurrent
+    {
+        get => _isCurrent;
+        set
+        {
+            if (_isCurrent == value)
+            {
+                return;
+            }
+
+            _isCurrent = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCurrent)));
+        }
+    }
+
+    /// <summary>True when this criterion has committed (active) values; drives the chip's active marker.</summary>
+    public bool HasSelections
+    {
+        get => _hasSelections;
+        set
+        {
+            if (_hasSelections == value)
+            {
+                return;
+            }
+
+            _hasSelections = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasSelections)));
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }
 
@@ -179,8 +210,7 @@ public partial class UnitFilterPopupView : ContentView
     private readonly Dictionary<UnitFilterField, UnitFilterTerm> _committedTerms = [];
     private FilterCriterionItem? _selectedCriterion;
     private string _selectedActiveMatchMode = AnyMode;
-    private SKPicture? _applyCriterionIconPicture;
-    private SKPicture? _clearCriterionIconPicture;
+    private bool _isLoadingEditor;
 
     public event EventHandler<UnitFilterCriteria>? FilterArmyApplied;
     public event EventHandler? CloseRequested;
@@ -204,9 +234,15 @@ public partial class UnitFilterPopupView : ContentView
             if (_selectedCriterion is not null)
             {
                 CommitCriterionFromEditor(_selectedCriterion);
+                _selectedCriterion.IsCurrent = false;
             }
 
             _selectedCriterion = value;
+            if (_selectedCriterion is not null)
+            {
+                _selectedCriterion.IsCurrent = true;
+            }
+
             OnPropertyChanged(nameof(SelectedCriterion));
             OnPropertyChanged(nameof(SelectedCriterionTitle));
             LoadSelectedCriterionEditor();
@@ -227,6 +263,13 @@ public partial class UnitFilterPopupView : ContentView
 
             _selectedActiveMatchMode = value;
             OnPropertyChanged(nameof(SelectedActiveMatchMode));
+
+            // A match-mode change re-commits the open criterion so its summary
+            // prefix (Any/All) stays in sync, but not while the editor is loading.
+            if (!_isLoadingEditor && _selectedCriterion is not null)
+            {
+                CommitCriterionFromEditor(_selectedCriterion);
+            }
         }
     }
 
@@ -279,7 +322,6 @@ public partial class UnitFilterPopupView : ContentView
         TeamsViewEnabled = teamsViewEnabled;
         BindingContext = this;
         ApplySelections(existingCriteria ?? UnitFilterCriteria.None, minPoints, maxPoints, lieutenantOnlyUnits, teamsView);
-        _ = LoadActionIconsAsync();
     }
 
     private static List<string> NormalizeValues(IEnumerable<string> values)
@@ -370,27 +412,35 @@ public partial class UnitFilterPopupView : ContentView
 
     private void LoadSelectedCriterionEditor()
     {
-        ActiveCriterionOptions.Clear();
-        if (SelectedCriterion is null)
+        _isLoadingEditor = true;
+        try
         {
-            SelectedActiveMatchMode = AnyMode;
-            return;
-        }
-
-        var field = SelectedCriterion.Field;
-        _committedTerms.TryGetValue(field, out var term);
-        var selectedValues = term?.Values.ToHashSet(StringComparer.OrdinalIgnoreCase)
-                             ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var value in _availableValues[field])
-        {
-            ActiveCriterionOptions.Add(new SelectableFilterOption(value)
+            ActiveCriterionOptions.Clear();
+            if (SelectedCriterion is null)
             {
-                IsSelected = selectedValues.Contains(value)
-            });
-        }
+                SelectedActiveMatchMode = AnyMode;
+                return;
+            }
 
-        SelectedActiveMatchMode = term?.MatchMode == UnitFilterMatchMode.All ? AllMode : AnyMode;
+            var field = SelectedCriterion.Field;
+            _committedTerms.TryGetValue(field, out var term);
+            var selectedValues = term?.Values.ToHashSet(StringComparer.OrdinalIgnoreCase)
+                                 ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var value in _availableValues[field])
+            {
+                ActiveCriterionOptions.Add(new SelectableFilterOption(value)
+                {
+                    IsSelected = selectedValues.Contains(value)
+                });
+            }
+
+            SelectedActiveMatchMode = term?.MatchMode == UnitFilterMatchMode.All ? AllMode : AnyMode;
+        }
+        finally
+        {
+            _isLoadingEditor = false;
+        }
     }
 
     private void UpdateAllCriterionSummaries()
@@ -398,6 +448,7 @@ public partial class UnitFilterPopupView : ContentView
         foreach (var item in CriteriaItems)
         {
             item.Summary = BuildSummary(item.Field);
+            item.HasSelections = _committedTerms.ContainsKey(item.Field);
         }
     }
 
@@ -427,106 +478,41 @@ public partial class UnitFilterPopupView : ContentView
             : UnitFilterMatchMode.Any;
     }
 
-    private async Task LoadActionIconsAsync()
+    private void OnCriterionChipTapped(object? sender, TappedEventArgs e)
     {
-        try
+        if (sender is Border { BindingContext: FilterCriterionItem item })
         {
-            await using var checkStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-check-3612574.svg");
-            var checkSvg = new SKSvg();
-            _applyCriterionIconPicture = checkSvg.Load(checkStream);
+            SelectedCriterion = item;
         }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"UnitFilterPopupView check icon load failed: {ex.Message}");
-        }
-
-        try
-        {
-            await using var xStream = await FileSystem.Current.OpenAppPackageFileAsync("SVGCache/NonCBIcons/noun-x-1890844.svg");
-            var xSvg = new SKSvg();
-            _clearCriterionIconPicture = xSvg.Load(xStream);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"UnitFilterPopupView x icon load failed: {ex.Message}");
-        }
-
-        ApplyCriterionIconCanvas.InvalidateSurface();
-        ClearCriterionIconCanvas.InvalidateSurface();
     }
 
-    private static void DrawActionIcon(SKCanvas canvas, SKImageInfo info, SKPicture? picture)
+    private void OnOptionChipTapped(object? sender, TappedEventArgs e)
     {
-        canvas.Clear(SKColors.Transparent);
-        if (picture is null)
+        if (sender is not Border { BindingContext: SelectableFilterOption option })
         {
             return;
         }
 
-        var bounds = picture.CullRect;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
+        // Selections are live: toggling a value chip commits it immediately so the
+        // criterion's active marker and summary stay in sync without an Apply step.
+        option.IsSelected = !option.IsSelected;
+        if (SelectedCriterion is not null)
         {
-            return;
+            CommitCriterionFromEditor(SelectedCriterion);
         }
-
-        var destination = new SKRect(0, 0, info.Width, info.Height);
-        var scaleX = destination.Width / bounds.Width;
-        var scaleY = destination.Height / bounds.Height;
-
-        canvas.Save();
-        canvas.Translate(destination.Left, destination.Top);
-        canvas.Scale(scaleX, scaleY);
-        canvas.Translate(-bounds.Left, -bounds.Top);
-        canvas.DrawPicture(picture);
-        canvas.Restore();
-    }
-
-    private void OnApplyCriterionIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawActionIcon(e.Surface.Canvas, e.Info, _applyCriterionIconPicture);
-    }
-
-    private void OnClearCriterionIconCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawActionIcon(e.Surface.Canvas, e.Info, _clearCriterionIconPicture);
-    }
-
-    private void OnApplyCriterionTapped(object? sender, TappedEventArgs e)
-    {
-        OnApplyCriterionClicked(sender, EventArgs.Empty);
-    }
-
-    private void OnClearCriterionTapped(object? sender, TappedEventArgs e)
-    {
-        OnClearCriterionClicked(sender, EventArgs.Empty);
-    }
-
-    private void OnApplyCriterionClicked(object? sender, EventArgs e)
-    {
-        if (SelectedCriterion is null)
-        {
-            return;
-        }
-
-        CommitCriterionFromEditor(SelectedCriterion);
-    }
-
-    private void OnClearSelectionsClicked(object? sender, EventArgs e)
-    {
-        _committedTerms.Clear();
-        UpdateAllCriterionSummaries();
-        LoadSelectedCriterionEditor();
     }
 
     private void OnClearCriterionClicked(object? sender, EventArgs e)
     {
-        if (SelectedCriterion is null)
+        foreach (var option in ActiveCriterionOptions)
         {
-            return;
+            option.IsSelected = false;
         }
 
-        // Discard in-editor changes and restore previously committed values.
-        LoadSelectedCriterionEditor();
+        if (SelectedCriterion is not null)
+        {
+            CommitCriterionFromEditor(SelectedCriterion);
+        }
     }
 
     private void CommitCriterionFromEditor(FilterCriterionItem criterion)
@@ -550,6 +536,7 @@ public partial class UnitFilterPopupView : ContentView
         }
 
         criterion.Summary = BuildSummary(field);
+        criterion.HasSelections = _committedTerms.ContainsKey(field);
     }
 
     private void OnBackClicked(object? sender, EventArgs e)
@@ -595,16 +582,28 @@ public partial class UnitFilterPopupView : ContentView
         CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    // Single-column layout works at every width, so sizing is all that adapts:
+    // cap the popup to a comfortable reading column and let the body ScrollView
+    // absorb any overflow rather than running off a short screen.
+    private const double MaxPopupWidth = 560d;
+    private const double OuterPadding = 32d; // root Grid Padding="16" on both sides
+
     private void OnPopupSizeChanged(object? sender, EventArgs e)
     {
         var hostHeight = Height > 0
             ? Height
             : Window?.Height ?? Application.Current?.Windows.FirstOrDefault()?.Page?.Height ?? 0;
-        if (hostHeight <= 0)
+        if (hostHeight > 0)
         {
-            return;
+            PopupContainer.MaximumHeightRequest = hostHeight * 0.9;
         }
 
-        PopupContainer.HeightRequest = hostHeight * 0.9;
+        var width = Width > 0
+            ? Width
+            : Window?.Width ?? Application.Current?.Windows.FirstOrDefault()?.Page?.Width ?? 0;
+        if (width > 0)
+        {
+            PopupContainer.WidthRequest = Math.Min(width - OuterPadding, MaxPopupWidth);
+        }
     }
 }

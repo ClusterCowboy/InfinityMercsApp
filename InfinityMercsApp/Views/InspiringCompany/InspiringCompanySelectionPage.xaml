@@ -29,7 +29,7 @@
         </Grid>
     </shell:Shell.TitleView>
 
-    <Grid Padding="16,16,16,0" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
+    <Grid x:Name="MainContentGrid" Padding="16,16,16,0" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,Auto,*" ColumnSpacing="12" RowSpacing="10">
 
         <controls:FactionSelectionStripView
             Grid.Row="0"
@@ -38,7 +38,24 @@
             ItemsSource="{Binding Factions}"
             SelectFactionCommand="{Binding SelectFactionCommand}" />
 
-        <Grid Grid.Row="1" Grid.Column="0">
+        <!-- Compact-only workspace switch: shows either the units pane or the detail+roster pane. -->
+        <Grid x:Name="CompactTabBar"
+              Grid.Row="1"
+              Grid.ColumnSpan="2"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="8"
+              IsVisible="False">
+            <Button x:Name="UnitsTabButton"
+                    Grid.Column="0"
+                    Text="UNITS"
+                    Clicked="OnShowUnitsTabTapped" />
+            <Button x:Name="CompanyTabButton"
+                    Grid.Column="1"
+                    Text="COMPANY"
+                    Clicked="OnShowCompanyTabTapped" />
+        </Grid>
+
+        <Grid x:Name="UnitsPane" Grid.Row="2" Grid.Column="0">
                 <Grid VerticalOptions="FillAndExpand">
                     <Border StrokeThickness="0" Padding="0" VerticalOptions="FillAndExpand">
                         <Grid RowDefinitions="Auto,*" RowSpacing="8" VerticalOptions="FillAndExpand">
@@ -114,30 +131,44 @@
                 </Grid>
             </Grid>
 
-        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
+        <Grid x:Name="RightPane" Grid.Row="2" Grid.Column="1" RowDefinitions="*,3,Auto,*" RowSpacing="0">
             <controls:UnitDisplayConfigurationsView x:Name="UnitDisplayConfigurationsView" Grid.Row="0" VerticalOptions="FillAndExpand" ShowSummaryRows="False" />
 
-            <HorizontalStackLayout Grid.Row="2" Spacing="8" VerticalOptions="Center">
-                <Label
-                    Text="Mercs Company"
-                    FontSize="{DynamicResource FontSizeTitleSmall}"
-                    FontAttributes="Bold"
-                    VerticalOptions="Center" />
-                <Label Text="-" VerticalOptions="Center" />
-                <Border Stroke="{Binding CompanyNameBorderColor}" StrokeThickness="2" Padding="2,0">
+            <Grid Grid.Row="2"
+                  ColumnDefinitions="Auto,*"
+                  RowDefinitions="Auto,Auto"
+                  ColumnSpacing="8"
+                  RowSpacing="2"
+                  VerticalOptions="Center">
+                <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Spacing="8" VerticalOptions="Center">
+                    <Label
+                        Text="Mercs Company"
+                        FontSize="{DynamicResource FontSizeTitleSmall}"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center" />
+                    <Label Text="-" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Border Grid.Row="0" Grid.Column="1"
+                        Stroke="{Binding CompanyNameBorderColor}"
+                        StrokeThickness="2"
+                        Padding="2,0"
+                        HorizontalOptions="Fill"
+                        MaximumWidthRequest="320"
+                        VerticalOptions="Center">
                     <Entry
-                        WidthRequest="220"
                         Text="{Binding CompanyName}"
                         Placeholder="Company Name"
                         ClearButtonVisibility="WhileEditing"
                         VerticalOptions="Center" />
                 </Border>
                 <Label
+                    Grid.Row="1"
+                    Grid.Column="1"
                     Text="Enter Company Name"
                     TextColor="{StaticResource Danger}"
                     VerticalOptions="Center"
                     IsVisible="{Binding ShowCompanyNameValidationError}" />
-            </HorizontalStackLayout>
+            </Grid>
 
             <controls:MercsCompanyEntriesListView
                 Grid.Row="3"
@@ -161,7 +192,7 @@
         <Grid
             x:Name="UnitFilterOverlay"
             Grid.Row="0"
-            Grid.RowSpan="2"
+            Grid.RowSpan="3"
             Grid.ColumnSpan="2"
             IsVisible="False"
             BackgroundColor="#880E1116"

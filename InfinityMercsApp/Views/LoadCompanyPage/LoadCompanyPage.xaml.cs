@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Threading;
+using InfinityMercsApp.Views.Adaptive;
 using InfinityMercsApp.Views.Common;
 using InfinityMercsApp.Views.Season;
 using SkiaSharp.Views.Maui.Controls;
@@ -11,7 +12,7 @@ using Svg.Skia;
 
 namespace InfinityMercsApp.Views;
 
-public partial class LoadCompanyPage : ContentPage, IQueryAttributable
+public partial class LoadCompanyPage : AdaptiveContentPage, IQueryAttributable
 {
     private const string SaveDirectoryName = "MercenaryRecords";
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -37,11 +38,26 @@ public partial class LoadCompanyPage : ContentPage, IQueryAttributable
             OnPropertyChanged(nameof(HasSavedRecords));
             OnPropertyChanged(nameof(ShowEmptyState));
         };
+        ApplyLayout();
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         _seasonMode = query.ContainsKey("seasonMode");
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        // Compact fills the screen; wider widths center the list at a readable width, and the
+        // largest screens reflow saved records into a two-column grid.
+        RootGrid.MaximumWidthRequest = IsCompact ? double.PositiveInfinity : (IsWide ? 1000d : 640d);
+        RootGrid.HorizontalOptions = IsCompact ? LayoutOptions.Fill : LayoutOptions.Center;
+
+        RecordsCollection.ItemsLayout = IsWide
+            ? new GridItemsLayout(2, ItemsLayoutOrientation.Vertical) { HorizontalItemSpacing = 8 }
+            : new LinearItemsLayout(ItemsLayoutOrientation.Vertical);
     }
 
     protected override async void OnAppearing()

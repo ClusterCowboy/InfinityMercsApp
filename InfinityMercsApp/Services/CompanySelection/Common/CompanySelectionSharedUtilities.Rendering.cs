@@ -82,6 +82,15 @@ internal static partial class CompanySelectionSharedUtilities
             return;
         }
 
+        // The button lives inside the header border whose SizeChanged drives this; re-assigning an
+        // unchanged size would re-raise that SizeChanged and keep the layout pass spinning. Skip when
+        // already settled (within a pixel).
+        if (Math.Abs(buttonBorder.WidthRequest - iconButtonSize) < 1.0
+            && Math.Abs(buttonBorder.HeightRequest - iconButtonSize) < 1.0)
+        {
+            return;
+        }
+
         buttonBorder.WidthRequest = iconButtonSize;
         buttonBorder.HeightRequest = iconButtonSize;
         iconCanvas.WidthRequest = iconButtonSize;

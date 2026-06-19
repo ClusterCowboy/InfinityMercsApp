@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              x:Class="InfinityMercsApp.Views.Season.LoadSeasonPage"
+             x:Name="LoadSeasonRoot"
              Title="Load Season"
              BackgroundColor="{StaticResource Void}">
 
-    <Grid Padding="16" RowDefinitions="Auto,*" RowSpacing="12">
+    <Grid x:Name="RootGrid" Padding="16" RowDefinitions="Auto,*" RowSpacing="12" HorizontalOptions="Fill">
 
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Load Season"
@@ -21,7 +23,8 @@
 
         <Grid Grid.Row="1">
 
-            <CollectionView ItemsSource="{Binding SeasonRecords}"
+            <CollectionView x:Name="SeasonsCollection"
+                            ItemsSource="{Binding SeasonRecords}"
                             SelectionMode="None"
                             IsVisible="{Binding HasSeasonRecords}">
                 <CollectionView.ItemTemplate>
@@ -71,4 +74,4 @@
 
     </Grid>
 
-</ContentPage>
+</layout:AdaptiveContentPage>

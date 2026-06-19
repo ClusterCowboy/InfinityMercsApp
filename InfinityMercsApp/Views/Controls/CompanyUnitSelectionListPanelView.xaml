@@ -18,9 +18,11 @@
                     <Label
                         Grid.Column="0"
                         Text="UNIT SELECTION"
-                        FontSize="{DynamicResource FontSizeSubHeadline}"
+                        FontSize="{DynamicResource FontSizeSectionHeader}"
                         FontAttributes="Bold"
                         TextColor="White"
+                        LineBreakMode="WordWrap"
+                        MaxLines="2"
                         HorizontalTextAlignment="Start"
                         VerticalTextAlignment="Center"
                         VerticalOptions="Center" />

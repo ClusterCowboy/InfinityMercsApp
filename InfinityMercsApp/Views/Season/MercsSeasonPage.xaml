@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<layout:AdaptiveContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:layout="clr-namespace:InfinityMercsApp.Views.Adaptive"
              x:Class="InfinityMercsApp.Views.Season.MercsSeasonPage"
+             x:Name="SeasonRoot"
              Title="Home"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource Void}">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid x:Name="RootGrid" RowDefinitions="*,Auto" RowSpacing="0">
 
         <!-- Logo and title -->
-        <VerticalStackLayout Grid.Row="0"
+        <VerticalStackLayout x:Name="BrandPanel"
+                             Grid.Row="0"
                              Spacing="{DynamicResource SpacingLarge}"
                              VerticalOptions="Center"
                              Padding="24,0">
@@ -31,7 +34,7 @@
         </VerticalStackLayout>
 
         <!-- Action panel -->
-        <Grid Grid.Row="1" Padding="24,0,24,40">
+        <Grid x:Name="ActionArea" Grid.Row="1" Padding="24,0,24,40">
 
             <!-- Main actions -->
             <VerticalStackLayout x:Name="MainActionsPanel" Spacing="{DynamicResource SpacingMedium}">
@@ -77,4 +80,4 @@
 
         </Grid>
     </Grid>
-</ContentPage>
+</layout:AdaptiveContentPage>

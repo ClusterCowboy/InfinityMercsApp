@@ -206,7 +206,33 @@ public class FactionLogoCacheService
         }
 
         var downloaded = await TryDownloadRemoteAssetAsync(logoUrl!, localPath, cancellationToken);
-        return downloaded ? EnsureResult.Downloaded : EnsureResult.NotAvailable;
+        if (downloaded)
+        {
+            return EnsureResult.Downloaded;
+        }
+
+        // Some faction logos are missing from the CB CDN (e.g. Hayabusa / 1199 returns 404).
+        // Fall back to a copy bundled with the app when one is available.
+        return await TryCopyPackagedFactionFallbackAsync(factionId, localPath, cancellationToken)
+            ? EnsureResult.Downloaded
+            : EnsureResult.NotAvailable;
+    }
+
+    private async Task<bool> TryCopyPackagedFactionFallbackAsync(int factionId, string localPath, CancellationToken cancellationToken)
+    {
+        var packagedPath = GetPackagedFactionLogoPath(factionId);
+
+        bool exists;
+        try
+        {
+            exists = await FileSystem.Current.AppPackageFileExistsAsync(packagedPath);
+        }
+        catch
+        {
+            exists = false;
+        }
+
+        return exists && await TryCopyPackagedAssetAsync(packagedPath, localPath, cancellationToken);
     }
 
     private async Task<EnsureResult> EnsureUnitLogoAvailableAsync(int factionId, int unitId, string? logoUrl, CancellationToken cancellationToken)

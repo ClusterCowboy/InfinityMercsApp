@@ -61,6 +61,13 @@ public partial class InspiringCompanySelectionPage : GeneratedFactionCompanySele
     public ICommand SelectTeamAllowedProfileCommand { get; }
     public ICommand StartCompanyCommand { get; }
 
+    protected override Grid AdaptiveMainContentGrid => MainContentGrid;
+    protected override View AdaptiveUnitsPane => UnitsPane;
+    protected override View AdaptiveRightPane => RightPane;
+    protected override View AdaptiveCompactTabBar => CompactTabBar;
+    protected override Button AdaptiveUnitsTabButton => UnitsTabButton;
+    protected override Button AdaptiveCompanyTabButton => CompanyTabButton;
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
