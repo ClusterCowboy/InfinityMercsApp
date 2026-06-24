@@ -12,6 +12,7 @@
     <shell:Shell.TitleView>
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
             <controls:AddFactionButtonView
+                x:Name="AddFactionButton"
                 Grid.Column="0"
                 Tapped="OnToggleFactionStripTapped" />
             <controls:FactionSlotSelectorView
@@ -37,6 +38,15 @@
             IsVisible="{Binding ShowFactionStrip}"
             ItemsSource="{Binding Factions}"
             SelectFactionCommand="{Binding SelectFactionCommand}" />
+
+        <!-- Compact-only: top-of-content faction icon button that reopens the selector overlay. -->
+        <controls:SelectedFactionButtonView
+            x:Name="SelectedFactionButton"
+            Grid.Row="0"
+            Grid.ColumnSpan="2"
+            IsVisible="False"
+            ShowRightSlot="{Binding ShowRightSelectionBox}"
+            Tapped="OnSelectedFactionButtonTapped" />
 
         <!-- Compact-only workspace switch: shows either the units pane or the detail+roster pane. -->
         <Grid x:Name="CompactTabBar"
@@ -242,6 +252,17 @@
                 VerticalOptions="Center"
                 MaximumWidthRequest="700" />
         </Grid>
+
+        <!-- Compact-only full-screen vertical faction selector. -->
+        <controls:FactionSelectorOverlayView
+            x:Name="FactionSelectorOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            Grid.ColumnSpan="2"
+            ZIndex="200"
+            Title="{Binding Title}"
+            ItemsSource="{Binding Factions}"
+            SelectFactionCommand="{Binding SelectFactionCommand}" />
     </Grid>
 </templates:CompanySelectionPageBase>
 

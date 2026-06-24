@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
+             x:Class="InfinityMercsApp.Views.Controls.FactionSelectorOverlayView"
+             x:Name="FactionSelectorOverlayRoot"
+             BackgroundColor="#CC0E1116"
+             InputTransparent="False"
+             IsVisible="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=IsOpen}">
+
+    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="12">
+
+        <!-- Header: title + close affordance -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Label
+                Grid.Column="0"
+                Text="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=Title}"
+                FontSize="{DynamicResource FontSizeHeadline}"
+                FontAttributes="Bold"
+                TextColor="{StaticResource TextPrimary}"
+                LineBreakMode="TailTruncation"
+                VerticalOptions="Center" />
+            <Border
+                Grid.Column="1"
+                Stroke="{StaticResource Signal}"
+                StrokeThickness="2"
+                WidthRequest="40"
+                HeightRequest="40"
+                Padding="0"
+                VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4" />
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCloseTapped" />
+                </Border.GestureRecognizers>
+                <Label
+                    Text="&#x2715;"
+                    FontSize="{DynamicResource FontSizeSubHeadline}"
+                    TextColor="{StaticResource Signal}"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <!-- Vertically scrolling faction cards (Company-Style-Icon look). Span flips 2->1 in code. -->
+        <CollectionView
+            Grid.Row="1"
+            x:Name="FactionCollectionView"
+            ItemsSource="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemsSource}"
+            VerticalScrollBarVisibility="Always">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="8" VerticalItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Stroke="{StaticResource Signal}"
+                        StrokeThickness="2"
+                        BackgroundColor="{StaticResource Plate}"
+                        Padding="2">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="4" />
+                        </Border.StrokeShape>
+                        <controls:FactionListItemView
+                            UseVerticalTileLayout="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=UseVerticalTileLayout}"
+                            ItemTappedCommand="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemTappedCommand}"
+                            ItemTappedCommandParameter="{Binding .}" />
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentView>

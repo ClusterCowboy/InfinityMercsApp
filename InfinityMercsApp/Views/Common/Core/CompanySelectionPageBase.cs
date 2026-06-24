@@ -88,6 +88,15 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
     /// <summary>The compact "COMPANY" tab button (detail + roster).</summary>
     protected abstract Button AdaptiveCompanyTabButton { get; }
 
+    /// <summary>The title-bar "+" button that toggles the faction picker; hidden on Compact.</summary>
+    protected abstract View AdaptiveAddFactionButton { get; }
+
+    /// <summary>The compact-only top-of-content faction icon button that reopens the selector.</summary>
+    protected abstract SelectedFactionButtonView AdaptiveSelectedFactionButton { get; }
+
+    /// <summary>The compact-only full-screen vertical faction selector overlay.</summary>
+    protected abstract FactionSelectorOverlayView AdaptiveFactionSelectorOverlay { get; }
+
     protected override void OnSizeAllocated(double width, double height)
     {
         base.OnSizeAllocated(width, height);
@@ -186,6 +195,62 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
             units.IsVisible = true;
             right.IsVisible = true;
         }
+
+        ApplyFactionPickerChrome();
+    }
+
+    private bool _factionOverlayWired;
+
+    /// <summary>
+    /// Swaps the faction picker chrome by width: on Compact the title-bar "+" and slot selector are
+    /// hidden in favour of the top-of-content icon button + full-screen overlay; on Medium and wider
+    /// the original title-bar picker + horizontal strip are restored.
+    /// </summary>
+    private void ApplyFactionPickerChrome()
+    {
+        var overlay = AdaptiveFactionSelectorOverlay;
+        if (!_factionOverlayWired && overlay is not null)
+        {
+            overlay.CloseRequested += (_, _) => ShowFactionStrip = false;
+            _factionOverlayWired = true;
+        }
+
+        var addButton = AdaptiveAddFactionButton;
+        var slotSelector = FactionSlotSelectorViewForVisuals;
+        var topButton = AdaptiveSelectedFactionButton;
+
+        if (addButton is not null)
+        {
+            addButton.IsVisible = !IsCompact;
+        }
+
+        if (slotSelector is not null)
+        {
+            slotSelector.IsVisible = !IsCompact;
+        }
+
+        if (topButton is not null)
+        {
+            topButton.IsVisible = IsCompact;
+        }
+
+        SyncCompactFactionOverlay();
+    }
+
+    /// <summary>Keeps the overlay open state tied to <see cref="ShowFactionStrip"/>, Compact only.</summary>
+    private void SyncCompactFactionOverlay()
+    {
+        var overlay = AdaptiveFactionSelectorOverlay;
+        if (overlay is not null)
+        {
+            overlay.IsOpen = IsCompact && ShowFactionStrip;
+        }
+    }
+
+    /// <summary>Handler for the compact top-of-content faction button: reopens the selector overlay.</summary>
+    protected void OnSelectedFactionButtonTapped(object? sender, EventArgs e)
+    {
+        ShowFactionStrip = true;
     }
 
     private void UpdateCompactTabVisuals()
@@ -284,6 +349,7 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
 
             _showFactionStrip = value;
             OnPropertyChanged();
+            SyncCompactFactionOverlay();
         }
     }
 
