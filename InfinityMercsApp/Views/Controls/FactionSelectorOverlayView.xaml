@@ -51,7 +51,7 @@
         <ScrollView Grid.Row="1" Orientation="Vertical">
             <VerticalStackLayout
                 Spacing="8"
-                BindableLayout.ItemsSource="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemsSource}">
+                BindableLayout.ItemsSource="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=EffectiveItemsSource}">
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
                         <Border

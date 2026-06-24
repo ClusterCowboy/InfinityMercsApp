@@ -1,5 +1,3 @@
-using InfinityMercsApp.Diagnostics;
-
 namespace InfinityMercsApp;
 
 public partial class AppShell : Shell
@@ -7,10 +5,6 @@ public partial class AppShell : Shell
     public AppShell()
     {
         InitializeComponent();
-
-        // Page-load profiling: time every Shell navigation. See PerfLog.
-        Navigating += (_, e) => PerfLog.NavigationStarting(e.Target?.Location?.ToString() ?? "?");
-        Navigated += (_, _) => PerfLog.NavigationCompleted(CurrentPage);
         Routing.RegisterRoute(nameof(Views.SplashPage), typeof(Views.SplashPage));
         // Routes declared in AppShell.xaml ShellContent entries must not be registered here,
         // otherwise Shell can throw ambiguous-route exceptions.

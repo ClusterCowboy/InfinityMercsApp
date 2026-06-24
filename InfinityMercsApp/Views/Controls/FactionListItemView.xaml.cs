@@ -8,13 +8,17 @@ using InfinityMercsApp.Views.Common;
 
 namespace InfinityMercsApp.Views.Controls;
 
+/// <summary>
+/// A single faction tile (centred logo + name) used by the faction strip and the compact faction
+/// selector overlay. Renders the faction logo SVG into one <see cref="SkiaSharp.Views.Maui.Controls.SKCanvasView"/>;
+/// the SVG is parsed off the UI thread so filling the large faction list does not block on parsing.
+/// </summary>
 public partial class FactionListItemView : ContentView
 {
     private SKPicture? _svgPicture;
-    private SKPicture? _rightPrimaryPicture;
-    private SKPicture? _rightSecondaryPicture;
     private int _logoLoadVersion;
     public event EventHandler? ItemTapped;
+
     public static readonly BindableProperty ItemTappedCommandProperty =
         BindableProperty.Create(
             nameof(ItemTappedCommand),
@@ -26,61 +30,19 @@ public partial class FactionListItemView : ContentView
             nameof(ItemTappedCommandParameter),
             typeof(object),
             typeof(FactionListItemView));
+
     public static readonly BindableProperty TitleFormattedProperty =
         BindableProperty.Create(
             nameof(TitleFormatted),
             typeof(FormattedString),
             typeof(FactionListItemView),
             propertyChanged: OnTitleFormattedChanged);
-    public static readonly BindableProperty TrailingTextProperty =
-        BindableProperty.Create(
-            nameof(TrailingText),
-            typeof(string),
-            typeof(FactionListItemView),
-            string.Empty,
-            propertyChanged: OnTrailingTextChanged);
-    public static readonly BindableProperty HasTrailingTextProperty =
-        BindableProperty.Create(
-            nameof(HasTrailingText),
-            typeof(bool),
-            typeof(FactionListItemView),
-            false);
-    public static readonly BindableProperty RightPrimaryIconPackagedPathProperty =
-        BindableProperty.Create(
-            nameof(RightPrimaryIconPackagedPath),
-            typeof(string),
-            typeof(FactionListItemView),
-            string.Empty,
-            propertyChanged: OnRightIconPathChanged);
-    public static readonly BindableProperty RightSecondaryIconPackagedPathProperty =
-        BindableProperty.Create(
-            nameof(RightSecondaryIconPackagedPath),
-            typeof(string),
-            typeof(FactionListItemView),
-            string.Empty,
-            propertyChanged: OnRightIconPathChanged);
-    public static readonly BindableProperty ShowRightPrimaryIconSlotProperty =
-        BindableProperty.Create(
-            nameof(ShowRightPrimaryIconSlot),
-            typeof(bool),
-            typeof(FactionListItemView),
-            false);
-    public static readonly BindableProperty ShowRightSecondaryIconSlotProperty =
-        BindableProperty.Create(
-            nameof(ShowRightSecondaryIconSlot),
-            typeof(bool),
-            typeof(FactionListItemView),
-            false);
+
+    // Retained for binding compatibility: both call sites set UseVerticalTileLayout="True" in XAML.
+    // The control now only renders the vertical tile, so the value is no longer acted on.
     public static readonly BindableProperty UseVerticalTileLayoutProperty =
         BindableProperty.Create(
             nameof(UseVerticalTileLayout),
-            typeof(bool),
-            typeof(FactionListItemView),
-            false,
-            propertyChanged: OnLayoutModeChanged);
-    public static readonly BindableProperty IsHorizontalLayoutProperty =
-        BindableProperty.Create(
-            nameof(IsHorizontalLayout),
             typeof(bool),
             typeof(FactionListItemView),
             true);
@@ -89,7 +51,6 @@ public partial class FactionListItemView : ContentView
     {
         InitializeComponent();
         UpdateTitleFormattingState(TitleFormatted);
-        RefreshLayoutModeVisibility();
         RefreshTitlePresentation();
     }
 
@@ -113,64 +74,10 @@ public partial class FactionListItemView : ContentView
 
     public bool HasTitleFormatted { get; private set; }
 
-    public string TrailingText
-    {
-        get => (string)GetValue(TrailingTextProperty);
-        set => SetValue(TrailingTextProperty, value);
-    }
-
-    public bool HasTrailingText
-    {
-        get => (bool)GetValue(HasTrailingTextProperty);
-        private set => SetValue(HasTrailingTextProperty, value);
-    }
-
-    public string RightPrimaryIconPackagedPath
-    {
-        get => (string)GetValue(RightPrimaryIconPackagedPathProperty);
-        set => SetValue(RightPrimaryIconPackagedPathProperty, value);
-    }
-
-    public string RightSecondaryIconPackagedPath
-    {
-        get => (string)GetValue(RightSecondaryIconPackagedPathProperty);
-        set => SetValue(RightSecondaryIconPackagedPathProperty, value);
-    }
-
-    public bool ShowRightPrimaryIconSlot
-    {
-        get => (bool)GetValue(ShowRightPrimaryIconSlotProperty);
-        set => SetValue(ShowRightPrimaryIconSlotProperty, value);
-    }
-
-    public bool ShowRightSecondaryIconSlot
-    {
-        get => (bool)GetValue(ShowRightSecondaryIconSlotProperty);
-        set => SetValue(ShowRightSecondaryIconSlotProperty, value);
-    }
-
     public bool UseVerticalTileLayout
     {
         get => (bool)GetValue(UseVerticalTileLayoutProperty);
         set => SetValue(UseVerticalTileLayoutProperty, value);
-    }
-
-    public bool IsHorizontalLayout
-    {
-        get => (bool)GetValue(IsHorizontalLayoutProperty);
-        private set => SetValue(IsHorizontalLayoutProperty, value);
-    }
-
-    private static void OnLayoutModeChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is not FactionListItemView view)
-        {
-            return;
-        }
-
-        var vertical = newValue is bool enabled && enabled;
-        view.IsHorizontalLayout = !vertical;
-        view.RefreshLayoutModeVisibility();
     }
 
     private static void OnTitleFormattedChanged(BindableObject bindable, object oldValue, object newValue)
@@ -182,14 +89,6 @@ public partial class FactionListItemView : ContentView
 
         view.UpdateTitleFormattingState(newValue as FormattedString);
         view.RefreshTitlePresentation();
-    }
-
-    private static void OnTrailingTextChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is FactionListItemView view)
-        {
-            view.HasTrailingText = !string.IsNullOrWhiteSpace(newValue as string);
-        }
     }
 
     private void UpdateTitleFormattingState(FormattedString? formattedTitle)
@@ -204,33 +103,16 @@ public partial class FactionListItemView : ContentView
         OnPropertyChanged(nameof(HasTitleFormatted));
     }
 
-    private void RefreshLayoutModeVisibility()
-    {
-        HorizontalLayoutRoot.IsVisible = IsHorizontalLayout;
-        VerticalLayoutRoot.IsVisible = !IsHorizontalLayout;
-    }
-
     private void RefreshTitlePresentation()
     {
-        HorizontalFormattedNameLabel.IsVisible = HasTitleFormatted;
-        HorizontalNameLabel.IsVisible = !HasTitleFormatted;
         VerticalFormattedNameLabel.IsVisible = HasTitleFormatted;
         VerticalNameLabel.IsVisible = !HasTitleFormatted;
-    }
-
-    private static void OnRightIconPathChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is FactionListItemView view)
-        {
-            _ = view.LoadRightIconsAsync();
-        }
     }
 
     protected override void OnBindingContextChanged()
     {
         base.OnBindingContextChanged();
         _ = LoadSvgFromCacheAsync();
-        _ = LoadRightIconsAsync();
     }
 
     private async Task LoadSvgFromCacheAsync()
@@ -242,84 +124,47 @@ public partial class FactionListItemView : ContentView
         var item = BindingContext as IViewerListItem;
         if (item is null)
         {
-            LogoCanvas.InvalidateSurface();
             LogoCanvasVertical.InvalidateSurface();
             return;
         }
 
+        SKPicture? loadedPicture = null;
         try
         {
-            Stream? stream = await OpenBestLogoStreamAsync(item);
-
-            if (stream is null)
+            // Open and parse the logo off the UI thread: SKSvg.Load is synchronous CPU work and,
+            // multiplied across the ~40-item faction list, blocked item creation. SKPicture is
+            // immutable once built, so it is safe to hand back and draw on the UI thread later.
+            loadedPicture = await Task.Run(async () =>
             {
-                if (loadVersion != _logoLoadVersion)
+                var stream = await OpenBestLogoStreamAsync(item);
+                if (stream is null)
                 {
-                    return;
+                    return null;
                 }
 
-                LogoCanvas.InvalidateSurface();
-                LogoCanvasVertical.InvalidateSurface();
-                return;
-            }
-
-            SKPicture? loadedPicture = null;
-            await using (stream)
-            {
-                var svg = new SKSvg();
-                loadedPicture = svg.Load(stream);
-            }
-
-            if (loadVersion != _logoLoadVersion)
-            {
-                loadedPicture?.Dispose();
-                return;
-            }
-
-            _svgPicture?.Dispose();
-            _svgPicture = loadedPicture;
+                await using (stream)
+                {
+                    var svg = new SKSvg();
+                    return svg.Load(stream);
+                }
+            });
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"FactionListItemView SVG load failed for '{item.CachedLogoPath ?? item.PackagedLogoPath}': {ex.Message}");
-            _svgPicture = null;
+            loadedPicture = null;
         }
 
-        LogoCanvas.InvalidateSurface();
+        // A newer load (recycled item / fast rebind) superseded this one; drop the stale picture.
+        if (loadVersion != _logoLoadVersion)
+        {
+            loadedPicture?.Dispose();
+            return;
+        }
+
+        _svgPicture?.Dispose();
+        _svgPicture = loadedPicture;
         LogoCanvasVertical.InvalidateSurface();
-    }
-
-    private async Task LoadRightIconsAsync()
-    {
-        _rightPrimaryPicture?.Dispose();
-        _rightPrimaryPicture = null;
-        _rightSecondaryPicture?.Dispose();
-        _rightSecondaryPicture = null;
-
-        _rightPrimaryPicture = await TryLoadPackagedSvgAsync(RightPrimaryIconPackagedPath);
-        _rightSecondaryPicture = await TryLoadPackagedSvgAsync(RightSecondaryIconPackagedPath);
-
-        RightIconPrimaryCanvas.InvalidateSurface();
-        RightIconSecondaryCanvas.InvalidateSurface();
-    }
-
-    private static async Task<SKPicture?> TryLoadPackagedSvgAsync(string? packagedPath)
-    {
-        if (string.IsNullOrWhiteSpace(packagedPath))
-        {
-            return null;
-        }
-
-        try
-        {
-            await using var stream = await FileSystem.Current.OpenAppPackageFileAsync(packagedPath);
-            var svg = new SKSvg();
-            return svg.Load(stream);
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     private static async Task<Stream?> OpenBestLogoStreamAsync(IViewerListItem item)
@@ -398,7 +243,7 @@ public partial class FactionListItemView : ContentView
         }
     }
 
-    private void OnLogoCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    private void OnLogoCanvasVerticalPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
@@ -421,46 +266,6 @@ public partial class FactionListItemView : ContentView
         canvas.Translate(x, y);
         canvas.Scale(scale);
         canvas.DrawPicture(_svgPicture);
-    }
-
-    private void OnLogoCanvasVerticalPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        OnLogoCanvasPaintSurface(sender, e);
-    }
-
-    private void OnRightIconPrimaryCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawCanvasPicture(_rightPrimaryPicture, e);
-    }
-
-    private void OnRightIconSecondaryCanvasPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        DrawCanvasPicture(_rightSecondaryPicture, e);
-    }
-
-    private static void DrawCanvasPicture(SKPicture? picture, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-
-        if (picture is null)
-        {
-            return;
-        }
-
-        var bounds = picture.CullRect;
-        if (bounds.Width <= 0 || bounds.Height <= 0)
-        {
-            return;
-        }
-
-        var scale = Math.Min(e.Info.Width / bounds.Width, e.Info.Height / bounds.Height);
-        var x = (e.Info.Width - (bounds.Width * scale)) / 2f;
-        var y = (e.Info.Height - (bounds.Height * scale)) / 2f;
-
-        canvas.Translate(x, y);
-        canvas.Scale(scale);
-        canvas.DrawPicture(picture);
     }
 
     private void OnItemTapped(object? sender, TappedEventArgs e)

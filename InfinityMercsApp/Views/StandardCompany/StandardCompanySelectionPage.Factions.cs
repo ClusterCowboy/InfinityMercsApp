@@ -48,11 +48,7 @@ public partial class StandardCompanySelectionPage
                     PackagedLogoPath = packagedLogoPath
                 });
 
-            Factions.Clear();
-            foreach (var faction in items)
-            {
-                Factions.Add(faction);
-            }
+            Factions.ReplaceRange(items);
         }
         catch (Exception ex)
         {

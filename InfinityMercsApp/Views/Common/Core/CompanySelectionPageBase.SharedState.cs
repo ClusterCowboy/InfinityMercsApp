@@ -26,7 +26,7 @@ public abstract partial class CompanySelectionPageBase
     /// <summary>Active unit search/filter criteria and prepared popup options.</summary>
     protected readonly CompanySelectionFilterState _filterState = new();
 
-    public ObservableCollection<ArmyFactionSelectionItem> Factions { get; } = [];
+    public ObservableRangeCollection<ArmyFactionSelectionItem> Factions { get; } = [];
     public ObservableCollection<ArmyUnitSelectionItem> Units { get; } = [];
     public ObservableCollection<ArmyTeamListItem> TeamEntries { get; } = [];
     public ObservableCollection<ViewerProfileItem> Profiles { get; } = [];

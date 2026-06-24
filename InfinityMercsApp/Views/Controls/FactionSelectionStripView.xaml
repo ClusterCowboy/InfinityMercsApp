@@ -4,30 +4,28 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              x:Class="InfinityMercsApp.Views.Controls.FactionSelectionStripView"
              x:Name="FactionSelectionStripRoot">
-    <ContentView.GestureRecognizers>
-        <PointerGestureRecognizer
-            PointerPressed="OnStripPointerPressed"
-            PointerMoved="OnStripPointerMoved"
-            PointerReleased="OnStripPointerReleased" />
-    </ContentView.GestureRecognizers>
 
-    <ScrollView x:Name="FactionScrollView" Orientation="Horizontal" HorizontalScrollBarVisibility="Always" Padding="0">
-        <ScrollView.GestureRecognizers>
-            <PanGestureRecognizer PanUpdated="OnFactionStripPanUpdated" />
-        </ScrollView.GestureRecognizers>
-        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Source={x:Reference FactionSelectionStripRoot}, Path=ItemsSource}"
-                               Spacing="2"
-                               Padding="0">
-            <BindableLayout.ItemTemplate>
-                <DataTemplate>
-                    <controls:FactionListItemView
-                        WidthRequest="138"
-                        UseVerticalTileLayout="True"
-                        ItemTappedCommand="{Binding Source={x:Reference FactionSelectionStripRoot}, Path=SelectFactionCommand}"
-                        ItemTappedCommandParameter="{Binding .}" />
-                </DataTemplate>
-            </BindableLayout.ItemTemplate>
-        </HorizontalStackLayout>
-    </ScrollView>
+    <!-- Virtualized horizontal list: only the on-screen faction tiles are realised, so opening the
+         picker no longer builds a Skia canvas for every faction up-front. The per-item tap command is
+         bound via RelativeSource (not x:Reference) so it resolves inside the CollectionView template. -->
+    <CollectionView x:Name="FactionCollectionView"
+                    HeightRequest="100"
+                    SelectionMode="None"
+                    HorizontalScrollBarVisibility="Always"
+                    VerticalScrollBarVisibility="Never"
+                    ItemsSource="{Binding Source={x:Reference FactionSelectionStripRoot}, Path=EffectiveItemsSource}">
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="2" />
+        </CollectionView.ItemsLayout>
+        <CollectionView.ItemTemplate>
+            <DataTemplate>
+                <controls:FactionListItemView
+                    WidthRequest="138"
+                    UseVerticalTileLayout="True"
+                    ItemTappedCommand="{Binding Source={RelativeSource AncestorType={x:Type controls:FactionSelectionStripView}}, Path=SelectFactionCommand}"
+                    ItemTappedCommandParameter="{Binding .}" />
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+    </CollectionView>
 
 </ContentView>

@@ -5,6 +5,10 @@
              x:Class="InfinityMercsApp.Views.Controls.FactionListItemView"
              x:Name="FactionListItemRoot">
 
+    <!-- Vertical tile: a centred logo above the faction name. The logo SVG is parsed off the UI
+         thread and drawn into a single SKCanvasView. Every call site uses this vertical tile, so the
+         control no longer carries the previously-hidden horizontal layout (which realised 3 extra
+         SKCanvasView GPU surfaces per item for no visible benefit). -->
     <Border x:Name="ItemBorder" Padding="0" StrokeThickness="0">
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnItemTapped" />
@@ -22,71 +26,11 @@
         </Border.Triggers>
 
         <Grid
-            x:Name="HorizontalLayoutRoot"
-            Padding="8,6"
-            MinimumHeightRequest="50"
-            ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-            ColumnSpacing="10">
-            <skia:SKCanvasView
-                x:Name="LogoCanvas"
-                WidthRequest="32"
-                HeightRequest="32"
-                VerticalOptions="Center"
-                PaintSurface="OnLogoCanvasPaintSurface" />
-            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                <Grid>
-                    <Label
-                        x:Name="HorizontalNameLabel"
-                        Text="{Binding Name}"
-                        TextColor="{StaticResource TextPrimary}"
-                        LineBreakMode="WordWrap"
-                        MaxLines="3" />
-                    <Label
-                        x:Name="HorizontalFormattedNameLabel"
-                        FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
-                        TextColor="{StaticResource TextPrimary}"
-                        LineBreakMode="WordWrap"
-                        MaxLines="3"
-                        IsVisible="False" />
-                </Grid>
-                <Label
-                    Text="{Binding Subtitle}"
-                    FontSize="{DynamicResource FontSizeCaption}"
-                    TextColor="{StaticResource TextMuted}"
-                    IsVisible="{Binding HasSubtitle}" />
-            </VerticalStackLayout>
-            <skia:SKCanvasView
-                Grid.Column="2"
-                x:Name="RightIconPrimaryCanvas"
-                WidthRequest="24"
-                HeightRequest="24"
-                VerticalOptions="Center"
-                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=ShowRightPrimaryIconSlot}"
-                PaintSurface="OnRightIconPrimaryCanvasPaintSurface" />
-            <skia:SKCanvasView
-                Grid.Column="3"
-                x:Name="RightIconSecondaryCanvas"
-                WidthRequest="24"
-                HeightRequest="24"
-                VerticalOptions="Center"
-                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=ShowRightSecondaryIconSlot}"
-                PaintSurface="OnRightIconSecondaryCanvasPaintSurface" />
-            <Label
-                Grid.Column="4"
-                Text="{Binding Source={x:Reference FactionListItemRoot}, Path=TrailingText}"
-                FontAttributes="Bold"
-                TextColor="{StaticResource TextPrimary}"
-                VerticalOptions="Start"
-                IsVisible="{Binding Source={x:Reference FactionListItemRoot}, Path=HasTrailingText}" />
-        </Grid>
-
-        <Grid
             x:Name="VerticalLayoutRoot"
             Padding="8,6"
             MinimumHeightRequest="88"
             RowDefinitions="Auto,Auto"
-            RowSpacing="6"
-            IsVisible="False">
+            RowSpacing="6">
             <skia:SKCanvasView
                 x:Name="LogoCanvasVertical"
                 Grid.Row="0"

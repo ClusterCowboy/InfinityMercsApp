@@ -13,13 +13,13 @@ namespace InfinityMercsApp.Views.Controls;
 public partial class FactionSelectorOverlayView : ContentView
 {
     public static readonly BindableProperty IsOpenProperty =
-        BindableProperty.Create(nameof(IsOpen), typeof(bool), typeof(FactionSelectorOverlayView), false);
+        BindableProperty.Create(nameof(IsOpen), typeof(bool), typeof(FactionSelectorOverlayView), false, propertyChanged: OnGatingChanged);
 
     public static readonly BindableProperty TitleProperty =
         BindableProperty.Create(nameof(Title), typeof(string), typeof(FactionSelectorOverlayView), "Choose your faction");
 
     public static readonly BindableProperty ItemsSourceProperty =
-        BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(FactionSelectorOverlayView));
+        BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(FactionSelectorOverlayView), propertyChanged: OnGatingChanged);
 
     public static readonly BindableProperty SelectFactionCommandProperty =
         BindableProperty.Create(nameof(SelectFactionCommand), typeof(ICommand), typeof(FactionSelectorOverlayView));
@@ -57,6 +57,20 @@ public partial class FactionSelectorOverlayView : ContentView
     {
         get => (IEnumerable?)GetValue(ItemsSourceProperty);
         set => SetValue(ItemsSourceProperty, value);
+    }
+
+    /// <summary>
+    /// The item source actually bound to the inner list. The faction cards are SVG-heavy and
+    /// non-virtualized, so a closed overlay binds nothing and pays no build cost until it opens.
+    /// </summary>
+    public IEnumerable? EffectiveItemsSource => IsOpen ? ItemsSource : null;
+
+    private static void OnGatingChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is FactionSelectorOverlayView view)
+        {
+            view.OnPropertyChanged(nameof(EffectiveItemsSource));
+        }
     }
 
     public ICommand? SelectFactionCommand

@@ -3,12 +3,12 @@ using System.Windows.Input;
 
 namespace InfinityMercsApp.Views.Controls;
 
+/// <summary>
+/// Horizontal faction picker strip. Backed by a virtualized <see cref="CollectionView"/> so only the
+/// on-screen faction tiles are realised; tapping a tile runs <see cref="SelectFactionCommand"/>.
+/// </summary>
 public partial class FactionSelectionStripView : ContentView
 {
-    private double _panStartScrollX;
-    private bool _isMouseDragging;
-    private Point? _lastPointerPosition;
-
     public static readonly BindableProperty ItemsSourceProperty =
         BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(FactionSelectionStripView));
 
@@ -32,48 +32,20 @@ public partial class FactionSelectionStripView : ContentView
         set => SetValue(SelectFactionCommandProperty, value);
     }
 
-    private void OnFactionStripPanUpdated(object? sender, PanUpdatedEventArgs e)
+    /// <summary>
+    /// The item source actually bound to the inner list. Faction tiles are SVG-heavy, so a hidden
+    /// strip binds nothing and pays no build cost until it is shown.
+    /// </summary>
+    public IEnumerable? EffectiveItemsSource => IsVisible ? ItemsSource : null;
+
+    protected override void OnPropertyChanged(string? propertyName = null)
     {
-        switch (e.StatusType)
+        base.OnPropertyChanged(propertyName);
+
+        if (propertyName == IsVisibleProperty.PropertyName ||
+            propertyName == ItemsSourceProperty.PropertyName)
         {
-            case GestureStatus.Started:
-                _panStartScrollX = FactionScrollView.ScrollX;
-                break;
-            case GestureStatus.Running:
-                var targetX = Math.Max(0, _panStartScrollX - e.TotalX);
-                _ = FactionScrollView.ScrollToAsync(targetX, 0, false);
-                break;
+            OnPropertyChanged(nameof(EffectiveItemsSource));
         }
-    }
-
-    private void OnStripPointerPressed(object? sender, PointerEventArgs e)
-    {
-        _isMouseDragging = true;
-        _lastPointerPosition = e.GetPosition(this);
-    }
-
-    private void OnStripPointerMoved(object? sender, PointerEventArgs e)
-    {
-        if (!_isMouseDragging)
-        {
-            return;
-        }
-
-        var currentPosition = e.GetPosition(this);
-        if (!currentPosition.HasValue || !_lastPointerPosition.HasValue)
-        {
-            return;
-        }
-
-        var deltaX = currentPosition.Value.X - _lastPointerPosition.Value.X;
-        var targetX = Math.Max(0, FactionScrollView.ScrollX - deltaX);
-        _ = FactionScrollView.ScrollToAsync(targetX, 0, false);
-        _lastPointerPosition = currentPosition;
-    }
-
-    private void OnStripPointerReleased(object? sender, PointerEventArgs e)
-    {
-        _isMouseDragging = false;
-        _lastPointerPosition = null;
     }
 }
