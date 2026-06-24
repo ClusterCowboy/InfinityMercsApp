@@ -18,6 +18,10 @@ public abstract partial class CompanySelectionPageBase
             packagedPath,
             FactionSlotSelectorViewForVisuals,
             message => Console.Error.WriteLine(message));
+
+        // Mirror the same slot icon onto the compact top-of-content faction button so it always
+        // reflects the current pick on small screens (loads its own copy from the same paths).
+        AdaptiveSelectedFactionButton?.SetSlot(slotIndex, cachedPath, packagedPath);
     }
 
     /// <summary>

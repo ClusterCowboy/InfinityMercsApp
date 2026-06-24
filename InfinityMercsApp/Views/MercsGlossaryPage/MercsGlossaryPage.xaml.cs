@@ -6,11 +6,26 @@ using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using Svg.Skia;
+using InfinityMercsApp.Views.Adaptive;
 
 namespace InfinityMercsApp.Views;
 
-public partial class MercsGlossaryPage : ContentPage
+public partial class MercsGlossaryPage : AdaptiveContentPage
 {
+    private bool _showDetail;
+
+    /// <summary>
+    /// Rules-index list text size, scaled to the available width so long titles stay readable and
+    /// fit inside the index box. Compact has the full screen width; the medium+ rail is narrow.
+    /// </summary>
+    public double ListFontSize => LayoutMode switch
+    {
+        AdaptiveLayoutMode.Compact => 17d,
+        AdaptiveLayoutMode.Medium => 14d,
+        AdaptiveLayoutMode.Expanded => 15d,
+        _ => 16d
+    };
+
     private SKPicture? _deltaIconPicture;
     private readonly ObservableCollection<GlossaryEntryItem> _glossaryItems = [];
     private GlossaryEntryItem? _selectedItem;
@@ -26,6 +41,12 @@ public partial class MercsGlossaryPage : ContentPage
         get => _selectedItem;
         set
         {
+            if (value?.IsHeader == true)
+            {
+                OnPropertyChanged();
+                return;
+            }
+
             if (_selectedItem == value)
             {
                 return;
@@ -33,6 +54,10 @@ public partial class MercsGlossaryPage : ContentPage
 
             _selectedItem = value;
             OnPropertyChanged();
+
+            // In compact mode, choosing a rule reveals the detail pane over the index.
+            _showDetail = _selectedItem is not null;
+            ApplyLayout();
 
             if (_selectedItem is null)
             {
@@ -83,8 +108,60 @@ public partial class MercsGlossaryPage : ContentPage
         InitializeComponent();
         BindingContext = this;
         UpdateWebViewSource();
+        ApplyLayout();
         _ = LoadGlossaryAsync();
         _ = LoadDeltaIconAsync();
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        OnPropertyChanged(nameof(ListFontSize));
+
+        if (IsCompact)
+        {
+            RootGrid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+            RootGrid.ColumnSpacing = 0;
+            Grid.SetColumn(IndexPane, 0);
+            Grid.SetColumn(DetailPane, 0);
+            IndexPane.IsVisible = !_showDetail;
+            DetailPane.IsVisible = _showDetail;
+            DetailBackButton.IsVisible = true;
+        }
+        else
+        {
+            var indexWidth = LayoutMode switch
+            {
+                AdaptiveLayoutMode.Medium => 300d,
+                AdaptiveLayoutMode.Expanded => 320d,
+                _ => 340d
+            };
+
+            RootGrid.ColumnDefinitions =
+            [
+                new ColumnDefinition(new GridLength(indexWidth)),
+                new ColumnDefinition(GridLength.Star)
+            ];
+            RootGrid.ColumnSpacing = 16;
+            Grid.SetColumn(IndexPane, 0);
+            Grid.SetColumn(DetailPane, 1);
+            IndexPane.IsVisible = true;
+            DetailPane.IsVisible = true;
+            DetailBackButton.IsVisible = false;
+        }
+
+        // Keep rules text at a comfortable reading width on the largest screens. The WebView must
+        // stay Fill — it has no intrinsic content width, so centering collapses it to zero and the
+        // text disappears. Cap the width via MaximumWidthRequest instead.
+        GlossaryWebView.HorizontalOptions = LayoutOptions.Fill;
+        GlossaryWebView.MaximumWidthRequest = IsWide ? 860d : double.PositiveInfinity;
+    }
+
+    private void OnDetailBackClicked(object? sender, EventArgs e)
+    {
+        _showDetail = false;
+        ApplyLayout();
     }
 
     private async Task LoadGlossaryAsync()
@@ -98,27 +175,83 @@ public partial class MercsGlossaryPage : ContentPage
             });
 
             _glossaryItems.Clear();
-            foreach (var entry in payload?.Entries ?? [])
-            {
-                if (string.IsNullOrWhiteSpace(entry.Title))
-                {
-                    continue;
-                }
+            AddGlossaryItems(payload);
 
-                _glossaryItems.Add(new GlossaryEntryItem
-                {
-                    Title = entry.Title.Trim(),
-                    MarkdownFile = entry.MarkdownFile?.Trim() ?? string.Empty,
-                    HasDelta = entry.HasDelta
-                });
-            }
-
-            SelectedItem = _glossaryItems.FirstOrDefault();
+            // Preselect the first rule so the detail pane has content, but keep compact mode on the
+            // index list — the user opens a rule explicitly.
+            SelectedItem = _glossaryItems.FirstOrDefault(item => !item.IsHeader);
+            _showDetail = false;
+            ApplyLayout();
         }
         catch (Exception ex)
         {
             SelectedTitle = "Load Error";
             SelectedContentHtml = BuildHtmlFromMarkdown($"Failed to load glossary data: {ex.Message}");
+        }
+    }
+
+    private void AddGlossaryItems(GlossaryPayload? payload)
+    {
+        if (payload?.Sections.Count > 0)
+        {
+            foreach (var section in payload.Sections)
+            {
+                AddHeader(section.HeaderOrTitle);
+                AddEntries(section.Entries);
+            }
+
+            return;
+        }
+
+        string? lastSectionHeader = null;
+        foreach (var entry in payload?.Entries ?? [])
+        {
+            var sectionHeader = entry.SectionHeaderOrHeader;
+            if (!string.IsNullOrWhiteSpace(sectionHeader) &&
+                !string.Equals(sectionHeader, lastSectionHeader, StringComparison.Ordinal))
+            {
+                AddHeader(sectionHeader);
+                lastSectionHeader = sectionHeader;
+            }
+
+            AddEntry(entry);
+        }
+
+        void AddHeader(string? header)
+        {
+            if (string.IsNullOrWhiteSpace(header))
+            {
+                return;
+            }
+
+            _glossaryItems.Add(new GlossaryEntryItem
+            {
+                Title = header.Trim(),
+                IsHeader = true
+            });
+        }
+
+        void AddEntries(IEnumerable<GlossaryPayloadEntry> entries)
+        {
+            foreach (var entry in entries)
+            {
+                AddEntry(entry);
+            }
+        }
+
+        void AddEntry(GlossaryPayloadEntry entry)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Title))
+            {
+                return;
+            }
+
+            _glossaryItems.Add(new GlossaryEntryItem
+            {
+                Title = entry.Title.Trim(),
+                MarkdownFile = entry.MarkdownFile?.Trim() ?? string.Empty,
+                HasDelta = entry.HasDelta
+            });
         }
     }
 
@@ -236,6 +369,16 @@ public partial class MercsGlossaryPage : ContentPage
     private sealed class GlossaryPayload
     {
         public List<GlossaryPayloadEntry> Entries { get; init; } = [];
+        public List<GlossaryPayloadSection> Sections { get; init; } = [];
+    }
+
+    private sealed class GlossaryPayloadSection
+    {
+        public string Header { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public List<GlossaryPayloadEntry> Entries { get; init; } = [];
+
+        public string HeaderOrTitle => string.IsNullOrWhiteSpace(Header) ? Title : Header;
     }
 
     private sealed class GlossaryPayloadEntry
@@ -243,6 +386,10 @@ public partial class MercsGlossaryPage : ContentPage
         public string Title { get; init; } = string.Empty;
         public string MarkdownFile { get; init; } = string.Empty;
         public bool HasDelta { get; init; }
+        public string SectionHeader { get; init; } = string.Empty;
+        public string Header { get; init; } = string.Empty;
+
+        public string SectionHeaderOrHeader => string.IsNullOrWhiteSpace(SectionHeader) ? Header : SectionHeader;
     }
 
     public sealed class GlossaryEntryItem
@@ -250,6 +397,8 @@ public partial class MercsGlossaryPage : ContentPage
         public string Title { get; init; } = string.Empty;
         public string MarkdownFile { get; init; } = string.Empty;
         public bool HasDelta { get; init; }
+        public bool IsHeader { get; init; }
+        public bool ShowDeltaIcon => !IsHeader && HasDelta;
     }
 
     private static string BuildHtmlFromMarkdown(string markdown)

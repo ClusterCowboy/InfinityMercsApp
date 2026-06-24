@@ -21,10 +21,7 @@
                 </x:Array>
             </Picker.ItemsSource>
         </Picker>
-        <Label Text="Points to start season" VerticalOptions="Center" />
-        <Label
-            Text="{Binding Source={x:Reference SeasonStartPointsRoot}, Path=PointsRemainingText, StringFormat='({0} remaining)'}"
-            VerticalOptions="Center" />
+        <Label Text="Points" VerticalOptions="Center" />
         <skia:SKCanvasView
             x:Name="SeasonValidationCanvas"
             WidthRequest="24"

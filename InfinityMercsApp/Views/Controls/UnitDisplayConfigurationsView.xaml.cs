@@ -19,7 +19,24 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private const double DefaultUnitHeadingFontStep = 0.5d;
     private const string DefaultStatValue = "-";
     private const string DefaultVitalityHeader = "VITA";
-    private const double LogoHideThreshold = 500d;
+    // The faction emblem shrinks as the pane narrows and only disappears when there
+    // is genuinely no room, so the selected unit's faction stays identifiable at
+    // small window sizes instead of the header reading as an empty, cut-off box.
+    private const double LogoHideThreshold = 320d;
+    private const double LogoCompactThreshold = 460d;
+    // Below this pane width the per-profile weapons/skills/equipment block reflows from a single
+    // row of four columns into a 2x2 grid so each cell has room instead of wrapping every word.
+    private const double ProfileTwoColumnThreshold = 520d;
+    private const double LogoFullColumnWidth = 84d;
+    private const double LogoFullCanvasSize = 82d;
+    private const double LogoCompactColumnWidth = 54d;
+    private const double LogoCompactCanvasSize = 50d;
+    // The trait-icon column is squeezed on narrow panes so the statline (MOV, CC, ...) gets the
+    // freed horizontal space; it shares the logo's compact threshold so both shrink together.
+    private const double IconColumnFullWidth = 58d;
+    private const double IconColumnFullCanvasSize = 50d;
+    private const double IconColumnCompactWidth = 34d;
+    private const double IconColumnCompactCanvasSize = 30d;
     public static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
     public static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
     public static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
@@ -28,7 +45,14 @@ public partial class UnitDisplayConfigurationsView : ContentView
     public static readonly Color SkillsAccentOnLightSecondary = Color.FromArgb("#7C2D12");
     private sealed record HeaderIconRenderItem(SKPicture Picture);
     private double _profilesPanLastTotalY;
-    private bool _logoVisible = true;
+    private double _logoColumnWidth = -1d;
+    private double _iconColumnWidth = -1d;
+
+    // Re-entrancy guards for the two size-driven font fitters below. Both adjust a font size from
+    // inside a SizeChanged callback, which re-measures the element and re-raises SizeChanged; without
+    // these the recursion can outrun WinUI's layout-pass iteration cap and throw LayoutCycleException.
+    private bool _adjustingHeadingFontSize;
+    private bool _adjustingStatFontSize;
 
     /// <summary>
     /// Unit MOV value shown in the primary statline.
@@ -199,6 +223,11 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(StatFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
     public static readonly BindableProperty StatHeaderFontSizeProperty =
         BindableProperty.Create(nameof(StatHeaderFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
+    public static readonly BindableProperty IsCompactProfileLayoutProperty =
+        BindableProperty.Create(nameof(IsCompactProfileLayout), typeof(bool), typeof(UnitDisplayConfigurationsView), false,
+            propertyChanged: OnIsCompactProfileLayoutChanged);
+    public static readonly BindableProperty IsWideProfileLayoutProperty =
+        BindableProperty.Create(nameof(IsWideProfileLayout), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
 
     public string UnitMov
     {
@@ -614,6 +643,31 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(StatHeaderFontSizeProperty, value);
     }
 
+    /// <summary>
+    /// When true the per-profile weapons/skills/equipment block is laid out as a 2x2 grid
+    /// (equipment + skills on top, ranged + close combat below) for narrow panes.
+    /// </summary>
+    public bool IsCompactProfileLayout
+    {
+        get => (bool)GetValue(IsCompactProfileLayoutProperty);
+        set => SetValue(IsCompactProfileLayoutProperty, value);
+    }
+
+    /// <summary>Inverse of <see cref="IsCompactProfileLayout"/>; the single-row four-column layout.</summary>
+    public bool IsWideProfileLayout
+    {
+        get => (bool)GetValue(IsWideProfileLayoutProperty);
+        private set => SetValue(IsWideProfileLayoutProperty, value);
+    }
+
+    private static void OnIsCompactProfileLayoutChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is UnitDisplayConfigurationsView view)
+        {
+            view.IsWideProfileLayout = newValue is not bool compact || !compact;
+        }
+    }
+
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowPeripheralIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
@@ -657,14 +711,66 @@ public partial class UnitDisplayConfigurationsView : ContentView
         base.OnSizeAllocated(width, height);
         if (width <= 0) return;
 
-        var shouldShowLogo = width >= LogoHideThreshold;
-        if (shouldShowLogo == _logoVisible) return;
+        // Reflow the per-profile block to 2x2 on narrow panes. Set before the logo early-return
+        // below, whose threshold differs, so crossing this width always updates the layout.
+        IsCompactProfileLayout = width < ProfileTwoColumnThreshold;
 
-        _logoVisible = shouldShowLogo;
-        LogoColumnBorder.IsVisible = shouldShowLogo;
-        ConfigurationsRootGrid.ColumnDefinitions[1].Width = shouldShowLogo
-            ? new GridLength(84)
-            : new GridLength(0);
+        UpdateIconColumnWidth(width);
+
+        double columnWidth;
+        double canvasSize;
+        if (width < LogoHideThreshold)
+        {
+            columnWidth = 0d;
+            canvasSize = 0d;
+        }
+        else if (width < LogoCompactThreshold)
+        {
+            columnWidth = LogoCompactColumnWidth;
+            canvasSize = LogoCompactCanvasSize;
+        }
+        else
+        {
+            columnWidth = LogoFullColumnWidth;
+            canvasSize = LogoFullCanvasSize;
+        }
+
+        if (Math.Abs(_logoColumnWidth - columnWidth) < 0.5) return;
+        _logoColumnWidth = columnWidth;
+
+        var showLogo = columnWidth > 0d;
+        LogoColumnBorder.IsVisible = showLogo;
+        ConfigurationsRootGrid.ColumnDefinitions[1].Width = new GridLength(columnWidth);
+        if (showLogo)
+        {
+            SelectedUnitCanvas.WidthRequest = canvasSize;
+            SelectedUnitCanvas.HeightRequest = canvasSize;
+            SelectedUnitCanvas.InvalidateSurface();
+        }
+    }
+
+    // Narrows the trait-icon column (and its canvas) on small panes so the statline keeps the room.
+    private void UpdateIconColumnWidth(double width)
+    {
+        double columnWidth;
+        double canvasSize;
+        if (width < LogoCompactThreshold)
+        {
+            columnWidth = IconColumnCompactWidth;
+            canvasSize = IconColumnCompactCanvasSize;
+        }
+        else
+        {
+            columnWidth = IconColumnFullWidth;
+            canvasSize = IconColumnFullCanvasSize;
+        }
+
+        if (Math.Abs(_iconColumnWidth - columnWidth) < 0.5) return;
+        _iconColumnWidth = columnWidth;
+
+        ConfigurationsRootGrid.ColumnDefinitions[0].Width = new GridLength(columnWidth);
+        HeaderIconsCanvas.WidthRequest = canvasSize;
+        HeaderIconsCanvas.InvalidateSurface();
     }
 
     public Label UnitNameHeadingElement => UnitNameHeadingLabel;
@@ -1060,24 +1166,39 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
     private void UpdateUnitHeadingFontSize(double maxFontSize, double minFontSize, double fontStep)
     {
-        var availableWidth = UnitNameHeadingLabel.Width;
-        if (availableWidth <= 0)
+        // Assigning the font below re-measures the label and re-raises its SizeChanged, which calls
+        // back here; bail on the re-entrant pass so the fitted value stands and layout can settle.
+        if (_adjustingHeadingFontSize)
         {
-            UnitNameHeadingFontSize = maxFontSize;
             return;
         }
 
-        for (var size = maxFontSize; size >= minFontSize; size -= fontStep)
+        _adjustingHeadingFontSize = true;
+        try
         {
-            UnitNameHeadingFontSize = size;
-            var measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
-            if (measuredWidth <= availableWidth)
+            var availableWidth = UnitNameHeadingLabel.Width;
+            if (availableWidth <= 0)
             {
+                UnitNameHeadingFontSize = maxFontSize;
                 return;
             }
-        }
 
-        UnitNameHeadingFontSize = minFontSize;
+            for (var size = maxFontSize; size >= minFontSize; size -= fontStep)
+            {
+                UnitNameHeadingFontSize = size;
+                var measuredWidth = UnitNameHeadingLabel.Measure(double.PositiveInfinity, double.PositiveInfinity).Width;
+                if (measuredWidth <= availableWidth)
+                {
+                    return;
+                }
+            }
+
+            UnitNameHeadingFontSize = minFontSize;
+        }
+        finally
+        {
+            _adjustingHeadingFontSize = false;
+        }
     }
 
     private static void OnHeaderIconVisibilityChanged(BindableObject bindable, object oldValue, object newValue)
@@ -1106,9 +1227,13 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
     private void OnStatHeadersBorderSizeChanged(object? sender, EventArgs e)
     {
+        if (_adjustingStatFontSize) return;
         if (sender is not View view || view.Height <= 0 || view.Width <= 0) return;
 
-        // Height constraint: labels should fill the row without overflowing vertically.
+        // Height constraint: labels should fill the row without overflowing vertically. The border
+        // sits in an Auto row, so its height grows with the font we set here — a positive feedback
+        // loop. We cap by the width-derived size and stop re-applying once settled (below) so the
+        // loop converges instead of cycling the layout pass.
         var fontFromHeight = (view.Height - 4) * 0.75;
 
         // Width constraint: ColumnSpacing=6 with 9 or 10 columns, Border padding=8 each side.
@@ -1118,11 +1243,30 @@ public partial class UnitDisplayConfigurationsView : ContentView
 
         // Headers: use 3.2× to account for wide unicode symbols like ▲ in the vitality header.
         var headerFontFromWidth = colWidth / 3.2;
-        StatHeaderFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, headerFontFromWidth), 1));
+        var newHeaderFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, headerFontFromWidth), 1));
 
         // Values: bold character width ≈ 0.65× font size, so 4 chars ≈ 2.6× font size.
         var fontFromWidth = colWidth / 2.6;
-        StatFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, fontFromWidth), 1));
+        var newStatFontSize = Math.Max(6.0, Math.Round(Math.Min(fontFromHeight, fontFromWidth), 1));
+
+        // Already at the target (within a font-pixel): re-applying would re-raise SizeChanged for no
+        // visible gain and keep the layout pass spinning. Leave it be.
+        if (Math.Abs(StatHeaderFontSize - newHeaderFontSize) < 0.5
+            && Math.Abs(StatFontSize - newStatFontSize) < 0.5)
+        {
+            return;
+        }
+
+        _adjustingStatFontSize = true;
+        try
+        {
+            StatHeaderFontSize = newHeaderFontSize;
+            StatFontSize = newStatFontSize;
+        }
+        finally
+        {
+            _adjustingStatFontSize = false;
+        }
     }
 
     private static void OnShowConfigurationsSectionChanged(BindableObject bindable, object oldValue, object newValue)

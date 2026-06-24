@@ -4,6 +4,11 @@ namespace InfinityMercsApp.Services;
 
 public static class CompanyProfileTextService
 {
+    // Font size of the blank spacer line inserted between profile list entries; small enough that
+    // the line reads as a ~2px gap rather than a full empty row.
+    private const double EntrySeparatorFontSize = 2d;
+
+
     /// <summary>
     /// Returns true when a weapon name should be treated as melee/CC.
     /// </summary>
@@ -159,7 +164,9 @@ public static class CompanyProfileTextService
         {
             if (i > 0)
             {
-                formatted.Spans.Add(new Span { Text = Environment.NewLine, TextColor = textColor });
+                // A near-zero-height blank line between entries gives ~2px of separation so the
+                // weapons/equipment/skills items don't read as one solid block.
+                formatted.Spans.Add(new Span { Text = Environment.NewLine + " " + Environment.NewLine, FontSize = EntrySeparatorFontSize, TextColor = textColor });
             }
 
             var lineColor = highlightLieutenantPurple && lines[i].Contains("lieutenant", StringComparison.OrdinalIgnoreCase)

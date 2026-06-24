@@ -5,24 +5,42 @@ using System.Windows.Input;
 using InfinityMercsApp.Domain.Models.Stores;
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
+using InfinityMercsApp.Views.Adaptive;
 using InfinityMercsApp.Views.Controls;
 
 namespace InfinityMercsApp.Views;
 
-public partial class MarketplacesPage : ContentPage
+public partial class MarketplacesPage : AdaptiveContentPage
 {
     private readonly IStoreProvider _storeProvider;
     private readonly IMetadataProvider? _metadataProvider;
     private readonly IWikiDescriptionService? _wikiDescriptionService;
     private bool _showQuantityControls;
+    private bool _hasStore;
     private string _storeName = string.Empty;
     private string _storeFactionsDisplay = string.Empty;
     private string _storeMetaDisplay = string.Empty;
+    private string _cartTotalDisplay = "Total: 0cr";
 
     public ObservableCollection<string> StoreNames { get; } = [];
     public ObservableCollection<ItemGroupViewModel> ItemGroups { get; } = [];
     public ObservableCollection<TroopTypeRowViewModel> TroopTypeRows { get; } = [];
     public ObservableCollection<AugmentRowViewModel> AugmentRows { get; } = [];
+    public ObservableCollection<CartLineViewModel> CartLines { get; } = [];
+
+    public bool HasCartLines => CartLines.Count > 0;
+    public bool IsCartEmpty => CartLines.Count == 0;
+
+    public string CartTotalDisplay
+    {
+        get => _cartTotalDisplay;
+        private set
+        {
+            if (_cartTotalDisplay == value) return;
+            _cartTotalDisplay = value;
+            OnPropertyChanged();
+        }
+    }
 
     public ICommand ShowItemCommand { get; }
     public ICommand ShowTroopTypeCommand { get; }
@@ -85,6 +103,165 @@ public partial class MarketplacesPage : ContentPage
         ShowAugmentCommand = new Command<AugmentRowViewModel>(ShowAugmentPopup);
 
         LoadStoreNames();
+        ApplyLayout();
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        // The buying workflow (and its cart summary) is offered only on the widest screens.
+        ShowQuantityControls = IsWide;
+
+        bool twoColumnSections;
+        switch (LayoutMode)
+        {
+            case AdaptiveLayoutMode.Compact:
+                ContentGrid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+                ContentGrid.RowDefinitions = [new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star)];
+                ContentGrid.ColumnSpacing = 0;
+                ContentGrid.RowSpacing = 12;
+                Place(StoreInfoBorder, 0, 0, 1, 1);
+                Place(SectionsScroll, 1, 0, 1, 1);
+                twoColumnSections = false;
+                break;
+
+            case AdaptiveLayoutMode.Medium:
+                ContentGrid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+                ContentGrid.RowDefinitions = [new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star)];
+                ContentGrid.ColumnSpacing = 0;
+                ContentGrid.RowSpacing = 12;
+                Place(StoreInfoBorder, 0, 0, 1, 1);
+                Place(SectionsScroll, 1, 0, 1, 1);
+                twoColumnSections = true;
+                break;
+
+            case AdaptiveLayoutMode.Expanded:
+                ContentGrid.ColumnDefinitions =
+                [
+                    new ColumnDefinition(new GridLength(280)),
+                    new ColumnDefinition(GridLength.Star)
+                ];
+                ContentGrid.RowDefinitions = [new RowDefinition(GridLength.Star)];
+                ContentGrid.ColumnSpacing = 12;
+                ContentGrid.RowSpacing = 0;
+                Place(StoreInfoBorder, 0, 0, 1, 1);
+                Place(SectionsScroll, 0, 1, 1, 1);
+                twoColumnSections = true;
+                break;
+
+            default: // Wide — add the cart rail on the right.
+                ContentGrid.ColumnDefinitions =
+                [
+                    new ColumnDefinition(new GridLength(280)),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(new GridLength(320))
+                ];
+                ContentGrid.RowDefinitions = [new RowDefinition(GridLength.Star)];
+                ContentGrid.ColumnSpacing = 12;
+                ContentGrid.RowSpacing = 0;
+                Place(StoreInfoBorder, 0, 0, 1, 1);
+                Place(SectionsScroll, 0, 1, 1, 1);
+                Place(CartBorder, 0, 2, 1, 1);
+                twoColumnSections = true;
+                break;
+        }
+
+        ApplySectionsColumns(twoColumnSections);
+
+        // Placeholder always covers the whole content area.
+        Grid.SetRow(PlaceholderLabel, 0);
+        Grid.SetColumn(PlaceholderLabel, 0);
+        Grid.SetRowSpan(PlaceholderLabel, ContentGrid.RowDefinitions.Count);
+        Grid.SetColumnSpan(PlaceholderLabel, ContentGrid.ColumnDefinitions.Count);
+
+        UpdateContentVisibility();
+    }
+
+    private void ApplySectionsColumns(bool twoColumn)
+    {
+        if (twoColumn)
+        {
+            SectionsHost.ColumnDefinitions =
+            [
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star)
+            ];
+            SectionsHost.RowDefinitions =
+            [
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto)
+            ];
+            Place(ItemsBorder, 0, 0, 2, 1);
+            Place(TroopTypesBorder, 0, 1, 1, 1);
+            Place(AugmentsBorder, 1, 1, 1, 1);
+        }
+        else
+        {
+            SectionsHost.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+            SectionsHost.RowDefinitions =
+            [
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto)
+            ];
+            Place(ItemsBorder, 0, 0, 1, 1);
+            Place(TroopTypesBorder, 1, 0, 1, 1);
+            Place(AugmentsBorder, 2, 0, 1, 1);
+        }
+    }
+
+    private void UpdateContentVisibility()
+    {
+        PlaceholderLabel.IsVisible = !_hasStore;
+        StoreInfoBorder.IsVisible = _hasStore;
+        SectionsScroll.IsVisible = _hasStore;
+        CartBorder.IsVisible = _hasStore && IsWide;
+    }
+
+    private static void Place(View view, int row, int column, int rowSpan, int columnSpan)
+    {
+        Grid.SetRow(view, row);
+        Grid.SetColumn(view, column);
+        Grid.SetRowSpan(view, rowSpan);
+        Grid.SetColumnSpan(view, columnSpan);
+    }
+
+    private void RefreshCart()
+    {
+        CartLines.Clear();
+        var total = 0;
+
+        foreach (var group in ItemGroups)
+        {
+            foreach (var item in group.Items)
+            {
+                if (item.Quantity <= 0) continue;
+                var lineCost = item.CostCr * item.Quantity;
+                total += lineCost;
+                CartLines.Add(new CartLineViewModel(item.Name, item.Quantity, lineCost));
+            }
+        }
+
+        foreach (var troop in TroopTypeRows)
+        {
+            if (troop.Quantity <= 0) continue;
+            var lineCost = troop.CostCr * troop.Quantity;
+            total += lineCost;
+            CartLines.Add(new CartLineViewModel(troop.DisplayName, troop.Quantity, lineCost));
+        }
+
+        foreach (var augment in AugmentRows)
+        {
+            if (augment.Quantity <= 0) continue;
+            var lineCost = augment.CostCr * augment.Quantity;
+            total += lineCost;
+            CartLines.Add(new CartLineViewModel(augment.Name, augment.Quantity, lineCost));
+        }
+
+        CartTotalDisplay = $"Total: {total}cr";
+        OnPropertyChanged(nameof(HasCartLines));
+        OnPropertyChanged(nameof(IsCartEmpty));
     }
 
     private void LoadStoreNames()
@@ -98,8 +275,8 @@ public partial class MarketplacesPage : ContentPage
     {
         if (MarketplacePicker.SelectedIndex < 0 || MarketplacePicker.SelectedIndex >= StoreNames.Count)
         {
-            PlaceholderLabel.IsVisible = true;
-            StoreContentLayout.IsVisible = false;
+            _hasStore = false;
+            UpdateContentVisibility();
             return;
         }
 
@@ -110,8 +287,9 @@ public partial class MarketplacesPage : ContentPage
             return;
 
         PopulateStore(store);
-        PlaceholderLabel.IsVisible = false;
-        StoreContentLayout.IsVisible = true;
+        RefreshCart();
+        _hasStore = true;
+        UpdateContentVisibility();
     }
 
     private void PopulateStore(Store store)
@@ -473,37 +651,55 @@ public partial class MarketplacesPage : ContentPage
     private void OnItemIncrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: StoreItemRowViewModel row })
+        {
             row.Quantity++;
+            RefreshCart();
+        }
     }
 
     private void OnItemDecrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: StoreItemRowViewModel row })
+        {
             row.Quantity--;
+            RefreshCart();
+        }
     }
 
     private void OnTroopIncrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: TroopTypeRowViewModel row })
+        {
             row.Quantity++;
+            RefreshCart();
+        }
     }
 
     private void OnTroopDecrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: TroopTypeRowViewModel row })
+        {
             row.Quantity--;
+            RefreshCart();
+        }
     }
 
     private void OnAugmentIncrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: AugmentRowViewModel row })
+        {
             row.Quantity++;
+            RefreshCart();
+        }
     }
 
     private void OnAugmentDecrement(object sender, EventArgs e)
     {
         if (sender is Button { CommandParameter: AugmentRowViewModel row })
+        {
             row.Quantity--;
+            RefreshCart();
+        }
     }
 
     // ── View models ──────────────────────────────────────────────────────────
@@ -576,6 +772,16 @@ public partial class MarketplacesPage : ContentPage
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
+    public sealed class CartLineViewModel(string name, int quantity, int lineCost)
+    {
+        public string Name { get; } = name;
+        public int Quantity { get; } = quantity;
+        public int LineCost { get; } = lineCost;
+
+        public string QuantityDisplay => $"x{Quantity}";
+        public string CostDisplay => $"{LineCost}cr";
     }
 
     public sealed class AugmentRowViewModel : INotifyPropertyChanged

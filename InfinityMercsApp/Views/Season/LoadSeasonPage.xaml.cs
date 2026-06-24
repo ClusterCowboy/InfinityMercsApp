@@ -1,10 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
+using InfinityMercsApp.Views.Adaptive;
 
 namespace InfinityMercsApp.Views.Season;
 
-public partial class LoadSeasonPage : ContentPage
+public partial class LoadSeasonPage : AdaptiveContentPage
 {
     private const string SeasonsDirectoryName = "Seasons";
     private const string RecordsDirectoryName = "MercenaryRecords";
@@ -27,12 +28,27 @@ public partial class LoadSeasonPage : ContentPage
             OnPropertyChanged(nameof(HasSeasonRecords));
             OnPropertyChanged(nameof(ShowEmptyState));
         };
+        ApplyLayout();
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         await LoadSeasonRecordsAsync();
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        // Compact fills the screen; wider widths center the list at a readable width, and the
+        // largest screens reflow saved seasons into a two-column grid.
+        RootGrid.MaximumWidthRequest = IsCompact ? double.PositiveInfinity : (IsWide ? 1000d : 640d);
+        RootGrid.HorizontalOptions = IsCompact ? LayoutOptions.Fill : LayoutOptions.Center;
+
+        SeasonsCollection.ItemsLayout = IsWide
+            ? new GridItemsLayout(2, ItemsLayoutOrientation.Vertical) { HorizontalItemSpacing = 8 }
+            : new LinearItemsLayout(ItemsLayoutOrientation.Vertical);
     }
 
     private async Task LoadSeasonRecordsAsync()

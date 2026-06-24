@@ -21,6 +21,12 @@
         Route="ModeSelectionPage" />
 
     <ShellContent
+        Title="Create New Company"
+        FlyoutItemIsVisible="False"
+        ContentTemplate="{DataTemplate views:CreateNewCompanyPage}"
+        Route="CreateNewCompanyPage" />
+
+    <ShellContent
         Title="Standard Company"
         FlyoutItemIsVisible="False"
         ContentTemplate="{DataTemplate views:StandardCompanySourcePopupPage}"
@@ -79,10 +85,6 @@
             Title="Perk Tester"
             ContentTemplate="{DataTemplate views:PerkTesterPage}"
             Route="PerkTesterPage" />
-        <ShellContent
-            Title="Create New Company"
-            ContentTemplate="{DataTemplate views:CreateNewCompanyPage}"
-            Route="CreateNewCompanyPage" />
         <ShellContent
             Title="Load Company"
             ContentTemplate="{DataTemplate views:LoadCompanyPage}"

@@ -258,7 +258,9 @@
                                                 <Label Text="{Binding Cost, StringFormat='C {0}'}" FontSize="{DynamicResource FontSizeCaption}" HorizontalTextAlignment="End" VerticalOptions="Center" />
                                             </HorizontalStackLayout>
                                         </Grid>
-                                        <Grid ColumnSpacing="8">
+                                        <!-- Wide layout: ranged | melee | equipment | skills in a single row of four columns. -->
+                                        <Grid ColumnSpacing="8"
+                                              IsVisible="{Binding Source={RelativeSource AncestorType={x:Type controls:UnitDisplayConfigurationsView}}, Path=IsWideProfileLayout}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="*" />
@@ -269,6 +271,22 @@
                                             <Label Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#22C55E" LineBreakMode="WordWrap" />
                                             <Label Grid.Column="2" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#06B6D4" LineBreakMode="WordWrap" />
                                             <Label Grid.Column="3" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                        </Grid>
+                                        <!-- Small-screen layout: 2x2 grid. Top row equipment | skills, bottom row ranged | close combat. -->
+                                        <Grid ColumnSpacing="8" RowSpacing="2"
+                                              IsVisible="{Binding Source={RelativeSource AncestorType={x:Type controls:UnitDisplayConfigurationsView}}, Path=IsCompactProfileLayout}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Label Grid.Row="0" Grid.Column="0" FormattedText="{Binding UniqueEquipmentFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#06B6D4" LineBreakMode="WordWrap" />
+                                            <Label Grid.Row="0" Grid.Column="1" FormattedText="{Binding UniqueSkillsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#F59E0B" LineBreakMode="WordWrap" />
+                                            <Label Grid.Row="1" Grid.Column="0" FormattedText="{Binding RangedWeaponsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#EF4444" LineBreakMode="WordWrap" />
+                                            <Label Grid.Row="1" Grid.Column="1" FormattedText="{Binding MeleeWeaponsFormatted}" FontSize="{DynamicResource FontSizeCaption}" TextColor="#22C55E" LineBreakMode="WordWrap" />
                                         </Grid>
                                         <Label
                                             Text="{Binding Peripherals, StringFormat='Peripheral: {0}'}"

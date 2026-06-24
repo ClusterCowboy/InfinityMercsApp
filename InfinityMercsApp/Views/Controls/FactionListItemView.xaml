@@ -38,11 +38,15 @@
                     <Label
                         x:Name="HorizontalNameLabel"
                         Text="{Binding Name}"
-                        TextColor="{StaticResource TextPrimary}" />
+                        TextColor="{StaticResource TextPrimary}"
+                        LineBreakMode="WordWrap"
+                        MaxLines="3" />
                     <Label
                         x:Name="HorizontalFormattedNameLabel"
                         FormattedText="{Binding Source={x:Reference FactionListItemRoot}, Path=TitleFormatted}"
                         TextColor="{StaticResource TextPrimary}"
+                        LineBreakMode="WordWrap"
+                        MaxLines="3"
                         IsVisible="False" />
                 </Grid>
                 <Label

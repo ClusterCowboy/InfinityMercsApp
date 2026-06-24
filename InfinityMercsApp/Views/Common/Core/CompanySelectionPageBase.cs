@@ -1,6 +1,7 @@
 using InfinityMercsApp.Infrastructure.Providers;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.Views;
+using InfinityMercsApp.Views.Adaptive;
 using InfinityMercsApp.Views.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
@@ -17,7 +18,7 @@ namespace InfinityMercsApp.Views.Common;
 /// This centralizes service resolution and shared UI wiring while allowing
 /// each concrete page to keep its own state models and mode-specific behavior.
 /// </summary>
-public abstract partial class CompanySelectionPageBase : ContentPage
+public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
 {
     // Loaded asynchronously at startup; used by both filter canvas variants.
     private SKPicture? _filterIconPicture;
@@ -57,6 +58,274 @@ public abstract partial class CompanySelectionPageBase : ContentPage
         AppSettingsProvider = appSettingsProvider;
         _showFireteams = DefaultTeamsView;
     }
+
+    #region Adaptive layout
+
+    // DATAPAD token hexes used by the compact tab visuals (resources are merged by runtime, but the
+    // code-behind reskin convention is to use literal token hexes here).
+    private static readonly Color CompactTabActiveBg = Color.FromArgb("#34D399");   // Signal
+    private static readonly Color CompactTabActiveText = Color.FromArgb("#0E1116");  // Void
+    private static readonly Color CompactTabInactiveText = Color.FromArgb("#8A97A8"); // TextMuted
+
+    /// <summary>Which single pane the compact tab bar is currently showing.</summary>
+    private enum CompactPane
+    {
+        Units,
+        Profile,
+        Company
+    }
+
+    private CompactPane _compactPane = CompactPane.Units;
+    private bool _adaptiveLayoutApplied;
+
+    /// <summary>The two-column work grid (units | detail+roster) hosted in each leaf's XAML.</summary>
+    protected abstract Grid AdaptiveMainContentGrid { get; }
+
+    /// <summary>The left units/teams selection pane.</summary>
+    protected abstract View AdaptiveUnitsPane { get; }
+
+    /// <summary>
+    /// The right-column container Grid. On medium and wider it stacks the unit-detail pane above the
+    /// company pane; on compact it hosts whichever of the two the active tab selects. Typed as
+    /// <see cref="Grid"/> so the compact reflow can rewrite its row definitions.
+    /// </summary>
+    protected abstract Grid AdaptiveRightPane { get; }
+
+    /// <summary>The unit-detail pane (stat card + profiles); the compact "PROFILE" tab content.</summary>
+    protected abstract View AdaptiveDetailPane { get; }
+
+    /// <summary>The Mercs Company pane (name row + roster + start button); the compact "COMPANY" tab content.</summary>
+    protected abstract View AdaptiveCompanyPane { get; }
+
+    /// <summary>The compact-only UNITS/PROFILE/COMPANY switch row, hidden on medium and wider.</summary>
+    protected abstract View AdaptiveCompactTabBar { get; }
+
+    /// <summary>The compact "UNITS" tab button (unit selection list).</summary>
+    protected abstract Button AdaptiveUnitsTabButton { get; }
+
+    /// <summary>The compact "PROFILE" tab button (selected unit detail).</summary>
+    protected abstract Button AdaptiveProfileTabButton { get; }
+
+    /// <summary>The compact "COMPANY" tab button (Mercs Company roster).</summary>
+    protected abstract Button AdaptiveCompanyTabButton { get; }
+
+    /// <summary>The title-bar "+" button that toggles the faction picker; hidden on Compact.</summary>
+    protected abstract View AdaptiveAddFactionButton { get; }
+
+    /// <summary>The compact-only top-of-content faction icon button that reopens the selector.</summary>
+    protected abstract SelectedFactionButtonView AdaptiveSelectedFactionButton { get; }
+
+    /// <summary>The compact-only full-screen vertical faction selector overlay.</summary>
+    protected abstract FactionSelectorOverlayView AdaptiveFactionSelectorOverlay { get; }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        // Guarantee one layout pass once we have a real width, even if the mode never changes
+        // (e.g. a phone that starts and stays Compact never raises OnLayoutModeChanged).
+        if (!_adaptiveLayoutApplied && width > 0)
+        {
+            _adaptiveLayoutApplied = true;
+            ApplyAdaptiveLayout();
+        }
+    }
+
+    protected override void OnLayoutModeChanged(AdaptiveLayoutMode mode) => ApplyAdaptiveLayout();
+
+    protected void OnShowUnitsTabTapped(object? sender, EventArgs e)
+    {
+        _compactPane = CompactPane.Units;
+        ApplyAdaptiveLayout();
+    }
+
+    protected void OnShowProfileTabTapped(object? sender, EventArgs e)
+    {
+        _compactPane = CompactPane.Profile;
+        ApplyAdaptiveLayout();
+    }
+
+    protected void OnShowCompanyTabTapped(object? sender, EventArgs e)
+    {
+        _compactPane = CompactPane.Company;
+        ApplyAdaptiveLayout();
+    }
+
+    private void ApplyAdaptiveLayout()
+    {
+        var grid = AdaptiveMainContentGrid;
+        if (grid is null)
+        {
+            return;
+        }
+
+        var units = AdaptiveUnitsPane;
+        var right = AdaptiveRightPane;
+        var detail = AdaptiveDetailPane;
+        var company = AdaptiveCompanyPane;
+        var tabBar = AdaptiveCompactTabBar;
+
+        if (IsCompact)
+        {
+            // One workspace at a time: the UNITS/PROFILE/COMPANY switch toggles which pane is shown.
+            // The right column hosts both the detail and company panes, so its rows are collapsed to
+            // give the active pane the full height instead of the medium+ 50/50 split.
+            grid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
+            grid.ColumnSpacing = 0;
+
+            Grid.SetColumn(units, 0);
+            Grid.SetColumnSpan(units, 1);
+            Grid.SetColumn(right, 0);
+            Grid.SetColumnSpan(right, 1);
+
+            if (tabBar is not null)
+            {
+                tabBar.IsVisible = true;
+            }
+
+            var showCompany = _compactPane == CompactPane.Company;
+            var showProfile = _compactPane == CompactPane.Profile;
+
+            units.IsVisible = _compactPane == CompactPane.Units;
+            right.IsVisible = showProfile || showCompany;
+            detail.IsVisible = showProfile;
+            company.IsVisible = showCompany;
+
+            right.RowDefinitions = showCompany
+                ? [new RowDefinition(new GridLength(0)), new RowDefinition(new GridLength(0)), new RowDefinition(GridLength.Star)]
+                : [new RowDefinition(GridLength.Star), new RowDefinition(new GridLength(0)), new RowDefinition(new GridLength(0))];
+
+            UpdateCompactTabVisuals();
+        }
+        else
+        {
+            // Side-by-side panes; the units rail tightens and then fixes as width grows so the
+            // detail/roster pane keeps a readable, stable width.
+            ColumnDefinitionCollection cols = LayoutMode switch
+            {
+                AdaptiveLayoutMode.Medium =>
+                [
+                    new ColumnDefinition(new GridLength(0.82, GridUnitType.Star)),
+                    new ColumnDefinition(new GridLength(1.18, GridUnitType.Star))
+                ],
+                AdaptiveLayoutMode.Expanded =>
+                [
+                    new ColumnDefinition(new GridLength(0.72, GridUnitType.Star)),
+                    new ColumnDefinition(new GridLength(1.28, GridUnitType.Star))
+                ],
+                _ =>
+                [
+                    new ColumnDefinition(new GridLength(380)),
+                    new ColumnDefinition(GridLength.Star)
+                ]
+            };
+
+            grid.ColumnDefinitions = cols;
+            grid.ColumnSpacing = 12;
+
+            Grid.SetColumn(units, 0);
+            Grid.SetColumnSpan(units, 1);
+            Grid.SetColumn(right, 1);
+            Grid.SetColumnSpan(right, 1);
+
+            if (tabBar is not null)
+            {
+                tabBar.IsVisible = false;
+            }
+
+            // Detail stacked above the company pane, sharing the column height with a 3px gutter.
+            right.RowDefinitions =
+            [
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(new GridLength(3)),
+                new RowDefinition(GridLength.Star)
+            ];
+
+            units.IsVisible = true;
+            right.IsVisible = true;
+            detail.IsVisible = true;
+            company.IsVisible = true;
+        }
+
+        ApplyFactionPickerChrome();
+    }
+
+    private bool _factionOverlayWired;
+
+    /// <summary>
+    /// Swaps the faction picker chrome by width: on Compact the title-bar "+" and slot selector are
+    /// hidden in favour of the top-of-content icon button + full-screen overlay; on Medium and wider
+    /// the original title-bar picker + horizontal strip are restored.
+    /// </summary>
+    private void ApplyFactionPickerChrome()
+    {
+        var overlay = AdaptiveFactionSelectorOverlay;
+        if (!_factionOverlayWired && overlay is not null)
+        {
+            overlay.CloseRequested += (_, _) => ShowFactionStrip = false;
+            _factionOverlayWired = true;
+        }
+
+        var addButton = AdaptiveAddFactionButton;
+        var slotSelector = FactionSlotSelectorViewForVisuals;
+        var topButton = AdaptiveSelectedFactionButton;
+
+        if (addButton is not null)
+        {
+            addButton.IsVisible = !IsCompact;
+        }
+
+        if (slotSelector is not null)
+        {
+            slotSelector.IsVisible = !IsCompact;
+        }
+
+        if (topButton is not null)
+        {
+            topButton.IsVisible = IsCompact;
+        }
+
+        SyncCompactFactionOverlay();
+    }
+
+    /// <summary>Keeps the overlay open state tied to <see cref="ShowFactionStrip"/>, Compact only.</summary>
+    private void SyncCompactFactionOverlay()
+    {
+        var overlay = AdaptiveFactionSelectorOverlay;
+        if (overlay is not null)
+        {
+            overlay.IsOpen = IsCompact && ShowFactionStrip;
+        }
+    }
+
+    /// <summary>Handler for the compact top-of-content faction button: reopens the selector overlay.</summary>
+    protected void OnSelectedFactionButtonTapped(object? sender, EventArgs e)
+    {
+        ShowFactionStrip = true;
+    }
+
+    private void UpdateCompactTabVisuals()
+    {
+        var unitsButton = AdaptiveUnitsTabButton;
+        var profileButton = AdaptiveProfileTabButton;
+        var companyButton = AdaptiveCompanyTabButton;
+        if (unitsButton is null || profileButton is null || companyButton is null)
+        {
+            return;
+        }
+
+        ApplyCompactTabVisual(unitsButton, _compactPane == CompactPane.Units);
+        ApplyCompactTabVisual(profileButton, _compactPane == CompactPane.Profile);
+        ApplyCompactTabVisual(companyButton, _compactPane == CompactPane.Company);
+    }
+
+    private static void ApplyCompactTabVisual(Button button, bool isActive)
+    {
+        button.BackgroundColor = isActive ? CompactTabActiveBg : Colors.Transparent;
+        button.TextColor = isActive ? CompactTabActiveText : CompactTabInactiveText;
+    }
+
+    #endregion
 
     /// <summary>Gets the mode (standard vs cohesive) that controls which factions and rules apply.</summary>
     protected ArmySourceSelectionMode Mode { get; }
@@ -137,6 +406,7 @@ public abstract partial class CompanySelectionPageBase : ContentPage
 
             _showFactionStrip = value;
             OnPropertyChanged();
+            SyncCompactFactionOverlay();
         }
     }
 

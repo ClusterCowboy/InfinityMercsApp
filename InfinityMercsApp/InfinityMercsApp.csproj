@@ -82,6 +82,8 @@
 		<MauiAsset Include="SVGCache\CBIcons\**\*" LogicalName="SVGCache/CBIcons/%(RecursiveDir)%(Filename)%(Extension)" />
 		<MauiAsset Include="SVGCache\NonCBIcons\**\*" LogicalName="SVGCache/NonCBIcons/%(RecursiveDir)%(Filename)%(Extension)" />
 		<MauiAsset Include="SVGCache\MercsIcons\**\*" LogicalName="SVGCache/MercsIcons/%(RecursiveDir)%(Filename)%(Extension)" />
+		<!-- Hayabusa (faction 1199) is missing from the CB CDN, so bundle a local fallback logo. -->
+		<MauiAsset Include="SVGCache\factions\1199.svg" LogicalName="SVGCache/factions/1199.svg" />
 	</ItemGroup>
 
 	<ItemGroup>

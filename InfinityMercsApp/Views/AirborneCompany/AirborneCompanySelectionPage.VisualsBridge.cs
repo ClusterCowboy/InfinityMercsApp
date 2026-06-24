@@ -8,6 +8,9 @@ public partial class AirborneCompanySelectionPage
 {
     protected override IArmyDataService ArmyDataService => _armyDataService;
     protected override FactionSlotSelectorView FactionSlotSelectorViewForVisuals => FactionSlotSelectorView;
+    protected override View AdaptiveAddFactionButton => AddFactionButton;
+    protected override SelectedFactionButtonView AdaptiveSelectedFactionButton => SelectedFactionButton;
+    protected override FactionSelectorOverlayView AdaptiveFactionSelectorOverlay => FactionSelectorOverlay;
     protected override UnitDisplayConfigurationsView UnitDisplayConfigurationsViewForVisuals => UnitDisplayConfigurationsView;
     protected override SKCanvasView UnitSelectionFilterCanvasInactiveForVisuals => UnitSelectionPanel.FilterCanvas;
     protected override SKCanvasView UnitSelectionFilterCanvasActiveForVisuals => UnitSelectionPanel.FilterCanvas;

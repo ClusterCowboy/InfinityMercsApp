@@ -35,6 +35,13 @@
     <!-- Emphasis labels inside cards / sections -->
     <OnIdiom x:Key="FontSizeSectionHeader" x:TypeArguments="x:Double" Phone="16" Tablet="20" Desktop="18" />
 
+    <!--
+        Card titles squeezed into a single compact row (icon + text side-by-side),
+        as on the phone-width "Create New Company" type cards. Smaller than the
+        section header so the label fits beside the icon without wrapping.
+    -->
+    <OnIdiom x:Key="FontSizeCardTitleCompact" x:TypeArguments="x:Double" Phone="15" Tablet="17" Desktop="17" />
+
     <!-- Sub-headline (SubHeadline named style) -->
     <OnIdiom x:Key="FontSizeSubHeadline" x:TypeArguments="x:Double" Phone="18" Tablet="22" Desktop="24" />
 
