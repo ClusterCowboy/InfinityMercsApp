@@ -166,56 +166,7 @@ public partial class ViewerViewModel
             HashSet<string>? commonEquipNames = null;
             HashSet<string>? commonSkillNames = null;
             var profileCount = 0;
-            var equipUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var skillUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var hasControllerGroups = doc.RootElement.EnumerateArray().Any(usageGroup => IsControllerGroup(doc.RootElement, usageGroup));
-
-            foreach (var usageGroup in doc.RootElement.EnumerateArray())
-            {
-                if (hasControllerGroups && !IsControllerGroup(doc.RootElement, usageGroup))
-                {
-                    continue;
-                }
-
-                if (!usageGroup.TryGetProperty("options", out var usageOptionsElement) || usageOptionsElement.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var usageOption in usageOptionsElement.EnumerateArray())
-                {
-                    if (LieutenantOnlyUnits && !IsLieutenantOption(usageOption, skillsLookup))
-                    {
-                        continue;
-                    }
-
-                    var usageSwc = ReadOptionSwc(usageOption);
-                    if (MercsOnlyUnits && IsPositiveSwc(usageSwc))
-                    {
-                        continue;
-                    }
-
-                    foreach (var equipName in GetOrderedIdDisplayNamesFromEntries(
-                                 GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "equip"),
-                                 equipLookup,
-                                 extrasLookup,
-                                 ShowUnitsInInches).Select(x => x.Name))
-                    {
-                        equipUsageCounts[equipName] = equipUsageCounts.TryGetValue(equipName, out var count) ? count + 1 : 1;
-                    }
-
-                    var usageSkillEntries = BuildConfigurationSkillEntries(
-                        GetOrderedIdDisplayNamesFromEntries(
-                            GetOptionEntriesWithIncludes(doc.RootElement, usageOption, "skills"),
-                            skillsLookup,
-                            extrasLookup,
-                            ShowUnitsInInches));
-                    foreach (var skillName in usageSkillEntries.Select(x => x.Name))
-                    {
-                        skillUsageCounts[skillName] = skillUsageCounts.TryGetValue(skillName, out var count) ? count + 1 : 1;
-                    }
-                }
-            }
 
             var seenConfigurations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -302,7 +253,6 @@ public partial class ViewerViewModel
                                 equipLookup,
                                 extrasLookup,
                                 ShowUnitsInInches)
-                            .Where(x => equipUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
                             .ToList();
                     var uniqueEquipment = JoinOrDash(uniqueEquipmentEntries.Select(x => x.Name));
 
@@ -313,9 +263,7 @@ public partial class ViewerViewModel
                                 extrasLookup,
                                 ShowUnitsInInches))
                         .ToList();
-                    var uniqueSkillsEntries = optionSkillsEntries
-                        .Where(x => skillUsageCounts.TryGetValue(x.Name, out var c) && c == 1)
-                        .ToList();
+                    var uniqueSkillsEntries = optionSkillsEntries;
                     var uniqueSkills = JoinOrDash(uniqueSkillsEntries.Select(x => x.Name));
 
                     var peripheralEntries = GetCountedIdDisplayNamesFromEntries(

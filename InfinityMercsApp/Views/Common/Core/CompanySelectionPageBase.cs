@@ -67,7 +67,15 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
     private static readonly Color CompactTabActiveText = Color.FromArgb("#0E1116");  // Void
     private static readonly Color CompactTabInactiveText = Color.FromArgb("#8A97A8"); // TextMuted
 
-    private bool _compactShowCompany;
+    /// <summary>Which single pane the compact tab bar is currently showing.</summary>
+    private enum CompactPane
+    {
+        Units,
+        Profile,
+        Company
+    }
+
+    private CompactPane _compactPane = CompactPane.Units;
     private bool _adaptiveLayoutApplied;
 
     /// <summary>The two-column work grid (units | detail+roster) hosted in each leaf's XAML.</summary>
@@ -76,16 +84,29 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
     /// <summary>The left units/teams selection pane.</summary>
     protected abstract View AdaptiveUnitsPane { get; }
 
-    /// <summary>The right pane holding unit detail, the company-name row and the roster.</summary>
-    protected abstract View AdaptiveRightPane { get; }
+    /// <summary>
+    /// The right-column container Grid. On medium and wider it stacks the unit-detail pane above the
+    /// company pane; on compact it hosts whichever of the two the active tab selects. Typed as
+    /// <see cref="Grid"/> so the compact reflow can rewrite its row definitions.
+    /// </summary>
+    protected abstract Grid AdaptiveRightPane { get; }
 
-    /// <summary>The compact-only UNITS/COMPANY switch row, hidden on medium and wider.</summary>
+    /// <summary>The unit-detail pane (stat card + profiles); the compact "PROFILE" tab content.</summary>
+    protected abstract View AdaptiveDetailPane { get; }
+
+    /// <summary>The Mercs Company pane (name row + roster + start button); the compact "COMPANY" tab content.</summary>
+    protected abstract View AdaptiveCompanyPane { get; }
+
+    /// <summary>The compact-only UNITS/PROFILE/COMPANY switch row, hidden on medium and wider.</summary>
     protected abstract View AdaptiveCompactTabBar { get; }
 
-    /// <summary>The compact "UNITS" tab button.</summary>
+    /// <summary>The compact "UNITS" tab button (unit selection list).</summary>
     protected abstract Button AdaptiveUnitsTabButton { get; }
 
-    /// <summary>The compact "COMPANY" tab button (detail + roster).</summary>
+    /// <summary>The compact "PROFILE" tab button (selected unit detail).</summary>
+    protected abstract Button AdaptiveProfileTabButton { get; }
+
+    /// <summary>The compact "COMPANY" tab button (Mercs Company roster).</summary>
     protected abstract Button AdaptiveCompanyTabButton { get; }
 
     /// <summary>The title-bar "+" button that toggles the faction picker; hidden on Compact.</summary>
@@ -114,13 +135,19 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
 
     protected void OnShowUnitsTabTapped(object? sender, EventArgs e)
     {
-        _compactShowCompany = false;
+        _compactPane = CompactPane.Units;
+        ApplyAdaptiveLayout();
+    }
+
+    protected void OnShowProfileTabTapped(object? sender, EventArgs e)
+    {
+        _compactPane = CompactPane.Profile;
         ApplyAdaptiveLayout();
     }
 
     protected void OnShowCompanyTabTapped(object? sender, EventArgs e)
     {
-        _compactShowCompany = true;
+        _compactPane = CompactPane.Company;
         ApplyAdaptiveLayout();
     }
 
@@ -134,11 +161,15 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
 
         var units = AdaptiveUnitsPane;
         var right = AdaptiveRightPane;
+        var detail = AdaptiveDetailPane;
+        var company = AdaptiveCompanyPane;
         var tabBar = AdaptiveCompactTabBar;
 
         if (IsCompact)
         {
-            // One workspace at a time: the UNITS/COMPANY switch toggles which pane is shown.
+            // One workspace at a time: the UNITS/PROFILE/COMPANY switch toggles which pane is shown.
+            // The right column hosts both the detail and company panes, so its rows are collapsed to
+            // give the active pane the full height instead of the medium+ 50/50 split.
             grid.ColumnDefinitions = [new ColumnDefinition(GridLength.Star)];
             grid.ColumnSpacing = 0;
 
@@ -152,8 +183,18 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
                 tabBar.IsVisible = true;
             }
 
-            units.IsVisible = !_compactShowCompany;
-            right.IsVisible = _compactShowCompany;
+            var showCompany = _compactPane == CompactPane.Company;
+            var showProfile = _compactPane == CompactPane.Profile;
+
+            units.IsVisible = _compactPane == CompactPane.Units;
+            right.IsVisible = showProfile || showCompany;
+            detail.IsVisible = showProfile;
+            company.IsVisible = showCompany;
+
+            right.RowDefinitions = showCompany
+                ? [new RowDefinition(new GridLength(0)), new RowDefinition(new GridLength(0)), new RowDefinition(GridLength.Star)]
+                : [new RowDefinition(GridLength.Star), new RowDefinition(new GridLength(0)), new RowDefinition(new GridLength(0))];
+
             UpdateCompactTabVisuals();
         }
         else
@@ -192,8 +233,18 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
                 tabBar.IsVisible = false;
             }
 
+            // Detail stacked above the company pane, sharing the column height with a 3px gutter.
+            right.RowDefinitions =
+            [
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(new GridLength(3)),
+                new RowDefinition(GridLength.Star)
+            ];
+
             units.IsVisible = true;
             right.IsVisible = true;
+            detail.IsVisible = true;
+            company.IsVisible = true;
         }
 
         ApplyFactionPickerChrome();
@@ -256,16 +307,22 @@ public abstract partial class CompanySelectionPageBase : AdaptiveContentPage
     private void UpdateCompactTabVisuals()
     {
         var unitsButton = AdaptiveUnitsTabButton;
+        var profileButton = AdaptiveProfileTabButton;
         var companyButton = AdaptiveCompanyTabButton;
-        if (unitsButton is null || companyButton is null)
+        if (unitsButton is null || profileButton is null || companyButton is null)
         {
             return;
         }
 
-        unitsButton.BackgroundColor = _compactShowCompany ? Colors.Transparent : CompactTabActiveBg;
-        unitsButton.TextColor = _compactShowCompany ? CompactTabInactiveText : CompactTabActiveText;
-        companyButton.BackgroundColor = _compactShowCompany ? CompactTabActiveBg : Colors.Transparent;
-        companyButton.TextColor = _compactShowCompany ? CompactTabActiveText : CompactTabInactiveText;
+        ApplyCompactTabVisual(unitsButton, _compactPane == CompactPane.Units);
+        ApplyCompactTabVisual(profileButton, _compactPane == CompactPane.Profile);
+        ApplyCompactTabVisual(companyButton, _compactPane == CompactPane.Company);
+    }
+
+    private static void ApplyCompactTabVisual(Button button, bool isActive)
+    {
+        button.BackgroundColor = isActive ? CompactTabActiveBg : Colors.Transparent;
+        button.TextColor = isActive ? CompactTabActiveText : CompactTabInactiveText;
     }
 
     #endregion

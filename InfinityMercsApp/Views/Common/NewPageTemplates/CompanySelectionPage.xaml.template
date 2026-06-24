@@ -45,7 +45,7 @@
                         </x:Array>
                     </Picker.ItemsSource>
                 </Picker>
-                <Label Text="Points to start season" VerticalOptions="Center" />
+                <Label Text="Points" VerticalOptions="Center" />
                 <skia:SKCanvasView x:Name="SeasonValidationCanvas" WidthRequest="24" HeightRequest="24" VerticalOptions="Center" PaintSurface="OnSeasonValidationCanvasPaintSurface" />
             </HorizontalStackLayout>
         </Grid>
@@ -57,7 +57,7 @@
       concrete page as needed, then wire handlers in code-behind.
     -->
 
-    <Grid Padding="16" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
+    <Grid Padding="2" ColumnDefinitions="0.82*,1.18*" RowDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10">
         <controls:FactionSelectionStripView
             Grid.Row="0"
             Grid.ColumnSpan="2"

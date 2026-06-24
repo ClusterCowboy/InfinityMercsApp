@@ -24,10 +24,19 @@ public partial class UnitDisplayConfigurationsView : ContentView
     // small window sizes instead of the header reading as an empty, cut-off box.
     private const double LogoHideThreshold = 320d;
     private const double LogoCompactThreshold = 460d;
+    // Below this pane width the per-profile weapons/skills/equipment block reflows from a single
+    // row of four columns into a 2x2 grid so each cell has room instead of wrapping every word.
+    private const double ProfileTwoColumnThreshold = 520d;
     private const double LogoFullColumnWidth = 84d;
     private const double LogoFullCanvasSize = 82d;
     private const double LogoCompactColumnWidth = 54d;
     private const double LogoCompactCanvasSize = 50d;
+    // The trait-icon column is squeezed on narrow panes so the statline (MOV, CC, ...) gets the
+    // freed horizontal space; it shares the logo's compact threshold so both shrink together.
+    private const double IconColumnFullWidth = 58d;
+    private const double IconColumnFullCanvasSize = 50d;
+    private const double IconColumnCompactWidth = 34d;
+    private const double IconColumnCompactCanvasSize = 30d;
     public static readonly Color DefaultHeaderPrimaryColor = Color.FromArgb("#B91C1C");
     public static readonly Color DefaultHeaderSecondaryColor = Color.FromArgb("#7F1D1D");
     public static readonly Color EquipmentAccentOnDarkSecondary = Color.FromArgb("#67E8F9");
@@ -37,6 +46,7 @@ public partial class UnitDisplayConfigurationsView : ContentView
     private sealed record HeaderIconRenderItem(SKPicture Picture);
     private double _profilesPanLastTotalY;
     private double _logoColumnWidth = -1d;
+    private double _iconColumnWidth = -1d;
 
     // Re-entrancy guards for the two size-driven font fitters below. Both adjust a font size from
     // inside a SizeChanged callback, which re-measures the element and re-raises SizeChanged; without
@@ -213,6 +223,11 @@ public partial class UnitDisplayConfigurationsView : ContentView
         BindableProperty.Create(nameof(StatFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
     public static readonly BindableProperty StatHeaderFontSizeProperty =
         BindableProperty.Create(nameof(StatHeaderFontSize), typeof(double), typeof(UnitDisplayConfigurationsView), 10.0);
+    public static readonly BindableProperty IsCompactProfileLayoutProperty =
+        BindableProperty.Create(nameof(IsCompactProfileLayout), typeof(bool), typeof(UnitDisplayConfigurationsView), false,
+            propertyChanged: OnIsCompactProfileLayoutChanged);
+    public static readonly BindableProperty IsWideProfileLayoutProperty =
+        BindableProperty.Create(nameof(IsWideProfileLayout), typeof(bool), typeof(UnitDisplayConfigurationsView), true);
 
     public string UnitMov
     {
@@ -628,6 +643,31 @@ public partial class UnitDisplayConfigurationsView : ContentView
         set => SetValue(StatHeaderFontSizeProperty, value);
     }
 
+    /// <summary>
+    /// When true the per-profile weapons/skills/equipment block is laid out as a 2x2 grid
+    /// (equipment + skills on top, ranged + close combat below) for narrow panes.
+    /// </summary>
+    public bool IsCompactProfileLayout
+    {
+        get => (bool)GetValue(IsCompactProfileLayoutProperty);
+        set => SetValue(IsCompactProfileLayoutProperty, value);
+    }
+
+    /// <summary>Inverse of <see cref="IsCompactProfileLayout"/>; the single-row four-column layout.</summary>
+    public bool IsWideProfileLayout
+    {
+        get => (bool)GetValue(IsWideProfileLayoutProperty);
+        private set => SetValue(IsWideProfileLayoutProperty, value);
+    }
+
+    private static void OnIsCompactProfileLayoutChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is UnitDisplayConfigurationsView view)
+        {
+            view.IsWideProfileLayout = newValue is not bool compact || !compact;
+        }
+    }
+
     public bool HasPeripheralEquipment => !string.IsNullOrWhiteSpace(PeripheralEquipment) && PeripheralEquipment != "-";
     public bool HasPeripheralSkills => !string.IsNullOrWhiteSpace(PeripheralSkills) && PeripheralSkills != "-";
     public bool HasAnyTopHeaderIcons => ShowRegularOrderIcon || ShowIrregularOrderIcon || ShowLieutenantIcon || LieutenantIconCount > 0 || ShowPeripheralIcon || ShowImpetuousIcon || ShowTacticalAwarenessIcon;
@@ -671,6 +711,12 @@ public partial class UnitDisplayConfigurationsView : ContentView
         base.OnSizeAllocated(width, height);
         if (width <= 0) return;
 
+        // Reflow the per-profile block to 2x2 on narrow panes. Set before the logo early-return
+        // below, whose threshold differs, so crossing this width always updates the layout.
+        IsCompactProfileLayout = width < ProfileTwoColumnThreshold;
+
+        UpdateIconColumnWidth(width);
+
         double columnWidth;
         double canvasSize;
         if (width < LogoHideThreshold)
@@ -701,6 +747,30 @@ public partial class UnitDisplayConfigurationsView : ContentView
             SelectedUnitCanvas.HeightRequest = canvasSize;
             SelectedUnitCanvas.InvalidateSurface();
         }
+    }
+
+    // Narrows the trait-icon column (and its canvas) on small panes so the statline keeps the room.
+    private void UpdateIconColumnWidth(double width)
+    {
+        double columnWidth;
+        double canvasSize;
+        if (width < LogoCompactThreshold)
+        {
+            columnWidth = IconColumnCompactWidth;
+            canvasSize = IconColumnCompactCanvasSize;
+        }
+        else
+        {
+            columnWidth = IconColumnFullWidth;
+            canvasSize = IconColumnFullCanvasSize;
+        }
+
+        if (Math.Abs(_iconColumnWidth - columnWidth) < 0.5) return;
+        _iconColumnWidth = columnWidth;
+
+        ConfigurationsRootGrid.ColumnDefinitions[0].Width = new GridLength(columnWidth);
+        HeaderIconsCanvas.WidthRequest = canvasSize;
+        HeaderIconsCanvas.InvalidateSurface();
     }
 
     public Label UnitNameHeadingElement => UnitNameHeadingLabel;

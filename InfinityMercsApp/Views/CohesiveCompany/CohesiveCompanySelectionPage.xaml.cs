@@ -265,9 +265,12 @@ public partial class CohesiveCompanySelectionPage : CompanySelectionPageBase, IC
 
     protected override Grid AdaptiveMainContentGrid => MainContentGrid;
     protected override View AdaptiveUnitsPane => UnitsPane;
-    protected override View AdaptiveRightPane => RightPane;
+    protected override Grid AdaptiveRightPane => RightPane;
+    protected override View AdaptiveDetailPane => UnitDisplayConfigurationsView;
+    protected override View AdaptiveCompanyPane => CompanyPane;
     protected override View AdaptiveCompactTabBar => CompactTabBar;
     protected override Button AdaptiveUnitsTabButton => UnitsTabButton;
+    protected override Button AdaptiveProfileTabButton => ProfileTabButton;
     protected override Button AdaptiveCompanyTabButton => CompanyTabButton;
 
     protected override async void OnAppearing()

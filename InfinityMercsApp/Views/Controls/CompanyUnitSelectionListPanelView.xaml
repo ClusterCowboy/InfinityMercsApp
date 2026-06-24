@@ -16,6 +16,7 @@
                 SizeChanged="OnHeaderBorderSizeChanged">
                 <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
                     <Label
+                        x:Name="UnitSelectionHeaderLabel"
                         Grid.Column="0"
                         Text="UNIT SELECTION"
                         FontSize="{DynamicResource FontSizeSectionHeader}"

@@ -61,7 +61,7 @@ public partial class SelectedFactionButtonView : ContentView
     private void UpdatePrompt()
     {
         var hasSelection = _leftPicture is not null || _rightPicture is not null;
-        PromptLabel.Text = hasSelection ? "Tap to change faction" : "Tap to choose faction";
+        PromptLabel.Text = hasSelection ? "" : "Faction";
     }
 
     private static async Task<SKPicture?> LoadPictureAsync(string? cachedPath, string? packagedPath)

@@ -31,7 +31,8 @@
                     FontAttributes="Bold"
                     HorizontalTextAlignment="Center" />
 
-                <Grid x:Name="CardsGrid" Grid.Row="1" ColumnSpacing="16">
+                <ScrollView Grid.Row="1">
+                <Grid x:Name="CardsGrid" ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -67,6 +68,7 @@
                         </VerticalStackLayout>
                     </Grid>
                 </Grid>
+                </ScrollView>
 
                 <Button
                     Grid.Row="2"

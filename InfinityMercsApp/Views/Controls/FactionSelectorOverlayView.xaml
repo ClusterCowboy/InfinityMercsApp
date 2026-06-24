@@ -4,30 +4,31 @@
              xmlns:controls="clr-namespace:InfinityMercsApp.Views.Controls"
              x:Class="InfinityMercsApp.Views.Controls.FactionSelectorOverlayView"
              x:Name="FactionSelectorOverlayRoot"
-             BackgroundColor="#CC0E1116"
+             BackgroundColor="{StaticResource Void}"
              InputTransparent="False"
              IsVisible="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=IsOpen}">
 
-    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="12">
+    <Grid RowDefinitions="Auto,*" Padding="12" RowSpacing="10">
 
         <!-- Header: title + close affordance -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <Label
                 Grid.Column="0"
                 Text="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=Title}"
-                FontSize="{DynamicResource FontSizeHeadline}"
+                FontSize="{DynamicResource FontSizeSubHeadline}"
                 FontAttributes="Bold"
                 TextColor="{StaticResource TextPrimary}"
-                LineBreakMode="TailTruncation"
+                LineBreakMode="WordWrap"
+                MaxLines="2"
                 VerticalOptions="Center" />
             <Border
                 Grid.Column="1"
                 Stroke="{StaticResource Signal}"
                 StrokeThickness="2"
-                WidthRequest="40"
-                HeightRequest="40"
+                WidthRequest="36"
+                HeightRequest="36"
                 Padding="0"
-                VerticalOptions="Center">
+                VerticalOptions="Start">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="4" />
                 </Border.StrokeShape>
@@ -36,40 +37,41 @@
                 </Border.GestureRecognizers>
                 <Label
                     Text="&#x2715;"
-                    FontSize="{DynamicResource FontSizeSubHeadline}"
+                    FontSize="{DynamicResource FontSizeBody}"
                     TextColor="{StaticResource Signal}"
                     HorizontalOptions="Center"
                     VerticalOptions="Center" />
             </Border>
         </Grid>
 
-        <!-- Vertically scrolling faction cards (Company-Style-Icon look). Span flips 2->1 in code. -->
-        <CollectionView
-            Grid.Row="1"
-            x:Name="FactionCollectionView"
-            ItemsSource="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemsSource}"
-            VerticalScrollBarVisibility="Always">
-            <CollectionView.ItemsLayout>
-                <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="8" VerticalItemSpacing="8" />
-            </CollectionView.ItemsLayout>
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Border
-                        Stroke="{StaticResource Signal}"
-                        StrokeThickness="2"
-                        BackgroundColor="{StaticResource Plate}"
-                        Padding="2">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="4" />
-                        </Border.StrokeShape>
-                        <controls:FactionListItemView
-                            UseVerticalTileLayout="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=UseVerticalTileLayout}"
-                            ItemTappedCommand="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemTappedCommand}"
-                            ItemTappedCommandParameter="{Binding .}" />
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <!-- Single column of full-width faction cards (Company-Style-Icon look), scrolling vertically.
+             Uses ScrollView + BindableLayout (not CollectionView) to match the working faction strip:
+             WinUI CollectionView collapses nested ContentView item heights, and x:Reference resolves
+             in this shared namescope. -->
+        <ScrollView Grid.Row="1" Orientation="Vertical">
+            <VerticalStackLayout
+                Spacing="8"
+                BindableLayout.ItemsSource="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemsSource}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Stroke="{StaticResource Signal}"
+                            StrokeThickness="2"
+                            BackgroundColor="{StaticResource Plate}"
+                            Padding="4"
+                            HorizontalOptions="Fill">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="4" />
+                            </Border.StrokeShape>
+                            <controls:FactionListItemView
+                                UseVerticalTileLayout="True"
+                                ItemTappedCommand="{Binding Source={x:Reference FactionSelectorOverlayRoot}, Path=ItemTappedCommand}"
+                                ItemTappedCommandParameter="{Binding .}" />
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 
 </ContentView>
