@@ -17,6 +17,14 @@
 		<DebugSymbols>false</DebugSymbols>
 	</PropertyGroup>
 
+	<!-- Android Release cold-start: profiled AOT precompiles the hot startup paths from the
+	     bundled default startup profile so less code is JIT-compiled during launch. Profiled
+	     (not full) AOT keeps the size increase modest by only AOT-ing the startup methods. -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>

@@ -58,6 +58,19 @@ public interface ISQLiteRepository
     public bool Exists<T>(Expression<Func<T, bool>> filter) where T : new();
 
     /// <summary>
+    /// Returns true if the table contains any rows, without materializing them.
+    /// Uses SQL EXISTS so no row data (and no large blob columns) is read.
+    /// </summary>
+    public bool Any<T>() where T : new();
+
+    /// <summary>
+    /// Projects a single column for every row, without materializing whole entities.
+    /// Use this instead of <see cref="GetAll{T}(Expression{Func{T, bool}}, Expression{Func{T, object}})"/>
+    /// when only one column is needed, to avoid loading large blob columns.
+    /// </summary>
+    public IReadOnlyList<TResult> QueryColumn<T, TResult>(string columnName) where T : new();
+
+    /// <summary>
     /// Deletes all records from a SQLite table by filter.
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -68,4 +81,11 @@ public interface ISQLiteRepository
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public void DeleteAll<T>() where T : new();
+
+    /// <summary>
+    /// Runs <paramref name="action"/> inside a single database transaction. Batches many
+    /// writes into one commit/fsync instead of one per statement. Repository calls made
+    /// from within <paramref name="action"/> participate in the same transaction.
+    /// </summary>
+    public void RunInTransaction(Action action);
 }

@@ -15,6 +15,12 @@ public interface IFactionProvider
     bool HasFactionArmy(int factionId);
 
     /// <summary>
+    /// Returns true if any faction army data is stored, without reading row data.
+    /// Cheap enough for the startup path; prefer this over GetStoredFactionIds().Count > 0.
+    /// </summary>
+    bool HasAnyFactionData();
+
+    /// <summary>
     /// Gets a list of FactionIDs.
     /// </summary>
     /// <returns></returns>

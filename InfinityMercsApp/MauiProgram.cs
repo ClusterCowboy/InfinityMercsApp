@@ -1,4 +1,3 @@
-using System.Net;
 using InfinityMercsApp.Infrastructure;
 using InfinityMercsApp.Infrastructure.Options;
 using InfinityMercsApp.Services;
@@ -26,21 +25,18 @@ public static class MauiProgram
 				fonts.AddFont("Conthrax-SemiBold.otf", "ConthraxSemiBold");
 			});
 
-		builder.Services.AddSingleton(sp =>
-		{
-			var handler = new HttpClientHandler
-			{
-				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-			};
+		// Seed the working DB from the bundled snapshot before anything opens a connection to it,
+		// so first launch starts populated instead of importing every faction over the network.
+		var dbPath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3");
+		DatabaseSeeder.EnsureSeeded(dbPath);
 
-			return new HttpClient(handler);
-		})
+		builder.Services
 				.AddInfrastructureServices()
 				.AddAppServices()
 				.AddViewModels()
 				.AddPages()
 				// Change this once AppSettings is set up. Wish MAUI did this by default.
-				.AddSingleton(new SQLIteConfiguration() { DBPath = Path.Combine(FileSystem.Current.AppDataDirectory, "infinitymercs.db3") });
+				.AddSingleton(new SQLIteConfiguration() { DBPath = dbPath });
 
 #if DEBUG
 		builder.Logging.AddDebug();

@@ -77,21 +77,26 @@ public class ArmyImportProvider(ISQLiteRepository sqliteRepository) : IArmyImpor
         var specopsWeapons = BuildSpecopsWeaponRecords(factionId, specopsRoot, yuJingSpecops);
         var specopsUnits = BuildSpecopsUnitRecords(factionId, specopsRoot);
 
-        sqliteRepository.Delete<Unit>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<Resume>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == factionId);
-        sqliteRepository.Delete<Faction>(x => x.FactionId == factionId);
+        // One transaction per faction: collapses 14 separate commits/fsyncs into one, and keeps
+        // the faction's rows atomic (no window where units are deleted but not yet re-inserted).
+        sqliteRepository.RunInTransaction(() =>
+        {
+            sqliteRepository.Delete<Unit>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<Resume>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<SpecopsSkill>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<SpecopsEquipment>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<SpecopsWeapon>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<SpecopsUnit>(x => x.FactionId == factionId);
+            sqliteRepository.Delete<Faction>(x => x.FactionId == factionId);
 
-        sqliteRepository.Insert([faction]);
-        sqliteRepository.Insert(units);
-        sqliteRepository.Insert(resume);
-        sqliteRepository.Insert(specopsSkills);
-        sqliteRepository.Insert(specopsEquips);
-        sqliteRepository.Insert(specopsWeapons);
-        sqliteRepository.Insert(specopsUnits);
+            sqliteRepository.Insert([faction]);
+            sqliteRepository.Insert(units);
+            sqliteRepository.Insert(resume);
+            sqliteRepository.Insert(specopsSkills);
+            sqliteRepository.Insert(specopsEquips);
+            sqliteRepository.Insert(specopsWeapons);
+            sqliteRepository.Insert(specopsUnits);
+        });
     }
 
     private static string BuildUnitKey(int factionId, DomainArmyImportUnit unit)

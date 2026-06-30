@@ -4,11 +4,12 @@ using InfinityMercsApp.Messages;
 using InfinityMercsApp.Services;
 using InfinityMercsApp.ViewModels.Base;
 using InfinityMercsApp.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InfinityMercsApp.ViewModels;
 
 public partial class SplashPageViewModel(
-    IImportService importService,
+    IServiceProvider serviceProvider,
     IFactionProvider factionProvider,
     INavigationService navigationService) : ViewModelBase(navigationService)
 {
@@ -26,7 +27,7 @@ public partial class SplashPageViewModel(
         // import before showing the main page or it would be empty. On every later launch
         // the DB already holds data, so navigate immediately and let the daily sync (which
         // is network-bound and can be slow) run in the background.
-        var hasCachedData = factionProvider.GetStoredFactionIds().Count > 0;
+        var hasCachedData = factionProvider.HasAnyFactionData();
 
         if (hasCachedData)
         {
@@ -45,6 +46,9 @@ public partial class SplashPageViewModel(
     {
         try
         {
+            // Resolved lazily: the import graph (API client, generators, etc.) is heavy and is
+            // only needed for the sync, which is off the critical path for returning users.
+            var importService = serviceProvider.GetRequiredService<IImportService>();
             await foreach (var result in importService.ImportAllDataAsync())
             {
                 UpdateProgressMessage = result.Message;

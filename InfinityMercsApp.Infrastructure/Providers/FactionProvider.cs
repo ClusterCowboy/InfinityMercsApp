@@ -21,10 +21,17 @@ public sealed class FactionProvider(ISQLiteRepository sqliteRepository) : IFacti
     }
 
     /// <inheritdoc/>
+    public bool HasAnyFactionData()
+    {
+        return sqliteRepository.Any<DbFaction>();
+    }
+
+    /// <inheritdoc/>
     public IReadOnlyList<int> GetStoredFactionIds()
     {
-        var snapshots = sqliteRepository.GetAll<DbFaction>(x => true, x => x.FactionId).ToList();
-        return snapshots.Select(x => x.FactionId).ToList();
+        // Projects only FactionId: loading whole Faction rows here pulls every faction's
+        // multi-MB JSON blob columns into memory just to read an int.
+        return sqliteRepository.QueryColumn<DbFaction, int>(nameof(DbFaction.FactionId));
     }
 
     /// <inheritdoc/>
